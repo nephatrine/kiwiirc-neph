@@ -186,7 +186,7 @@ export default {
     border: none;
 }
 
-@media screen and (max-width: 769px) {
+@media screen and (width <= 769px) {
     .kiwi-mediaviewer-controls {
         right: 6px;
         opacity: 1;

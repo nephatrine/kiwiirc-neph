@@ -130,7 +130,7 @@ export default Vue.component('tabbed-view', {
     text-align: left;
     box-sizing: border-box;
     padding: 0.5em 1em;
-    border-bottom: 3px solid rgba(0, 0, 0, 0.1);
+    border-bottom: 3px solid rgb(0, 0, 0, 0.1);
     transition: border 0.3s;
 }
 
@@ -149,7 +149,7 @@ export default Vue.component('tabbed-view', {
     height: 100%;
 }
 
-@media screen and (max-width: 769px) {
+@media screen and (width <= 769px) {
     .u-tabbed-view-tabs {
         padding-top: 0;
     }

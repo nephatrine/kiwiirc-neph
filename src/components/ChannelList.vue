@@ -308,13 +308,13 @@ export default {
     padding: 0.3em;
 }
 
-@media screen and (max-width: 1024px) {
+@media screen and (width <= 1024px) {
     .kiwi-channellist-padding-top {
         padding-top: 100px;
     }
 }
 
-@media screen and (max-width: 770px) {
+@media screen and (width <= 770px) {
     .kiwi-channellist-nav .u-form .u-input {
         width: 100%;
     }

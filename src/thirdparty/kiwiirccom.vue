@@ -137,7 +137,7 @@ getState().getStartups().kiwiirccom = ctor;
     display: block;
 }
 
-@media screen and (min-width: 700px) {
+@media screen and (width >= 700px) {
     .kiwi-aboutnew-content {
         padding: 2em 3em;
     }
@@ -176,7 +176,7 @@ getState().getStartups().kiwiirccom = ctor;
     display: none;
 }
 
-@media screen and (max-width: 500px) {
+@media screen and (width <= 500px) {
     .kiwi-personal-existing-networks {
         display: inherit;
     }

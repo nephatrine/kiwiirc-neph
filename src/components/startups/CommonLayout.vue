@@ -88,8 +88,7 @@ export default {
     padding: 1em;
     box-sizing: border-box;
     height: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden auto;
 
     /* transition the 2 sections out when the page closes. right+left defaults */
     transition: transform 0.4s;
@@ -113,7 +112,7 @@ export default {
 }
 
 .kiwi-startup-common-section-info-content {
-    background: rgba(255, 255, 255, 0.74);
+    background: rgb(255, 255, 255, 0.74);
     margin: 2em;
     color: #1b1b1b;
     font-size: 1.5em;
@@ -130,7 +129,7 @@ export default {
     height: 1px;
 }
 
-@media (min-width: 850px) {
+@media (width >= 850px) {
     /** Closing - the wiping away of the screen **/
     .kiwi-startup-common--closing .kiwi-startup-common-section-connection {
         transform: translateX(-100%);
@@ -142,7 +141,7 @@ export default {
 }
 
 /** Smaller screen... **/
-@media (max-width: 850px) {
+@media (width <= 850px) {
     .kiwi-startup-common {
         font-size: 0.9em;
         display: block;
@@ -191,7 +190,7 @@ export default {
 
 /* stylint-enable */
 
-@media (max-width: 850px) {
+@media (width <= 850px) {
     /* Apply some flex so that the info panel fills the rest of the bottom screen */
     .kiwi-startup-common {
         background-size: cover;
@@ -209,7 +208,7 @@ export default {
     }
 }
 
-@media (max-width: 500px) {
+@media (width <= 500px) {
     .kiwi-startup-common-section-info-content {
         margin: 1em;
     }

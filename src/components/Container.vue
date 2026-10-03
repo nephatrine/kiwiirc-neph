@@ -350,7 +350,7 @@ export default {
     position: absolute;
     left: auto;
     height: 120%;
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color: rgb(0, 0, 0, 0.4);
     top: 0;
     opacity: 0;
     z-index: 99;
@@ -359,13 +359,13 @@ export default {
     transition: opacity 0.1s;
 }
 
-@media screen and (max-width: 1500px) {
+@media screen and (width <= 1500px) {
     .kiwi-container--sidebar-open .kiwi-sidebar {
         max-width: 350px;
     }
 }
 
-@media screen and (max-width: 769px) {
+@media screen and (width <= 769px) {
     .kiwi-wrap--statebrowser-drawopen .kiwi-container-statebrowser-messagecount-alert {
         display: none;
     }

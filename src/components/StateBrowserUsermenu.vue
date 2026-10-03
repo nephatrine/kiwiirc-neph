@@ -135,7 +135,7 @@ export default {
     margin-bottom: 0;
 }
 
-@media screen and (max-width: 769px) {
+@media screen and (width <= 769px) {
     .kiwi-statebrowser-usermenu-close {
         display: none;
     }

@@ -308,7 +308,7 @@ export default {
     display: none;
 }
 
-@media screen and (max-width: 500px) {
+@media screen and (width <= 500px) {
     .kiwi-personal-existing-networks {
         display: inherit;
     }

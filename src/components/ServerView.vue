@@ -119,10 +119,7 @@ export default {
 .kiwi-serverview-inner {
     /* Mobile safari can't work out the height for scrolling to work without this wrapper element */
     position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    inset: 0 0 0 0;
 }
 
 .kiwi-serverview-alerts {

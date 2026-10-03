@@ -114,9 +114,6 @@ export default Vue.component('input-prompt', {
     position: absolute;
     font-size: 150%;
     font-weight: 800;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    inset: 0 0 0 0;
 }
 </style>

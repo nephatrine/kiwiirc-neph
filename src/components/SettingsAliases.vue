@@ -107,7 +107,7 @@ export default {
 .kiwi-settings-aliases-help {
     padding: 1em;
     margin: 1em 0;
-    border: 1px dashed rgba(0, 0, 0, 0.4);
+    border: 1px dashed rgb(0, 0, 0, 0.4);
 }
 
 .kiwi-settings-aliases .u-form textarea {

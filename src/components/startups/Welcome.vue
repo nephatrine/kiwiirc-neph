@@ -461,21 +461,21 @@ form.kiwi-welcome-simple-form {
     padding: 20px;
 }
 
-@media (max-width: 1025px) {
+@media (width <= 1025px) {
     form.kiwi-welcome-simple-form {
         width: 100%;
     }
 }
 
-@media (max-width: 850px) {
+@media (width <= 850px) {
     form.kiwi-welcome-simple-form {
         background: var(--brand-default-bg);
         border-radius: 5px;
-        box-shadow: 0 2px 10px 0 rgba(0, 0, 0, 0.2);
+        box-shadow: 0 2px 10px 0 rgb(0, 0, 0, 0.2);
     }
 }
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
     form.kiwi-welcome-simple-form {
         max-width: 350px;
     }
