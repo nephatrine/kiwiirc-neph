@@ -28,7 +28,7 @@ module.exports = {
             fallback: {
                 stream: require.resolve('stream-browserify'),
             },
-            // This prevents yarn link modules from getting linted
+            // This prevents linked modules from getting linted
             symlinks: false,
         },
         performance: {

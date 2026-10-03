@@ -29,16 +29,16 @@ To install Kiwi IRC on your own server, pre-built and ready to use installers ca
 #### Dependencies
 Before you can build or start to develop on Kiwi IRC, make sure to have the following installed on your system:
 * [Nodejs](https://nodejs.org/)
-* [yarn](https://yarnpkg.com/)
+* [npm](https://www.npmjs.com/)
 
 #### Building for production
 
 ``` bash
 # Install dependencies
-$ yarn install
+$ npm install
 
 # Build Kiwi IRC into the dist/ folder
-$ yarn run build
+$ npm run build
 ```
 
 ***Note:*** *Be sure to copy the files from the `dist/` folder to your webserver! This folder will be overwritten each time it is built.*
@@ -48,13 +48,13 @@ Kiwi IRC is built using Vuejs, webpack and babel.
 
 ``` bash
 # Install dependencies
-yarn install
+npm install
 
 # Optionally link git pre-commit linting hooks
 ln -s $PWD/scripts/pre-commit .git/hooks/
 
 # A development web server with hot reloading at http://localhost:8080/
-yarn run dev
+npm run dev
 ```
 
 ***Note:*** *Do not use this development environment on your live website. It is slow, very large, and unsecure.*
