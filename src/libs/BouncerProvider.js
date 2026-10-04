@@ -64,7 +64,7 @@ export default class BouncerProvider {
 
         // Enable BOUNCER on existing connections
         this.state.networks.forEach((network) => {
-            network.ircClient.use(bouncerMiddleware());
+            network.ircClient.use(bouncerMiddleware(network));
         });
 
         // this.monitorNetworkChanges();
@@ -80,8 +80,7 @@ export default class BouncerProvider {
         this.controllerNetwork = null;
         for (let i = 0; i < this.state.networks.length; i++) {
             let network = this.state.networks[i];
-            let client = network.ircClient;
-            if (network.state === 'connected' && client.network.cap.isEnabled('bouncer')) {
+            if (network.state === 'connected' && network.hasCap('bouncer')) {
                 this.controllerNetwork = network;
                 break;
             }
@@ -97,7 +96,7 @@ export default class BouncerProvider {
             return;
         }
 
-        if (!client.network.cap.isEnabled('bouncer')) {
+        if (!network.hasCap('bouncer')) {
             log.debug(`BOUNCER cap not available on network ${network.name}, not using for BNC`);
             return;
         }

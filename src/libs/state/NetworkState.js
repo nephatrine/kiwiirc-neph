@@ -49,6 +49,8 @@ export default class NetworkState {
         };
         this.password = '';
         this.away = '';
+        this.enabled_caps = [];
+        this.isupport = {};
 
         Vue.observable(this);
 
@@ -115,7 +117,7 @@ export default class NetworkState {
             return false;
         }
 
-        let chanPrefixes = this.ircClient.network.supports('CHANTYPES') || '#&';
+        let chanPrefixes = this.supports('CHANTYPES') || '#&';
         return chanPrefixes.indexOf(input[0]) > -1;
     }
 
@@ -163,5 +165,91 @@ export default class NetworkState {
 
     userByName(nick) {
         return this.appState.getUser(this.id, nick);
+    }
+
+    hasCap(name) {
+        return this.enabled_caps.includes(name.toLowerCase());
+    }
+
+    /**
+     * @param {string} name
+     * @returns {any}
+     */
+    supports(name) {
+        let val = this.isupport[name.toUpperCase()];
+        if (typeof val !== 'undefined') {
+            return val;
+        }
+
+        // Default values
+        if (name.toUpperCase() === 'PREFIX') {
+            return [
+                { symbol: '~', mode: 'q' },
+                { symbol: '&', mode: 'a' },
+                { symbol: '@', mode: 'o' },
+                { symbol: '%', mode: 'h' },
+                { symbol: '+', mode: 'v' },
+            ];
+        }
+
+        if (name.toUpperCase() === 'CHANTYPES') {
+            return ['#', '&'];
+        }
+
+        return undefined;
+    }
+
+    supportsTag(name) {
+        if (!this.hasCap('message-tags')) {
+            return false;
+        }
+
+        let deny = this.supports('CLIENTTAGDENY');
+        if (!deny || deny.length === 0) {
+            return true;
+        }
+
+        if (typeof deny === 'string') {
+            deny = deny.split(',');
+        }
+
+        const allowAll = deny[0] !== '*';
+        if (allowAll) {
+            return !deny.some((tag) => tag === name);
+        }
+
+        return deny.some((tag) => tag === `-${name}`);
+    }
+
+    timeToLocal(serverTimeMs) {
+        return this.ircClient.network.timeToLocal(serverTimeMs);
+    }
+
+    // Support '@#channel' and '++channel' formats
+    extractTargetGroup(target) {
+        const statusMsg = this.supports('STATUSMSG');
+
+        if (!statusMsg) {
+            return null;
+        }
+
+        let targetGroup = '';
+        let targetName = target;
+        for (let i = 0; i < statusMsg.length; i++) {
+            if (statusMsg[i] === target[0]) {
+                targetGroup = statusMsg[i];
+                targetName = target.substring(1);
+                break;
+            }
+        }
+
+        if (!targetGroup) {
+            return null;
+        }
+
+        return {
+            target: targetName,
+            target_group: targetGroup,
+        };
     }
 }

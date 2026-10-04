@@ -5,9 +5,9 @@
 /**
  * Adds the +typing IRCv3 spec to irc-framework
  */
-export default function typingMiddleware() {
+export default function typingMiddleware(network) {
     return function middleware(client, rawEvents, parsedEvents) {
-        addFunctionsToClient(client);
+        addFunctionsToClient(client, network);
         rawEvents.use(theMiddleware);
     };
 
@@ -40,12 +40,12 @@ export default function typingMiddleware() {
     }
 }
 
-function addFunctionsToClient(client) {
+function addFunctionsToClient(client, network) {
     let typing = client.typing = {};
     let activeTyping = Object.create(null);
 
     function isEnabled() {
-        return client.network.supportsTag('typing');
+        return network.supportsTag('+typing');
     }
 
     typing.start = function start(target) {

@@ -87,7 +87,7 @@ export default {
             );
         },
         awayNotifySupported() {
-            return this.network.ircClient.network.cap.isEnabled('away-notify');
+            return this.network.hasCap('away-notify');
         },
         showMessageCounts() {
             return !this.buffer.setting('hide_message_counts');

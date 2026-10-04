@@ -8,13 +8,13 @@ import * as Misc from '@/helpers/Misc';
 /**
  * Adds the BOUNCER IRCv3 spec to irc-framework
  */
-export default function bouncerMiddleware() {
+export default function bouncerMiddleware(network) {
     let networks = [];
     let buffers = {};
 
     return function middleware(client, rawEvents, parsedEvents) {
         client.requestCap('bouncer');
-        addFunctionsToClient(client);
+        addFunctionsToClient(client, network);
         rawEvents.use(theMiddleware);
     };
 
@@ -95,18 +95,18 @@ export default function bouncerMiddleware() {
     }
 }
 
-function addFunctionsToClient(client) {
+function addFunctionsToClient(client, network) {
     let bnc = client.bnc = {};
 
     bnc.tags = function tags() {
-        let token = client.network.supports('bouncer');
+        let token = network.supports('bouncer');
         return !token || typeof token !== 'string' ?
             {} :
             MessageTags.decode(token) || {};
     };
 
     bnc.hasNetwork = function hasNetwork() {
-        let token = client.network.supports('bouncer');
+        let token = network.supports('bouncer');
         if (!token || token === true) {
             return false;
         }

@@ -155,8 +155,7 @@ const methods = {
         }
 
         // Server does not support extended-join so realname would be inconsistent
-        let client = props.ml.buffer.getNetwork().ircClient;
-        if (!client.network.cap.isEnabled('extended-join')) {
+        if (!this.network.hasCap('extended-join')) {
             return false;
         }
 

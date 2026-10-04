@@ -19,9 +19,9 @@ export function create(state, network) {
         message_max_length: 350,
     });
     ircClient.requestCap('znc.in/self-message');
-    ircClient.use(chathistoryMiddleware());
+    ircClient.use(chathistoryMiddleware(network));
     ircClient.use(clientMiddleware(state, network));
-    ircClient.use(typingMiddleware());
+    ircClient.use(typingMiddleware(network));
 
     // Overload the connect() function to make sure we are connecting with the
     // most recent connection details from the network state
@@ -159,11 +159,45 @@ function clientMiddleware(state, network) {
         client.on('connected', () => {
             network.state_error = '';
             network.state = 'connected';
+            network.enabled_caps = client.network.cap.enabled.map((c) => c.toLowerCase());
 
             let currentUser = network.currentUser();
             if (currentUser) {
                 currentUser.away = '';
             }
+        });
+
+        client.on('server options', (event) => {
+            network.isupport = event.options;
+            if (client.network.name !== 'Network' && !network.connection.bncnetid) {
+                network.name = client.network.name;
+            }
+        });
+
+        client.on('cap ack', (event) => {
+            network.enabled_caps = client.network.cap.enabled.map((c) => c.toLowerCase());
+        });
+
+        client.on('cap new', (event) => {
+            network.enabled_caps = client.network.cap.enabled.map((c) => c.toLowerCase());
+            let capNames = Object.keys(event.capabilities).join(', ');
+            let serverBuffer = network.serverBuffer();
+            state.addMessage(serverBuffer, {
+                time: Date.now(),
+                nick: '',
+                message: 'New capabilities available: ' + capNames,
+            });
+        });
+
+        client.on('cap del', (event) => {
+            network.enabled_caps = client.network.cap.enabled.map((c) => c.toLowerCase());
+            let capNames = Object.keys(event.capabilities).join(', ');
+            let serverBuffer = network.serverBuffer();
+            state.addMessage(serverBuffer, {
+                time: Date.now(),
+                nick: '',
+                message: 'Capabilities removed: ' + capNames,
+            });
         });
 
         client.on('socket close', (err) => {
@@ -248,7 +282,7 @@ function clientMiddleware(state, network) {
         // If there is a time difference between this client and the server, convert it
         // to match our local time so it makes sense to the user
         let eventTime = (event && event.time) ?
-            network.ircClient.network.timeToLocal(event.time) :
+            network.timeToLocal(event.time) :
             Date.now();
         let serverTime = (event && event.time) || 0;
 
@@ -269,7 +303,7 @@ function clientMiddleware(state, network) {
                 time: eventTime,
                 server_time: serverTime,
                 nick: '',
-                message: TextFormatting.t('connected_to', { network: client.network.name }),
+                message: TextFormatting.t('connected_to', { network: network.name }),
             });
 
             // Get some extra info about ourselves
@@ -298,11 +332,7 @@ function clientMiddleware(state, network) {
         }
 
         if (command === 'server options') {
-            // If the network name has changed from the irc-framework default, update ours
-            // Also if it isn't a BNC network as the name is then derived from the BNC info instead
-            if (client.network.name !== 'Network' && !network.connection.bncnetid) {
-                network.name = client.network.name;
-            }
+            // Already handled by client.on('server options')
         }
 
         // Show unhandled data from the server in the servers tab
@@ -1103,7 +1133,7 @@ function clientMiddleware(state, network) {
                     modeStrs[mode.mode] = modeStrs[mode.mode] || [];
 
                     // If this mode has a user prefix then we need to update the user object
-                    let prefix = _.find(network.ircClient.network.options.PREFIX, {
+                    let prefix = _.find(network.supports('PREFIX'), {
                         mode: mode.mode[1],
                     });
 
@@ -1156,7 +1186,7 @@ function clientMiddleware(state, network) {
                     '-b': 'modes_takes_ban',
                 };
 
-                let prefixes = network.ircClient.network.options.PREFIX;
+                let prefixes = network.supports('PREFIX');
                 Object.keys(modeLocaleIds).forEach((mode) => {
                     let supported = mode[1] === 'b' || prefixes.find((p) => mode[1] === p.mode);
                     if (!supported) {

@@ -64,7 +64,7 @@ export default {
     computed: {
         sortedUsers() {
             // Get a list of network prefixes and give them a rank number
-            const netPrefixes = this.network.ircClient.network.options.PREFIX;
+            const netPrefixes = this.network.supports('PREFIX');
             const prefixOrders = Object.create(null);
             netPrefixes.forEach((prefix, idx) => {
                 prefixOrders[prefix.mode] = idx;

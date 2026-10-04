@@ -122,7 +122,7 @@ const shouldShowStatus = () => {
         return false;
     }
 
-    const awayNotifyEnabled = props.network.ircClient.network.cap.isEnabled('away-notify');
+    const awayNotifyEnabled = props.network.hasCap('away-notify');
     return state.setting('buffers.who_loop') || awayNotifyEnabled;
 };
 

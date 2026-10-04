@@ -241,7 +241,7 @@ export default {
         // Channel modes differ on some IRCds so get them from the network options
         availableChannelModes() {
             let availableModes = [];
-            let prefixes = this.network.ircClient.network.options.PREFIX;
+            let prefixes = this.network.supports('PREFIX');
             let knownPrefix = {
                 q: 'Owner',
                 a: 'Admin',

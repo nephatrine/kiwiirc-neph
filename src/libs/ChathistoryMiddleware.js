@@ -10,10 +10,10 @@ const log = Logger.namespace('chathistory');
 /**
  * Adds the CHATHISTORY IRCv3 spec to irc-framework
  */
-export default function chathistoryMiddleware() {
+export default function chathistoryMiddleware(network) {
     return function middleware(client, rawEvents, parsedEvents) {
         client.requestCap('draft/chathistory');
-        addFunctionsToClient(client);
+        addFunctionsToClient(client, network);
         parsedEvents.use(theMiddleware);
     };
 
@@ -38,7 +38,7 @@ export default function chathistoryMiddleware() {
     }
 }
 
-function addFunctionsToClient(client) {
+function addFunctionsToClient(client, network) {
     const history = client.chathistory = {};
 
     history.batchCallbacks = {
@@ -90,7 +90,7 @@ function addFunctionsToClient(client) {
     };
 
     // supports (ISUPPORT) is used by kiwibnc, the spec and unreal's implementation uses CAP
-    history.isSupported = () => !!client.network.supports('draft/chathistory') || client.network.cap.isEnabled('draft/chathistory');
+    history.isSupported = () => !!network.supports('draft/chathistory') || network.hasCap('draft/chathistory');
 
     history.before = (target, dateOrTime) => new Promise((resolve) => {
         if (!history.isSupported()) {

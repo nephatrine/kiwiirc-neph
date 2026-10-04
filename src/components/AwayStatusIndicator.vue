@@ -44,7 +44,7 @@ const methods = {
             return false;
         }
 
-        let awayNotifyEnabled = props.network.ircClient.network.cap.isEnabled('away-notify');
+        let awayNotifyEnabled = props.network.hasCap('away-notify');
         return getState().setting('buffers.who_loop') || awayNotifyEnabled;
     },
 };

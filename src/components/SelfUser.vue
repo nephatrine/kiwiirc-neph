@@ -166,7 +166,7 @@ export default {
             this.self_user_settings_open = false;
         },
         networkSupportsAway() {
-            return this.network.ircClient.network.cap.isEnabled('away-notify');
+            return this.network.hasCap('away-notify');
         },
     },
 };

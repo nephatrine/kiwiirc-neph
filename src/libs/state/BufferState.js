@@ -210,22 +210,12 @@ export default class BufferState {
     }
 
     isChannel() {
-        let chanPrefixes = ['#', '&'];
-        let ircNetwork = this.getNetwork().ircClient.network;
-        if (ircNetwork && ircNetwork.options.CHANTYPES) {
-            chanPrefixes = ircNetwork.options.CHANTYPES;
-        }
-
+        let chanPrefixes = this.getNetwork().supports('CHANTYPES') || ['#', '&'];
         return chanPrefixes.indexOf(this.name[0]) > -1;
     }
 
     isQuery() {
-        let chanPrefixes = ['#', '&'];
-        let ircNetwork = this.getNetwork().ircClient.network;
-        if (ircNetwork && ircNetwork.options.CHANTYPES) {
-            chanPrefixes = ircNetwork.options.CHANTYPES;
-        }
-
+        let chanPrefixes = this.getNetwork().supports('CHANTYPES') || ['#', '&'];
         return chanPrefixes.indexOf(this.name[0]) === -1 &&
             !this.isSpecial() &&
             !this.isServer();
@@ -272,7 +262,7 @@ export default class BufferState {
         }
 
         let network = this.getNetwork();
-        let netPrefixes = network.ircClient.network.options.PREFIX;
+        let netPrefixes = network.supports('PREFIX');
         // Find the first (highest) netPrefix in the users buffer modes
         let prefix = _.find(netPrefixes, (p) => modes.indexOf(p.mode) > -1);
 
@@ -302,7 +292,7 @@ export default class BufferState {
         }
 
         let network = this.getNetwork();
-        let netPrefixes = network.ircClient.network.options.PREFIX;
+        let netPrefixes = network.supports('PREFIX');
         // Find the first (highest) netPrefix in the users buffer modes
         let prefix = _.find(netPrefixes, (p) => modes.indexOf(p.mode) > -1);
 
@@ -717,7 +707,7 @@ function maybeStartWhoLoop(bufferState) {
 
         let whoLoop = bufferState.setting('who_loop');
         let isJoined = bufferState.joined;
-        let hasAwayNotify = network.ircClient.network.cap.isEnabled('away-notify');
+        let hasAwayNotify = network.hasCap('away-notify');
         let networkConnected = network.state === 'connected';
 
         if (whoLoop && networkConnected && isJoined && !hasAwayNotify) {

@@ -9,7 +9,7 @@ export function extbanAccount(network) {
 
     // Eg. ~,qjncrRa
     // Eg. ,qjncrRa
-    let extban = network.ircClient.network.supports('EXTBAN') || '';
+    let extban = network.supports('EXTBAN') || '';
     if (!extban) {
         return '';
     }

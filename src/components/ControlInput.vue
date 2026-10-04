@@ -758,7 +758,7 @@ export default {
             return list;
         },
         startTyping() {
-            if (!this.network.ircClient.network.cap.isEnabled('message-tags')) {
+            if (!this.network.hasCap('message-tags')) {
                 return;
             }
             if (!this.buffer || !this.buffer.shouldShareTyping()) {
@@ -780,7 +780,7 @@ export default {
             this.lastTypingTime = Date.now();
         },
         stopTyping(sendStop) {
-            if (!this.network.ircClient.network.cap.isEnabled('message-tags')) {
+            if (!this.network.hasCap('message-tags')) {
                 return;
             }
             if (!this.buffer || !this.buffer.shouldShareTyping()) {

@@ -162,7 +162,7 @@ function handleMessage(type, event, command, line, context) {
     }
 
     let localBuffer = bufferName;
-    let extractedTarget = network.ircClient.network.extractTargetGroup(bufferName);
+    let extractedTarget = network.extractTargetGroup(bufferName);
     if (extractedTarget) {
         localBuffer = extractedTarget.target;
     }
