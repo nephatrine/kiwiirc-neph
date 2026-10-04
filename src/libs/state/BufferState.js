@@ -46,6 +46,7 @@ export default class BufferState {
         this.input_history_pos = 0;
         this.show_input = true;
         this.latest_messages = [];
+        this.replying_to = null;
 
         // Counter for chathistory requests. While this value is 0, it means that this buffer is
         // still loading messages
@@ -525,11 +526,17 @@ export default class BufferState {
 
     say(message, opts = {}) {
         let network = this.getNetwork();
+        let tags = opts.tags || {};
+
+        if (this.replying_to && network.hasCap('message-tags') && network.supportsTag('+reply')) {
+            tags['+reply'] = this.replying_to.id;
+        }
+
         let newMessage = {
             time: Date.now(),
             nick: network.nick,
             message: message,
-            tags: opts.tags || {},
+            tags: tags,
             type: opts.type || 'privmsg',
         };
 
@@ -542,7 +549,9 @@ export default class BufferState {
             tagmsg: 'tagmsg',
         };
         let fnName = fnNames[opts.type] || 'say';
-        network.ircClient[fnName](this.name, message, opts.tags);
+        network.ircClient[fnName](this.name, message, tags);
+
+        this.replying_to = null;
     }
 
     join() {

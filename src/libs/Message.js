@@ -26,6 +26,7 @@ export default class Message {
         // so day_num can be updated if the time is changed
         def(this, 'internal_time', null);
         def(this, 'day_num', null);
+        def(this, 'reply', extractReplyId(message));
 
         // Two different times;
         //   time = time in the users local time (getter/setter)
@@ -169,4 +170,12 @@ function extractMessageId(message) {
     }
 
     return message.tags.msgid || message.tags['draft/msgid'] || undefined;
+}
+
+function extractReplyId(message) {
+    if (!message.tags) {
+        return undefined;
+    }
+
+    return message.tags['+reply'] || message.tags['+draft/reply'] || undefined;
 }

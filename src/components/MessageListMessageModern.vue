@@ -49,6 +49,18 @@
             </template>
         </div>
         <div class="kiwi-messagelist-modern-right">
+            <div v-if="props.message.reply" class="kiwi-messagelist-reply-preview" @click="props.m().scrollToReply(props.message.reply)">
+                <i class="fa fa-reply" aria-hidden="true" />
+                <span v-if="props.m().getReplyMessage(props.message.reply)" class="kiwi-messagelist-reply-preview-nick">
+                    {{ props.m().getReplyMessage(props.message.reply).nick }}:
+                </span>
+                <span v-if="props.m().getReplyMessage(props.message.reply)" class="kiwi-messagelist-reply-preview-message">
+                    {{ props.m().getReplyMessage(props.message.reply).message }}
+                </span>
+                <span v-else class="kiwi-messagelist-reply-preview-id">
+                    {{ props.message.reply }}
+                </span>
+            </div>
             <div class="kiwi-messagelist-top">
                 <a
                     v-if="props.message.nick"
@@ -109,6 +121,14 @@
                 class="kiwi-messagelist-body"
                 v-html="props.ml.formatMessage(props.message)"
             />
+
+            <div
+                v-if="props.m().canReply(props.message)"
+                class="kiwi-messagelist-reply-action"
+                @click.stop="props.ml.onReply(props.message)"
+            >
+                <i class="fa fa-reply" aria-hidden="true" />
+            </div>
 
             <component
                 :is="injections.components.MessageInfo"
@@ -235,6 +255,18 @@ const methods = {
         let props = this.props;
         return props.ml.buffer.userModePrefix(user);
     },
+    getReplyMessage(replyId) {
+        let props = this.props;
+        return props.ml.buffer.messagesObj.messages.find((m) => m.id === replyId);
+    },
+    scrollToReply(replyId) {
+        let props = this.props;
+        props.ml.maybeScrollToId(replyId);
+    },
+    canReply(message) {
+        let types = ['privmsg', 'action', 'message'];
+        return types.indexOf(message.type) > -1;
+    },
 };
 
 export default {
@@ -347,6 +379,7 @@ export default {
     padding-top: 0;
     width: 100%;
     overflow: hidden;
+    position: relative;
 }
 
 .kiwi-messagelist-message--modern .kiwi-messagelist-top > div {
@@ -368,6 +401,60 @@ export default {
 .kiwi-messagelist-message--modern .kiwi-messagelist-nick {
     padding: 0;
     margin-right: 10px;
+}
+
+.kiwi-messagelist-reply-preview {
+    display: block;
+    font-size: 0.85em;
+    opacity: 0.7;
+    margin-bottom: 4px;
+    margin-top: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-left: 2px solid;
+    padding-left: 8px;
+    width: 100%;
+
+    &:hover {
+        opacity: 1;
+    }
+
+    .fa-reply {
+        margin-right: 5px;
+    }
+
+    .kiwi-messagelist-reply-preview-nick {
+        font-weight: bold;
+        margin-right: 5px;
+    }
+}
+
+.kiwi-messagelist-reply-action {
+    display: none;
+    cursor: pointer;
+    opacity: 0.8;
+    position: absolute;
+    right: 10px;
+    top: 2px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    z-index: 1;
+    background-color: inherit;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+
+    &:hover {
+        opacity: 1;
+    }
+}
+
+.kiwi-messagelist-message--modern:hover .kiwi-messagelist-reply-action {
+    display: block;
+}
+
+.kiwi-messagelist-message--authorrepeat .kiwi-messagelist-reply-action {
+    top: 0;
 }
 
 .kiwi-messagelist-message-traffic .kiwi-messagelist-body {

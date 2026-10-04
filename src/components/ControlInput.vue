@@ -34,36 +34,18 @@
                     aria-hidden="true"
                 />
             </div>
+            <div v-if="buffer.replying_to" class="kiwi-controlinput-reply">
+                <div class="kiwi-controlinput-reply-nick">{{ $t('replying_to') }} {{ buffer.replying_to.nick }}</div>
+                <div class="kiwi-controlinput-reply-message">{{ buffer.replying_to.message }}</div>
+                <div class="kiwi-controlinput-reply-cancel" @click="buffer.replying_to = null">
+                    <i class="fa fa-times" aria-hidden="true" />
+                </div>
+            </div>
             <form
                 class="kiwi-controlinput-form"
                 @submit.prevent="submitForm"
                 @click="maybeHidePlugins"
             >
-                <auto-complete
-                    v-if="autocomplete_open"
-                    ref="autocomplete"
-                    :items="autocomplete_items"
-                    :filter="autocomplete_filter"
-                    :buffer="buffer"
-                    @temp="onAutocompleteTemp"
-                    @selected="onAutocompleteSelected"
-                    @cancel="onAutocompleteCancel"
-                />
-                <div v-if="showCommandWarning" class="kiwi-controlinput-command-warn">
-                    <div>
-                        <i class="fa fa-exclamation-triangle" aria-hidden="true" />
-                        {{ $t('input_not_command') }}
-                    </div>
-                    <div class="kiwi-controlinput-command-text">
-                        {{ $t('input_send_text') }}
-                        <input-confirm
-                            :flip-connotation="true"
-                            @ok="submitForm()"
-                            @submit="showCommandWarning = false;"
-                        />
-                    </div>
-                </div>
-                <typing-users-list v-if="buffer.setting('share_typing')" :buffer="buffer" />
                 <div class="kiwi-controlinput-input-wrap">
                     <irc-input
                         ref="input"
@@ -342,6 +324,16 @@ export default {
 
         this.listen(this.$state, 'input.tool', (toolComponent) => {
             this.toggleInputTool(toolComponent);
+        });
+
+        this.listen(this.$state, 'input.reply', (nick) => {
+            if (!this.$refs.input) {
+                return;
+            }
+
+            this.$refs.input.focus();
+            this.$refs.input.selectionToStart();
+            this.$refs.input.insertText(nick + ': ');
         });
     },
     mounted() {
@@ -909,6 +901,48 @@ export default {
     box-sizing: border-box;
     overflow: hidden;
     margin: 0 10px;
+}
+
+.kiwi-controlinput-reply {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-top: 1px solid var(--comp-border);
+    border-bottom: 1px solid var(--comp-border);
+    z-index: 10;
+    font-size: 0.9em;
+    background-color: var(--brand-default-bg);
+    color: var(--brand-default-fg);
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+
+    .kiwi-controlinput-reply-nick {
+        font-weight: bold;
+        margin-right: 10px;
+        white-space: nowrap;
+    }
+
+    .kiwi-controlinput-reply-message {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        opacity: 0.8;
+    }
+
+    .kiwi-controlinput-reply-cancel {
+        margin-left: 10px;
+        cursor: pointer;
+        padding: 5px;
+        opacity: 0.6;
+
+        &:hover {
+            opacity: 1;
+        }
+    }
 }
 
 .kiwi-controlinput-active-tool {

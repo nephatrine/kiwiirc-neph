@@ -26,6 +26,9 @@
             (props.message.user && props.m().userMode(props.message.user))
                 ? `kiwi-messagelist-message--user-mode-${props.m().userMode(props.message.user)}`
                 : '',
+            !props.ml.bufferSetting('show_timestamps')
+                ? 'kiwi-messagelist-message--no-timestamps'
+                : '',
             data.staticClass,
         ]"
         :data-message-id="props.message.id"
@@ -35,6 +38,18 @@
         @dblclick="props.ml.onMessageDblClick($event, props.message)"
     >
         <div>
+            <div v-if="props.message.reply" class="kiwi-messagelist-reply-preview" @click="props.ml.maybeScrollToId(props.message.reply)">
+                <i class="fa fa-reply" aria-hidden="true" />
+                <span v-if="props.m().getReplyMessage(props.message.reply)" class="kiwi-messagelist-reply-preview-nick">
+                    {{ props.m().getReplyMessage(props.message.reply).nick }}:
+                </span>
+                <span v-if="props.m().getReplyMessage(props.message.reply)" class="kiwi-messagelist-reply-preview-message">
+                    {{ props.m().getReplyMessage(props.message.reply).message }}
+                </span>
+                <span v-else class="kiwi-messagelist-reply-preview-id">
+                    {{ props.message.reply }}
+                </span>
+            </div>
             <span
                 v-if="props.ml.bufferSetting('show_timestamps')"
                 class="kiwi-messagelist-time"
@@ -82,6 +97,13 @@
                 class="kiwi-messagelist-body"
                 v-html="props.ml.formatMessage(props.message)"
             />
+            <div
+                v-if="props.m().canReply(props.message)"
+                class="kiwi-messagelist-reply-action"
+                @click.stop="props.ml.onReply(props.message)"
+            >
+                <i class="fa fa-reply" aria-hidden="true" />
+            </div>
         </div>
 
         <component
@@ -127,6 +149,14 @@ const methods = {
         let props = this.props;
         return props.ml.buffer.userModePrefix(user);
     },
+    getReplyMessage(replyId) {
+        let props = this.props;
+        return props.ml.buffer.messagesObj.messages.find((m) => m.id === replyId);
+    },
+    canReply(message) {
+        let types = ['privmsg', 'action', 'message'];
+        return types.indexOf(message.type) > -1;
+    },
 };
 
 export default {
@@ -165,6 +195,11 @@ export default {
     padding: 4px 10px;
     margin: 0;
     text-align: left;
+    padding-right: 100px;
+}
+
+.kiwi-messagelist-message--no-timestamps.kiwi-messagelist-message--text {
+    padding-right: 60px;
 }
 
 //Hide the timestamp unless the user hovers over the message in question
@@ -204,6 +239,60 @@ export default {
     display: inline;
     padding: 0;
     white-space: pre-wrap;
+}
+
+.kiwi-messagelist-reply-preview {
+    display: block;
+    font-size: 0.85em;
+    opacity: 0.7;
+    margin-bottom: 4px;
+    margin-top: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-left: 2px solid;
+    padding-left: 8px;
+    width: auto;
+
+    &:hover {
+        opacity: 1;
+    }
+
+    .fa-reply {
+        margin-right: 5px;
+    }
+
+    .kiwi-messagelist-reply-preview-nick {
+        font-weight: bold;
+        margin-right: 5px;
+    }
+}
+
+.kiwi-messagelist-reply-action {
+    display: none;
+    cursor: pointer;
+    opacity: 0.8;
+    position: absolute;
+    right: 80px;
+    top: 2px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    z-index: 1;
+    background-color: inherit;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+
+    &:hover {
+        opacity: 1;
+    }
+}
+
+.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-reply-action {
+    right: 10px;
+}
+
+.kiwi-messagelist-message--text:hover .kiwi-messagelist-reply-action {
+    display: block;
 }
 
 .kiwi-messagelist-message--text .kiwi-messagelist-body a {

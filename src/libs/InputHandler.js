@@ -176,6 +176,13 @@ function handleMessage(type, event, command, line, context) {
             textFormatType = 'notice';
         }
 
+        let tags = {};
+        if (buffer.replying_to) {
+            if (network.hasCap('message-tags') && network.supportsTag('+reply')) {
+                tags['+reply'] = buffer.replying_to.id;
+            }
+        }
+
         let messageBody = TextFormatting.formatText(textFormatType, {
             nick: network.nick,
             text: message,
@@ -186,18 +193,21 @@ function handleMessage(type, event, command, line, context) {
             nick: network.nick,
             message: messageBody,
             type: type,
+            tags: tags,
         };
 
         this.state.addMessage(buffer, newMessage);
-    }
 
-    let fnNames = {
-        privmsg: 'say',
-        action: 'action',
-        notice: 'notice',
-    };
-    let fnName = fnNames[type] || 'say';
-    network.ircClient[fnName](bufferName, message);
+        let fnNames = {
+            privmsg: 'say',
+            action: 'action',
+            notice: 'notice',
+        };
+        let fnName = fnNames[type] || 'say';
+        network.ircClient[fnName](bufferName, message, tags);
+
+        buffer.replying_to = null;
+    }
 }
 
 inputCommands.msg = function inputCommandMsg(event, command, line, context) {

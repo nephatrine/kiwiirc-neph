@@ -29,6 +29,9 @@
             (props.message.user && props.m().userMode(props.message.user))
                 ? `kiwi-messagelist-message--user-mode-${props.m().userMode(props.message.user)}`
                 : '',
+            !props.ml.bufferSetting('show_timestamps')
+                ? 'kiwi-messagelist-message--no-timestamps'
+                : '',
             data.staticClass,
         ]"
         :data-message-id="props.message.id"
@@ -67,24 +70,48 @@
             </span>
             {{ props.message.nick }}
         </a>
+
+        <div class="kiwi-messagelist-body-container">
+            <div v-if="props.message.reply" class="kiwi-messagelist-reply-preview" @click="props.ml.maybeScrollToId(props.message.reply)">
+                <i class="fa fa-reply" aria-hidden="true" />
+                <span v-if="props.m().getReplyMessage(props.message.reply)" class="kiwi-messagelist-reply-preview-nick">
+                    {{ props.m().getReplyMessage(props.message.reply).nick }}:
+                </span>
+                <span v-if="props.m().getReplyMessage(props.message.reply)" class="kiwi-messagelist-reply-preview-message">
+                    {{ props.m().getReplyMessage(props.message.reply).message }}
+                </span>
+                <span v-else class="kiwi-messagelist-reply-preview-id">
+                    {{ props.message.reply }}
+                </span>
+            </div>
+
+            <div
+                v-if="props.message.bodyTemplate
+                    && props.message.bodyTemplate.$el
+                    && props.ml.isTemplateVue(props.message.bodyTemplate)"
+                v-rawElement="props.message.bodyTemplate.$el"
+                class="kiwi-messagelist-body"
+            />
+            <component
+                :is="props.message.bodyTemplate"
+                v-else-if="props.message.bodyTemplate"
+                v-bind="props.message.bodyTemplateProps"
+                :buffer="props.ml.buffer"
+                :message="props.message"
+                :idx="props.idx"
+                :ml="props.ml"
+                class="kiwi-messagelist-body"
+            />
+            <div v-else class="kiwi-messagelist-body" v-html="props.ml.formatMessage(props.message)" />
+        </div>
+
         <div
-            v-if="props.message.bodyTemplate
-                && props.message.bodyTemplate.$el
-                && props.ml.isTemplateVue(props.message.bodyTemplate)"
-            v-rawElement="props.message.bodyTemplate.$el"
-            class="kiwi-messagelist-body"
-        />
-        <component
-            :is="props.message.bodyTemplate"
-            v-else-if="props.message.bodyTemplate"
-            v-bind="props.message.bodyTemplateProps"
-            :buffer="props.ml.buffer"
-            :message="props.message"
-            :idx="props.idx"
-            :ml="props.ml"
-            class="kiwi-messagelist-body"
-        />
-        <div v-else class="kiwi-messagelist-body" v-html="props.ml.formatMessage(props.message)" />
+            v-if="props.m().canReply(props.message)"
+            class="kiwi-messagelist-reply-action"
+            @click.stop="props.ml.onReply(props.message)"
+        >
+            <i class="fa fa-reply" aria-hidden="true" />
+        </div>
 
         <component
             :is="injections.components.MessageInfo"
@@ -148,6 +175,14 @@ const methods = {
     userModePrefix(user) {
         let props = this.props;
         return props.ml.buffer.userModePrefix(user);
+    },
+    getReplyMessage(replyId) {
+        let props = this.props;
+        return props.ml.buffer.messagesObj.messages.find((m) => m.id === replyId);
+    },
+    canReply(message) {
+        let types = ['privmsg', 'action', 'message'];
+        return types.indexOf(message.type) > -1;
     },
 };
 
@@ -213,16 +248,27 @@ export default {
 
 .kiwi-messagelist-message--compact .kiwi-messagelist-time {
     display: inline-block;
-    float: right;
+    position: absolute;
+    right: 10px;
+    top: 2px;
     font-size: 12px;
     opacity: 0.8;
+}
+
+.kiwi-messagelist-body-container {
+    display: block;
+    margin-left: 120px;
+    padding-right: 100px;
+}
+
+.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-body-container {
+    padding-right: 60px;
 }
 
 .kiwi-messagelist-message--compact .kiwi-messagelist-body {
     display: block;
     white-space: pre-wrap;
     word-wrap: break-word;
-    margin-left: 120px;
 }
 
 .kiwi-messagelist-message--compact .kiwi-messagelist-body a {
@@ -230,7 +276,61 @@ export default {
 }
 
 .kiwi-messagelist-message--compact .kiwi-messageinfo {
-    padding-left: 130px;
+    padding-left: 100px; /* 130px */
+}
+
+.kiwi-messagelist-reply-preview {
+    display: block;
+    font-size: 0.85em;
+    opacity: 0.7;
+    margin-bottom: 4px;
+    margin-top: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-left: 2px solid;
+    padding-left: 8px;
+    width: auto;
+
+    &:hover {
+        opacity: 1;
+    }
+
+    .fa-reply {
+        margin-right: 5px;
+    }
+
+    .kiwi-messagelist-reply-preview-nick {
+        font-weight: bold;
+        margin-right: 5px;
+    }
+}
+
+.kiwi-messagelist-reply-action {
+    display: none;
+    cursor: pointer;
+    opacity: 0.8;
+    position: absolute;
+    right: 80px;
+    top: 2px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    z-index: 1;
+    background-color: inherit;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+
+    &:hover {
+        opacity: 1;
+    }
+}
+
+.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-reply-action {
+    right: 10px;
+}
+
+.kiwi-messagelist-message--compact:hover .kiwi-messagelist-reply-action {
+    display: block;
 }
 
 //Channel traffic messages
@@ -239,7 +339,7 @@ export default {
     padding: 1px 0;
 }
 
-.kiwi-messagelist-message--compact.kiwi-messagelist-message-traffic .kiwi-messagelist-body {
+.kiwi-messagelist-message--compact.kiwi-messagelist-message-traffic .kiwi-messagelist-body-container {
     margin-left: 131px;
 }
 
@@ -251,7 +351,7 @@ export default {
     margin: 1em 0;
 }
 
-.kiwi-messagelist-message--compact.kiwi-messagelist-message-topic .kiwi-messagelist-body {
+.kiwi-messagelist-message--compact.kiwi-messagelist-message-topic .kiwi-messagelist-body-container {
     padding-right: 0;
     max-width: 95%;
     margin-left: 20px;
@@ -290,14 +390,19 @@ export default {
         text-align: right;
     }
 
-    .kiwi-messagelist-message--compact .kiwi-messagelist-body {
+    .kiwi-messagelist-message--compact .kiwi-messagelist-body-container {
         float: left;
         width: 100%;
         margin-left: 0;
         box-sizing: border-box;
+        padding-right: 130px;
     }
 
-    .kiwi-messagelist-message--compact.kiwi-messagelist-message--unread .kiwi-messagelist-body {
+    .kiwi-messagelist-message--no-timestamps .kiwi-messagelist-body-container {
+        padding-right: 60px;
+    }
+
+    .kiwi-messagelist-message--compact.kiwi-messagelist-message--unread .kiwi-messagelist-body-container {
         padding-left: 10px;
     }
 
@@ -309,7 +414,7 @@ export default {
         padding-left: 2px;
     }
 
-    .kiwi-messagelist-message--compact.kiwi-messagelist-message-traffic .kiwi-messagelist-body {
+    .kiwi-messagelist-message--compact.kiwi-messagelist-message-traffic .kiwi-messagelist-body-container {
         margin-left: 0;
     }
 
@@ -345,7 +450,7 @@ export default {
     }
 
     // Messages
-    .kiwi-messagelist-message--compact .kiwi-messagelist-body {
+    .kiwi-messagelist-message--compact .kiwi-messagelist-body-container {
         margin-left: 170px;
     }
 
@@ -353,7 +458,7 @@ export default {
         padding-left: 180px;
     }
 
-    .kiwi-messagelist-message--compact.kiwi-messagelist-message-traffic .kiwi-messagelist-body {
+    .kiwi-messagelist-message--compact.kiwi-messagelist-message-traffic .kiwi-messagelist-body-container {
         margin-left: 181px;
     }
 }

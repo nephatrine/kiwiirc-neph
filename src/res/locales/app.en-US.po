@@ -111,6 +111,14 @@ msgstr "Protocol"
 msgid "network"
 msgstr "Network"
 
+#: Reply
+msgid "reply"
+msgstr "Reply"
+
+#: Replying to:
+msgid "replying_to"
+msgstr "Replying to:"
+
 #: Networks
 msgid "networks"
 msgstr "Networks"

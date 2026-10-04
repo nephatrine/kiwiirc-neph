@@ -20,8 +20,14 @@
             class="kiwi-messageinfo-actions"
         >
             <a
-                v-if="!requestingInput && message.nick && buffer.name !== message.nick && !isSelf()"
+                v-if="!requestingInput && message.nick && buffer.name !== message.nick"
                 class="u-link kiwi-messageinfo-button kiwi-messageinfo-reply"
+                @click="onReply"
+            >{{ $t('reply') }}</a>
+
+            <a
+                v-if="!requestingInput && message.nick && buffer.name !== message.nick && !isSelf()"
+                class="u-link kiwi-messageinfo-button kiwi-messageinfo-reply-private"
                 @click="openQuery"
             >{{ $t('reply_in_private') }}</a>
 
@@ -95,6 +101,10 @@ export default {
         },
         onKick(reason) {
             this.buffer.kickUser(this.message.user, reason);
+        },
+        onReply() {
+            this.buffer.replying_to = this.message;
+            this.$emit('close');
         },
         openQuery() {
             let network = this.buffer.getNetwork();

@@ -194,6 +194,19 @@ export default Vue.component('irc-input', {
 
             this.maybeEmitInput();
         },
+        selectionToStart() {
+            // Move the caret to the start
+            let el = this.$refs.editor.firstChild || this.$refs.editor;
+            this.current_el = el;
+            this.current_el_pos = 0;
+
+            if (this.$el.contains(document.activeElement)) {
+                // IrcInput has focus select all content and collapse to start
+                let sel = window.getSelection();
+                sel.collapse(el, 0);
+                this.updateValueProps();
+            }
+        },
         selectionToEnd() {
             // Move the caret to the end
             let el = this.$refs.editor.lastChild || this.$refs.editor;

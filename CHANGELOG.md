@@ -12,13 +12,25 @@ and this project adheres to
 
 - Implemented full support for IRCv3 `cap-notify` extension, including handling
   of `CAP NEW` and `CAP DEL` messages.
-- Added `enabled_caps` to network state to track negotiated capabilities in
-  real-time.
+- Implemented full support for the IRCv3 `+reply` and `+draft/reply` client-only
+  tag extensions.
+- Added hover-activated reply buttons to individual messages for desktop users
+  across all layouts.
+- Added "Reply" functionality to the `MessageInfo` overlay for touch devices.
+- Added reply context previews with "click-to-scroll" functionality to all
+  message layouts (Modern, Compact, and Inline).
+- Added reactive `enabled_caps` and `isupport` tracking to the network state for
+  real-time protocol capability and support checks.
 - Fixed `+typing` support check to strictly use the `+typing` tag name for
   `CLIENTTAGDENY` compliance.
 
 ### Changed
 
+- Refactored the codebase to use reactive `NetworkState` properties for all
+  capability and `ISUPPORT` checks, enabling the UI to respond instantly to
+  dynamic updates.
+- Updated **Compact** and **Inline** message layouts to dynamically adjust their
+  right margins when timestamps are disabled, optimizing screen space.
 - Bumped minimum Node version requirement to 22.0.0.
 - Upgraded Stylelint ecosystem to v17 and migrated stylistic rules to
   `@stylistic/stylelint-plugin`.
@@ -31,7 +43,7 @@ and this project adheres to
 ### Fixed
 
 - Stabilized project environment: verified successful build, lint, and unit
-  tests (72/72 passed) on Node v26.4.0.
+  tests (78/78 passed) on Node v26.4.0.
 - Migrated project from `yarn` to `npm`: updated documentation, GitHub Actions,
   and environment configuration.
 - Fixed `stylelint` configuration and dependency compatibility issues.

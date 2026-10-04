@@ -471,6 +471,10 @@ export default {
                 this.toggleMessageInfo(message);
             }
         },
+        onReply(message) {
+            this.buffer.replying_to = message;
+            this.$state.$emit('input.reply', message.nick);
+        },
         checkScrollingState() {
             let el = this.$el;
             let scrolledUpByPx = el.scrollHeight - (el.offsetHeight + el.scrollTop);
