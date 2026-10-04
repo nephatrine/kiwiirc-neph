@@ -87,7 +87,6 @@
 
 ::-webkit-input-placeholder,
 ::-moz-placeholder,
-::-ms-placeholder,
 ::placeholder {
     color: black;
 }

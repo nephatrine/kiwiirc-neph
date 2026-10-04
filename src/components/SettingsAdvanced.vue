@@ -160,10 +160,6 @@ export default {
         width: 100%;
     }
 
-    input::-ms-clear {
-        display: none;
-    }
-
     .fa {
         position: absolute;
         top: 8px;

@@ -7,11 +7,6 @@ import VueI18Next from '@panter/vue-i18next';
 import VueVirtualScroller from 'vue-virtual-scroller';
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 
-// fetch polyfill
-import 'whatwg-fetch';
-// polyfill for vue-virtual-scroller & ie11
-import 'intersection-observer';
-
 import App from '@/components/App';
 import StartupError from '@/components/StartupError';
 import startupWelcome from '@/components/startups/Welcome';
@@ -373,7 +368,6 @@ function loadPlugins() {
                         // and place them into the DOM using our own script elements
                         let scripts = [...el.querySelectorAll('script')];
 
-                        // IE11 does not support nodes.forEach()
                         scripts.forEach((limitedScr) => {
                             limitedScr.parentElement.removeChild(limitedScr);
                             let scr = document.createElement('script');

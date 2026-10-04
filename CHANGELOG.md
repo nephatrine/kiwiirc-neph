@@ -35,6 +35,16 @@ and this project adheres to
 
 - Strictly verified capability negotiation: implemented selective `CAP REQ`
   based on `CAP NEW` advertised capabilities.
+- Modernized browser support: officially dropped support for IE11 and legacy
+  (EdgeHTML) Edge. Target baseline is now aligned with modern web standards
+  (Chrome, Firefox, Safari 15+, Chromium Edge).
+- Optimized Babel configuration: transitioned to `useBuiltIns: 'usage'` and
+  shared `@babel/runtime` for more efficient, targeted polyfilling and smaller
+  bundle sizes.
+- Refactored input logic: simplified `IrcInput.vue` by removing legacy
+  clipboard and HTML parsing workarounds originally required for IE.
+- Standardized CSS architecture: removed legacy vendor prefixes (`-ms-`,
+  `::-ms-`) and IE-specific layout hacks across all themes and components.
 - Renamed "Reply in private" to "Private Message" to prevent terminology
   confusion with IRCv3 threads.
 - Increased hover gutter padding for all layouts to ensure action badges never
@@ -52,6 +62,13 @@ and this project adheres to
   within peer dependency constraints.
 - Aligned Jest ecosystem to v27 to ensure clean, conflict-free `npm install`
   without flags.
+
+### Removed
+
+- Removed legacy polyfills: `Element.closest`, `whatwg-fetch`, and
+  `intersection-observer` are no longer included in the core bundle.
+- Removed legacy dependencies: uninstalled `isomorphic-textencoder` in favor of
+  native global `TextEncoder`/`TextDecoder` APIs.
 
 ### Fixed
 

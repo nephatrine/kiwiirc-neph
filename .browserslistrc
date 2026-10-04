@@ -1,5 +1,3 @@
-> 0.1%
-last 4 versions
-Firefox ESR
-not dead
-not ios_saf < 15
+defaults
+not ie <= 11
+not op_mini all

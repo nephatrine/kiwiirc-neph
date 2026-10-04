@@ -193,10 +193,7 @@ export default {
 /* When the sidebar is open we will put a shadow over the text area */
 .kiwi-header {
     z-index: 2;
-
-    /* IE 11 breaks when using the shorthand flex syntax here */
-    flex-grow: 0;
-    flex-shrink: 1;
+    flex: 0 1 auto;
 }
 
 .kiwi-sidebar {

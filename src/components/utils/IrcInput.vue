@@ -81,19 +81,6 @@ export default Vue.component('irc-input', {
                 }
 
                 document.execCommand('insertText', false, clpData.getData('text/plain'));
-            } else {
-                // IE11
-                let clpText = window.clipboardData.getData('Text');
-                if (!clpText) {
-                    return;
-                }
-
-                let selection = window.getSelection();
-                let range = selection.getRangeAt(0);
-                if (range) {
-                    range.deleteContents();
-                    range.insertNode(document.createTextNode(clpText));
-                }
             }
 
             setTimeout(() => {
@@ -292,21 +279,6 @@ export default Vue.component('irc-input', {
                         if (attribs.style.indexOf('underline') > -1) {
                             textValue += '\x1f';
                             addToggle('\x1f');
-                        }
-
-                    // Welcome to the IE/Edge sucks section, time to do crazy things
-                    // IE11 doesnt support document.execCommand('styleWithCSS')
-                    // so we have individual nodes instead, which are handled below
-                    } else if (attribs.color) {
-                        // IE likes to remove spaces from rgb(1, 2, 3)
-                        // it also likes converting rgb to hex
-                        let mappedCode = this.code_map[attribs.color] ||
-                            this.code_map[attribs.color.replace(/,/g, ', ')] ||
-                            this.code_map[Colours.hex2rgb(attribs.color)];
-
-                        if (mappedCode) {
-                            textValue += '\x03' + mappedCode;
-                            addToggle('\x03' + mappedCode);
                         }
                     } else if (name === 'strong') {
                         textValue += '\x02';

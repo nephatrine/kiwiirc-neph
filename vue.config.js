@@ -14,7 +14,7 @@ module.exports = {
     publicPath: '',
     assetsDir: 'static/',
     runtimeCompiler: true,
-    transpileDependencies: ['irc-framework', 'isomorphic-textencoder'],
+    transpileDependencies: ['irc-framework'],
     productionSourceMap: makeSourceMap,
     css: {
         sourceMap: makeSourceMap,
@@ -102,20 +102,6 @@ module.exports = {
             .exclude.add(path.join(__dirname, 'index.html')).end()
             .use('html-loader')
             .loader('html-loader');
-
-        // Remove the old 'app' entry
-        config.entryPoints.delete('app');
-
-        // IE11 required by the webpack runtime for async import().
-        // babel polyfills don't help us here
-        config.entry('app').add('core-js/features/promise');
-
-        // IE11 play nice with vue-virtual-scroller
-        config.entry('app').add('core-js/features/array/virtual/find-index');
-        config.entry('app').add('core-js/features/array/virtual/includes');
-
-        // Kiwiirc main entry point
-        config.entry('app').add('./src/main.js');
     },
 };
 

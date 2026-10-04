@@ -8,8 +8,8 @@
                     :id="inputId"
                     v-model="currentValue"
                     :disabled="disabled"
-                    :type="plainTextEnabled && !isEdgeBrowser() ? 'text' : 'password'"
-                    :class="{ 'u-form-input-plaintext': !isEdgeBrowser() && showPlainText }"
+                    :type="plainTextEnabled ? 'text' : 'password'"
+                    :class="{ 'u-form-input-plaintext': showPlainText }"
                     autocomplete="off"
                     autocorrect="off"
                     autocapitalize="off"
@@ -20,7 +20,7 @@
                 >
 
                 <i
-                    v-if="showPlainText && !isEdgeBrowser()"
+                    v-if="showPlainText"
                     :class="{ 'u-input-text-plaintext--active': plainTextEnabled }"
                     class="u-input-text-plaintext fa fa-eye"
                     aria-hidden="true"
@@ -102,9 +102,6 @@ export default Vue.component('input-text', {
     methods: {
         updateValue(newValue) {
             this.$emit('input', newValue);
-        },
-        isEdgeBrowser() {
-            return navigator.appVersion.indexOf('Edge') > -1;
         },
     },
 });

@@ -67,10 +67,10 @@ contains the runtime configuration. When running in the development environment 
 
 ## Browser support
 
-Kiwi IRC is tested on all modern browsers and IE11. Other browsers are not actively tested and may have trouble running Kiwi IRC.
+Kiwi IRC is tested on all modern browsers.
 * Chrome
 * Chrome Mobile (Android)
 * Firefox
-* IE11
-* Safari 9+
+* Safari 15+
+* Edge (Chromium)
 
