@@ -278,6 +278,14 @@ export default {
                 this.maybeScrollToId(opt.id);
             }
         });
+
+        this.listen(this.$state, 'message.reaction', (event) => {
+            if (event.buffer === this.buffer) {
+                this.$nextTick(() => {
+                    this.maybeScrollToBottom();
+                });
+            }
+        });
     },
     methods: {
         isTemplateVue(template) {
@@ -504,9 +512,13 @@ export default {
             }
         },
         onListResize(e) {
-            // The messagelist or interface has resized or had new content added
-            // check if we should auto scroll down to the bottom
-            this.maybeScrollToBottom();
+            // If the resize was caused by a new message or reaction at the bottom,
+            // we should scroll to keep it in view.
+            // Window resizes or middle-list layout shifts should try to anchor
+            // the current scroll position instead of jumping to the bottom.
+            if (this.auto_scroll) {
+                this.maybeScrollToBottom();
+            }
         },
         scrollToBottom() {
             this.$el.scrollTop = this.$el.scrollHeight;
@@ -776,7 +788,7 @@ div.kiwi-messagelist-item.kiwi-messagelist-item--selected .kiwi-messagelist-mess
 
 .kiwi-messagelist-item {
     /* Allow child elements to make use of margins+padding within messagelist items */
-    overflow: hidden;
+    overflow: visible;
 }
 
 .kiwi-messagelist-message {
@@ -784,7 +796,7 @@ div.kiwi-messagelist-item.kiwi-messagelist-item--selected .kiwi-messagelist-mess
 
     /* some message highlights add a left border so add a default invisble one in preperation */
     border-left: 3px solid transparent;
-    overflow: hidden;
+    overflow: visible;
     line-height: 1.5em;
     margin: 0;
 }

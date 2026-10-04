@@ -1,0 +1,233 @@
+<template>
+    <div :class="[`kiwi-messageactions--${layout}`]" class="kiwi-messageactions" @click.stop>
+        <div class="kiwi-messageactions-badge">
+            <i class="fa fa-ellipsis-h" aria-hidden="true" />
+        </div>
+        <div class="kiwi-messageactions-dropdown">
+            <div
+                v-for="emoji in quickEmojis"
+                :key="emoji.code"
+                :style="{ 'background-image': `url(${emojiUrl(emoji.code)})` }"
+                :class="{ 'kiwi-messageactions-emoji--reacted': hasReacted(emoji.char) }"
+                class="kiwi-messageactions-item kiwi-messageactions-emoji"
+                @click="onReact(emoji.char)"
+            />
+            <div class="kiwi-messageactions-item" @click="showMore = !showMore">
+                <i class="fa fa-plus" aria-hidden="true" />
+                <div v-if="showMore" class="kiwi-messageactions-more-popover" @click.stop>
+                    <div
+                        v-for="emoji in curatedEmojis"
+                        :key="emoji.code"
+                        :style="{ 'background-image': `url(${emojiUrl(emoji.code)})` }"
+                        :class="{ 'kiwi-messageactions-emoji--reacted': hasReacted(emoji.char) }"
+                        class="kiwi-messageactions-emoji"
+                        @click="onReact(emoji.char)"
+                    />
+                </div>
+            </div>
+            <div class="kiwi-messageactions-divider" />
+            <div class="kiwi-messageactions-item" @click="onReply">
+                <i class="fa fa-reply" aria-hidden="true" />
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+'kiwi public';
+
+import { curatedEmojis, quickEmojis } from '@/helpers/Emoji';
+
+export default {
+    props: {
+        buffer: Object,
+        message: Object,
+        layout: {
+            type: String,
+            default: 'modern',
+        },
+    },
+    data() {
+        return {
+            showMore: false,
+            curatedEmojis,
+            quickEmojis,
+        };
+    },
+    methods: {
+        emojiUrl(code) {
+            return this.$state.setting('emojiLocation') + code;
+        },
+        hasReacted(emojiChar) {
+            return this.message.reactions[emojiChar] && this.message.reactions[emojiChar].reacted;
+        },
+        onReact(emojiChar) {
+            this.buffer.react(this.message, emojiChar);
+            this.showMore = false;
+        },
+        onReply() {
+            this.buffer.replying_to = this.message;
+            this.$state.$emit('input.reply', this.message.nick);
+        },
+    },
+};
+</script>
+
+<style lang="less">
+.kiwi-messageactions {
+    position: relative;
+    display: inline-block;
+    z-index: 100;
+}
+
+.kiwi-messageactions-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: var(--brand-midtone, #eee);
+    border: 1px solid var(--brand-darktone, rgba(0, 0, 0, 0.1));
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.kiwi-messageactions-badge:hover {
+    opacity: 1;
+}
+
+.kiwi-messageactions-dropdown {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 28px;
+    background: var(--brand-midtone, #eee);
+    border: 1px solid var(--brand-darktone, rgba(0, 0, 0, 0.1));
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    padding: 2px;
+    z-index: 1000;
+    flex-direction: row;
+    align-items: center;
+}
+
+/* Hover bridge to keep the dropdown open */
+.kiwi-messageactions-dropdown::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: -10px;
+    bottom: 0;
+    width: 10px;
+    z-index: -1;
+}
+
+.kiwi-messageactions:hover .kiwi-messageactions-dropdown {
+    display: flex;
+}
+
+.kiwi-messageactions-divider {
+    width: 1px;
+    height: 18px;
+    background: rgba(0, 0, 0, 0.1);
+    margin: 0 4px;
+}
+
+.kiwi-messageactions-item {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 3px;
+    position: relative;
+    box-sizing: border-box;
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+    color: var(--brand-default-fg, #000);
+
+    &:hover {
+        background-color: rgba(128, 128, 128, 0.2);
+    }
+
+    i {
+        font-size: 14px;
+        opacity: 0.8;
+    }
+}
+
+.kiwi-messageactions-emoji {
+    background-size: 18px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.kiwi-messageactions-emoji--reacted {
+    background-color: rgba(66, 133, 244, 0.2) !important;
+    border: 1px solid rgba(66, 133, 244, 0.4);
+}
+
+.kiwi-messageactions-more-popover {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    background: var(--brand-midtone, #eee);
+    border: 1px solid var(--brand-darktone, rgba(0, 0, 0, 0.1));
+    border-radius: 4px;
+    padding: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
+    margin-bottom: 6px;
+    max-width: 140px;
+}
+
+/* Compact layout specific styling */
+.kiwi-messageactions--compact,
+.kiwi-messageactions--inline {
+    .kiwi-messageactions-badge,
+    .kiwi-messageactions-dropdown,
+    .kiwi-messageactions-item,
+    .kiwi-messageactions-more-popover {
+        border-radius: 0;
+    }
+
+    .kiwi-messageactions-badge {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        opacity: 0.5;
+
+        &:hover {
+            background: var(--brand-midtone, #eee);
+            border: 1px solid var(--brand-darktone, rgba(0, 0, 0, 0.1));
+            opacity: 1;
+        }
+    }
+
+    .kiwi-messageactions-dropdown {
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        padding: 0;
+    }
+
+    .kiwi-messageactions-item {
+        width: 26px;
+        height: 26px;
+    }
+
+    .kiwi-messageactions-more-popover {
+        margin-bottom: 0;
+    }
+}
+
+/* Hard reset for any global emoji styles */
+.kiwi-messageactions-emoji::before,
+.kiwi-messageactions-emoji::after {
+    display: none !important;
+}
+</style>

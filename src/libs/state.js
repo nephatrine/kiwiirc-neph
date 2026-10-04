@@ -577,6 +577,37 @@ function createNewState() {
                     return;
                 }
 
+                let network = buffer.getNetwork();
+
+                // If this is an echo of our own message, try to find the local version
+                // and update it with the authoritative tags/msgid from the server
+                let isEcho = message.nick === network.nick;
+                let msgid = message.tags ?
+                    (message.tags.msgid || message.tags['draft/msgid']) :
+                    null;
+                if (isEcho && msgid) {
+                    let bufMessages = buffer.getMessages();
+                    // Search backwards through the last 20 messages for a match
+                    let startIdx = bufMessages.length - 1;
+                    let endIdx = Math.max(0, bufMessages.length - 20);
+                    for (let i = startIdx; i >= endIdx; i--) {
+                        let m = bufMessages[i];
+                        if (
+                            m.nick === network.nick &&
+                            m.message === message.message &&
+                            !m.irc_id &&
+                            Math.abs(m.time - message.time) < 60000
+                        ) {
+                            // Update the existing message with the authoritative IRC ID and tags
+                            m.irc_id = msgid;
+                            m.tags = message.tags;
+                            // Add the new IRC ID to the map for future lookups (e.g. replies)
+                            Vue.set(buffer.messagesObj.messageIds, msgid, m);
+                            return;
+                        }
+                    }
+                }
+
                 let user = this.getUser(buffer.networkid, message.nick);
                 let bufferMessage = new Message(message, user);
                 if (user && user.ignore) {
@@ -600,7 +631,6 @@ function createNewState() {
                     includeAsActivity = true;
                 }
 
-                let network = buffer.getNetwork();
                 let isNewMessage = message.time >= buffer.last_read;
                 let isHighlight = !network || buffer.isRaw() ?
                     false :

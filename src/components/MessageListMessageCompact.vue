@@ -105,13 +105,14 @@
             <div v-else class="kiwi-messagelist-body" v-html="props.ml.formatMessage(props.message)" />
         </div>
 
-        <div
-            v-if="props.m().canReply(props.message)"
-            class="kiwi-messagelist-reply-action"
-            @click.stop="props.ml.onReply(props.message)"
-        >
-            <i class="fa fa-reply" aria-hidden="true" />
-        </div>
+        <component
+            :is="injections.components.MessageActions"
+            v-if="props.m().canReply(props.message) && props.message.irc_id && props.m().getNetwork().hasCap('message-tags')"
+            :message="props.message"
+            :buffer="props.ml.buffer"
+            layout="compact"
+            class="kiwi-messagelist-actions"
+        />
 
         <component
             :is="injections.components.MessageInfo"
@@ -143,6 +144,7 @@
 import MediaViewer from './MediaViewer';
 import AwayStatusIndicator from './AwayStatusIndicator';
 import MessageInfo from './MessageInfo';
+import MessageActions from './MessageActions';
 
 const methods = {
     props: {},
@@ -193,6 +195,7 @@ export default {
                 AwayStatusIndicator,
                 MessageInfo,
                 MediaViewer,
+                MessageActions,
             },
         },
     },
@@ -258,11 +261,11 @@ export default {
 .kiwi-messagelist-body-container {
     display: block;
     margin-left: 120px;
-    padding-right: 100px;
+    padding-right: 90px;
 }
 
 .kiwi-messagelist-message--no-timestamps .kiwi-messagelist-body-container {
-    padding-right: 60px;
+    padding-right: 45px;
 }
 
 .kiwi-messagelist-message--compact .kiwi-messagelist-body {
@@ -307,29 +310,22 @@ export default {
     }
 }
 
-.kiwi-messagelist-reply-action {
+.kiwi-messagelist-actions {
     display: none;
-    cursor: pointer;
-    opacity: 0.8;
     position: absolute;
-    right: 80px;
+    right: 72px;
     top: 2px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    z-index: 1;
-    background-color: inherit;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-
-    &:hover {
-        opacity: 1;
-    }
 }
 
-.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-reply-action {
+.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-actions {
     right: 10px;
 }
 
-.kiwi-messagelist-message--compact:hover .kiwi-messagelist-reply-action {
+.kiwi-messagelist-message--compact:hover {
+    z-index: 100;
+}
+
+.kiwi-messagelist-message--compact:hover .kiwi-messagelist-actions {
     display: block;
 }
 

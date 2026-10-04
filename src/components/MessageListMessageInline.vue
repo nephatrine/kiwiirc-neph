@@ -97,13 +97,14 @@
                 class="kiwi-messagelist-body"
                 v-html="props.ml.formatMessage(props.message)"
             />
-            <div
-                v-if="props.m().canReply(props.message)"
-                class="kiwi-messagelist-reply-action"
-                @click.stop="props.ml.onReply(props.message)"
-            >
-                <i class="fa fa-reply" aria-hidden="true" />
-            </div>
+            <component
+                :is="injections.components.MessageActions"
+                v-if="props.m().canReply(props.message) && props.message.irc_id && props.m().getNetwork().hasCap('message-tags')"
+                :message="props.message"
+                :buffer="props.ml.buffer"
+                layout="inline"
+                class="kiwi-messagelist-actions"
+            />
         </div>
 
         <component
@@ -130,9 +131,14 @@
 
 import MediaViewer from './MediaViewer';
 import MessageInfo from './MessageInfo';
+import MessageActions from './MessageActions';
 
 const methods = {
     props: {},
+    getNetwork() {
+        let props = this.props;
+        return props.ml.buffer.getNetwork();
+    },
     displayNick() {
         let props = this.props;
         let suffix = props.message.nick ?
@@ -165,6 +171,7 @@ export default {
             default: {
                 MessageInfo,
                 MediaViewer,
+                MessageActions,
             },
         },
     },
@@ -195,11 +202,11 @@ export default {
     padding: 4px 10px;
     margin: 0;
     text-align: left;
-    padding-right: 100px;
+    padding-right: 15px;
 }
 
 .kiwi-messagelist-message--no-timestamps.kiwi-messagelist-message--text {
-    padding-right: 60px;
+    padding-right: 15px;
 }
 
 //Hide the timestamp unless the user hovers over the message in question
@@ -269,30 +276,31 @@ export default {
     }
 }
 
-.kiwi-messagelist-reply-action {
+.kiwi-messagelist-actions {
     display: none;
-    cursor: pointer;
-    opacity: 0.8;
     position: absolute;
-    right: 80px;
+    right: 72px;
     top: 2px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    z-index: 1;
-    background-color: inherit;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-
-    &:hover {
-        opacity: 1;
-    }
 }
 
-.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-reply-action {
+.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-actions {
     right: 10px;
 }
 
-.kiwi-messagelist-message--text:hover .kiwi-messagelist-reply-action {
+.kiwi-messagelist-message--text:hover {
+    z-index: 100;
+}
+
+.kiwi-messagelist-message--text:hover .kiwi-messagelist-actions {
     display: block;
+}
+
+.kiwi-messagelist-message--text:hover {
+    padding-right: 115px;
+}
+
+.kiwi-messagelist-message--no-timestamps.kiwi-messagelist-message--text:hover {
+    padding-right: 45px;
 }
 
 .kiwi-messagelist-message--text .kiwi-messagelist-body a {

@@ -15,12 +15,23 @@
                 >{{ url }}</a>
             </div>
         </div>
+        <div v-if="supportsReactions" class="kiwi-messageinfo-reactions">
+            <div
+                v-for="emoji in curatedEmojis"
+                :key="emoji.code"
+                :style="{ 'background-image': `url(${emojiUrl(emoji.code)})` }"
+                :class="{ 'kiwi-messageinfo-reaction--reacted': hasReacted(emoji.char) }"
+                class="kiwi-messageinfo-reaction"
+                @click="onReact(emoji.char)"
+            />
+        </div>
         <div
             :class="{ 'kiwi-messageinfo-actions--open': requestingInput }"
             class="kiwi-messageinfo-actions"
         >
             <a
-                v-if="!requestingInput && message.nick && buffer.name !== message.nick"
+                v-if="!requestingInput && message.nick
+                    && buffer.name !== message.nick && message.irc_id"
                 class="u-link kiwi-messageinfo-button kiwi-messageinfo-reply"
                 @click="onReply"
             >{{ $t('reply') }}</a>
@@ -70,6 +81,7 @@
 'kiwi public';
 
 import GlobalApi from '@/libs/GlobalApi';
+import { curatedEmojis } from '@/helpers/Emoji';
 
 export default {
     props: ['buffer', 'message'],
@@ -77,14 +89,28 @@ export default {
         return {
             requestingInput: false,
             pluginUiSections: GlobalApi.singleton().messageInfoPlugins,
+            curatedEmojis,
         };
     },
     computed: {
         showLinkPreviews() {
             return this.$state.setting('buffers.show_link_previews');
         },
+        supportsReactions() {
+            return this.buffer.getNetwork().supportsTag('+draft/react') && this.message.irc_id;
+        },
     },
     methods: {
+        emojiUrl(code) {
+            return this.$state.setting('emojiLocation') + code;
+        },
+        hasReacted(emojiChar) {
+            return this.message.reactions[emojiChar] && this.message.reactions[emojiChar].reacted;
+        },
+        onReact(emojiChar) {
+            this.buffer.react(this.message, emojiChar);
+            this.$emit('close');
+        },
         urlPreview(url) {
             this.$state.$emit('mediaviewer.show', url);
         },
@@ -104,6 +130,7 @@ export default {
         },
         onReply() {
             this.buffer.replying_to = this.message;
+            this.$state.$emit('input.reply', this.message.nick);
             this.$emit('close');
         },
         openQuery() {
@@ -153,6 +180,37 @@ export default {
     text-align: center;
     border: 1px solid;
     border-radius: 3px;
+}
+
+.kiwi-messageinfo-reactions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    border-bottom: 1px solid;
+    flex-wrap: wrap;
+}
+
+.kiwi-messageinfo-reaction {
+    width: 24px;
+    height: 24px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    transition: background 0.2s;
+}
+
+.kiwi-messageinfo-reaction:hover {
+    background: rgb(0 0 0 / 5%);
+}
+
+.kiwi-messageinfo-reaction--reacted {
+    background: rgb(66 133 244 / 10%);
+    border-color: rgb(66 133 244 / 40%);
 }
 
 .kiwi-messageinfo-actions {

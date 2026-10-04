@@ -5,6 +5,7 @@ import strftime from 'strftime';
 import Irc from 'irc-framework';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import typingMiddleware from './TypingMiddleware';
+import reactionMiddleware from './ReactionMiddleware';
 import chathistoryMiddleware from './ChathistoryMiddleware';
 import * as ServerConnection from './ServerConnection';
 
@@ -19,9 +20,11 @@ export function create(state, network) {
         message_max_length: 350,
     });
     ircClient.requestCap('znc.in/self-message');
+    ircClient.requestCap('message-tags');
     ircClient.use(chathistoryMiddleware(network));
     ircClient.use(clientMiddleware(state, network));
     ircClient.use(typingMiddleware(network));
+    ircClient.use(reactionMiddleware(network));
 
     // Overload the connect() function to make sure we are connecting with the
     // most recent connection details from the network state
@@ -179,14 +182,35 @@ function clientMiddleware(state, network) {
         });
 
         client.on('cap new', (event) => {
-            network.enabled_caps = client.network.cap.enabled.map((c) => c.toLowerCase());
-            let capNames = Object.keys(event.capabilities).join(', ');
-            let serverBuffer = network.serverBuffer();
-            state.addMessage(serverBuffer, {
-                time: Date.now(),
-                nick: '',
-                message: 'New capabilities available: ' + capNames,
+            const desiredCaps = [
+                'znc.in/self-message',
+                'message-tags',
+                'draft/chathistory',
+                'away-notify',
+                'account-notify',
+                'extended-join',
+                'chghost',
+                'setname',
+                'cap-notify',
+            ];
+
+            let requested = [];
+            Object.keys(event.capabilities).forEach((capName) => {
+                const name = capName.toLowerCase();
+                if (desiredCaps.includes(name)) {
+                    client.requestCap(name);
+                    requested.push(name);
+                }
             });
+
+            if (requested.length > 0) {
+                let serverBuffer = network.serverBuffer();
+                state.addMessage(serverBuffer, {
+                    time: Date.now(),
+                    nick: '',
+                    message: 'Requested new capabilities: ' + requested.join(', '),
+                });
+            }
         });
 
         client.on('cap del', (event) => {

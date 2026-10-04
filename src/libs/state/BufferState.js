@@ -528,8 +528,13 @@ export default class BufferState {
         let network = this.getNetwork();
         let tags = opts.tags || {};
 
-        if (this.replying_to && network.hasCap('message-tags') && network.supportsTag('+reply')) {
-            tags['+reply'] = this.replying_to.id;
+        if (
+            this.replying_to &&
+            network.hasCap('message-tags') &&
+            network.supportsTag('+reply') &&
+            this.replying_to.irc_id
+        ) {
+            tags['+reply'] = this.replying_to.irc_id;
         }
 
         let newMessage = {
@@ -552,6 +557,26 @@ export default class BufferState {
         network.ircClient[fnName](this.name, message, tags);
 
         this.replying_to = null;
+    }
+
+    react(message, emoji) {
+        let network = this.getNetwork();
+        if (!network.supportsTag('+draft/react') || !message.irc_id) {
+            return;
+        }
+
+        let tags = {
+            '+reply': message.irc_id,
+        };
+
+        // If we have already reacted with this emoji, unreact it
+        if (message.reactions[emoji] && message.reactions[emoji].reacted) {
+            tags['+draft/unreact'] = emoji;
+        } else {
+            tags['+draft/react'] = emoji;
+        }
+
+        network.ircClient.tagmsg(this.name, tags);
     }
 
     join() {
@@ -644,6 +669,9 @@ function createMessageBatch(bufferState) {
         bufferState.updateLatestMessages(newMessage);
         bufferState.messagesObj.messages.push(newMessage);
         bufferState.messagesObj.messageIds[newMessage.id] = newMessage;
+        if (newMessage.irc_id) {
+            bufferState.messagesObj.messageIds[newMessage.irc_id] = newMessage;
+        }
         if (bufferState.isMessageTrimming) {
             trimMessages();
         }
@@ -657,6 +685,9 @@ function createMessageBatch(bufferState) {
             toAdd.forEach((msg) => {
                 bufferState.updateLatestMessages(msg);
                 bufferState.messagesObj.messageIds[msg.id] = msg;
+                if (msg.irc_id) {
+                    bufferState.messagesObj.messageIds[msg.irc_id] = msg;
+                }
             });
             if (bufferState.isMessageTrimming) {
                 trimMessages();
@@ -672,7 +703,12 @@ function createMessageBatch(bufferState) {
         let length = bufferState.messagesObj.messages.length;
         if (length > scrollbackSize) {
             let removed = bufferState.messagesObj.messages.splice(0, length - scrollbackSize);
-            removed.forEach((msg) => delete bufferState.messagesObj.messageIds[msg.id]);
+            removed.forEach((msg) => {
+                delete bufferState.messagesObj.messageIds[msg.id];
+                if (msg.irc_id) {
+                    delete bufferState.messagesObj.messageIds[msg.irc_id];
+                }
+            });
         }
     };
 

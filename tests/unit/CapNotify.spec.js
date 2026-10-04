@@ -22,16 +22,19 @@ describe('CapNotify', () => {
         expect(network.hasCap('cap3')).toBe(false);
     });
 
-    it('should update enabled_caps and add message on cap new', () => {
+    it('should NOT update enabled_caps on cap new but should add message for desired caps', () => {
         const client = network.ircClient;
-        client.network.cap.enabled = ['cap1', 'cap2', 'cap3'];
-        client.emit('cap new', { capabilities: { cap3: '' } });
+        const requestSpy = jest.spyOn(client, 'requestCap').mockImplementation(() => {});
 
-        expect(network.enabled_caps).toEqual(['cap1', 'cap2', 'cap3']);
+        client.emit('cap new', { capabilities: { 'message-tags': '' } });
+
+        // Should not update enabled_caps yet (waiting for ACK)
+        expect(network.enabled_caps).toEqual([]);
+        expect(requestSpy).toHaveBeenCalledWith('message-tags');
 
         const serverBuffer = network.serverBuffer();
         const lastMessage = serverBuffer.getLastMessage();
-        expect(lastMessage.message).toContain('New capabilities available: cap3');
+        expect(lastMessage.message).toContain('Requested new capabilities: message-tags');
     });
 
     it('should update enabled_caps and add message on cap del', () => {

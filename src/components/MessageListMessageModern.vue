@@ -121,14 +121,19 @@
                 class="kiwi-messagelist-body"
                 v-html="props.ml.formatMessage(props.message)"
             />
+            <component
+                :is="injections.components.MessageReactions"
+                :message="props.message"
+                :buffer="props.ml.buffer"
+            />
 
-            <div
-                v-if="props.m().canReply(props.message)"
-                class="kiwi-messagelist-reply-action"
-                @click.stop="props.ml.onReply(props.message)"
-            >
-                <i class="fa fa-reply" aria-hidden="true" />
-            </div>
+            <component
+                :is="injections.components.MessageActions"
+                v-if="props.m().canReply(props.message) && props.message.irc_id && props.m().getNetwork().hasCap('message-tags')"
+                :message="props.message"
+                :buffer="props.ml.buffer"
+                class="kiwi-messagelist-actions"
+            />
 
             <component
                 :is="injections.components.MessageInfo"
@@ -163,6 +168,8 @@ import MessageInfo from './MessageInfo';
 import AwayStatusIndicator from './AwayStatusIndicator';
 import UserAvatar from './UserAvatar';
 import MediaViewer from './MediaViewer';
+import MessageReactions from './MessageReactions';
+import MessageActions from './MessageActions';
 
 const methods = {
     props: {},
@@ -257,7 +264,7 @@ const methods = {
     },
     getReplyMessage(replyId) {
         let props = this.props;
-        return props.ml.buffer.messagesObj.messages.find((m) => m.id === replyId);
+        return props.ml.buffer.messagesObj.messageIds[replyId];
     },
     scrollToReply(replyId) {
         let props = this.props;
@@ -277,6 +284,8 @@ export default {
                 MessageInfo,
                 AwayStatusIndicator,
                 MediaViewer,
+                MessageReactions,
+                MessageActions,
             },
         },
     },
@@ -368,6 +377,12 @@ export default {
     display: block;
     margin-left: 0;
     margin-bottom: 10px;
+    padding-right: 0;
+    transition: padding-right 0.2s ease;
+}
+
+.kiwi-messagelist-message--modern:hover .kiwi-messagelist-body {
+    padding-right: 45px;
 }
 
 .kiwi-messagelist-message--modern .kiwi-messagelist-body a {
@@ -378,7 +393,6 @@ export default {
     margin-left: 5px;
     padding-top: 0;
     width: 100%;
-    overflow: hidden;
     position: relative;
 }
 
@@ -431,30 +445,24 @@ export default {
     }
 }
 
-.kiwi-messagelist-reply-action {
+.kiwi-messagelist-actions {
     display: none;
-    cursor: pointer;
-    opacity: 0.8;
     position: absolute;
     right: 10px;
-    top: 2px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    z-index: 1;
-    background-color: inherit;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-
-    &:hover {
-        opacity: 1;
-    }
+    top: 6px;
+    z-index: 100;
 }
 
-.kiwi-messagelist-message--modern:hover .kiwi-messagelist-reply-action {
+.kiwi-messagelist-message--modern:hover {
+    z-index: 100;
+}
+
+.kiwi-messagelist-message--modern:hover .kiwi-messagelist-actions {
     display: block;
 }
 
-.kiwi-messagelist-message--authorrepeat .kiwi-messagelist-reply-action {
-    top: 0;
+.kiwi-messagelist-message--authorrepeat .kiwi-messagelist-actions {
+    top: 2px;
 }
 
 .kiwi-messagelist-message-traffic .kiwi-messagelist-body {

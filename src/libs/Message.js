@@ -19,40 +19,42 @@ export default class Message {
     constructor(message, user) {
         // instance_num is a running number for all messages created within Kiwi. Used to order
         // messages if the message time is the same.
-        def(this, 'instance_num', nextId++);
-        def(this, 'id', extractMessageId(message) || nextId++);
+        this.instance_num = nextId++;
+        this.id = nextId++;
+        this.irc_id = extractMessageId(message);
 
         // internal_time is used to allow for a getter/setter
         // so day_num can be updated if the time is changed
-        def(this, 'internal_time', null);
-        def(this, 'day_num', null);
-        def(this, 'reply', extractReplyId(message));
+        this.internal_time = null;
+        this.day_num = null;
+        this.reply = extractReplyId(message);
 
         // Two different times;
         //   time = time in the users local time (getter/setter)
         //   server_time = time the server gave us
         this.time = message.time || Date.now();
-        def(this, 'server_time', message.server_time || this.time);
-        def(this, 'nick', message.nick);
-        def(this, 'message', message.message);
-        def(this, 'tags', message.tags);
-        def(this, 'type', message.type || 'message');
-        def(this, 'type_extra', message.type_extra);
-        def(this, 'ignore', false);
-        def(this, 'mentioned_urls', []);
+        this.server_time = message.server_time || this.time;
+        this.nick = message.nick;
+        this.message = message.message;
+        this.tags = message.tags;
+        this.type = message.type || 'message';
+        this.type_extra = message.type_extra;
+        this.ignore = false;
+        this.mentioned_urls = [];
         // If embed.payload is truthy, it will be embedded within the message
         this.embed = { type: 'url', payload: null };
         this.html = '';
         this.blocks = [];
-        def(this, 'hasRendered', false);
-        def(this, 'hasUserLink', false);
+        this.hasRendered = false;
+        this.hasUserLink = false;
         // template should be null or a Vue component to render this message
-        def(this, 'template', message.template || null);
-        def(this, 'templateProps', message.templateProps || {});
+        this.template = message.template || null;
+        this.templateProps = message.templateProps || {};
         // bodyTemplate should be null or a Vue component to render in the body of the message
-        def(this, 'bodyTemplate', message.bodyTemplate || null);
-        def(this, 'bodyTemplateProps', message.bodyTemplateProps || {});
-        def(this, 'isHighlight', false);
+        this.bodyTemplate = message.bodyTemplate || null;
+        this.bodyTemplateProps = message.bodyTemplateProps || {};
+        this.isHighlight = false;
+        this.reactions = {};
 
         // We don't want the user object to be enumerable
         def(this, 'user', user || null);
@@ -177,5 +179,5 @@ function extractReplyId(message) {
         return undefined;
     }
 
-    return message.tags['+reply'] || message.tags['+draft/reply'] || undefined;
+    return message.tags['+reply'] || message.tags['+draft/reply'] || message.tags.reply || undefined;
 }
