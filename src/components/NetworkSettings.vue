@@ -3,6 +3,9 @@
         <form class="u-form" @submit.prevent="connect">
             <div class="kiwi-title">{{ $t('settings_server_details') }}</div>
             <div class="kiwi-networksettings-section-block">
+                <div v-if="restricted" class="kiwi-networksettings-locked">
+                    {{ $t('settings_server_details_locked') }}
+                </div>
                 <div v-if="network.state_error" class="kiwi-networksettings-error">
                     {{ $t('network_noconnect') }}
                     <span>{{ readableStateError(network.state_error) }}</span>
@@ -20,12 +23,13 @@
                     <input-text
                         v-model="network.name"
                         :label="$t('network_name')"
+                        :disabled="restricted"
                     />
                 </div>
 
                 <server-selector
                     :enable-custom="startupOptions.enableCustom ?? true"
-                    :disabled="network.state !== 'disconnected'"
+                    :disabled="network.state !== 'disconnected' || restricted"
                     :connection="network.connection"
                 />
 
@@ -34,6 +38,11 @@
                         <input-text
                             v-model="network.connection.nick"
                             :label="$t('settings_nickname')"
+                        />
+                        <input-text
+                            v-model="network.connection.account"
+                            :label="$t('account_name')"
+                            :placeholder="network.connection.nick"
                         />
                         <input-text
                             v-model="network.password"
@@ -53,7 +62,7 @@
                     </template>
                 </div>
 
-                <div class="kiwi-networksettings-server-types">
+                <div v-if="!restricted" class="kiwi-networksettings-server-types">
                     <div
                         v-if="server_type === 'znc'"
                         class="kiwi-networksettings-server-types-info"
@@ -97,6 +106,7 @@
                     <input-text
                         v-model="network.connection.encoding"
                         :label="$t('settings_encoding')"
+                        :disabled="restricted"
                     />
 
                     <div class="u-input-text">
@@ -112,6 +122,7 @@
                         v-model="network.connection.password"
                         :show-plain-text="true"
                         :label="$t('server_password')"
+                        :disabled="restricted"
                         type="password"
                     />
 
@@ -131,10 +142,11 @@
                         <span class="kiwi-appsettings-showraw-label">
                             {{ $t('settings_use_websocket') }}
                         </span>
-                        <input v-model="network.connection.direct" type="checkbox">
+                        <input v-model="network.connection.direct" :disabled="restricted" type="checkbox">
                         <input-text
                             v-if="network.connection.direct"
                             v-model="directWs"
+                            :disabled="restricted"
                         />
                     </label>
 
@@ -172,7 +184,7 @@
                 </div>
             </div>
 
-            <div class="kiwi-dangerzone">
+            <div v-if="!restricted" class="kiwi-dangerzone">
                 <h3>{{ $t('settings_danger') }}</h3>
                 <a class="u-button u-button-warning" @click="removeNetwork">
                     <i class="fa fa-times" aria-hidden="true" /> {{ $t('settings_remove') }}
@@ -207,6 +219,9 @@ export default {
         };
     },
     computed: {
+        restricted() {
+            return this.$state.setting('restricted');
+        },
         startupOptions() {
             return this.$state.getSetting('settings.startupOptions');
         },
@@ -479,6 +494,17 @@ export default {
     margin: 1em 0 2em 0;
     padding: 1em;
     border: 1px dashed;
+}
+
+.kiwi-networksettings-locked {
+    text-align: center;
+    margin: 0 0 1.5em 0;
+    padding: 0.8em;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.05);
+    font-style: italic;
+    font-size: 0.9em;
+    border-radius: 4px;
 }
 
 .kiwi-networksettings .kiwi-networksettings-error span {

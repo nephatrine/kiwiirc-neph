@@ -44,6 +44,12 @@
                     class="kiwi-welcome-simple-input-container"
                 >
                     <input-text
+                        v-model="account"
+                        :label="$t('account_name')"
+                        :placeholder="nick"
+                        type="text"
+                    />
+                    <input-text
                         v-model="password"
                         v-focus="(!isIframe && nick) || show_password_box"
                         :show-plain-text="true"
@@ -115,6 +121,7 @@ export default {
             network: null,
             channel: '',
             nick: '',
+            account: '',
             password: '',
             showChannel: true,
             showPass: true,
@@ -245,10 +252,13 @@ export default {
 
         if (previousNet && previousNet.connection.nick) {
             this.nick = previousNet.connection.nick;
+            this.account = previousNet.connection.account || '';
         } else if (Misc.queryStringVal('nick')) {
             this.nick = Misc.queryStringVal('nick');
+            this.account = Misc.queryStringVal('account') || '';
         } else {
             this.nick = options.nick;
+            this.account = options.account || '';
         }
         this.nick = this.processNickRandomNumber(this.nick || '');
 
@@ -340,6 +350,7 @@ export default {
                 port: connectOptions.port,
                 tls: connectOptions.tls,
                 password: password,
+                account: this.account,
                 encoding: _.trim(options.encoding),
                 direct: connectOptions.direct,
                 path: connectOptions.direct_path || '',
@@ -355,6 +366,7 @@ export default {
             // If we retreived an existing network, update the nick+password with what
             // the user has just put in place
             net.connection.nick = this.nick;
+            net.connection.account = this.account;
             if (options.bouncer) {
                 // Bouncer mode uses server PASS
                 net.connection.password = `${this.nick}:${password}`;

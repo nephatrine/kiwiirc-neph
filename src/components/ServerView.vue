@@ -6,7 +6,6 @@
                     <message-list :buffer="serverBuffer" />
                 </tabbed-tab>
                 <tabbed-tab
-                    v-if="!restrictedServer"
                     :header="$t('settings')"
                     :focus="!hasMessages"
                     name="settings"
@@ -19,6 +18,13 @@
                     name="channels"
                 >
                     <channel-list :network="network" />
+                </tabbed-tab>
+                <tabbed-tab
+                    v-if="networkConnected"
+                    :header="$t('information')"
+                    name="info"
+                >
+                    <network-info :network="network" />
                 </tabbed-tab>
                 <tabbed-tab
                     v-for="item in pluginUiElements"
@@ -44,12 +50,14 @@ import GlobalApi from '@/libs/GlobalApi';
 import MessageList from './MessageList';
 import NetworkSettings from './NetworkSettings';
 import ChannelList from './ChannelList';
+import NetworkInfo from './NetworkInfo';
 
 export default {
     components: {
         MessageList,
         NetworkSettings,
         ChannelList,
+        NetworkInfo,
     },
     props: ['network'],
     data() {

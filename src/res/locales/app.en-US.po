@@ -75,6 +75,10 @@ msgstr "Username"
 msgid "password"
 msgstr "Password"
 
+#: SASL account name
+msgid "account_name"
+msgstr "Account Name"
+
 #: Server Password
 msgid "server_password"
 msgstr "Server Password"
@@ -1326,4 +1330,44 @@ msgstr "Toggle Section"
 #: Tools
 msgid "tools"
 msgstr "Tools"
+
+#: Auto reconnect
+msgid "settings_auto_reconnect"
+msgstr "Auto Reconnect"
+
+#: Reconnect wait (ms)
+msgid "settings_auto_reconnect_wait"
+msgstr "Max Reconnect Delay (ms)"
+
+#: Max reconnect retries
+msgid "settings_auto_reconnect_max_retries"
+msgstr "Max Reconnect Retries"
+
+#: Default SASL mechanism
+msgid "settings_default_sasl_mechanism"
+msgstr "Default SASL Mechanism"
+
+#: Connection details locked
+msgid "settings_server_details_locked"
+msgstr "Connection details are locked by the administrator."
+
+#: Information tab title
+msgid "information"
+msgstr "Information"
+
+#: Server information section header
+msgid "info_server"
+msgstr "Server Information"
+
+#: IRCd type label
+msgid "info_ircd"
+msgstr "IRCd Type"
+
+#: Enabled capabilities section header
+msgid "info_caps"
+msgstr "Enabled Capabilities"
+
+#: ISUPPORT tokens section header
+msgid "info_isupport"
+msgstr "Server Options (ISUPPORT)"
 

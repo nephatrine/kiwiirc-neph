@@ -59,6 +59,10 @@
                                 <span>{{ $t('settings_use_monospace') }} </span>
                                 <input v-model="settingUseMonospace" type="checkbox">
                             </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_auto_reconnect') }} </span>
+                                <input v-model="settingAutoReconnect" type="checkbox">
+                            </label>
                             <div
                                 v-if="canRegisterProtocolHandler"
                                 style="margin-top: 10px; text-align: center;"
@@ -286,6 +290,7 @@ export default {
             return this.$state.settings;
         },
         settingShowAutoComplete: bindSetting('showAutocomplete'),
+        settingAutoReconnect: bindSetting('autoReconnect'),
         settingUseMonospace: bindSetting('useMonospace'),
         settingHighlights: bindSetting('highlights'),
         settingBufferColourNicknames: bindSetting('buffers.colour_nicknames_in_messages'),

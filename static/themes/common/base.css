@@ -88,7 +88,14 @@
 ::-webkit-input-placeholder,
 ::-moz-placeholder,
 ::placeholder {
-    color: black;
+    color: var(--brand-input-fg);
+    opacity: 0.6;
+}
+
+.u-input,
+.u-form .u-input,
+.u-form textarea {
+    color: var(--brand-input-fg) !important;
 }
 
 /* ---- Global : Checkbox input ---- */

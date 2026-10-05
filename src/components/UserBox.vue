@@ -17,6 +17,7 @@
                     :style="{ color: user.getColour() }"
                 >{{ user.nick }}</span>
                 <span v-if="userMode" class="kiwi-userbox-modestring">+{{ userMode }}</span>
+                <span v-if="realname" class="kiwi-userbox-realname" v-html="formattedRealname" />
                 <span class="kiwi-userbox-usermask">{{ user.username }}@{{ user.host }}</span>
                 <span v-if="user.is_bot" :title="$t('bot')" class="kiwi-userbox-bot">🤖</span>
             </div>
@@ -39,10 +40,7 @@
             />
         </template>
 
-        <div v-else-if="realname" class="kiwi-userbox-basicinfo">
-            <span class="kiwi-userbox-basicinfo-title">{{ $t('whois_realname') }}:</span>
-            <span class="kiwi-userbox-basicinfo-data" v-html="formattedRealname" />
-        </div>
+        <div class="kiwi-userbox-basicinfo" />
 
         <div class="kiwi-userbox-actions">
             <a v-if="!isSelf && !buffer.isQuery()" class="kiwi-userbox-action" @click="openQuery">
@@ -460,6 +458,12 @@ export default {
     margin-top: 4px;
     font-size: 1.2em;
     cursor: default;
+}
+
+.kiwi-userbox-realname {
+    display: block;
+    color: var(--comp-sidebar-fg);
+    opacity: 0.8;
 }
 
 .fa-user.kiwi-userbox-icon {

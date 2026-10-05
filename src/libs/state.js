@@ -313,6 +313,7 @@ function createNewState() {
                 network.password = serverInfo.account_password || '';
                 network.connection.password = serverInfo.password;
                 network.connection.nick = nick;
+                network.connection.account = serverInfo.account || '';
                 network.connection.server = serverInfo.server || '';
                 network.connection.port = serverInfo.port || 6667;
                 network.connection.tls = serverInfo.tls || false;

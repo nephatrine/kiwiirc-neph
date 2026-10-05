@@ -49,7 +49,7 @@ export function create(state, network) {
         ircClient.options.password = network.connection.password;
         if (network.password) {
             ircClient.options.account = {
-                account: network.connection.nick,
+                account: network.connection.account || network.connection.nick,
                 password: network.password,
             };
         } else {
@@ -61,8 +61,10 @@ export function create(state, network) {
         ircClient.options.username = network.username || network.connection.nick;
         ircClient.options.gecos = network.gecos || 'https://kiwiirc.com/';
         ircClient.options.encoding = network.connection.encoding;
-        ircClient.options.sasl_mechanism = network.connection.sasl_mechanism || 'PLAIN';
+        ircClient.options.sasl_mechanism = network.connection.sasl_mechanism || state.setting('defaultSaslMechanism') || 'AUTO';
         ircClient.options.auto_reconnect = !!state.setting('autoReconnect');
+        ircClient.options.auto_reconnect_max_wait = state.setting('autoReconnectMaxWait') || 30000;
+        ircClient.options.auto_reconnect_max_retries = state.setting('autoReconnectMaxRetries') || 10;
         ircClient.options.sasl_disconnect_on_fail = !!state.setting('disconnectOnSaslFail');
 
         // Apply any irc-fw options specified in kiwiirc config

@@ -8,6 +8,7 @@
                     :id="inputId"
                     v-model="currentValue"
                     :disabled="disabled"
+                    :placeholder="placeholder"
                     :type="plainTextEnabled ? 'text' : 'password'"
                     :class="{ 'u-form-input-plaintext': showPlainText }"
                     autocomplete="off"
@@ -33,6 +34,7 @@
                 :id="inputId"
                 v-model.number="currentValue"
                 :disabled="disabled"
+                :placeholder="placeholder"
                 type="number"
                 class="u-input"
                 @keypress="$emit('keypress', $event)"
@@ -43,6 +45,7 @@
                 :id="inputId"
                 v-model="currentValue"
                 :disabled="disabled"
+                :placeholder="placeholder"
                 class="u-input"
                 @keypress="$emit('keypress', $event)"
                 @paste="$emit('paste', $event)"
@@ -52,6 +55,7 @@
                 :id="inputId"
                 v-model="currentValue"
                 :disabled="disabled"
+                :placeholder="placeholder"
                 autocomplete="off"
                 autocorrect="off"
                 autocapitalize="off"
@@ -74,7 +78,7 @@
 import Vue from 'vue';
 
 export default Vue.component('input-text', {
-    props: ['value', 'label', 'type', 'showPlainText', 'disabled'],
+    props: ['value', 'label', 'type', 'showPlainText', 'disabled', 'placeholder'],
     data: function data() {
         return {
             plainTextEnabled: false,
