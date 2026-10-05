@@ -1,74 +1,45 @@
 'kiwi public';
 
+import Irc from 'irc-framework';
 import * as TextFormatting from '@/helpers/TextFormatting';
 
 /**
  * Handlers for specialized IRCv3 BATCH types.
+ * Each handler returns an array of synthetic IrcMessage-like objects.
  */
 
-export function handleNetsplit(network, state, event) {
-    const isNetsplit = event.type.toLowerCase().indexOf('netsplit') > -1;
-    const remoteServer = event.params[0] || 'unknown';
-    const localServer = event.params[1] || network.name;
-    const nicks = event.commands.map((c) => c.nick).filter((n) => !!n);
-
-    if (nicks.length === 0) {
-        return;
-    }
-
-    const translationKey = isNetsplit ? 'netsplit_summary' : 'netjoin_summary';
-    const messageBody = TextFormatting.t(translationKey, {
-        remote: remoteServer,
-        local: localServer,
-        count: nicks.length,
-    });
-
-    // Add message to server buffer
-    state.addMessage(network.serverBuffer(), {
-        time: Date.now(),
-        nick: '',
-        message: messageBody,
-        type: 'traffic',
-    });
-
-    // Also add to any channel buffers where these nicks might be
-    const channels = new Set();
-    event.commands.forEach((c) => {
-        if (c.params && c.params[0] && network.isChannelName(c.params[0])) {
-            channels.add(c.params[0]);
-        }
-    });
-
-    channels.forEach((chanName) => {
-        const buffer = network.bufferByName(chanName);
-        if (buffer) {
-            state.addMessage(buffer, {
-                time: Date.now(),
-                nick: '',
-                message: messageBody,
-                type: 'traffic',
-            });
-        }
-    });
+export function handleNetsplitBatch(network, client, batch) {
+    return collapseTraffic(network, client, batch, 'netsplit_summary');
 }
 
-export function handleMultiline(network, state, event, parsedEventsHandler, client) {
-    const messages = event.commands.filter((c) => (
+export function handleNetjoinBatch(network, client, batch) {
+    return collapseTraffic(network, client, batch, 'netjoin_summary');
+}
+
+export function handleMultilineBatch(network, client, batch) {
+    const messages = batch.commands.filter((c) => (
         c.command === 'PRIVMSG' || c.command === 'NOTICE'
     ));
+
     if (messages.length === 0) {
-        return;
+        return batch.commands;
     }
 
     let combinedText = '';
     messages.forEach((m, idx) => {
         const text = m.params[m.params.length - 1];
-        const concat = m.tags.hasOwnProperty('draft/multiline-concat');
-        combinedText += text;
-        // If concat tag exists, it means the line continues in the next message.
-        // If it doesn't exist, we add a newline unless it's the last message.
-        if (!concat && idx < messages.length - 1) {
-            combinedText += '\n';
+        const isConcat = 'draft/multiline-concat' in m.tags;
+
+        if (isConcat) {
+            // SPEC: When this tag is present, the parameter MUST be concatenated
+            // to the previous command's parameter.
+            combinedText += text;
+        } else {
+            // New logical line. Add newline if not the first message in the batch.
+            if (idx > 0) {
+                combinedText += '\n';
+            }
+            combinedText += text;
         }
     });
 
@@ -76,30 +47,101 @@ export function handleMultiline(network, state, event, parsedEventsHandler, clie
     const target = firstMsg.params[0];
 
     // Tags on the BATCH command apply to all messages in the batch.
-    // Some clients may still put them on the first message, so we merge them.
-    const tags = { ...firstMsg.tags, ...event.tags };
+    const tags = { ...firstMsg.tags, ...batch.tags };
 
-    // Create a synthetic message event that matches what irc-framework emits
-    const syntheticEvent = {
-        from_server: !firstMsg.nick,
-        nick: firstMsg.nick || '',
-        ident: firstMsg.ident || '',
-        hostname: firstMsg.hostname || '',
-        target: target,
-        group: network.extractTargetGroup(target)?.target_group,
-        message: combinedText,
-        tags: tags,
-        time: tags.time || firstMsg.time || Date.now(),
-        account: tags.account || firstMsg.tags?.account || '',
-        type: firstMsg.command.toLowerCase(),
-        batch: null, // Don't let it be seen as part of a batch again
-    };
+    // Create a synthetic message event
+    const syntheticEvent = new Irc.Message(firstMsg.command, target, combinedText);
+    syntheticEvent.nick = firstMsg.nick || '';
+    syntheticEvent.ident = firstMsg.ident || '';
+    syntheticEvent.hostname = firstMsg.hostname || '';
+    syntheticEvent.tags = tags;
+    syntheticEvent.time = firstMsg.time;
 
-    // Pass it to our own handler. We use 'message' as the command name
-    // to match what Kiwi's main handler expects for cohesive messages.
-    parsedEventsHandler('message', syntheticEvent, client, () => {});
+    return [syntheticEvent];
 }
 
+export function handleChathistoryBatch(network, client, batch) {
+    const target = batch.params[0];
+
+    // Resolve the history promise in the framework
+    if (client.chathistory && client.chathistory.batchCallbacks) {
+        const event = {
+            command: 'BATCH',
+            params: [target],
+            tags: batch.tags,
+            commands: batch.commands,
+        };
+        client.chathistory.batchCallbacks.resolve(target, event);
+    }
+
+    // Notify Kiwi to clear the message range for this history request
+    client.emit('kiwi.chathistory.start', {
+        target,
+        commands: batch.commands,
+    });
+
+    return batch.commands;
+}
+
+/**
+ * Default handler just returns the constituent commands unchanged.
+ */
+export function handleDefaultBatch(network, client, batch) {
+    return batch.commands;
+}
+
+/**
+ * Helper to collapse netsplit/netjoin traffic.
+ */
+function collapseTraffic(network, client, batch, translationKey) {
+    const remoteServer = batch.params[0] || 'unknown';
+    const localServer = batch.params[1] || network.name;
+    const nicks = batch.commands.map((c) => c.nick).filter((n) => !!n);
+
+    if (nicks.length === 0) {
+        return batch.commands;
+    }
+
+    const messageBody = TextFormatting.t(translationKey, {
+        remote: remoteServer,
+        local: localServer,
+        count: nicks.length,
+    });
+
+    // Find all channels involved in this batch to display the summary there too
+    const channels = new Set();
+    batch.commands.forEach((c) => {
+        if (c.params && c.params[0] && network.isChannelName(c.params[0])) {
+            channels.add(c.params[0]);
+        }
+    });
+
+    const results = [];
+
+    // Create summaries
+    const summary = new Irc.Message('PRIVMSG', '*', messageBody);
+    summary.nick = '';
+    summary.type = 'traffic';
+    summary.tags = { ...batch.tags };
+    summary.is_batch_summary = true;
+    results.push(summary);
+
+    channels.forEach((chanName) => {
+        const chanSummary = new Irc.Message('PRIVMSG', chanName, messageBody);
+        chanSummary.nick = '';
+        chanSummary.type = 'traffic';
+        chanSummary.tags = { ...batch.tags };
+        chanSummary.is_batch_summary = true;
+        results.push(chanSummary);
+    });
+
+    // Include original commands so they can be processed by user list logic
+    return [...results, ...batch.commands];
+}
+
+/**
+ * Outgoing multiline sender.
+ */
 export function sendMultiline(network, state, commandName, target, message, tags) {
     const capValue = network.capValue('draft/multiline');
     const capParams = {};
@@ -119,13 +161,11 @@ export function sendMultiline(network, state, commandName, target, message, tags
     const logicalLines = message.split(/\r\n|\n|\r/);
     let estimatedLines = 0;
     logicalLines.forEach((line) => {
+        // Use a safe limit for individual IRC commands (e.g., 350 bytes)
         estimatedLines += Math.max(1, Math.ceil(encoder.encode(line).length / 350));
     });
 
-    const isOverBytes = maxBytes > 0 && totalBytes > maxBytes;
-    const isOverLines = maxLines > 0 && estimatedLines > maxLines;
-
-    if (isOverBytes || isOverLines) {
+    if ((maxBytes > 0 && totalBytes > maxBytes) || (maxLines > 0 && estimatedLines > maxLines)) {
         const buffer = network.bufferByName(target) || network.serverBuffer();
         const errorMsg = TextFormatting.t('multiline_too_large', {
             totalBytes,
@@ -153,20 +193,24 @@ export function sendMultiline(network, state, commandName, target, message, tags
     }
     client.raw(batchStart);
 
-    logicalLines.forEach((line, lineIdx) => {
+    logicalLines.forEach((line) => {
         const lineBytes = encoder.encode(line);
         if (lineBytes.length <= 350) {
             // Single chunk line
             const lineTags = { batch: batchId };
-
             const msg = new client.Message(commandName, target, line);
             msg.tags = lineTags;
             client.raw(msg);
         } else {
             // Chunked line
             let offset = 0;
+            let chunkIdx = 0;
             while (offset < line.length) {
                 const chunkTags = { batch: batchId };
+                if (chunkIdx > 0) {
+                    // Subsequent chunks MUST have the tag (look-back)
+                    chunkTags['draft/multiline-concat'] = true;
+                }
 
                 let chunk = '';
                 let chunkBytes = 0;
@@ -181,14 +225,10 @@ export function sendMultiline(network, state, commandName, target, message, tags
                     offset++;
                 }
 
-                if (offset < line.length) {
-                    // More chunks for this logical line, signal concatenation
-                    chunkTags['draft/multiline-concat'] = true;
-                }
-
                 const msg = new client.Message(commandName, target, chunk);
                 msg.tags = chunkTags;
                 client.raw(msg);
+                chunkIdx++;
             }
         }
     });

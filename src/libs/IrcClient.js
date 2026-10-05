@@ -7,6 +7,7 @@ import * as TextFormatting from '@/helpers/TextFormatting';
 import typingMiddleware from './TypingMiddleware';
 import reactionMiddleware from './ReactionMiddleware';
 import saslMiddleware from './SaslMiddleware';
+import batchMiddleware from './BatchMiddleware';
 import chathistoryMiddleware from './ChathistoryMiddleware';
 import * as BatchHandlers from './BatchHandlers';
 import * as ServerConnection from './ServerConnection';
@@ -30,6 +31,7 @@ export function create(state, network) {
     ircClient.use(typingMiddleware(network));
     ircClient.use(reactionMiddleware(network));
     ircClient.use(saslMiddleware(network));
+    ircClient.use(batchMiddleware(network));
 
     // Overload the connect() function to make sure we are connecting with the
     // most recent connection details from the network state
@@ -289,6 +291,27 @@ function clientMiddleware(state, network) {
             });
         });
 
+        client.on('kiwi.chathistory.start', (event) => {
+            let startTime = 0;
+            let endTime = 0;
+            event.commands.forEach((message) => {
+                if (message.time && message.time > endTime) {
+                    endTime = message.time;
+                }
+
+                if (message.time && message.time < startTime) {
+                    startTime = message.time;
+                }
+            });
+
+            if (startTime && endTime) {
+                let buffer = state.getBufferByName(networkid, event.target);
+                if (buffer) {
+                    buffer.clearMessageRange(startTime, endTime);
+                }
+            }
+        });
+
         client.on('socket close', (err) => {
             isRegistered = false;
             network.state = 'disconnected';
@@ -374,6 +397,27 @@ function clientMiddleware(state, network) {
             network.timeToLocal(event.time) :
             Date.now();
         let serverTime = (event && event.time) || 0;
+
+        if (command.toLowerCase() === 'batch start chathistory' && client.chathistory) {
+            let startTime = 0;
+            let endTime = 0;
+            event.commands.forEach((message) => {
+                if (message.time && message.time > endTime) {
+                    endTime = message.time;
+                }
+
+                if (message.time && message.time < startTime) {
+                    startTime = message.time;
+                }
+            });
+
+            if (startTime && endTime) {
+                let buffer = state.getBufferByName(networkid, event.params[0]);
+                if (buffer) {
+                    buffer.clearMessageRange(startTime, endTime);
+                }
+            }
+        }
 
         if (command === 'channel_redirect') {
             let b = network.bufferByName(event.from);
@@ -495,42 +539,6 @@ function clientMiddleware(state, network) {
             }
         }
 
-        if (command.toLowerCase() === 'batch start chathistory' && client.chathistory) {
-            // We have a new batch of messages. To prevent duplicate messages being shown, we remove
-            // all messages we have locally in the range of these new messages so that the new block
-            // of messages we recieved are displayed accurately. Each message in the block will
-            // trigger a 'message' event after this.
-            let startTime = 0;
-            let endTime = 0;
-            event.commands.forEach((message) => {
-                if (message.time && message.time > endTime) {
-                    endTime = message.time;
-                }
-
-                if (message.time && message.time < startTime) {
-                    startTime = message.time;
-                }
-            });
-
-            if (!startTime || !endTime) {
-                return;
-            }
-
-            let buffer = state.getBufferByName(networkid, event.params[0]);
-            if (buffer) {
-                buffer.clearMessageRange(startTime, endTime);
-            }
-        }
-
-        if (command.toLowerCase() === 'batch start netsplit' ||
-            command.toLowerCase() === 'batch start netjoin') {
-            BatchHandlers.handleNetsplit(network, state, event);
-        }
-
-        if (command.toLowerCase() === 'batch start draft/multiline') {
-            BatchHandlers.handleMultiline(network, state, event, parsedEventsHandler, client);
-        }
-
         if (command === 'message' || command === 'tagmsg') {
             if (event.nick && typeof event.account !== 'undefined') {
                 state.addUser(networkid, { nick: event.nick, account: event.account || '' });
@@ -538,10 +546,6 @@ function clientMiddleware(state, network) {
         }
 
         if (command === 'message') {
-            if (event.batch && ['netsplit', 'netjoin', 'draft/multiline'].includes(event.batch.type)) {
-                return;
-            }
-
             let isPrivateMessage = false;
             let bufferName = event.from_server ? '*' : event.target;
 
@@ -654,7 +658,11 @@ function clientMiddleware(state, network) {
             if (!buffer) {
                 buffer = state.getOrAddBufferByName(networkid, bufferName);
             }
-            state.addMessage(buffer, message);
+
+            const isHandledBatch = event.batch && ['netsplit', 'netjoin'].includes(event.batch.type);
+            if (!isHandledBatch) {
+                state.addMessage(buffer, message);
+            }
         }
 
         if (command === 'wallops') {
