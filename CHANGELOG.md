@@ -84,8 +84,7 @@ and this project adheres to
 
 ### Fixed
 
-- Resolved scroller instability: refined `onListResize` logic to prevent
-  aggressive "jumps" to the bottom during layout shifts or window resizing.
+- Resolved scroller instability: implemented a real-time scroll listener to ensure the auto-scroll state stays synchronized with the user's position, preventing aggressive "jumps" to the bottom during layout shifts or window resizing.
 - Stabilized touch UI safety: disabled threaded reply/reaction buttons in the
   `MessageInfo` overlay for local-only or legacy messages.
 - Stabilized project environment: verified successful build, lint, and unit

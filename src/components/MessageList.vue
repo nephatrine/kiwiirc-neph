@@ -9,6 +9,7 @@
             'kiwi-messagelist--showtyping': buffer.setting('share_typing'),
         }"
         @click.self="onListClick"
+        @scroll.passive="onScroll"
     >
         <div v-resizeobserver="onListResize">
             <div
@@ -268,7 +269,7 @@ export default {
         });
 
         this.listen(this.$state, 'mediaviewer.opened', () => {
-            this.$nextTick(this.maybeScrollToBottom.apply(this));
+            this.$nextTick(() => this.maybeScrollToBottom());
         });
 
         this.listen(this.$state, 'messagelist.scrollto', (opt) => {
@@ -480,6 +481,9 @@ export default {
         onReply(message) {
             this.buffer.replying_to = message;
             this.$state.$emit('input.reply', message.nick);
+        },
+        onScroll() {
+            this.checkScrollingState();
         },
         checkScrollingState() {
             let el = this.$el;
