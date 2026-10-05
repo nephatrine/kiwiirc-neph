@@ -1,6 +1,11 @@
 'kiwi public';
 
 export function extbanAccount(network) {
+    let accExtBan = network.supports('ACCOUNTEXTBAN');
+    if (accExtBan && typeof accExtBan === 'string' && accExtBan.indexOf(',') > -1) {
+        return accExtBan.split(',').join('');
+    }
+
     // Eg. InspIRCd-2.0
     // Eg. UnrealIRCd-4.0.17
     // Eg. ircd-seven-1.1.7

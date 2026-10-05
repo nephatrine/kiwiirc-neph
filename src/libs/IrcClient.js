@@ -217,6 +217,7 @@ function clientMiddleware(state, network) {
                 'draft/chathistory',
                 'away-notify',
                 'account-notify',
+                'account-tag',
                 'extended-join',
                 'chghost',
                 'setname',
@@ -483,6 +484,12 @@ function clientMiddleware(state, network) {
             let buffer = state.getBufferByName(networkid, event.params[0]);
             if (buffer) {
                 buffer.clearMessageRange(startTime, endTime);
+            }
+        }
+
+        if (command === 'message' || command === 'tagmsg') {
+            if (event.nick && typeof event.account !== 'undefined') {
+                state.addUser(networkid, { nick: event.nick, account: event.account || '' });
             }
         }
 
