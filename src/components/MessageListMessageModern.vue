@@ -62,7 +62,7 @@
                 </span>
             </div>
             <div class="kiwi-messagelist-top">
-                <a
+                <span v-if="props.message.is_bot" :title="props.ml.$t('bot')" class="kiwi-messagelist-nick-bot">🤖</span><a
                     v-if="props.message.nick"
                     :style="{ color: props.ml.userColour(props.message.user) }"
                     :class="[
@@ -415,6 +415,10 @@ export default {
 .kiwi-messagelist-message--modern .kiwi-messagelist-nick {
     padding: 0;
     margin-right: 10px;
+}
+
+.kiwi-messagelist-nick-bot {
+    font-size: 1.1em;
 }
 
 .kiwi-messagelist-reply-preview {

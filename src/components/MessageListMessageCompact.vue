@@ -65,10 +65,9 @@
                 :network="props.m().getNetwork()" :user="props.message.user"
                 :toggle="false"
             />
-            <span class="kiwi-messagelist-nick--prefix">
-                {{ props.message.user ? props.m().userModePrefix(props.message.user) : '' }}
-            </span>
-            {{ props.message.nick }}
+            <span class="kiwi-messagelist-nick--prefix">{{
+                props.message.user ? props.m().userModePrefix(props.message.user) : ''
+            }}</span>{{ props.message.nick }}
         </a>
 
         <div class="kiwi-messagelist-body-container">
@@ -121,6 +120,8 @@
             :buffer="props.ml.buffer"
             @close="props.ml.toggleMessageInfo()"
         />
+
+        <span v-if="props.message.is_bot" :title="props.ml.$t('bot')" class="kiwi-messagelist-nick-bot">🤖</span>
 
         <div v-if="props.message.embed.payload && props.ml.shouldAutoEmbed">
             <component
@@ -247,6 +248,21 @@ export default {
 
 .kiwi-messagelist-message--compact .kiwi-messagelist-nick:hover {
     width: auto;
+}
+
+.kiwi-messagelist-nick-bot {
+    position: absolute;
+    right: 72px;
+    top: 2px;
+    font-size: 1.1em;
+}
+
+.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-nick-bot {
+    right: 10px;
+}
+
+.kiwi-messagelist-message--compact:hover .kiwi-messagelist-nick-bot {
+    display: none;
 }
 
 .kiwi-messagelist-message--compact .kiwi-messagelist-time {

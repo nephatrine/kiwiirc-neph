@@ -28,6 +28,7 @@
             class="kiwi-nicklist-user-nick"
             :style="{ color: userColour }"
         >{{ user.nick }} </span>
+        <span v-if="user.is_bot" :title="$t('bot')" class="kiwi-nicklist-user-bot">🤖</span>
         <div class="kiwi-nicklist-user-buttons">
             <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -157,6 +158,11 @@ export default {
     overflow: hidden;
     font-weight: 700;
     text-overflow: ellipsis;
+}
+
+.kiwi-nicklist-user-bot {
+    margin-right: 4px;
+    font-size: 1.1em;
 }
 
 .kiwi-nicklist-user-buttons {

@@ -54,6 +54,7 @@ export default class Message {
         this.bodyTemplate = message.bodyTemplate || null;
         this.bodyTemplateProps = message.bodyTemplateProps || {};
         this.isHighlight = false;
+        this.is_bot = !!(message.tags && typeof message.tags.bot !== 'undefined');
         this.reactions = {};
 
         // We don't want the user object to be enumerable

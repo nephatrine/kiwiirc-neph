@@ -130,6 +130,10 @@
                                 <span>{{ $t('settings_show_inline_previews') }} </span>
                                 <input v-model="settingBufferInlineLinkPreviews" type="checkbox">
                             </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_ignore_bots') }} </span>
+                                <input v-model="settingBufferIgnoreBots" type="checkbox">
+                            </label>
                         </div>
                     </div>
 
@@ -294,6 +298,7 @@ export default {
         settingBufferTrafficAsActivity: bindSetting('buffers.traffic_as_activity'),
         settingBufferMuteSound: bindSetting('buffers.mute_sound'),
         settingBufferShareTyping: bindSetting('buffers.share_typing'),
+        settingBufferIgnoreBots: bindSetting('buffers.ignore_bots'),
         settingDefaultBanMask: bindSetting('buffers.default_ban_mask'),
         settingDefaultKickReason: bindSetting('buffers.default_kick_reason'),
         settingBufferInlineLinkPreviews: {

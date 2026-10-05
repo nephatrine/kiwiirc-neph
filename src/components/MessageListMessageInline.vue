@@ -56,7 +56,7 @@
             >
                 {{ props.ml.formatTime(props.message.time) }}
             </span>
-            <span
+            <span v-if="props.message.is_bot" :title="props.ml.$t('bot')" class="kiwi-messagelist-nick-bot">🤖</span><span
                 :style="{ color: props.ml.userColour(props.message.user) }"
                 :class="[
                     'kiwi-messagelist-nick',
@@ -68,10 +68,9 @@
                 @mouseover="props.ml.hover_nick = props.message.nick.toLowerCase();"
                 @mouseout="props.ml.hover_nick = '';"
             >
-                <span class="kiwi-messagelist-nick--prefix">
-                    {{ props.message.user ? props.m().userModePrefix(props.message.user) : '' }}
-                </span>
-                <a :data-nick="(props.message.nick || '').toLowerCase()">
+                <span class="kiwi-messagelist-nick--prefix">{{
+                    props.message.user ? props.m().userModePrefix(props.message.user) : ''
+                }}</span><a :data-nick="(props.message.nick || '').toLowerCase()">
                     {{ props.m().displayNick() }}
                 </a>
             </span>
@@ -240,6 +239,10 @@ export default {
 .kiwi-messagelist-message--text .kiwi-messagelist-nick:hover {
     max-width: none;
     width: auto;
+}
+
+.kiwi-messagelist-nick-bot {
+    font-size: 1.1em;
 }
 
 .kiwi-messagelist-message--text .kiwi-messagelist-body {

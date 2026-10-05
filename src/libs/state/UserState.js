@@ -22,6 +22,7 @@ export default class UserState {
         this.away = user.away || '';
         this.colour = user.colour || '';
         this.account = user.account || '';
+        this.is_bot = user.is_bot || false;
         this.buffers = Object.create(null);
         this.hasWhois = false;
         this.hasWhoFlags = false;

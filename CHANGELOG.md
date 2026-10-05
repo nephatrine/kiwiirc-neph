@@ -35,6 +35,7 @@ and this project adheres to
 - Added full support for the IRCv3 `account-tag` extension for robust, per-message user identification.
 - Added full support for the IRCv3 `batch` extension, including specialized handling for `netsplit`, `netjoin`, and `draft/multiline` batch types. Implemented a robust Batch Middleware to support nested batches and recursive resolution (e.g., multiline messages within chathistory).
 - Implemented authoritative sending of multiline messages using the `draft/multiline` extension, featuring automatic chunking, `draft/multiline-concat` support, and strict adherence to server-advertised `max-bytes` and `max-lines` limits.
+- Added support for the IRCv3 Bot Mode specification, including persistent visual indicators (`🤖`) for bot users and bot-authored messages, and a new "Hide all bot messages" safety setting.
 - Added standards-compliant `ACCOUNTEXTBAN` negotiation with prioritized detection of authoritative ISUPPORT tokens.
 - Added reactive `enabled_caps` and `isupport` tracking to the network state for
   real-time protocol capability and support checks.

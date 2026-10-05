@@ -18,6 +18,7 @@
                 >{{ user.nick }}</span>
                 <span v-if="userMode" class="kiwi-userbox-modestring">+{{ userMode }}</span>
                 <span class="kiwi-userbox-usermask">{{ user.username }}@{{ user.host }}</span>
+                <span v-if="user.is_bot" :title="$t('bot')" class="kiwi-userbox-bot">🤖</span>
             </div>
         </div>
 
@@ -114,7 +115,7 @@
                 <span class="kiwi-userbox-whois-line">
                     {{ $t('user_realname', { realname: user.realname }) }}
                 </span>
-                <span v-if="user.whois.bot" class="kiwi-userbox-whois-line">
+                <span v-if="user.is_bot" class="kiwi-userbox-whois-line">
                     {{ $t('user_bot') }}
                 </span>
                 <span v-if="user.whois.helpop" class="kiwi-userbox-whois-line">
@@ -452,6 +453,13 @@ export default {
     opacity: 0.6;
     cursor: default;
     padding-left: 1px;
+}
+
+.kiwi-userbox-bot {
+    display: block;
+    margin-top: 4px;
+    font-size: 1.2em;
+    cursor: default;
 }
 
 .fa-user.kiwi-userbox-icon {

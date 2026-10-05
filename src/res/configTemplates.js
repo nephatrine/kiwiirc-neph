@@ -90,6 +90,7 @@ export const configTemplates = {
             auto_request_history: 'channels',
             emoji_convert_as_typed: true,
             emoji_convert_incoming: true,
+            ignore_bots: false,
         },
         avatars: {
             away_status_position: 1,

@@ -207,6 +207,12 @@ function clientMiddleware(state, network) {
 
         client.on('server options', (event) => {
             network.isupport = event.options;
+
+            // Default BOT token to 'B' if present but empty
+            if (typeof network.isupport.BOT !== 'undefined' && !network.isupport.BOT) {
+                network.isupport.BOT = 'B';
+            }
+
             if (client.network.name !== 'Network' && !network.connection.bncnetid) {
                 network.name = client.network.name;
             }
@@ -540,8 +546,17 @@ function clientMiddleware(state, network) {
         }
 
         if (command === 'message' || command === 'tagmsg') {
-            if (event.nick && typeof event.account !== 'undefined') {
-                state.addUser(networkid, { nick: event.nick, account: event.account || '' });
+            if (event.nick) {
+                const update = {};
+                if (typeof event.account !== 'undefined') {
+                    update.account = event.account || '';
+                }
+                if (event.tags && typeof event.tags.bot !== 'undefined') {
+                    update.is_bot = true;
+                }
+                if (Object.keys(update).length > 0) {
+                    state.addUser(networkid, { nick: event.nick, ...update });
+                }
             }
         }
 
@@ -619,6 +634,16 @@ function clientMiddleware(state, network) {
                 type: event.type,
                 tags: event.tags || {},
             };
+
+            // If ignore_bots is enabled and the user is a known bot or the message has a bot tag,
+            // ignore the message
+            const ignoreBots = state.setting('buffers.ignore_bots');
+            const messageUser = state.getUser(network.id, event.nick);
+            const isBot = (messageUser && messageUser.is_bot) ||
+                (event.tags && typeof event.tags.bot !== 'undefined');
+            if (ignoreBots && isBot) {
+                return;
+            }
 
             // If this is a new PM and the sending user is not exempt from blocks, ignore it
             if (blockNewPms && isPrivateMessage && !buffer && pmBlock === PM_BLOCK_BLOCKED) {
@@ -937,9 +962,13 @@ function clientMiddleware(state, network) {
             };
 
             // Whois items that maybe will exist
-            ['away', 'account'].forEach((prop) => {
+            ['away', 'account', 'bot'].forEach((prop) => {
                 if (typeof event[prop] !== 'undefined') {
-                    userObj[prop] = event[prop] || '';
+                    if (prop === 'bot') {
+                        userObj.is_bot = !!event[prop];
+                    } else {
+                        userObj[prop] = event[prop] || '';
+                    }
                 }
             });
 
@@ -997,6 +1026,7 @@ function clientMiddleware(state, network) {
                         away: eventUser.away ? 'Away' : '',
                         realname: eventUser.real_name,
                         account: eventUser.account || undefined,
+                        is_bot: !!eventUser.bot,
                     };
                     let user = state.addUser(networkid, userObj, users);
                     if (!user) {
