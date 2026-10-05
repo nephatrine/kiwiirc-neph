@@ -6,6 +6,7 @@ import Irc from 'irc-framework';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import typingMiddleware from './TypingMiddleware';
 import reactionMiddleware from './ReactionMiddleware';
+import saslMiddleware from './SaslMiddleware';
 import chathistoryMiddleware from './ChathistoryMiddleware';
 import * as ServerConnection from './ServerConnection';
 
@@ -25,6 +26,7 @@ export function create(state, network) {
     ircClient.use(clientMiddleware(state, network));
     ircClient.use(typingMiddleware(network));
     ircClient.use(reactionMiddleware(network));
+    ircClient.use(saslMiddleware(network));
 
     // Overload the connect() function to make sure we are connecting with the
     // most recent connection details from the network state
@@ -54,6 +56,7 @@ export function create(state, network) {
         ircClient.options.username = network.username || network.connection.nick;
         ircClient.options.gecos = network.gecos || 'https://kiwiirc.com/';
         ircClient.options.encoding = network.connection.encoding;
+        ircClient.options.sasl_mechanism = network.connection.sasl_mechanism || 'PLAIN';
         ircClient.options.auto_reconnect = !!state.setting('autoReconnect');
         ircClient.options.sasl_disconnect_on_fail = !!state.setting('disconnectOnSaslFail');
 
@@ -157,6 +160,8 @@ function clientMiddleware(state, network) {
             network.state = 'connecting';
             network.last_error = '';
             network.last_error_numeric = 0;
+            client.sasl_scram = null;
+            client.sasl_buffer = '';
         });
 
         client.on('connected', () => {
@@ -177,11 +182,35 @@ function clientMiddleware(state, network) {
             }
         });
 
+        client.on('cap ls', (event) => {
+            if (client.options.sasl_mechanism !== 'AUTO' || !event.capabilities.sasl) {
+                return;
+            }
+
+            const saslValue = event.capabilities.sasl || '';
+            const mechanisms = saslValue.toUpperCase().split(',');
+            if (mechanisms.includes('SCRAM-SHA-256')) {
+                client.options.sasl_mechanism = 'SCRAM-SHA-256';
+            } else {
+                client.options.sasl_mechanism = 'PLAIN';
+            }
+        });
+
         client.on('cap ack', (event) => {
             network.enabled_caps = client.network.cap.enabled.map((c) => c.toLowerCase());
         });
 
         client.on('cap new', (event) => {
+            if (client.options.sasl_mechanism === 'AUTO' && event.capabilities.sasl) {
+                const saslValue = event.capabilities.sasl || '';
+                const mechanisms = saslValue.toUpperCase().split(',');
+                if (mechanisms.includes('SCRAM-SHA-256')) {
+                    client.options.sasl_mechanism = 'SCRAM-SHA-256';
+                } else {
+                    client.options.sasl_mechanism = 'PLAIN';
+                }
+            }
+
             const desiredCaps = [
                 'znc.in/self-message',
                 'message-tags',

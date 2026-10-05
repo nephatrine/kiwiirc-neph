@@ -31,6 +31,7 @@ and this project adheres to
 - Added "Reply" functionality to the `MessageInfo` overlay for touch devices.
 - Added reply context previews with "click-to-scroll" functionality to all
   message layouts (Modern, Compact, and Inline).
+- Added support for SASL SCRAM-SHA-256 authentication mechanism using the modern Web Crypto API.
 - Added reactive `enabled_caps` and `isupport` tracking to the network state for
   real-time protocol capability and support checks.
 - Fixed `+typing` support check to strictly use the `+typing` tag name for

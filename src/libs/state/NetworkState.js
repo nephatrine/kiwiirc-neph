@@ -35,6 +35,7 @@ export default class NetworkState {
             encoding: 'utf8',
             bncnetid: '',
             nick: '',
+            sasl_mechanism: 'AUTO',
         };
         this.settings = {
             show_raw_caps: false,

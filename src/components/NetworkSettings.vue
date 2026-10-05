@@ -99,6 +99,15 @@
                         :label="$t('settings_encoding')"
                     />
 
+                    <div class="u-input-text">
+                        <label>{{ $t('settings_sasl_mechanism') }}</label>
+                        <select v-model="network.connection.sasl_mechanism" class="u-input">
+                            <option value="AUTO">AUTO (Recommended)</option>
+                            <option value="PLAIN">PLAIN</option>
+                            <option value="SCRAM-SHA-256">SCRAM-SHA-256</option>
+                        </select>
+                    </div>
+
                     <input-text
                         v-model="network.connection.password"
                         :show-plain-text="true"
