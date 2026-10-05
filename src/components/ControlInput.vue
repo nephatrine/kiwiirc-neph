@@ -136,13 +136,13 @@ import _ from 'lodash';
 import * as Misc from '@/helpers/Misc';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import * as EmojiProvider from '@/libs/EmojiProvider';
+import * as Emoji from '@/helpers/Emoji';
 import * as settingTools from '@/libs/settingTools';
 
 import autocompleteCommands from '@/res/autocompleteCommands';
 import GlobalApi from '@/libs/GlobalApi';
 import AutoComplete from './AutoComplete';
 import ToolTextStyle from './inputtools/TextStyle';
-import ToolEmoji from './inputtools/Emoji';
 import SelfUser from './SelfUser';
 import AwayStatusIndicator from './AwayStatusIndicator';
 import TypingUsersList from './TypingUsersList';
@@ -376,7 +376,10 @@ export default {
             this.toggleInputTool(ToolTextStyle);
         },
         onToolClickEmoji() {
-            this.toggleInputTool(ToolEmoji);
+            this.$state.$emit('emojipicker.show', {
+                type: 'input',
+                ircinput: this.$refs.input,
+            });
         },
         closeToolsPlugins() {
             this.showPlugins = false;
@@ -448,28 +451,17 @@ export default {
                 event.preventDefault();
                 this.$refs.input.insertText('\n');
             } else if (event.key === 'Enter') {
+                this.maybeReplaceEmoji();
                 // Send message when enter is pressed
                 event.preventDefault();
                 this.submitForm();
             } else if (event.key === 'Escape' && this.showCommandWarning) {
                 // Close command warning if the user presses escape
                 this.showCommandWarning = false;
-            } else if (event.key === ' ') {
-                // Hitting space after just typing an ascii emoji will get it replaced with
-                // its image
-                if (this.$state.setting('buffers.show_emoticons')) {
-                    let currentWord = this.$refs.input.getCurrentWord(true);
-                    let emojis = EmojiProvider.getEmojis(currentWord.word);
-                    if (emojis.length) {
-                        event.preventDefault();
-                        this.$refs.input.setCurrentWord('', false, true);
-                        this.$refs.input.addImg(
-                            emojis[0].ascii,
-                            emojis[0].url,
-                            emojis[0].imgProps,
-                        );
-                    }
-                }
+            } else if ([' ', '.', ',', '!', '?', ':', ';'].includes(event.key)) {
+                // Hitting a word-breaker after just typing an emoji shortcode will get it replaced
+                // with its native unicode character if enabled
+                this.maybeReplaceEmoji();
             } else if (event.key === 'ArrowUp') {
                 // Up
                 if (this.$refs.input.getCaretIdx() > 0) {
@@ -621,6 +613,10 @@ export default {
                 }
             }
 
+            if (this.$state.setting('buffers.emoji_convert_as_typed')) {
+                ircText = Emoji.replaceShortcodes(ircText);
+            }
+
             this.$state.$emit('input.raw', ircText);
 
             this.historyAdd(rawInput);
@@ -672,6 +668,15 @@ export default {
             if (this.$state.setting('showAutocomplete')) {
                 this.autocomplete_items = items;
                 this.autocomplete_open = true;
+            }
+        },
+        maybeReplaceEmoji() {
+            if (this.$state.setting('buffers.emoji_convert_as_typed')) {
+                let currentWord = this.$refs.input.getCurrentWord(true);
+                let emojis = EmojiProvider.getEmojis(currentWord.word);
+                if (emojis.length && emojis[0].char) {
+                    this.$refs.input.setCurrentWord(emojis[0].char, false, true);
+                }
             }
         },
         buildAutoCompleteItems(_opts) {

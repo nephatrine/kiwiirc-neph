@@ -1,46 +1,46 @@
 'kiwi public';
 
-import { escape } from 'lodash';
 import getState from '@/libs/state';
+import { shortcodeToChar } from '@/res/emojis';
 
 export function matchEmoji(word) {
-    const emojis = getEmojis(word);
-    if (!emojis.length) {
+    if (!getState().setting('buffers.emoji_convert_incoming')) {
         return false;
     }
+
+    const shortcode = extractShortcode(word);
+    if (!shortcode || !shortcodeToChar[shortcode]) {
+        return false;
+    }
+
     return [{
-        index: 0,
-        match: word,
+        index: word.indexOf(':' + shortcode + ':'),
+        match: ':' + shortcode + ':',
         type: 'emoji',
         meta: {
-            emoji: emojis[0].code,
+            emoji: shortcodeToChar[shortcode],
         },
     }];
 }
 
 export function blockToHtml(block, isSingle, showEmoticons) {
-    if (!showEmoticons) {
-        return block.content;
-    }
-
-    const emojiLocation = getState().setting('emojiLocation');
-    const emoji = block.meta.emoji;
-    const classes = 'kiwi-messagelist-emoji' + (isSingle ? ' kiwi-messagelist-emoji--single' : '');
-    const src = `${emojiLocation}${emoji}`;
-
-    return `<img class="${classes}" src="${src}" alt="${escape(block.content)}" title="${escape(block.content)}" />`;
+    // Native unicode emojis are just text
+    return block.meta.emoji || block.content;
 }
 
 export function getEmojis(word) {
-    const emojiList = getState().setting('emojis');
-    const emojiLocation = getState().setting('emojiLocation');
-    if (!Object.prototype.hasOwnProperty.call(emojiList, word)) {
+    const shortcode = extractShortcode(word);
+    if (!shortcode || !shortcodeToChar[shortcode]) {
         return [];
     }
+
     return [{
-        ascii: word,
-        code: emojiList[word],
-        url: emojiLocation + emojiList[word],
-        // imgProps allows setting properties of <img>
+        shortcode: shortcode,
+        char: shortcodeToChar[shortcode],
     }];
+}
+
+function extractShortcode(word) {
+    const match = word.match(/:([a-z0-9_+-]+):/);
+    return match ? match[1] : null;
 }

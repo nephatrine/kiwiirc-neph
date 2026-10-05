@@ -40,6 +40,13 @@ function createNewState() {
             input_history: [],
             input_history_pos: 0,
             show_advanced_tab: false,
+            emoji_picker: {
+                visible: false,
+                type: 'input', // 'input' | 'reaction'
+                message: null,
+                buffer: null,
+                ircinput: null,
+            },
         },
         networks: [],
     };

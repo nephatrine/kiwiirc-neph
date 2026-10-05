@@ -6,24 +6,15 @@
         <div class="kiwi-messageactions-dropdown">
             <div
                 v-for="emoji in quickEmojis"
-                :key="emoji.code"
-                :style="{ 'background-image': `url(${emojiUrl(emoji.code)})` }"
+                :key="emoji.shortcode"
                 :class="{ 'kiwi-messageactions-emoji--reacted': hasReacted(emoji.char) }"
                 class="kiwi-messageactions-item kiwi-messageactions-emoji"
                 @click="onReact(emoji.char)"
-            />
-            <div class="kiwi-messageactions-item" @click="showMore = !showMore">
+            >
+                {{ emoji.char }}
+            </div>
+            <div class="kiwi-messageactions-item" @click="showPicker">
                 <i class="fa fa-plus" aria-hidden="true" />
-                <div v-if="showMore" class="kiwi-messageactions-more-popover" @click.stop>
-                    <div
-                        v-for="emoji in curatedEmojis"
-                        :key="emoji.code"
-                        :style="{ 'background-image': `url(${emojiUrl(emoji.code)})` }"
-                        :class="{ 'kiwi-messageactions-emoji--reacted': hasReacted(emoji.char) }"
-                        class="kiwi-messageactions-emoji"
-                        @click="onReact(emoji.char)"
-                    />
-                </div>
             </div>
             <div class="kiwi-messageactions-divider" />
             <div class="kiwi-messageactions-item" @click="onReply">
@@ -36,7 +27,7 @@
 <script>
 'kiwi public';
 
-import { curatedEmojis, quickEmojis } from '@/helpers/Emoji';
+import { quickEmojis } from '@/helpers/Emoji';
 
 export default {
     props: {
@@ -49,21 +40,22 @@ export default {
     },
     data() {
         return {
-            showMore: false,
-            curatedEmojis,
             quickEmojis,
         };
     },
     methods: {
-        emojiUrl(code) {
-            return this.$state.setting('emojiLocation') + code;
-        },
         hasReacted(emojiChar) {
             return this.message.reactions[emojiChar] && this.message.reactions[emojiChar].reacted;
         },
         onReact(emojiChar) {
             this.buffer.react(this.message, emojiChar);
-            this.showMore = false;
+        },
+        showPicker() {
+            this.$state.$emit('emojipicker.show', {
+                type: 'reaction',
+                buffer: this.buffer,
+                message: this.message,
+            });
         },
         onReply() {
             this.buffer.replying_to = this.message;
@@ -171,29 +163,12 @@ export default {
     border: 1px solid rgba(66, 133, 244, 0.4);
 }
 
-.kiwi-messageactions-more-popover {
-    position: absolute;
-    bottom: 100%;
-    right: 0;
-    background: var(--brand-midtone, #eee);
-    border: 1px solid var(--brand-darktone, rgba(0, 0, 0, 0.1));
-    border-radius: 4px;
-    padding: 4px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
-    margin-bottom: 6px;
-    max-width: 140px;
-}
-
 /* Compact layout specific styling */
 .kiwi-messageactions--compact,
 .kiwi-messageactions--inline {
     .kiwi-messageactions-badge,
     .kiwi-messageactions-dropdown,
-    .kiwi-messageactions-item,
-    .kiwi-messageactions-more-popover {
+    .kiwi-messageactions-item {
         border-radius: 0;
     }
 
@@ -218,10 +193,6 @@ export default {
     .kiwi-messageactions-item {
         width: 26px;
         height: 26px;
-    }
-
-    .kiwi-messageactions-more-popover {
-        margin-bottom: 0;
     }
 }
 

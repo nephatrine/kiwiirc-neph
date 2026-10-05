@@ -58,6 +58,7 @@
             </div>
         </template>
         <AvatarCommon />
+        <emoji-picker />
     </div>
 </template>
 
@@ -73,6 +74,7 @@ import Container from '@/components/Container';
 import ControlInput from '@/components/ControlInput';
 import MediaViewer from '@/components/MediaViewer';
 import AvatarCommon from '@/components/UserAvatarCommon';
+import EmojiPicker from '@/components/EmojiPicker';
 import { State as SidebarState } from '@/components/Sidebar';
 import ThemeManager from '@/libs/ThemeManager';
 import * as Notifications from '@/libs/Notifications';
@@ -88,6 +90,7 @@ export default {
         ControlInput,
         MediaViewer,
         AvatarCommon,
+        EmojiPicker,
     },
     props: ['startupComponent'],
     data() {

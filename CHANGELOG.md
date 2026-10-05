@@ -23,6 +23,11 @@ and this project adheres to
   reactive IRCv3 `irc_id` (`msgid`) tags.
 - Added authoritative message ID promotion logic to correlate server echoes
   with locally sent messages.
+- Added native Unicode emoji support with a high-performance, searchable
+  picker.
+- Added support for instant `:shortcode:` to Unicode conversion as you type.
+- Added horizontal quick-reaction toolbar with integrated "More Reactions"
+  modal using the new Emoji Picker.
 - Added "Reply" functionality to the `MessageInfo` overlay for touch devices.
 - Added reply context previews with "click-to-scroll" functionality to all
   message layouts (Modern, Compact, and Inline).
@@ -45,6 +50,8 @@ and this project adheres to
   clipboard and HTML parsing workarounds originally required for IE.
 - Standardized CSS architecture: removed legacy vendor prefixes (`-ms-`,
   `::-ms-`) and IE-specific layout hacks across all themes and components.
+- Modernized emoji system: replaced legacy image-based emoticons with native
+  Unicode characters for better performance and OS-consistent rendering.
 - Renamed "Reply in private" to "Private Message" to prevent terminology
   confusion with IRCv3 threads.
 - Increased hover gutter padding for all layouts to ensure action badges never
