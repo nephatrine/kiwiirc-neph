@@ -36,6 +36,7 @@
 
                 <div
                     class="kiwi-statebrowser-channel-leave"
+                    :title="$t('close')"
                     @click="maybePromptClose()"
                 >
                     <i class="fa fa-times" aria-hidden="true" />

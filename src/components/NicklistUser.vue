@@ -47,6 +47,7 @@
             <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 36 36"
+                :title="$t('send_a_message')"
                 class="kiwi-nicklist-user-message"
                 @click.stop="nicklist.openQuery(user)"
             >

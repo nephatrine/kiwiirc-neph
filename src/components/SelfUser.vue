@@ -4,9 +4,10 @@
             <span class="kiwi-selfuser-nick">
                 <away-status-indicator :network="network" :user="user" />
                 {{ network.nick }}
-                <i class="fa fa-times" aria-hidden="true" @click="closeSelfUser()" />
-                <i class="fa fa-pencil" aria-hidden="true" @click="openSelfActions()" />
+                <i :title="$t('close')" class="fa fa-times" aria-hidden="true" @click="closeSelfUser()" />
+                <i :title="$t('change_nick')" class="fa fa-pencil" aria-hidden="true" @click="openSelfActions()" />
                 <i
+                    :title="$t('state_account')"
                     class="fa fa-user"
                     aria-hidden="true"
                     @click="openProfile()"

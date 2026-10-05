@@ -1,6 +1,6 @@
 <template>
     <div :class="[`kiwi-messageactions--${layout}`]" class="kiwi-messageactions" @click.stop>
-        <div class="kiwi-messageactions-badge">
+        <div :title="$t('message_actions_title')" class="kiwi-messageactions-badge">
             <i class="fa fa-ellipsis-h" aria-hidden="true" />
         </div>
         <div class="kiwi-messageactions-dropdown">
@@ -8,16 +8,17 @@
                 v-for="emoji in quickEmojis"
                 :key="emoji.shortcode"
                 :class="{ 'kiwi-messageactions-emoji--reacted': hasReacted(emoji.char) }"
+                :title="emoji.shortcode"
                 class="kiwi-messageactions-item kiwi-messageactions-emoji"
                 @click="onReact(emoji.char)"
             >
                 {{ emoji.char }}
             </div>
-            <div class="kiwi-messageactions-item" @click="showPicker">
+            <div :title="$t('emoji_picker')" class="kiwi-messageactions-item" @click="showPicker">
                 <i class="fa fa-plus" aria-hidden="true" />
             </div>
             <div class="kiwi-messageactions-divider" />
-            <div class="kiwi-messageactions-item" @click="onReply">
+            <div :title="$t('reply')" class="kiwi-messageactions-item" @click="onReply">
                 <i class="fa fa-reply" aria-hidden="true" />
             </div>
         </div>

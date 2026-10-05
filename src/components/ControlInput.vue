@@ -26,7 +26,7 @@
                 :network="network"
                 :user="network.currentUser()"
             />
-            <div v-if="currentNick" class="kiwi-controlinput-user" @click="toggleSelfUser">
+            <div v-if="currentNick" :title="$t('state_account')" class="kiwi-controlinput-user" @click="toggleSelfUser">
                 <span class="kiwi-controlinput-user-nick">{{ currentNick }}</span>
                 <i
                     :class="[selfuser_open ? 'fa-caret-down' : 'fa-caret-up']"
@@ -37,7 +37,7 @@
             <div v-if="buffer.replying_to" class="kiwi-controlinput-reply">
                 <div class="kiwi-controlinput-reply-nick">{{ $t('replying_to') }} {{ buffer.replying_to.nick }}</div>
                 <div class="kiwi-controlinput-reply-message">{{ buffer.replying_to.message }}</div>
-                <div class="kiwi-controlinput-reply-cancel" @click="buffer.replying_to = null">
+                <div :title="$t('cancel')" class="kiwi-controlinput-reply-cancel" @click="buffer.replying_to = null">
                     <i class="fa fa-times" aria-hidden="true" />
                 </div>
             </div>
@@ -66,6 +66,7 @@
                 >
                     <button
                         ref="sendButton"
+                        :title="$t('send_message')"
                         type="submit"
                         class="kiwi-controlinput-button kiwi-controlinput-send fa fa-paper-plane"
                     />
@@ -79,6 +80,7 @@
             >
                 <div
                     v-if="!shouldShowToolsInline"
+                    :title="$t('tools')"
                     class="kiwi-controlinput-tools-expand kiwi-controlinput-button"
                     :class="{ 'kiwi-controlinput-tools-expand--closed': !showPlugins }"
                     @click="showPlugins = !showPlugins"
@@ -92,6 +94,7 @@
                     >
                         <div
                             v-if="shouldShowColorPicker"
+                            :title="$t('color_picker')"
                             class="kiwi-controlinput-button"
                             @click.prevent="onToolClickTextStyle"
                         >
@@ -99,6 +102,7 @@
                         </div>
                         <div
                             v-if="shouldShowEmojiPicker"
+                            :title="$t('emoji_picker')"
                             class="kiwi-controlinput-button"
                             @click.prevent="onToolClickEmoji"
                         >

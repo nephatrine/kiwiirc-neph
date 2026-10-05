@@ -29,6 +29,7 @@
             <div class="kiwi-network-name-options">
                 <div
                     v-if="totalNetworkCount > 1"
+                    :title="$t('toggle_section')"
                     class="kiwi-network-name-option kiwi-network-name-option-collapse"
                     @click="collapsed = !collapsed"
                 >
@@ -163,6 +164,7 @@
                     <div v-if="type === 'channels'" class="kiwi-statebrowser-channels-options">
                         <div
                             :class="{ active: !!channel_add_display }"
+                            :title="$t('state_join')"
                             class="kiwi-statebrowser-channels-option"
                             @click="toggleAddChannel()"
                         >
@@ -170,6 +172,7 @@
                         </div>
                         <div
                             :class="{ active: !!channel_filter_display }"
+                            :title="$t('filter_channels')"
                             class="kiwi-statebrowser-channels-option"
                             @click="onSearchChannelClick()"
                         >
@@ -179,6 +182,7 @@
                     <div v-else-if="type === 'queries'" class="kiwi-statebrowser-channels-options">
                         <div
                             v-if="itemBuffers.length > 1"
+                            :title="$t('close')"
                             class="kiwi-statebrowser-channels-option
                                 kiwi-statebrowser-queries-close"
                             @click.stop.prevent="promptClose()"

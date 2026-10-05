@@ -125,6 +125,7 @@
                     :class="{
                         'kiwi-header-option--active': sidebarSection === 'user',
                     }"
+                    :title="$t('state_account')"
                     class="kiwi-header-option kiwi-header-option-user"
                 >
                     <a @click="toggleUser()">

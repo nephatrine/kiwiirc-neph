@@ -4,7 +4,7 @@
         class="kiwi-sidebar kiwi-theme-bg"
     >
         <span v-if="!sidebarState.isOpen" class="kiwi-sidebar-options">
-            <div class="kiwi-sidebar-close" @click="sidebarState.close()">
+            <div class="kiwi-sidebar-close" :title="$t('close')" @click="sidebarState.close()">
                 {{ $t('close') }}<i class="fa fa-times" aria-hidden="true" />
             </div>
         </span>
