@@ -180,7 +180,7 @@ const methods = {
     },
     getReplyMessage(replyId) {
         let props = this.props;
-        return props.ml.buffer.messagesObj.messages.find((m) => m.id === replyId);
+        return props.ml.buffer.messagesObj.messageIds[replyId];
     },
     canReply(message) {
         let types = ['privmsg', 'action', 'message'];
