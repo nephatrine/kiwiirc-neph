@@ -8,6 +8,7 @@ import typingMiddleware from './TypingMiddleware';
 import reactionMiddleware from './ReactionMiddleware';
 import saslMiddleware from './SaslMiddleware';
 import chathistoryMiddleware from './ChathistoryMiddleware';
+import * as BatchHandlers from './BatchHandlers';
 import * as ServerConnection from './ServerConnection';
 
 export function create(state, network) {
@@ -22,6 +23,8 @@ export function create(state, network) {
     });
     ircClient.requestCap('znc.in/self-message');
     ircClient.requestCap('message-tags');
+    ircClient.requestCap('batch');
+    ircClient.requestCap('draft/multiline');
     ircClient.use(chathistoryMiddleware(network));
     ircClient.use(clientMiddleware(state, network));
     ircClient.use(typingMiddleware(network));
@@ -95,7 +98,7 @@ export function create(state, network) {
     ircClient.raw = function raw(...args) {
         let message = null;
 
-        if (args[0] instanceof Irc.Message) {
+        if (args[0] instanceof Irc.Message || (args[0] && args[0].command && args[0].params)) {
             message = args[0];
         } else {
             let rawString = ircClient.rawString(...args);
@@ -119,7 +122,31 @@ export function create(state, network) {
             return;
         }
 
-        originalIrcClientRaw.apply(ircClient, [message]);
+        // Always pass a string to the original raw() method to avoid any
+        // constructor/instanceof issues with different library versions/imports.
+        const out = (typeof message.to1459 === 'function') ?
+            message.to1459() :
+            ircClient.rawString(...args);
+
+        originalIrcClientRaw.apply(ircClient, [out]);
+    };
+
+    const originalIrcClientSay = ircClient.say;
+    ircClient.say = function say(target, message, tags) {
+        if (network.hasCap('draft/multiline') && (message.indexOf('\n') > -1 || message.length > 350)) {
+            BatchHandlers.sendMultiline(network, state, 'PRIVMSG', target, message, tags);
+            return;
+        }
+        originalIrcClientSay.apply(ircClient, [target, message, tags]);
+    };
+
+    const originalIrcClientNotice = ircClient.notice;
+    ircClient.notice = function notice(target, message, tags) {
+        if (network.hasCap('draft/multiline') && (message.indexOf('\n') > -1 || message.length > 350)) {
+            BatchHandlers.sendMultiline(network, state, 'NOTICE', target, message, tags);
+            return;
+        }
+        originalIrcClientNotice.apply(ircClient, [target, message, tags]);
     };
 
     ircClient.on('raw', (event) => {
@@ -162,6 +189,7 @@ function clientMiddleware(state, network) {
             network.last_error_numeric = 0;
             client.sasl_scram = null;
             client.sasl_buffer = '';
+            network.cap_values = {};
         });
 
         client.on('connected', () => {
@@ -183,6 +211,7 @@ function clientMiddleware(state, network) {
         });
 
         client.on('cap ls', (event) => {
+            Object.assign(network.cap_values, event.capabilities);
             if (client.options.sasl_mechanism !== 'AUTO' || !event.capabilities.sasl) {
                 return;
             }
@@ -201,6 +230,7 @@ function clientMiddleware(state, network) {
         });
 
         client.on('cap new', (event) => {
+            Object.assign(network.cap_values, event.capabilities);
             if (client.options.sasl_mechanism === 'AUTO' && event.capabilities.sasl) {
                 const saslValue = event.capabilities.sasl || '';
                 const mechanisms = saslValue.toUpperCase().split(',');
@@ -214,6 +244,8 @@ function clientMiddleware(state, network) {
             const desiredCaps = [
                 'znc.in/self-message',
                 'message-tags',
+                'batch',
+                'draft/multiline',
                 'draft/chathistory',
                 'away-notify',
                 'account-notify',
@@ -245,6 +277,9 @@ function clientMiddleware(state, network) {
 
         client.on('cap del', (event) => {
             network.enabled_caps = client.network.cap.enabled.map((c) => c.toLowerCase());
+            Object.keys(event.capabilities).forEach((c) => {
+                delete network.cap_values[c.toLowerCase()];
+            });
             let capNames = Object.keys(event.capabilities).join(', ');
             let serverBuffer = network.serverBuffer();
             state.addMessage(serverBuffer, {
@@ -487,6 +522,15 @@ function clientMiddleware(state, network) {
             }
         }
 
+        if (command.toLowerCase() === 'batch start netsplit' ||
+            command.toLowerCase() === 'batch start netjoin') {
+            BatchHandlers.handleNetsplit(network, state, event);
+        }
+
+        if (command.toLowerCase() === 'batch start draft/multiline') {
+            BatchHandlers.handleMultiline(network, state, event, parsedEventsHandler, client);
+        }
+
         if (command === 'message' || command === 'tagmsg') {
             if (event.nick && typeof event.account !== 'undefined') {
                 state.addUser(networkid, { nick: event.nick, account: event.account || '' });
@@ -494,6 +538,10 @@ function clientMiddleware(state, network) {
         }
 
         if (command === 'message') {
+            if (event.batch && ['netsplit', 'netjoin', 'draft/multiline'].includes(event.batch.type)) {
+                return;
+            }
+
             let isPrivateMessage = false;
             let bufferName = event.from_server ? '*' : event.target;
 
@@ -674,14 +722,17 @@ function clientMiddleware(state, network) {
 
                 let typeExtra = (event.nick === client.user.nick) ? 'join_self' : 'join';
 
-                state.addMessage(buffer, {
-                    time: eventTime,
-                    server_time: serverTime,
-                    nick: event.nick,
-                    message: messageBody,
-                    type: 'traffic',
-                    type_extra: typeExtra,
-                });
+                const isHandledBatch = event.batch && ['netsplit', 'netjoin'].includes(event.batch.type);
+                if (!isHandledBatch) {
+                    state.addMessage(buffer, {
+                        time: eventTime,
+                        server_time: serverTime,
+                        nick: event.nick,
+                        message: messageBody,
+                        type: 'traffic',
+                        type_extra: typeExtra,
+                    });
+                }
             }
         }
         if (command === 'kick') {
@@ -769,14 +820,17 @@ function clientMiddleware(state, network) {
 
                 let typeExtra = (event.nick === client.user.nick) ? 'part_self' : 'part';
 
-                state.addMessage(buffer, {
-                    time: eventTime,
-                    server_time: serverTime,
-                    nick: event.nick,
-                    message: messageBody,
-                    type: 'traffic',
-                    type_extra: typeExtra,
-                });
+                const isHandledBatch = event.batch && ['netsplit', 'netjoin'].includes(event.batch.type);
+                if (!isHandledBatch) {
+                    state.addMessage(buffer, {
+                        time: eventTime,
+                        server_time: serverTime,
+                        nick: event.nick,
+                        message: messageBody,
+                        type: 'traffic',
+                        type_extra: typeExtra,
+                    });
+                }
             }
         }
         if (command === 'quit') {
@@ -810,14 +864,17 @@ function clientMiddleware(state, network) {
 
                 let typeExtra = (event.nick === client.user.nick) ? 'quit_self' : 'quit';
 
-                state.addMessage(buffer, {
-                    time: eventTime,
-                    server_time: serverTime,
-                    nick: event.nick,
-                    message: messageBody,
-                    type: 'traffic',
-                    type_extra: typeExtra,
-                });
+                const isHandledBatch = event.batch && ['netsplit', 'netjoin'].includes(event.batch.type);
+                if (!isHandledBatch) {
+                    state.addMessage(buffer, {
+                        time: eventTime,
+                        server_time: serverTime,
+                        nick: event.nick,
+                        message: messageBody,
+                        type: 'traffic',
+                        type_extra: typeExtra,
+                    });
+                }
             });
 
             // Set the user as away before removing so away status indicators are updated
@@ -1305,14 +1362,17 @@ function clientMiddleware(state, network) {
                         'mode_self' :
                         '';
 
-                    state.addMessage(buffer, {
-                        time: eventTime,
-                        server_time: serverTime,
-                        nick: '',
-                        message: messageBody,
-                        type: 'mode',
-                        type_extra: typeExtra,
-                    });
+                    const isHandledBatch = event.batch && ['netsplit', 'netjoin'].includes(event.batch.type);
+                    if (!isHandledBatch) {
+                        state.addMessage(buffer, {
+                            time: eventTime,
+                            server_time: serverTime,
+                            nick: '',
+                            message: messageBody,
+                            type: 'mode',
+                            type_extra: typeExtra,
+                        });
+                    }
                 });
             } else {
                 if (event.target === network.nick) {
@@ -1380,14 +1440,17 @@ function clientMiddleware(state, network) {
                         target: event.target,
                         text,
                     });
-                    state.addMessage(serverBuffer, {
-                        time: eventTime,
-                        server_time: serverTime,
-                        nick: '',
-                        message: messageBody,
-                        type: 'mode',
-                        type_extra: 'mode_self',
-                    });
+                    const isHandledBatch = event.batch && ['netsplit', 'netjoin'].includes(event.batch.type);
+                    if (!isHandledBatch) {
+                        state.addMessage(serverBuffer, {
+                            time: eventTime,
+                            server_time: serverTime,
+                            nick: '',
+                            message: messageBody,
+                            type: 'mode',
+                            type_extra: 'mode_self',
+                        });
+                    }
                 });
             }
         }

@@ -51,6 +51,7 @@ export default class NetworkState {
         this.password = '';
         this.away = '';
         this.enabled_caps = [];
+        this.cap_values = {};
         this.isupport = {};
 
         Vue.observable(this);
@@ -170,6 +171,10 @@ export default class NetworkState {
 
     hasCap(name) {
         return this.enabled_caps.includes(name.toLowerCase());
+    }
+
+    capValue(name) {
+        return this.cap_values[name.toLowerCase()] || '';
     }
 
     /**

@@ -46,8 +46,36 @@ export default class InputHandler {
 
     listenForInput() {
         this.state.$on('input.raw', (input, context = this.defaultContext()) => {
-            let lines = input.split('\n');
-            lines.forEach((line) => this.processLine(line, context));
+            const { network } = context;
+            const lines = input.split('\n');
+
+            // If multiline is not supported, process each line individually as before
+            if (!network || !network.hasCap('draft/multiline')) {
+                lines.forEach((line) => this.processLine(line, context));
+                return;
+            }
+
+            let accumulatedText = [];
+            const flushText = () => {
+                if (accumulatedText.length > 0) {
+                    this.processLine(accumulatedText.join('\n'), context);
+                    accumulatedText = [];
+                }
+            };
+
+            lines.forEach((line) => {
+                const stylesStripped = Misc.stripStyles(line);
+                const isCommand = stylesStripped[0] === '/' && stylesStripped.substr(0, 2) !== '//';
+
+                if (isCommand) {
+                    flushText();
+                    this.processLine(line, context);
+                } else {
+                    accumulatedText.push(line);
+                }
+            });
+
+            flushText();
         });
     }
 
