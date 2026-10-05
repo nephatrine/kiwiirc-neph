@@ -89,7 +89,7 @@ export default class Message {
         this.hasRendered = true;
 
         let state = getState();
-        let showEmoticons = state.setting('buffers.show_emoticons') && !messageList.buffer.isSpecial();
+        let showEmoticons = state.setting('buffers.emoji_convert_incoming') && !messageList.buffer.isSpecial();
 
         this.toBlocks(messageList.buffer, messageList.useExtraFormatting);
 

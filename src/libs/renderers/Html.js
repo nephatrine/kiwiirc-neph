@@ -9,7 +9,7 @@ export default render;
 function render(blocks, renderEmoticons) {
     const state = getState();
     const showEmoticons = typeof renderEmoticons === 'undefined' ?
-        state.setting('buffers.show_emoticons') :
+        state.setting('buffers.emoji_convert_incoming') :
         !!renderEmoticons;
 
     const retHtml = blocks.reduce((html, block, i) => {

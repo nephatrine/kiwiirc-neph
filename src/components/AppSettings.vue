@@ -93,8 +93,12 @@
                                 <input v-model="timestamps_24h" type="checkbox">
                             </label>
                             <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_emoticons') }} </span>
-                                <input v-model="settingBufferShowEmoticons" type="checkbox">
+                                <span>{{ $t('settings_emoji_convert_incoming') }} </span>
+                                <input v-model="settingBufferEmojiConvertIncoming" type="checkbox">
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_emoji_convert_as_typed') }} </span>
+                                <input v-model="settingBufferEmojiConvertAsTyped" type="checkbox">
                             </label>
                             <label class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_block_private') }} </span>
@@ -282,7 +286,8 @@ export default {
         settingHighlights: bindSetting('highlights'),
         settingBufferColourNicknames: bindSetting('buffers.colour_nicknames_in_messages'),
         settingBufferShowTimestamps: bindSetting('buffers.show_timestamps'),
-        settingBufferShowEmoticons: bindSetting('buffers.show_emoticons'),
+        settingBufferEmojiConvertIncoming: bindSetting('buffers.emoji_convert_incoming'),
+        settingBufferEmojiConvertAsTyped: bindSetting('buffers.emoji_convert_as_typed'),
         settingBufferBlockPms: bindSetting('buffers.block_pms'),
         settingBufferScrollbackSize: bindSetting('buffers.scrollback_size'),
         settingBufferExtraFormatting: bindSetting('buffers.extra_formatting'),
