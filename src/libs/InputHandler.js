@@ -205,9 +205,11 @@ function handleMessage(type, event, command, line, context) {
         }
 
         let tags = {};
-        if (buffer.replying_to) {
-            if (network.hasCap('message-tags') && network.supportsTag('+reply')) {
-                tags['+reply'] = buffer.replying_to.id;
+        if (buffer.replying_to && buffer.replying_to.irc_id && network.hasCap('message-tags')) {
+            if (network.supportsTag('+reply')) {
+                tags['+reply'] = buffer.replying_to.irc_id;
+            } else if (network.supportsTag('+draft/reply')) {
+                tags['+draft/reply'] = buffer.replying_to.irc_id;
             }
         }
 

@@ -41,7 +41,7 @@ describe('ReactionMiddleware', () => {
             },
         };
 
-        theMiddleware(network, 'TAGMSG', message, '', client, () => {});
+        theMiddleware(network, 'TAGMSG', message, client, () => {});
 
         // The middleware should have processed the reaction
         expect(msg.reactions['👍']).toBeDefined();
@@ -68,7 +68,7 @@ describe('ReactionMiddleware', () => {
                 '+reply': msgId,
             },
         };
-        theMiddleware(network, 'TAGMSG', message1, '', client, () => {});
+        theMiddleware(network, 'TAGMSG', message1, client, () => {});
         expect(msg.reactions['👍'].count).toBe(1);
 
         // Unreact
@@ -80,7 +80,7 @@ describe('ReactionMiddleware', () => {
                 '+reply': msgId,
             },
         };
-        theMiddleware(network, 'TAGMSG', message2, '', client, () => {});
+        theMiddleware(network, 'TAGMSG', message2, client, () => {});
 
         expect(msg.reactions['👍']).toBeUndefined();
     });
@@ -104,7 +104,7 @@ describe('ReactionMiddleware', () => {
                 '+reply': msgId,
             },
         };
-        theMiddleware(network, 'TAGMSG', message, '', client, () => {});
+        theMiddleware(network, 'TAGMSG', message, client, () => {});
 
         expect(msg.reactions['🔥'].reacted).toBe(true);
     });
@@ -119,7 +119,7 @@ describe('ReactionMiddleware', () => {
                 '+reply': 'nonexistent',
             },
         };
-        theMiddleware(network, 'TAGMSG', message, '', client, () => {});
+        theMiddleware(network, 'TAGMSG', message, client, () => {});
         // No error should occur
     });
 

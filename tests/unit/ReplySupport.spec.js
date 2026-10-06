@@ -59,8 +59,8 @@ describe('ReplySupport', () => {
 
         buffer.replying_to = originalMsg;
 
-        // Mock supportsTag to return false for +reply
-        network.isupport.CLIENTTAGDENY = '+reply';
+        // Mock supportsTag to return false for +reply and +draft/reply
+        network.isupport.CLIENTTAGDENY = '+reply,+draft/reply';
         network.enabled_caps = ['message-tags'];
 
         const saySpy = jest.spyOn(network.ircClient, 'say').mockImplementation(() => {});

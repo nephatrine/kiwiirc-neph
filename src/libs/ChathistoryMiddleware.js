@@ -12,7 +12,6 @@ const log = Logger.namespace('chathistory');
  */
 export default function chathistoryMiddleware(network) {
     return function middleware(client, rawEvents, parsedEvents) {
-        client.requestCap('draft/chathistory');
         addFunctionsToClient(client, network);
         parsedEvents.use(theMiddleware);
     };
@@ -30,6 +29,7 @@ export default function chathistoryMiddleware(network) {
 
             if (event.params[1].toLowerCase() === 'invalid_target') {
                 // suppress invalid target errors
+                next();
                 return;
             }
         }
@@ -92,13 +92,23 @@ function addFunctionsToClient(client, network) {
     // supports (ISUPPORT) is used by kiwibnc, the spec and unreal's implementation uses CAP
     history.isSupported = () => !!network.supports('draft/chathistory') || network.hasCap('draft/chathistory');
 
+    history.maxLimit = () => {
+        let limit = parseInt(network.supports('CHATHISTORY'), 10);
+        return (Number.isNaN(limit) || limit <= 0) ? 50 : limit;
+    };
+
+    history.supportedRefTypes = () => {
+        let val = network.supports('MSGREFTYPES');
+        return val ? val.split(',') : ['msgid', 'timestamp'];
+    };
+
     history.before = (target, dateOrTime) => new Promise((resolve) => {
         if (!history.isSupported()) {
             resolve();
             return;
         }
 
-        history.batchCallbacks.add(resolve, target, 'BEFORE', messageReference(dateOrTime), '50');
+        history.batchCallbacks.add(resolve, target, 'BEFORE', messageReference(dateOrTime), history.maxLimit().toString());
     });
 
     history.after = (target, dateOrTime) => new Promise((resolve) => {
@@ -107,7 +117,7 @@ function addFunctionsToClient(client, network) {
             return;
         }
 
-        history.batchCallbacks.add(resolve, target, 'AFTER', messageReference(dateOrTime), '50');
+        history.batchCallbacks.add(resolve, target, 'AFTER', messageReference(dateOrTime), history.maxLimit().toString());
     });
 
     history.latest = (target, dateOrTime) => new Promise((resolve) => {
@@ -116,7 +126,7 @@ function addFunctionsToClient(client, network) {
             return;
         }
 
-        history.batchCallbacks.add(resolve, target, 'LATEST', messageReference(dateOrTime), '50');
+        history.batchCallbacks.add(resolve, target, 'LATEST', messageReference(dateOrTime), history.maxLimit().toString());
     });
 
     history.around = (target, dateOrTime) => new Promise((resolve) => {
@@ -125,7 +135,7 @@ function addFunctionsToClient(client, network) {
             return;
         }
 
-        history.batchCallbacks.add(resolve, target, 'AROUND', messageReference(dateOrTime), '50');
+        history.batchCallbacks.add(resolve, target, 'AROUND', messageReference(dateOrTime), history.maxLimit().toString());
     });
 
     history.between = (target, fromDateOrTime, toDateOrTime) => new Promise((resolve) => {
@@ -136,7 +146,7 @@ function addFunctionsToClient(client, network) {
 
         const fromRef = messageReference(fromDateOrTime);
         const toRef = messageReference(toDateOrTime);
-        history.batchCallbacks.add(resolve, target, 'BETWEEN', fromRef, toRef, 50);
+        history.batchCallbacks.add(resolve, target, 'BETWEEN', fromRef, toRef, history.maxLimit().toString());
     });
 
     function messageReference(inp) {

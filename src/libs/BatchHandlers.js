@@ -70,6 +70,7 @@ export function handleChathistoryBatch(network, client, batch) {
             params: [target],
             tags: batch.tags,
             commands: batch.commands,
+            is_end: !!batch.tags['draft/chathistory-end'],
         };
         client.chathistory.batchCallbacks.resolve(target, event);
     }

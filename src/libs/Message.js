@@ -55,6 +55,7 @@ export default class Message {
         this.bodyTemplateProps = message.bodyTemplateProps || {};
         this.isHighlight = false;
         this.is_bot = !!(message.tags && typeof message.tags.bot !== 'undefined');
+        this.is_history = !!(message.tags && typeof message.tags['draft/chathistory-context'] !== 'undefined');
         this.is_pending = !!message.is_pending;
         this.reactions = {};
 
@@ -164,6 +165,7 @@ export default class Message {
             tags: this.tags,
             type: this.type,
             type_extra: this.type_extra,
+            is_history: this.is_history,
             is_pending: this.is_pending,
         };
     }

@@ -29,8 +29,11 @@ export function applyReaction(message, nick, emoji, isReacting, options = {}) {
     }
 
     const reaction = message.reactions[emoji];
-    const userIdx = reaction.users.indexOf(nick);
-    const pendingIdx = reaction.pending_nicks ? reaction.pending_nicks.indexOf(nick) : -1;
+    const nickUpper = nick.toUpperCase();
+    const userIdx = reaction.users.findIndex((u) => u.toUpperCase() === nickUpper);
+    const pendingIdx = reaction.pending_nicks
+        ? reaction.pending_nicks.findIndex((u) => u.toUpperCase() === nickUpper)
+        : -1;
 
     if (isReacting) {
         if (userIdx === -1) {
@@ -42,7 +45,7 @@ export function applyReaction(message, nick, emoji, isReacting, options = {}) {
             if (!reaction.pending_nicks) {
                 Vue.set(reaction, 'pending_nicks', []);
             }
-            if (reaction.pending_nicks.indexOf(nick) === -1) {
+            if (pendingIdx === -1) {
                 reaction.pending_nicks.push(nick);
             }
         } else if (pendingIdx !== -1) {
@@ -58,7 +61,7 @@ export function applyReaction(message, nick, emoji, isReacting, options = {}) {
             if (!reaction.pending_nicks) {
                 Vue.set(reaction, 'pending_nicks', []);
             }
-            if (reaction.pending_nicks.indexOf(nick) === -1) {
+            if (pendingIdx === -1) {
                 reaction.pending_nicks.push(nick);
             }
         } else if (pendingIdx !== -1) {

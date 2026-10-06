@@ -15,8 +15,16 @@ and this project adheres to
 - Added a **Network Information** tab displaying IRCd details, negotiated
   capabilities, and ISUPPORT tokens.
 - Added support for explicit SASL account names during connection and startup.
+- Added support for the IRCv3 `draft/event-playback` extension for more complete
+  history synchronization.
+- Added support for the `draft/chathistory-end` tag to authoritatively detect
+  history exhaustion.
+- Added support for the `draft/chathistory-context` tag to identify historical
+  messages in the state.
 - Added `/setname` command to authoritatively update the user's real name
   (gecos) via the IRCv3 extension.
+- Implemented queue-based message correlation to ensure reactions and replies
+  resolve correctly during high-volume history playback.
 - Added descriptive tooltips and accessibility labels across the primary
   application UI.
 - Implemented full support for IRCv3 `cap-notify` extension, including handling
@@ -65,6 +73,10 @@ and this project adheres to
 
 - Refactored message promotion logic to utilize IRCv3 labels for precise, O(1)
   correlation of server echoes.
+- Centralized capability negotiation logic to ensure consistent feature
+  availability during both initial and dynamic phases.
+- Updated typing notifications to ignore echoes of the client's own typing
+  status.
 - Relocated user "Real Name" to the profile header in the User Box for better
   visibility.
 - Reorganized emoji settings into specific toggles for incoming rendering and
@@ -107,6 +119,8 @@ and this project adheres to
 
 - Deprecated and removed support for `znc.in/self-message` in favor of the
   ratified `echo-message` standard.
+- Removed all legacy fallbacks to internal numeric IDs in protocol-facing tags
+  and message lookups.
 - Removed legacy polyfills: `Element.closest`, `whatwg-fetch`, and
   `intersection-observer` are no longer included in the core bundle.
 - Removed legacy dependencies: uninstalled `isomorphic-textencoder` in favor of
@@ -114,8 +128,8 @@ and this project adheres to
 
 ### Fixed
 
-- Fixed unwanted whitespace in the Compact message layout between nickname
-  prefixes and nicknames.
+- Fixed unwanted whitespace in the Compact and Inline message layouts between
+  nickname prefixes and nicknames.
 - Resolved scroller instability: implemented a real-time scroll listener to
   ensure the auto-scroll state stays synchronized with the user's position,
   preventing aggressive "jumps" to the bottom during layout shifts or window

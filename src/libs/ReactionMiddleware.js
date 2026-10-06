@@ -7,11 +7,16 @@ import * as Reactions from '@/helpers/Reactions';
  */
 export default function reactionMiddleware(network) {
     return function middleware(client, rawEvents, parsedEvents) {
-        rawEvents.use(theMiddleware.bind(null, network));
+        parsedEvents.use(theMiddleware.bind(null, network));
     };
 }
 
-export function theMiddleware(network, command, message, rawLine, client, next) {
+export function theMiddleware(network, command, message, client, next) {
+    if (!message || !message.tags) {
+        if (next) next();
+        return;
+    }
+
     const reactEmoji = message.tags['+draft/react'];
     const unreactEmoji = message.tags['+draft/unreact'];
     const replyId = message.tags['+reply'] || message.tags['+draft/reply'];
@@ -29,10 +34,17 @@ export function theMiddleware(network, command, message, rawLine, client, next) 
     }
 
     // Find the buffer this message belongs to
-    // If we are params[0] then the target is the sender (direct message)
-    let target = (message.params[0].toLowerCase() === client.user.nick.toLowerCase()) ?
-        message.nick :
-        message.params[0];
+    // In parsedEvents 'target' is used, in rawEvents 'params[0]' is used
+    let target = message.target || (message.params && message.params[0]);
+    if (!target) {
+        if (next) next();
+        return;
+    }
+
+    // If we are the target then the sender is the target (direct message)
+    if (target.toLowerCase() === client.user.nick.toLowerCase()) {
+        target = message.nick;
+    }
 
     // Handle STATUSMSG prefixes (e.g. @#channel)
     const targetGroup = network.extractTargetGroup(target);
@@ -46,7 +58,14 @@ export function theMiddleware(network, command, message, rawLine, client, next) 
         return;
     }
 
-    const targetMessage = buffer.messagesObj.messageIds[replyId];
+    let targetMessage = buffer.messagesObj.messageIds[replyId];
+    if (!targetMessage) {
+        // If not found in the official ID map, it might still be in the batching queue
+        // (common during history playback)
+        const queue = buffer.addMessageBatch.queue();
+        targetMessage = queue.find((m) => m.irc_id === replyId);
+    }
+
     if (!targetMessage) {
         if (next) next();
         return;
@@ -101,7 +120,7 @@ export function theMiddleware(network, command, message, rawLine, client, next) 
     });
 
     // If it's a TAGMSG, we've handled it completely
-    if (command === 'TAGMSG') {
+    if (command.toUpperCase() === 'TAGMSG') {
         return;
     }
 

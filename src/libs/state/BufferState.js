@@ -532,13 +532,12 @@ export default class BufferState {
         let network = this.getNetwork();
         let tags = opts.tags || {};
 
-        if (
-            this.replying_to &&
-            network.hasCap('message-tags') &&
-            network.supportsTag('+reply') &&
-            this.replying_to.irc_id
-        ) {
-            tags['+reply'] = this.replying_to.irc_id;
+        if (this.replying_to && this.replying_to.irc_id && network.hasCap('message-tags')) {
+            if (network.supportsTag('+reply')) {
+                tags['+reply'] = this.replying_to.irc_id;
+            } else if (network.supportsTag('+draft/reply')) {
+                tags['+draft/reply'] = this.replying_to.irc_id;
+            }
         }
 
         let newMessage = {
@@ -822,6 +821,11 @@ function getBufferHistory(buffer, chathistoryFuncName, time) {
     ircClient.chathistory[chathistoryFuncName](buffer.name, time).then((event) => {
         if (!event) {
             buffer.flag('chathistory_available', false);
+            return;
+        }
+
+        if (typeof event.is_end !== 'undefined') {
+            buffer.flag('chathistory_available', !event.is_end);
             return;
         }
 

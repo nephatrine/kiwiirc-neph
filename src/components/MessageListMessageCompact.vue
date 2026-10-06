@@ -191,7 +191,13 @@ const methods = {
     },
     getReplyMessage(replyId) {
         let props = this.props;
-        return props.ml.buffer.messagesObj.messageIds[replyId];
+        let m = props.ml.buffer.messagesObj.messageIds[replyId];
+        if (!m) {
+            // If not found in the official ID map, it might still be in the batching queue
+            const queue = props.ml.buffer.addMessageBatch.queue();
+            m = queue.find((msg) => msg.irc_id === replyId);
+        }
+        return m;
     },
     canReply(message) {
         let types = ['privmsg', 'action', 'message'];

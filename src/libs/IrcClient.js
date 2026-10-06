@@ -11,6 +11,26 @@ import batchMiddleware from './BatchMiddleware';
 import chathistoryMiddleware from './ChathistoryMiddleware';
 import * as BatchHandlers from './BatchHandlers';
 import * as ServerConnection from './ServerConnection';
+import * as Reactions from '@/helpers/Reactions';
+
+const DESIRED_CAPS = [
+    'echo-message',
+    'labeled-response',
+    'message-tags',
+    'batch',
+    'draft/multiline',
+    'draft/chathistory',
+    'draft/event-playback',
+    'away-notify',
+    'invite-notify',
+    'account-notify',
+    'account-tag',
+    'extended-join',
+    'chghost',
+    'setname',
+    'cap-notify',
+    'server-time',
+];
 
 export function create(state, network) {
     let networkid = network.id;
@@ -20,13 +40,14 @@ export function create(state, network) {
         version: null,
         enable_chghost: true,
         enable_setname: true,
+        enable_echomessage: true,
         message_max_length: 350,
     });
-    ircClient.requestCap('echo-message');
-    ircClient.requestCap('labeled-response');
-    ircClient.requestCap('message-tags');
-    ircClient.requestCap('batch');
-    ircClient.requestCap('draft/multiline');
+
+    DESIRED_CAPS.forEach((cap) => {
+        ircClient.requestCap(cap);
+    });
+
     ircClient.use(chathistoryMiddleware(network));
     ircClient.use(clientMiddleware(state, network));
     ircClient.use(typingMiddleware(network));
@@ -252,26 +273,10 @@ function clientMiddleware(state, network) {
                 }
             }
 
-            const desiredCaps = [
-                'echo-message',
-                'labeled-response',
-                'message-tags',
-                'batch',
-                'draft/multiline',
-                'draft/chathistory',
-                'away-notify',
-                'account-notify',
-                'account-tag',
-                'extended-join',
-                'chghost',
-                'setname',
-                'cap-notify',
-            ];
-
             let requested = [];
             Object.keys(event.capabilities).forEach((capName) => {
                 const name = capName.toLowerCase();
-                if (desiredCaps.includes(name)) {
+                if (DESIRED_CAPS.includes(name)) {
                     client.requestCap(name);
                     requested.push(name);
                 }
@@ -407,6 +412,42 @@ function clientMiddleware(state, network) {
             network.timeToLocal(event.time) :
             Date.now();
         let serverTime = (event && event.time) || 0;
+
+        if (command === 'FAIL' && event.tags && event.tags.label) {
+            const label = event.tags.label;
+            const failedCommand = event.params ? event.params[0] : '';
+            let buffer = null;
+
+            if (['PRIVMSG', 'TAGMSG', 'NOTICE'].includes(failedCommand) && event.params.length >= 3) {
+                const bufferName = event.params[2];
+                buffer = state.getBufferByName(networkid, bufferName);
+            }
+
+            if (buffer) {
+                // 1. Handle failed message
+                const pendingMsg = buffer.messagesObj.messageLabels[label];
+                if (pendingMsg) {
+                    pendingMsg.is_pending = false;
+                    pendingMsg.type = 'error';
+                    delete buffer.messagesObj.messageLabels[label];
+                }
+
+                // 2. Handle failed reaction
+                const pendingReaction = buffer.messagesObj.pendingReactions[label];
+                if (pendingReaction) {
+                    const { message, emoji, isReacting } = pendingReaction;
+                    // Revert the local echo by applying the opposite action
+                    Reactions.applyReaction(
+                        message,
+                        network.nick,
+                        emoji,
+                        !isReacting,
+                        { isPending: false }
+                    );
+                    delete buffer.messagesObj.pendingReactions[label];
+                }
+            }
+        }
 
         if (command.toLowerCase() === 'batch start chathistory' && client.chathistory) {
             let startTime = 0;
@@ -1023,6 +1064,9 @@ function clientMiddleware(state, network) {
         if (command === 'wholist') {
             state.usersTransaction(networkid, (users) => {
                 event.users.forEach((eventUser) => {
+                    if (!eventUser || !eventUser.nick) {
+                        return;
+                    }
                     let userObj = {
                         nick: eventUser.nick,
                         host: eventUser.hostname || undefined,
@@ -1039,17 +1083,23 @@ function clientMiddleware(state, network) {
                     }
 
                     let buffer = network.bufferByName(eventUser.channel);
-                    if (!buffer || !user.buffers[buffer.id]) {
+                    if (!buffer || !user.buffers || !user.buffers[buffer.id]) {
                         return;
                     }
 
                     // Add all the user channel modes
-                    let modes = user.buffers[buffer.id].modes;
-                    eventUser.channel_modes.forEach((mode) => {
-                        if (modes.indexOf(mode) === -1) {
-                            modes.push(mode);
-                        }
-                    });
+                    let userBuf = user.buffers[buffer.id];
+                    if (!userBuf || !userBuf.modes) {
+                        return;
+                    }
+                    let modes = userBuf.modes;
+                    if (eventUser.channel_modes) {
+                        eventUser.channel_modes.forEach((mode) => {
+                            if (modes.indexOf(mode) === -1) {
+                                modes.push(mode);
+                            }
+                        });
+                    }
 
                     Object.keys(user.whoFlags).forEach((flag) => {
                         if (typeof eventUser[flag] === 'boolean') {
@@ -1179,13 +1229,16 @@ function clientMiddleware(state, network) {
                 .length > 0;
             let users = [];
             event.users.forEach((user) => {
+                if (!user || !user.nick) {
+                    return;
+                }
                 users.push({
                     user: {
                         nick: user.nick,
                         username: user.ident,
                         hostname: user.hostname,
                     },
-                    modes: user.modes,
+                    modes: user.modes || [],
                 });
             });
             state.addMultipleUsersToBuffer(buffer, users);
@@ -1233,12 +1286,16 @@ function clientMiddleware(state, network) {
 
         if (command === 'channel info') {
             let buffer = network.bufferByName(event.channel);
-            if (!buffer) {
+            if (!buffer || !buffer.modes) {
                 return;
             }
 
             if (event.modes) {
                 let modeStrs = [];
+
+                if (!buffer.modes) {
+                    return;
+                }
 
                 event.modes.forEach((mode) => {
                     let adding = mode.mode[0] === '+';
@@ -1298,16 +1355,19 @@ function clientMiddleware(state, network) {
 
                     if (prefix) {
                         let user = state.getUser(network.id, mode.param);
-                        if (user) {
+                        if (user && user.buffers && user.buffers[buffer.id]) {
                             let adding = mode.mode[0] === '+';
-                            let modes = user.buffers[buffer.id].modes;
-                            let modeIdx = modes.indexOf(prefix.mode);
+                            let userBuf = user.buffers[buffer.id];
+                            if (userBuf && userBuf.modes) {
+                                let modes = userBuf.modes;
+                                let modeIdx = modes.indexOf(prefix.mode);
 
-                            // Add or remove the mode from the users mode list
-                            if (adding && modeIdx === -1) {
-                                modes.push(prefix.mode);
-                            } else if (!adding && modeIdx > -1) {
-                                modes.splice(modeIdx, 1);
+                                // Add or remove the mode from the users mode list
+                                if (adding && modeIdx === -1) {
+                                    modes.push(prefix.mode);
+                                } else if (!adding && modeIdx > -1) {
+                                    modes.splice(modeIdx, 1);
+                                }
                             }
                         }
 
@@ -1420,27 +1480,32 @@ function clientMiddleware(state, network) {
                 if (event.target === network.nick) {
                     let user = network.currentUser();
 
-                    event.modes.forEach((item) => {
-                        if (item.mode[0] === '+') {
-                            const existIdx = user.modes.findIndex(
-                                (uItem) => uItem.mode === item.mode[1]
-                            );
-                            if (existIdx === -1) {
-                                user.modes.push({
-                                    mode: item.mode[1],
-                                    param: item.param,
-                                });
+                    if (user && user.modes) {
+                        event.modes.forEach((item) => {
+                            if (!item || !item.mode) {
+                                return;
                             }
-                        } else {
-                            const removeIdx = user.modes.findIndex(
-                                (uItem) => uItem.mode === item.mode[1]
-                            );
+                            if (item.mode[0] === '+') {
+                                const existIdx = user.modes.findIndex(
+                                    (uItem) => uItem && uItem.mode === item.mode[1]
+                                );
+                                if (existIdx === -1) {
+                                    user.modes.push({
+                                        mode: item.mode[1],
+                                        param: item.param,
+                                    });
+                                }
+                            } else {
+                                const removeIdx = user.modes.findIndex(
+                                    (uItem) => uItem && uItem.mode === item.mode[1]
+                                );
 
-                            if (removeIdx !== -1) {
-                                user.modes.splice(removeIdx, 1);
+                                if (removeIdx !== -1) {
+                                    user.modes.splice(removeIdx, 1);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
 
                 // target is not a channel buffer (user mode ?)

@@ -20,7 +20,7 @@ export default function bouncerMiddleware(network) {
 
     function theMiddleware(command, message, rawLine, client, next) {
         if (command !== 'BOUNCER') {
-            next();
+            next(command, message, rawLine, client);
             return;
         }
 
@@ -92,6 +92,8 @@ export default function bouncerMiddleware(network) {
             client.command_handler.emit('bouncer addnetwork ok', eventObj);
             client.command_handler.emit('bouncer addnetwork ok ' + netName, eventObj);
         }
+
+        next();
     }
 }
 
