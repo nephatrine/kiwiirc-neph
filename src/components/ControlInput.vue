@@ -21,6 +21,7 @@
         </div>
 
         <div class="kiwi-controlinput-inner">
+            <typing-users-list :buffer="buffer" />
             <away-status-indicator
                 v-if="network && network.state === 'connected'"
                 :network="network"

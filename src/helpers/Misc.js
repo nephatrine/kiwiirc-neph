@@ -20,6 +20,16 @@ const styleStripRegexp = new RegExp(
     'g'
 );
 
+let labelId = 0;
+
+/**
+ * Generate a unique label for use with the labeled-response IRCv3 spec
+ * @returns {String}
+ */
+export function generateLabel() {
+    return 'kiwi-l-' + Date.now() + '-' + labelId++;
+}
+
 /**
  * Extract an array of buffers from a string, parsing multiple buffer names and channel keys
  * "#chan,#chan2" => 2 channels without a key

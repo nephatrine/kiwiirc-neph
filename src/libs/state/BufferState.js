@@ -5,6 +5,8 @@ import _ from 'lodash';
 import { def } from './common';
 import batchedAdd from '../batchedAdd';
 import * as bufferTools from '../bufferTools';
+import * as Reactions from '@/helpers/Reactions';
+import * as Misc from '@/helpers/Misc';
 
 let nextBufferId = 0;
 
@@ -63,6 +65,8 @@ export default class BufferState {
             buffer: this.name,
             messages: [],
             messageIds: Object.create(null),
+            messageLabels: Object.create(null),
+            pendingReactions: Object.create(null),
         };
         this.messageDict.push(messagesObj);
         def(this, 'messagesObj', messagesObj, false);
@@ -565,6 +569,7 @@ export default class BufferState {
             return;
         }
 
+        let isReacting = true;
         let tags = {
             '+reply': message.irc_id,
         };
@@ -572,8 +577,43 @@ export default class BufferState {
         // If we have already reacted with this emoji, unreact it
         if (message.reactions[emoji] && message.reactions[emoji].reacted) {
             tags['+draft/unreact'] = emoji;
+            isReacting = false;
         } else {
             tags['+draft/react'] = emoji;
+            isReacting = true;
+        }
+
+        let hasEcho = network.hasCap('echo-message');
+        let hasLabel = network.hasCap('labeled-response');
+
+        if (hasEcho && hasLabel) {
+            const label = Misc.generateLabel();
+            tags.label = label;
+            this.messagesObj.pendingReactions[label] = {
+                message,
+                emoji,
+                isReacting,
+            };
+
+            // Local echo with pending status
+            Reactions.applyReaction(message, network.nick, emoji, isReacting, { isPending: true });
+
+            // Set a timeout to clear the pending state if no echo arrives
+            setTimeout(() => {
+                if (this.messagesObj.pendingReactions[label]) {
+                    Reactions.applyReaction(
+                        message,
+                        network.nick,
+                        emoji,
+                        isReacting,
+                        { isPending: false }
+                    );
+                    delete this.messagesObj.pendingReactions[label];
+                }
+            }, 60000);
+        } else {
+            // Case 2 & 3: immediate local echo
+            Reactions.applyReaction(message, network.nick, emoji, isReacting, { isPending: false });
         }
 
         network.ircClient.tagmsg(this.name, tags);
@@ -672,6 +712,9 @@ function createMessageBatch(bufferState) {
         if (newMessage.irc_id) {
             bufferState.messagesObj.messageIds[newMessage.irc_id] = newMessage;
         }
+        if (newMessage.tags && newMessage.tags.label) {
+            bufferState.messagesObj.messageLabels[newMessage.tags.label] = newMessage;
+        }
         if (bufferState.isMessageTrimming) {
             trimMessages();
         }
@@ -687,6 +730,9 @@ function createMessageBatch(bufferState) {
                 bufferState.messagesObj.messageIds[msg.id] = msg;
                 if (msg.irc_id) {
                     bufferState.messagesObj.messageIds[msg.irc_id] = msg;
+                }
+                if (msg.tags && msg.tags.label) {
+                    bufferState.messagesObj.messageLabels[msg.tags.label] = msg;
                 }
             });
             if (bufferState.isMessageTrimming) {
@@ -707,6 +753,9 @@ function createMessageBatch(bufferState) {
                 delete bufferState.messagesObj.messageIds[msg.id];
                 if (msg.irc_id) {
                     delete bufferState.messagesObj.messageIds[msg.irc_id];
+                }
+                if (msg.tags && msg.tags.label) {
+                    delete bufferState.messagesObj.messageLabels[msg.tags.label];
                 }
             });
         }

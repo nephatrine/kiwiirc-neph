@@ -791,6 +791,10 @@ div.kiwi-messagelist-item.kiwi-messagelist-item--selected .kiwi-messagelist-mess
     overflow: visible;
 }
 
+.kiwi-messagelist-item:last-child {
+    min-height: 30px;
+}
+
 .kiwi-messagelist-message {
     padding: 0 10px;
 
@@ -892,6 +896,10 @@ div.kiwi-messagelist-item.kiwi-messagelist-item--selected .kiwi-messagelist-mess
 
 .kiwi-messagelist-message--blur {
     opacity: 0.3;
+}
+
+.kiwi-messagelist-message--pending {
+    opacity: 0.5;
 }
 
 .kiwi-messagelist-nick {

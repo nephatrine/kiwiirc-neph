@@ -26,6 +26,9 @@
             props.ml.message_info_open && props.ml.message_info_open !== props.message
                 ? 'kiwi-messagelist-message--blur'
                 : '',
+            props.message.is_pending
+                ? 'kiwi-messagelist-message--pending'
+                : '',
             (props.message.user && props.m().userMode(props.message.user))
                 ? `kiwi-messagelist-message--user-mode-${props.m().userMode(props.message.user)}`
                 : '',
@@ -102,6 +105,12 @@
                 class="kiwi-messagelist-body"
             />
             <div v-else class="kiwi-messagelist-body" v-html="props.ml.formatMessage(props.message)" />
+
+            <component
+                :is="injections.components.MessageReactions"
+                :message="props.message"
+                :buffer="props.ml.buffer"
+            />
         </div>
 
         <component
@@ -145,6 +154,7 @@
 import MediaViewer from './MediaViewer';
 import AwayStatusIndicator from './AwayStatusIndicator';
 import MessageInfo from './MessageInfo';
+import MessageReactions from './MessageReactions';
 import MessageActions from './MessageActions';
 
 const methods = {
@@ -196,6 +206,7 @@ export default {
                 AwayStatusIndicator,
                 MessageInfo,
                 MediaViewer,
+                MessageReactions,
                 MessageActions,
             },
         },
@@ -442,10 +453,6 @@ export default {
 
 .kiwi-messagelist-message--compact .kiwi-messagelist-message-traffic .kiwi-messagelist-nick {
     display: none;
-}
-
-.kiwi-messagelist-item:last-of-type {
-    margin-bottom: 5px;
 }
 
 // Moderate screen size

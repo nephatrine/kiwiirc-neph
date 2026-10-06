@@ -593,6 +593,23 @@ function createNewState() {
                 let msgid = message.tags ?
                     (message.tags.msgid || message.tags['draft/msgid']) :
                     null;
+                let label = message.tags ? message.tags.label : null;
+                if (isEcho && label) {
+                    let m = buffer.messagesObj.messageLabels[label];
+                    if (m) {
+                        // Found by label!
+                        m.irc_id = msgid;
+                        m.tags = message.tags;
+                        m.is_pending = false;
+                        if (msgid) {
+                            Vue.set(buffer.messagesObj.messageIds, msgid, m);
+                        }
+                        // Cleanup label map
+                        delete buffer.messagesObj.messageLabels[label];
+                        return;
+                    }
+                }
+
                 if (isEcho && msgid) {
                     let bufMessages = buffer.getMessages();
                     // Search backwards through the last 20 messages for a match
@@ -609,6 +626,7 @@ function createNewState() {
                             // Update the existing message with the authoritative IRC ID and tags
                             m.irc_id = msgid;
                             m.tags = message.tags;
+                            m.is_pending = false;
                             // Add the new IRC ID to the map for future lookups (e.g. replies)
                             Vue.set(buffer.messagesObj.messageIds, msgid, m);
                             return;
@@ -618,6 +636,14 @@ function createNewState() {
 
                 let user = this.getUser(buffer.networkid, message.nick);
                 let bufferMessage = new Message(message, user);
+
+                if (bufferMessage.is_pending) {
+                    // Set a timeout to clear the pending state if no echo arrives
+                    setTimeout(() => {
+                        bufferMessage.is_pending = false;
+                    }, 60000);
+                }
+
                 if (user && user.ignore) {
                     bufferMessage.ignore = true;
                 }

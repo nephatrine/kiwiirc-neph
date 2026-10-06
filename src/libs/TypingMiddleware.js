@@ -20,6 +20,16 @@ export default function typingMiddleware(network) {
             return;
         }
 
+        // If echo-message is enabled, ignore echoes of our own typing status
+        if (
+            network.hasCap('echo-message') &&
+            message.nick &&
+            message.nick.toLowerCase() === client.user.nick.toLowerCase()
+        ) {
+            next();
+            return;
+        }
+
         // if we are params[0] then the target is the sender (direct message)
         let target = (message.params[0].toLowerCase() === client.user.nick.toLowerCase()) ?
             message.nick :

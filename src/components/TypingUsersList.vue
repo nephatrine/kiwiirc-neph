@@ -47,6 +47,7 @@ export default {
 .kiwi-typinguserslist {
     position: absolute;
     top: -24px;
+    padding-left: 4px;
     background: var(--brand-default-bg);
     font-size: 0.9em;
     overflow: hidden;

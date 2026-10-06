@@ -3,7 +3,10 @@
         <div
             v-for="(reaction, emoji) in message.reactions"
             :key="emoji"
-            :class="{ 'kiwi-messagereactions-reaction--reacted': reaction.reacted }"
+            :class="{
+                'kiwi-messagereactions-reaction--reacted': reaction.reacted,
+                'kiwi-messagereactions-reaction--pending': isPending(reaction),
+            }"
             :title="reaction.users.join(', ')"
             class="kiwi-messagereactions-reaction"
             @click.stop="onReactionClick(emoji)"
@@ -46,6 +49,11 @@ export default {
         },
     },
     methods: {
+        isPending(reaction) {
+            const network = this.buffer.getNetwork();
+            const ourNick = network ? network.nick : '';
+            return reaction.pending_nicks && reaction.pending_nicks.indexOf(ourNick) !== -1;
+        },
         getEmojiUrl(emoji) {
             // 1. Try direct map (ascii or unicode if in config)
             let filename = this.emojiMap[emoji];
@@ -98,6 +106,10 @@ export default {
     &:hover {
         background: rgb(66 133 244 / 20%);
     }
+}
+
+.kiwi-messagereactions-reaction--pending {
+    opacity: 0.5;
 }
 
 .kiwi-messagereactions-emoji-img {

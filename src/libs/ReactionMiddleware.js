@@ -1,6 +1,6 @@
 'kiwi public';
 
-import Vue from 'vue';
+import * as Reactions from '@/helpers/Reactions';
 
 /**
  * Adds the +draft/react IRCv3 spec to irc-framework
@@ -15,6 +15,7 @@ export function theMiddleware(network, command, message, rawLine, client, next) 
     const reactEmoji = message.tags['+draft/react'];
     const unreactEmoji = message.tags['+draft/unreact'];
     const replyId = message.tags['+reply'] || message.tags['+draft/reply'];
+    const label = message.tags.label;
 
     if ((!reactEmoji && !unreactEmoji) || !replyId) {
         if (next) next();
@@ -54,41 +55,44 @@ export function theMiddleware(network, command, message, rawLine, client, next) 
     const emoji = reactEmoji || unreactEmoji;
     const isReacting = !!reactEmoji;
 
-    if (!targetMessage.reactions[emoji]) {
-        if (!isReacting) {
-            // Trying to unreact to something that doesn't exist
-            if (command === 'TAGMSG') {
-                return;
-            }
-            if (next) next();
-            return;
+    // If this is an echo of our own reaction with a label, clear the pending state
+    if (label && targetNick.toLowerCase() === client.user.nick.toLowerCase()) {
+        const pending = buffer.messagesObj.pendingReactions[label];
+        if (pending) {
+            Reactions.applyReaction(
+                targetMessage,
+                targetNick,
+                emoji,
+                isReacting,
+                { isPending: false }
+            );
+            delete buffer.messagesObj.pendingReactions[label];
+        } else {
+            // Echo from another client, or local echo already timed out
+            Reactions.applyReaction(
+                targetMessage,
+                targetNick,
+                emoji,
+                isReacting,
+                { isPending: false }
+            );
         }
-        Vue.set(targetMessage.reactions, emoji, {
-            count: 0,
-            users: [],
-            reacted: false,
-        });
-    }
-
-    const reaction = targetMessage.reactions[emoji];
-    const userIdx = reaction.users.indexOf(targetNick);
-
-    if (isReacting && userIdx === -1) {
-        reaction.users.push(targetNick);
-        reaction.count++;
-    } else if (!isReacting && userIdx !== -1) {
-        reaction.users.splice(userIdx, 1);
-        reaction.count--;
+    } else {
+        // Normal incoming reaction or Scenario C (echo without label)
+        Reactions.applyReaction(
+            targetMessage,
+            targetNick,
+            emoji,
+            isReacting,
+            { isPending: false }
+        );
     }
 
     // Update the 'reacted' status if this is our nick
     if (targetNick.toLowerCase() === client.user.nick.toLowerCase()) {
-        reaction.reacted = isReacting;
-    }
-
-    // Clean up empty reaction groups
-    if (reaction.count <= 0) {
-        Vue.delete(targetMessage.reactions, emoji);
+        if (targetMessage.reactions[emoji]) {
+            targetMessage.reactions[emoji].reacted = isReacting;
+        }
     }
 
     network.appState.$emit('message.reaction', {

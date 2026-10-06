@@ -55,6 +55,7 @@ export default class Message {
         this.bodyTemplateProps = message.bodyTemplateProps || {};
         this.isHighlight = false;
         this.is_bot = !!(message.tags && typeof message.tags.bot !== 'undefined');
+        this.is_pending = !!message.is_pending;
         this.reactions = {};
 
         // We don't want the user object to be enumerable
@@ -163,6 +164,7 @@ export default class Message {
             tags: this.tags,
             type: this.type,
             type_extra: this.type_extra,
+            is_pending: this.is_pending,
         };
     }
 }

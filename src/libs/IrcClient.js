@@ -22,7 +22,8 @@ export function create(state, network) {
         enable_setname: true,
         message_max_length: 350,
     });
-    ircClient.requestCap('znc.in/self-message');
+    ircClient.requestCap('echo-message');
+    ircClient.requestCap('labeled-response');
     ircClient.requestCap('message-tags');
     ircClient.requestCap('batch');
     ircClient.requestCap('draft/multiline');
@@ -252,7 +253,8 @@ function clientMiddleware(state, network) {
             }
 
             const desiredCaps = [
-                'znc.in/self-message',
+                'echo-message',
+                'labeled-response',
                 'message-tags',
                 'batch',
                 'draft/multiline',

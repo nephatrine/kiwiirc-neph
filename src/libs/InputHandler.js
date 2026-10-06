@@ -216,12 +216,20 @@ function handleMessage(type, event, command, line, context) {
             text: message,
         });
 
+        let hasEcho = network.hasCap('echo-message');
+        let hasLabel = network.hasCap('labeled-response');
+
+        if (hasEcho && hasLabel) {
+            tags.label = Misc.generateLabel();
+        }
+
         let newMessage = {
             time: Date.now(),
             nick: network.nick,
             message: messageBody,
             type: type,
-            tags: tags,
+            tags: _.clone(tags),
+            is_pending: hasEcho,
         };
 
         this.state.addMessage(buffer, newMessage);

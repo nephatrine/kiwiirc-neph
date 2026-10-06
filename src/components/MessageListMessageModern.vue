@@ -26,6 +26,9 @@
             props.ml.message_info_open && props.ml.message_info_open !== props.message
                 ? 'kiwi-messagelist-message--blur'
                 : '',
+            props.message.is_pending
+                ? 'kiwi-messagelist-message--pending'
+                : '',
             (props.message.user && props.m().userMode(props.message.user))
                 ? `kiwi-messagelist-message--user-mode-${props.m().userMode(props.message.user)}`
                 : '',

@@ -23,6 +23,9 @@
             props.ml.message_info_open && props.ml.message_info_open !== props.message
                 ? 'kiwi-messagelist-message--blur'
                 : '',
+            props.message.is_pending
+                ? 'kiwi-messagelist-message--pending'
+                : '',
             (props.message.user && props.m().userMode(props.message.user))
                 ? `kiwi-messagelist-message--user-mode-${props.m().userMode(props.message.user)}`
                 : '',
@@ -68,11 +71,7 @@
                 @mouseover="props.ml.hover_nick = props.message.nick.toLowerCase();"
                 @mouseout="props.ml.hover_nick = '';"
             >
-                <span class="kiwi-messagelist-nick--prefix">{{
-                    props.message.user ? props.m().userModePrefix(props.message.user) : ''
-                }}</span><a :data-nick="(props.message.nick || '').toLowerCase()">
-                    {{ props.m().displayNick() }}
-                </a>
+                <span class="kiwi-messagelist-nick--prefix">{{ props.message.user ? props.m().userModePrefix(props.message.user) : '' }}</span><a :data-nick="(props.message.nick || '').toLowerCase()">{{ props.m().displayNick() }}</a>
             </span>
             <div
                 v-if="props.message.bodyTemplate
@@ -95,6 +94,11 @@
                 v-else
                 class="kiwi-messagelist-body"
                 v-html="props.ml.formatMessage(props.message)"
+            />
+            <component
+                :is="injections.components.MessageReactions"
+                :message="props.message"
+                :buffer="props.ml.buffer"
             />
             <component
                 :is="injections.components.MessageActions"
@@ -130,6 +134,7 @@
 
 import MediaViewer from './MediaViewer';
 import MessageInfo from './MessageInfo';
+import MessageReactions from './MessageReactions';
 import MessageActions from './MessageActions';
 
 const methods = {
@@ -170,6 +175,7 @@ export default {
             default: {
                 MessageInfo,
                 MediaViewer,
+                MessageReactions,
                 MessageActions,
             },
         },
@@ -336,10 +342,6 @@ export default {
 
 .kiwi-messagelist-message--text .kiwi-messagelist-message-traffic .kiwi-messagelist-nick {
     display: none;
-}
-
-.kiwi-messagelist-item:last-of-type {
-    margin-bottom: 5px;
 }
 
 .kiwi-messagelist-message--text.kiwi-messagelist-message-nick .kiwi-messagelist-nick {
