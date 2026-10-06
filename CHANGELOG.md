@@ -10,12 +10,15 @@ and this project adheres to
 
 ### Added
 
-- Implemented support for IRCv3 `echo-message` and `labeled-response` extensions for robust
-  message synchronization and multi-client consistency.
+- Implemented support for IRCv3 `echo-message` and `labeled-response` extensions
+  for robust message synchronization and multi-client consistency.
 - Added a **Network Information** tab displaying IRCd details, negotiated
   capabilities, and ISUPPORT tokens.
 - Added support for explicit SASL account names during connection and startup.
-- Added descriptive tooltips and accessibility labels across the primary application UI.
+- Added `/setname` command to authoritatively update the user's real name
+  (gecos) via the IRCv3 extension.
+- Added descriptive tooltips and accessibility labels across the primary
+  application UI.
 - Implemented full support for IRCv3 `cap-notify` extension, including handling
   of `CAP NEW` and `CAP DEL` messages.
 - Implemented full support for the IRCv3 `+reply` and `+draft/reply` client-only
@@ -62,10 +65,12 @@ and this project adheres to
 
 - Refactored message promotion logic to utilize IRCv3 labels for precise, O(1)
   correlation of server echoes.
-- Relocated user "Real Name" to the profile header in the User Box for better visibility.
+- Relocated user "Real Name" to the profile header in the User Box for better
+  visibility.
 - Reorganized emoji settings into specific toggles for incoming rendering and
   outgoing conversion.
-- Updated default reconnection logic to cap delays at 30 seconds with 10 retries.
+- Updated default reconnection logic to cap delays at 30 seconds with 10
+  retries.
 - Strictly verified capability negotiation: implemented selective `CAP REQ`
   based on `CAP NEW` advertised capabilities.
 - Modernized browser support: officially dropped support for IE11 and legacy
@@ -100,8 +105,8 @@ and this project adheres to
 
 ### Removed
 
-- Deprecated and removed support for `znc.in/self-message` in favor of the ratified
-  `echo-message` standard.
+- Deprecated and removed support for `znc.in/self-message` in favor of the
+  ratified `echo-message` standard.
 - Removed legacy polyfills: `Element.closest`, `whatwg-fetch`, and
   `intersection-observer` are no longer included in the core bundle.
 - Removed legacy dependencies: uninstalled `isomorphic-textencoder` in favor of

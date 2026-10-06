@@ -957,3 +957,33 @@ inputCommands.notify = function inputCommandNotify(event, command, line, context
     event.handled = true;
     this.state.$emit('notification.show', line);
 };
+
+inputCommands.setname = function inputCommandSetname(event, command, line, context) {
+    event.handled = true;
+    const { network, buffer } = context;
+
+    if (!network.hasCap('setname')) {
+        this.state.addMessage(buffer, {
+            nick: '*',
+            message: 'Server does not support setname',
+            type: 'error',
+        });
+        return;
+    }
+
+    if (!line.trim()) {
+        return;
+    }
+
+    const tags = {};
+    if (network.hasCap('echo-message') && network.hasCap('labeled-response')) {
+        tags.label = Misc.generateLabel();
+    }
+
+    const ircMessage = new network.ircClient.Message('SETNAME', line);
+    if (Object.keys(tags).length > 0) {
+        ircMessage.tags = tags;
+    }
+
+    network.ircClient.raw(ircMessage);
+};

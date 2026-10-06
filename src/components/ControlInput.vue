@@ -9,6 +9,16 @@
         }"
         class="kiwi-controlinput kiwi-theme-bg"
     >
+        <auto-complete
+            v-if="autocomplete_open"
+            ref="autocomplete"
+            :items="autocomplete_items"
+            :filter="autocomplete_filter"
+            :buffer="buffer"
+            @selected="onAutocompleteSelected"
+            @temp="onAutocompleteTemp"
+            @cancel="onAutocompleteCancel"
+        />
         <div class="kiwi-controlinput-selfuser">
             <transition name="kiwi-selfuser-trans">
                 <self-user
@@ -438,13 +448,14 @@ export default {
             }
 
             // If autocomplete has handled the event, don't also handle it here
-            if (this.autocomplete_open && this.$refs.autocomplete.handleOnKeyDown(event)) {
+            const hasAutocomplete = this.autocomplete_open && this.$refs.autocomplete;
+            if (hasAutocomplete && this.$refs.autocomplete.handleOnKeyDown(event)) {
                 return;
             }
 
             // When not filtering, select the current autocomplete item so that we can type any
             // character directly after a nick
-            if (this.autocomplete_open && !this.autocomplete_filtering) {
+            if (hasAutocomplete && !this.autocomplete_filtering) {
                 this.$refs.autocomplete.selectCurrentItem();
             }
 

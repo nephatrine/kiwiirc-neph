@@ -1099,6 +1099,10 @@ msgstr "Set Topic"
 msgid "command_notice"
 msgstr "Send Notice"
 
+#: Change your real name
+msgid "command_setname"
+msgstr "Change Real Name"
+
 #: Send a raw command to the IRC server
 msgid "command_quote"
 msgstr "Send Raw Command"
