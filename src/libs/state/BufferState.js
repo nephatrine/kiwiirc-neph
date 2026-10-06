@@ -199,6 +199,9 @@ export default class BufferState {
 
             // This message will be removed
             delete this.messagesObj.messageIds[message.id];
+            if (message.irc_id) {
+                delete this.messagesObj.messageIds[message.irc_id];
+            }
             return false;
         });
 
@@ -344,52 +347,74 @@ export default class BufferState {
         return this.flags[name];
     }
 
-    requestScrollback(_direction) {
-        let direction = _direction || 'backward';
-        let time = '';
-        let chathistoryFuncName = 'before';
+    getHistoryReference(direction = 'backward') {
+        const messages = this.getMessages();
+        const validTypes = ['privmsg', 'notice', 'action', 'message'];
+        const validMessages = messages.filter((m) => validTypes.includes(m.type) &&
+            (m.irc_id || m.server_time));
 
-        // Going backwards takes the earliest message we already have and requests messages
-        // before it. Going forward takes the last message we have and requests messages after
-        // it.
-
-        if (direction === 'backward') {
-            let lastMessage = this.getMessages().reduce((earliest, current) => {
-                let ignoreTypes = ['traffic', 'topic', 'connection', 'presence'];
-                let validType = ignoreTypes.indexOf(earliest.type) === -1;
-                if (validType && earliest.time && earliest.time < current.time) {
-                    return earliest;
-                }
-                return current;
-            }, this.getMessages()[0]);
-
-            chathistoryFuncName = 'before';
-            time = lastMessage ?
-                new Date(lastMessage.server_time) :
-                new Date();
-        } else if (direction === 'forward') {
-            let firstMessage = this.getMessages().reduce((latest, current) => {
-                let ignoreTypes = ['traffic', 'topic', 'connection', 'presence'];
-                let validType = ignoreTypes.indexOf(latest.type) === -1;
-                if (validType && latest.time && latest.time > current.time) {
-                    return latest;
-                }
-                return current;
-            }, this.getMessages()[0]);
-
-            chathistoryFuncName = 'after';
-            time = firstMessage ?
-                new Date(firstMessage.server_time) :
-                new Date();
-        } else {
-            throw new Error('Invalid direction for requestScrollback(): ' + _direction);
+        if (validMessages.length === 0) {
+            return null;
         }
 
-        getBufferHistory(this, chathistoryFuncName, time);
+        if (direction === 'backward') {
+            return validMessages.reduce((earliest, current) => (
+                (earliest.time < current.time) ? earliest : current
+            ));
+        }
+
+        return validMessages.reduce((latest, current) => (
+            (current.time >= latest.time) ? current : latest
+        ));
+    }
+
+    requestScrollback(_direction) {
+        let direction = _direction || 'backward';
+        let chathistoryFuncName = (direction === 'backward') ? 'before' : 'after';
+        let history = this.getNetwork().ircClient.chathistory;
+        let supportedTypes = history.supportedRefTypes();
+
+        let targetMessage = this.getHistoryReference(direction);
+
+        let ref = null;
+        if (targetMessage) {
+            if (supportedTypes.includes('msgid') && targetMessage.irc_id) {
+                ref = targetMessage.irc_id;
+            } else if (supportedTypes.includes('timestamp') && targetMessage.server_time) {
+                ref = new Date(targetMessage.server_time);
+            }
+        } else if (direction === 'backward') {
+            // No messages yet, but we are requesting scrollback.
+            // This can happen if manually clicking load more on an empty buffer.
+            if (supportedTypes.includes('timestamp')) {
+                ref = new Date();
+            } else {
+                // if server only supports msgid, we can't really paginate from "now"
+                // without a msgid unless we use latest *
+                this.requestLatestScrollback();
+                return;
+            }
+        }
+
+        if (!ref) {
+            return;
+        }
+
+        getBufferHistory(this, chathistoryFuncName, ref);
     }
 
     requestLatestScrollback() {
-        getBufferHistory(this, 'latest', '*');
+        let lastMessage = this.getHistoryReference('forward');
+        let history = this.getNetwork().ircClient.chathistory;
+        let supportedTypes = history.supportedRefTypes();
+
+        if (lastMessage && supportedTypes.includes('msgid') && lastMessage.irc_id) {
+            getBufferHistory(this, 'latest', lastMessage.irc_id);
+        } else if (lastMessage && supportedTypes.includes('timestamp') && lastMessage.server_time) {
+            getBufferHistory(this, 'latest', new Date(lastMessage.server_time));
+        } else {
+            getBufferHistory(this, 'latest', '*');
+        }
     }
 
     markAsRead(delayed) {
@@ -705,6 +730,9 @@ function createMessageBatch(bufferState) {
         if (bufferState.messagesObj.messageIds[newMessage.id]) {
             return;
         }
+        if (newMessage.irc_id && bufferState.messagesObj.messageIds[newMessage.irc_id]) {
+            return;
+        }
         bufferState.updateLatestMessages(newMessage);
         bufferState.messagesObj.messages.push(newMessage);
         bufferState.messagesObj.messageIds[newMessage.id] = newMessage;
@@ -721,7 +749,11 @@ function createMessageBatch(bufferState) {
         bufferState.message_count++;
     };
     let addMultipleMessages = (newMessages) => {
-        let toAdd = newMessages.filter((msg) => !bufferState.messagesObj.messageIds[msg.id]);
+        let toAdd = newMessages.filter((msg) => {
+            let hasId = !!bufferState.messagesObj.messageIds[msg.id];
+            let hasIrcId = msg.irc_id && !!bufferState.messagesObj.messageIds[msg.irc_id];
+            return !hasId && !hasIrcId;
+        });
         if (toAdd.length > 0) {
             bufferState.messagesObj.messages = bufferState.messagesObj.messages.concat(toAdd);
             toAdd.forEach((msg) => {

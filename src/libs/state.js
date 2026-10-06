@@ -634,6 +634,11 @@ function createNewState() {
                     }
                 }
 
+                // If this message has an authoritative ID and we already have it, discard it
+                if (msgid && buffer.messagesObj.messageIds[msgid]) {
+                    return;
+                }
+
                 let user = this.getUser(buffer.networkid, message.nick);
                 let bufferMessage = new Message(message, user);
 

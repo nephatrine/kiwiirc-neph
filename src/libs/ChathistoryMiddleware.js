@@ -108,7 +108,13 @@ function addFunctionsToClient(client, network) {
             return;
         }
 
-        history.batchCallbacks.add(resolve, target, 'BEFORE', messageReference(dateOrTime), history.maxLimit().toString());
+        let ref = messageReference(dateOrTime);
+        if (!ref) {
+            resolve();
+            return;
+        }
+
+        history.batchCallbacks.add(resolve, target, 'BEFORE', ref, history.maxLimit().toString());
     });
 
     history.after = (target, dateOrTime) => new Promise((resolve) => {
@@ -117,7 +123,13 @@ function addFunctionsToClient(client, network) {
             return;
         }
 
-        history.batchCallbacks.add(resolve, target, 'AFTER', messageReference(dateOrTime), history.maxLimit().toString());
+        let ref = messageReference(dateOrTime);
+        if (!ref) {
+            resolve();
+            return;
+        }
+
+        history.batchCallbacks.add(resolve, target, 'AFTER', ref, history.maxLimit().toString());
     });
 
     history.latest = (target, dateOrTime) => new Promise((resolve) => {
@@ -126,7 +138,13 @@ function addFunctionsToClient(client, network) {
             return;
         }
 
-        history.batchCallbacks.add(resolve, target, 'LATEST', messageReference(dateOrTime), history.maxLimit().toString());
+        let ref = messageReference(dateOrTime);
+        if (!ref) {
+            resolve();
+            return;
+        }
+
+        history.batchCallbacks.add(resolve, target, 'LATEST', ref, history.maxLimit().toString());
     });
 
     history.around = (target, dateOrTime) => new Promise((resolve) => {
@@ -135,7 +153,13 @@ function addFunctionsToClient(client, network) {
             return;
         }
 
-        history.batchCallbacks.add(resolve, target, 'AROUND', messageReference(dateOrTime), history.maxLimit().toString());
+        let ref = messageReference(dateOrTime);
+        if (!ref) {
+            resolve();
+            return;
+        }
+
+        history.batchCallbacks.add(resolve, target, 'AROUND', ref, history.maxLimit().toString());
     });
 
     history.between = (target, fromDateOrTime, toDateOrTime) => new Promise((resolve) => {
@@ -146,18 +170,35 @@ function addFunctionsToClient(client, network) {
 
         const fromRef = messageReference(fromDateOrTime);
         const toRef = messageReference(toDateOrTime);
+        if (!fromRef || !toRef) {
+            resolve();
+            return;
+        }
+
         history.batchCallbacks.add(resolve, target, 'BETWEEN', fromRef, toRef, history.maxLimit().toString());
     });
 
     function messageReference(inp) {
-        if (typeof inp === 'object') {
-            return 'timestamp=' + Misc.dateIso(inp);
-        }
-
         if (inp === '*') {
             return '*';
         }
 
-        return 'msgid=' + inp;
+        let supportedTypes = history.supportedRefTypes();
+
+        if (typeof inp === 'object' && inp instanceof Date) {
+            if (!supportedTypes.includes('timestamp')) {
+                return null;
+            }
+            return 'timestamp=' + Misc.dateIso(inp);
+        }
+
+        if (typeof inp === 'string' && inp) {
+            if (!supportedTypes.includes('msgid')) {
+                return null;
+            }
+            return 'msgid=' + inp;
+        }
+
+        return null;
     }
 }
