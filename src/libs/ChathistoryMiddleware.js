@@ -2,10 +2,7 @@
 
 /** @module */
 
-import Logger from '@/libs/Logger';
 import * as Misc from '@/helpers/Misc';
-
-const log = Logger.namespace('chathistory');
 
 /**
  * Adds the CHATHISTORY IRCv3 spec to irc-framework
@@ -68,10 +65,6 @@ function addFunctionsToClient(client, network) {
 
             if (cb) {
                 cb(value);
-            } else if (history.isSupported()) {
-                // inspircd currently does not support chathistory
-                // but sends chathistory batches when joining channels
-                log.error('chathistory got a resolve but no associated callback');
             }
 
             this.queueNext();
@@ -89,8 +82,9 @@ function addFunctionsToClient(client, network) {
         },
     };
 
-    // supports (ISUPPORT) is used by kiwibnc, the spec and unreal's implementation uses CAP
-    history.isSupported = () => !!network.supports('draft/chathistory') || network.hasCap('draft/chathistory');
+    // history.isSupported gates the use of the CHATHISTORY command.
+    // Spec requires draft/chathistory capability to be negotiated.
+    history.isSupported = () => network.hasCap('draft/chathistory');
 
     history.maxLimit = () => {
         let limit = parseInt(network.supports('CHATHISTORY'), 10);

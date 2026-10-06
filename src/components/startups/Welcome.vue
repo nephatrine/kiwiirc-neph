@@ -1,6 +1,7 @@
 <template>
     <startup-layout
         ref="layout"
+        :remember-settings="remember_settings"
         class="kiwi-welcome-simple"
     >
         <template v-if="startupOptions.altComponent" #connection>
@@ -63,6 +64,13 @@
                         v-model="channel"
                         :label="$t('channel')"
                     />
+                </div>
+
+                <div class="kiwi-welcome-simple-input-container">
+                    <label>
+                        <input v-model="remember_settings" type="checkbox">
+                        <span> {{ $t('remember_settings') }} </span>
+                    </label>
                 </div>
 
                 <div v-if="termsContent" class="kiwi-welcome-simple-terms">
@@ -132,6 +140,7 @@ export default {
             showPlainText: false,
             captchaReady: false,
             termsAccepted: false,
+            remember_settings: true,
         };
     },
     computed: {
@@ -271,7 +280,15 @@ export default {
             this.password = '';
         }
 
-        this.channel = decodeURIComponent(window.location.hash) || options.channel || '';
+        let previousChannels = '';
+        if (previousNet) {
+            previousChannels = previousNet.buffers
+                .filter((b) => b.isChannel())
+                .map((b) => b.name)
+                .join(',');
+        }
+
+        this.channel = decodeURIComponent(window.location.hash) || previousChannels || options.channel || '';
         this.showChannel = typeof options.showChannel === 'boolean' ?
             options.showChannel :
             true;
@@ -286,6 +303,11 @@ export default {
             true;
 
         this.connectWithoutChannel = !!options.allowNoChannel;
+
+        let wasLogout = window.sessionStorage.getItem('kiwi-logout');
+        if (wasLogout) {
+            window.sessionStorage.removeItem('kiwi-logout');
+        }
 
         if (options.bouncer) {
             this.toggablePass = false;
@@ -303,7 +325,7 @@ export default {
             );
         }
 
-        if (options.autoConnect && this.readyToStart) {
+        if (!wasLogout && options.autoConnect && this.readyToStart) {
             this.startUp();
         }
     },
@@ -343,6 +365,18 @@ export default {
             let net = this.network || this.$state.getNetworkFromAddress(netAddress);
 
             let password = this.password;
+
+            let identityChanged = net && (
+                net.connection.nick !== this.nick ||
+                net.connection.account !== this.account
+            );
+            if (identityChanged) {
+                // Identity changed, purge previous session buffers and messages
+                while (net.buffers.length > 0) {
+                    this.$state.removeBuffer(net.buffers[0]);
+                }
+                this.$state.addBuffer(net.id, '*').joined = true;
+            }
 
             // If the network doesn't already exist, add a new one
             net = net || this.$state.addNetwork('Network', this.nick, {

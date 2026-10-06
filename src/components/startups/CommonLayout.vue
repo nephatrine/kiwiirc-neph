@@ -28,6 +28,12 @@
 'kiwi public';
 
 export default {
+    props: {
+        rememberSettings: {
+            type: Boolean,
+            default: true,
+        },
+    },
     data() {
         return {
             closing: false,
@@ -64,7 +70,11 @@ export default {
             this.closing = true;
             let startApp = (event) => {
                 this.$el.removeEventListener('transitionend', startApp);
-                this.$state.persistence.watchStateForChanges();
+                if (this.rememberSettings) {
+                    this.$state.persistence.watchStateForChanges();
+                } else {
+                    this.$state.persistence.forgetState();
+                }
                 // Hacky to be using $parent but this component should only be used in a sepcific
                 // scope within startup screens
                 this.$parent.$emit('start');

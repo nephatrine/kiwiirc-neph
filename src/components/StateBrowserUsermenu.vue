@@ -21,7 +21,10 @@
         </div>
         <div v-if="is_usermenu_open" class="kiwi-statebrowser-usermenu-body">
             <p> {{ $t('state_remembered') }} </p>
-            <a class="u-link" :title="$t('state_forget')" @click="clickForget">{{ $t('state_forget') }}</a>
+            <div class="kiwi-statebrowser-usermenu-actions">
+                <a class="u-link" @click="clickLogout">{{ $t('logout') }}</a>
+                <a class="u-link" :title="$t('state_forget')" @click="clickForget">{{ $t('state_forget') }}</a>
+            </div>
             <div class="kiwi-statebrowser-usermenu-close" :title="$t('close')" @click="is_usermenu_open = false">
                 <i class="fa fa-times" aria-hidden="true" />
             </div>
@@ -71,6 +74,9 @@ export default {
         },
     },
     methods: {
+        clickLogout() {
+            this.$state.logout();
+        },
         clickForget() {
             let msg = 'This will delete all stored networks and start fresh. Are you sure?';
             /* eslint-disable no-restricted-globals, no-alert */
@@ -133,6 +139,13 @@ export default {
 
 .kiwi-statebrowser-usermenu-body p {
     margin-bottom: 0;
+}
+
+.kiwi-statebrowser-usermenu-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
 }
 
 @media screen and (width <= 769px) {

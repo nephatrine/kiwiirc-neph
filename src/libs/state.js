@@ -115,6 +115,7 @@ function createNewState() {
                                 direct: network.connection.direct,
                                 encoding: network.connection.encoding,
                                 bncnetid: network.connection.bncnetid,
+                                account: network.connection.account,
                             },
                             auto_commands: network.auto_commands,
                             settings: _.cloneDeep(network.settings),
@@ -1023,6 +1024,24 @@ function createNewState() {
 
             getStartups() {
                 return availableStartups;
+            },
+
+            logout() {
+                this.networks.forEach((network) => {
+                    if (network.state === 'connected') {
+                        network.ircClient.quit();
+                    }
+                });
+
+                // sessionStorage flag is used by startup screens to skip autoconnect/auto-loading
+                // of a previous state, so that the user is presented with the login screen.
+                // It is cleared by the startup screen.
+                window.sessionStorage.setItem('kiwi-logout', '1');
+
+                // Small delay to let the quit commands send
+                setTimeout(() => {
+                    window.location.reload();
+                }, 300);
             },
         },
     });

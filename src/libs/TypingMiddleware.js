@@ -20,6 +20,16 @@ export default function typingMiddleware(network) {
             return;
         }
 
+        // If this message is from chathistory playback, ignore it
+        if (message.tags.batch) {
+            const batchId = message.tags.batch;
+            const batch = client.active_batches && client.active_batches.get(batchId);
+            if (batch && batch.type === 'chathistory') {
+                next();
+                return;
+            }
+        }
+
         // If echo-message is enabled, ignore echoes of our own typing status
         if (
             network.hasCap('echo-message') &&

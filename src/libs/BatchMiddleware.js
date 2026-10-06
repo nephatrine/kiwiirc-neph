@@ -128,6 +128,13 @@ function resolveBatch(network, client, batch) {
             // Since we swallowed BATCH commands, we must strip the tags entirely.
             const newTags = { ...reEvent.tags };
             delete newTags.batch;
+
+            // Indelibly mark events replayed from chathistory so the rest of the application
+            // can safely isolate them from the active session state.
+            if (batch.type === 'chathistory') {
+                newTags['kiwi-history'] = true;
+            }
+
             reEvent.tags = newTags;
 
             // Re-dispatch to the command_handler to hit Kiwi's main loop

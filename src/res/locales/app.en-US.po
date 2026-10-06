@@ -583,6 +583,18 @@ msgstr "Not Connected"
 msgid "container_privmsg"
 msgstr "Conversation with {{user}}"
 
+#: Log out
+msgid "logout"
+msgstr "Log Out"
+
+#: Are you sure you want to log out?
+msgid "prompt_logout"
+msgstr "Are you sure you want to log out?"
+
+#: Remember me on this computer
+msgid "remember_settings"
+msgstr "Remember Me"
+
 #: Send a message...
 msgid "input_placeholder"
 msgstr "Send a message..."

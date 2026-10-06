@@ -55,7 +55,10 @@ export default class Message {
         this.bodyTemplateProps = message.bodyTemplateProps || {};
         this.isHighlight = false;
         this.is_bot = !!(message.tags && typeof message.tags.bot !== 'undefined');
-        this.is_history = !!(message.tags && typeof message.tags['draft/chathistory-context'] !== 'undefined');
+        this.is_history = !!(message.tags && (
+            typeof message.tags['draft/chathistory-context'] !== 'undefined' ||
+            typeof message.tags['kiwi-history'] !== 'undefined'
+        ));
         this.is_pending = !!message.is_pending;
         this.reactions = {};
 

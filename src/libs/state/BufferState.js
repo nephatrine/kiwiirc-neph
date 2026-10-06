@@ -369,9 +369,13 @@ export default class BufferState {
     }
 
     requestScrollback(_direction) {
+        let history = this.getNetwork().ircClient.chathistory;
+        if (!history.isSupported()) {
+            return;
+        }
+
         let direction = _direction || 'backward';
         let chathistoryFuncName = (direction === 'backward') ? 'before' : 'after';
-        let history = this.getNetwork().ircClient.chathistory;
         let supportedTypes = history.supportedRefTypes();
 
         let targetMessage = this.getHistoryReference(direction);
@@ -404,8 +408,12 @@ export default class BufferState {
     }
 
     requestLatestScrollback() {
-        let lastMessage = this.getHistoryReference('forward');
         let history = this.getNetwork().ircClient.chathistory;
+        if (!history.isSupported()) {
+            return;
+        }
+
+        let lastMessage = this.getHistoryReference('forward');
         let supportedTypes = history.supportedRefTypes();
 
         if (lastMessage && supportedTypes.includes('msgid') && lastMessage.irc_id) {
@@ -847,6 +855,10 @@ function maybeStartWhoLoop(bufferState) {
 
 function getBufferHistory(buffer, chathistoryFuncName, time) {
     let ircClient = buffer.getNetwork().ircClient;
+    if (!ircClient.chathistory.isSupported()) {
+        return;
+    }
+
     buffer.flag('is_requesting_chathistory', true);
     buffer.chathistory_request_count += 1;
     let existingMessageIds = Object.assign({}, buffer.messagesObj.messageIds);

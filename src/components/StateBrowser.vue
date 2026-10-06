@@ -10,6 +10,15 @@
             <i class="fa fa-cog" aria-hidden="true" />
         </div>
 
+        <div
+            v-if="!isPersonalMode"
+            :title="$t('logout')"
+            class="kiwi-statebrowser-logout"
+            @click="clickLogout"
+        >
+            <i class="fa fa-sign-out" aria-hidden="true" />
+        </div>
+
         <state-browser-usermenu
             v-if="isPersistingState"
             :network="getNetwork"
@@ -87,6 +96,9 @@ export default {
         isRestrictedServer: function isRestrictedServer() {
             return !!this.$state.settings.restricted;
         },
+        isPersonalMode: function isPersonalMode() {
+            return this.$state.getSetting('settings.startupScreen') === 'personal';
+        },
         networksToShow: function networksToShow() {
             return this.networks.filter((net) => !net.hidden);
         },
@@ -129,6 +141,9 @@ export default {
         },
         clickAppSettings: function clickAppSettings() {
             this.$state.$emit('active.component.toggle', AppSettings);
+        },
+        clickLogout: function clickLogout() {
+            this.$state.logout();
         },
         hideStatebrowser: function hideStatebrowser() {
             this.$state.$emit('statebrowser.hide');
@@ -176,6 +191,23 @@ export default {
     font-size: 20px;
     opacity: 0.8;
     border-bottom-right-radius: 14px;
+    transition: background 0.2s, opacity 0.2s;
+    z-index: 1;
+}
+
+.kiwi-statebrowser-logout {
+    position: absolute;
+    top: 0;
+    left: 32px;
+    width: 32px;
+    line-height: 32px;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 20px;
+    opacity: 0.8;
+    border-bottom-right-radius: 14px;
+    border-bottom-left-radius: 14px;
     transition: background 0.2s, opacity 0.2s;
     z-index: 1;
 }

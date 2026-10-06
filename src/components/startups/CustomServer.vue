@@ -251,10 +251,15 @@ export default {
             this.connection.type = 'bnc';
         }
 
+        let wasLogout = window.sessionStorage.getItem('kiwi-logout');
+        if (wasLogout) {
+            window.sessionStorage.removeItem('kiwi-logout');
+        }
+
         let saveThisSessionsState = false;
 
         // If we have networks from a previous state, launch directly into it
-        if (this.$state.networks.length > 0) {
+        if (!wasLogout && this.$state.networks.length > 0) {
             const network = this.$state.networks[0];
             this.$state.setActiveBuffer(network.id, network.serverBuffer().name);
             saveThisSessionsState = true;
