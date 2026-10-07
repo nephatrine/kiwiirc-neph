@@ -1,0 +1,104 @@
+@import '../common/base.css';
+
+:root {
+    --brand-primary: #5e81ac;
+    --brand-primary-hover: #81a1c1;
+    --brand-midtone: #e5e9f0;
+    --brand-darktone: #d8dee9;
+    --brand-default-bg: #eceff4;
+    --brand-default-fg: #2e3440;
+    --brand-notice: #ebcb8b;
+    --brand-warning: #d08770;
+    --brand-error: #bf616a;
+
+    /* Input elements */
+    --brand-input-border: #d8dee9;
+    --brand-input-fg: #2e3440;
+    --brand-input-bg: #eceff4;
+
+    --comp-workspace-before-bg: var(--brand-primary);
+    --comp-bg-kiwi-workspace--disconnected-after-bg: var(--brand-error);
+    --comp-header-bg: var(--brand-default-bg);
+    --comp-header-name-fg: #2e3440;
+    --comp-header-option-active-fg: #eceff4;
+    --comp-header-option-active-bg: var(--brand-primary);
+    --comp-statebrowser-fg: #e5e9f0;
+    --comp-statebrowser-bg: #2e3440;
+    --comp-statebrowser-bg-networkname: #3b4252;
+    --comp-statebrowser-channel-active-bg: #434c5e;
+    --comp-statebrowser-channel-active-fg: #eceff4;
+    --comp-usermenu-open-bg: #3b4252;
+    --comp-statebrowser-network-border: #3b4252;
+    --comp-sidebar-bg: var(--brand-default-bg);
+    --comp-sidebar-fg: #3b4252;
+    --comp-scroller-bg: #ccd3de;
+    --comp-scroller-fg: #8c96a1;
+    --comp-aboutbuffer-bg: #e5e9f0;
+    --comp-aboutbuffer-header-bg: var(--brand-primary);
+    --brand-link-normal: #5e81ac;
+    --brand-link--hover: #81a1c1;
+    --brand-shadow: rgba(0, 0, 0, 0.1);
+    --comp-border: #ccd3de;
+}
+
+.kiwi-wrap {
+    --kiwi-nickcolour-saturation: 60;
+    --kiwi-nickcolour-lightness: 35;
+}
+
+.kiwi-wrap select option {
+    background-color: var(--brand-default-bg);
+    color: var(--brand-default-fg);
+}
+
+/* Nord Light Clean Accents */
+.kiwi-header {
+    border-bottom: 1px solid #d8dee9;
+}
+
+.u-input:focus {
+    border-color: #5e81ac !important;
+}
+
+.kiwi-statebrowser {
+    border-right: 1px solid #d8dee9;
+}
+
+.kiwi-sidebar {
+    border-left: 1px solid #d8dee9;
+}
+
+/* IRC Text Colours (Nord Light Optimized) */
+.irc-fg-colour-white { color: #d8dee9; }
+.irc-fg-colour-black { color: #2e3440; }
+.irc-fg-colour-blue { color: #5e81ac; }
+.irc-fg-colour-green { color: #a3be8c; }
+.irc-fg-colour-light-red { color: #bf616a; }
+.irc-fg-colour-brown { color: #d08770; }
+.irc-fg-colour-purple { color: #b48ead; }
+.irc-fg-colour-orange { color: #d08770; }
+.irc-fg-colour-yellow { color: #c8a06b; }
+.irc-fg-colour-light-green { color: #8fbcbb; }
+.irc-fg-colour-cyan { color: #88c0d0; }
+.irc-fg-colour-light-cyan { color: #81a1c1; }
+.irc-fg-colour-light-blue { color: #81a1c1; }
+.irc-fg-colour-pink { color: #b48ead; }
+.irc-fg-colour-grey { color: #4c566a; }
+.irc-fg-colour-light-grey { color: #434c5e; }
+
+.irc-bg-colour-white { background-color: #eceff4; }
+.irc-bg-colour-black { background-color: #2e3440; }
+.irc-bg-colour-blue { background-color: #5e81ac; }
+.irc-bg-colour-green { background-color: #a3be8c; }
+.irc-bg-colour-light-red { background-color: #bf616a; }
+.irc-bg-colour-brown { background-color: #d08770; }
+.irc-bg-colour-purple { background-color: #b48ead; }
+.irc-bg-colour-orange { background-color: #d08770; }
+.irc-bg-colour-yellow { background-color: #c8a06b; }
+.irc-bg-colour-light-green { background-color: #8fbcbb; }
+.irc-bg-colour-cyan { background-color: #88c0d0; }
+.irc-bg-colour-light-cyan { background-color: #81a1c1; }
+.irc-bg-colour-light-blue { background-color: #81a1c1; }
+.irc-bg-colour-pink { background-color: #b48ead; }
+.irc-bg-colour-grey { background-color: #4c566a; }
+.irc-bg-colour-light-grey { background-color: #434c5e; }

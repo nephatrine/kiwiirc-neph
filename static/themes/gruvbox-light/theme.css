@@ -1,0 +1,87 @@
+@import '../common/base.css';
+
+:root {
+    --brand-primary: #79740e;
+    --brand-primary-hover: #427b58;
+    --brand-midtone: #ebdbb2;
+    --brand-darktone: #d5c4a1;
+    --brand-default-bg: #fbf1c7;
+    --brand-default-fg: #3c3836;
+    --brand-notice: #b57614;
+    --brand-warning: #af3a03;
+    --brand-error: #9d0006;
+
+    /* Input elements */
+    --brand-input-border: #bdae93;
+    --brand-input-fg: #3c3836;
+    --brand-input-bg: #fbf1c7;
+
+    --comp-workspace-before-bg: var(--brand-primary);
+    --comp-bg-kiwi-workspace--disconnected-after-bg: var(--brand-error);
+    --comp-header-bg: var(--brand-default-bg);
+    --comp-header-name-fg: #3c3836;
+    --comp-header-option-active-fg: #fbf1c7;
+    --comp-header-option-active-bg: var(--brand-primary);
+    --comp-statebrowser-fg: #ebdbb2;
+    --comp-statebrowser-bg: #282828;
+    --comp-statebrowser-bg-networkname: #3c3836;
+    --comp-statebrowser-channel-active-bg: #504945;
+    --comp-statebrowser-channel-active-fg: #fbf1c7;
+    --comp-usermenu-open-bg: #3c3836;
+    --comp-statebrowser-network-border: #3c3836;
+    --comp-sidebar-bg: var(--brand-default-bg);
+    --comp-sidebar-fg: #504945;
+    --comp-scroller-bg: #d5c4a1;
+    --comp-scroller-fg: #a89984;
+    --comp-aboutbuffer-bg: #ebdbb2;
+    --comp-aboutbuffer-header-bg: var(--brand-primary);
+    --brand-link-normal: #076678;
+    --brand-link--hover: #427b58;
+    --brand-shadow: rgba(0, 0, 0, 0.1);
+    --comp-border: #d5c4a1;
+}
+
+.kiwi-wrap {
+    --kiwi-nickcolour-saturation: 70;
+    --kiwi-nickcolour-lightness: 35;
+}
+
+.kiwi-wrap select option {
+    background-color: var(--brand-default-bg);
+    color: var(--brand-default-fg);
+}
+
+/* IRC Text Colours (Gruvbox Light Optimized) */
+.irc-fg-colour-white { color: #bdae93; }
+.irc-fg-colour-black { color: #3c3836; }
+.irc-fg-colour-blue { color: #076678; }
+.irc-fg-colour-green { color: #79740e; }
+.irc-fg-colour-light-red { color: #9d0006; }
+.irc-fg-colour-brown { color: #8f3f71; }
+.irc-fg-colour-purple { color: #8f3f71; }
+.irc-fg-colour-orange { color: #af3a03; }
+.irc-fg-colour-yellow { color: #b57614; }
+.irc-fg-colour-light-green { color: #427b58; }
+.irc-fg-colour-cyan { color: #427b58; }
+.irc-fg-colour-light-cyan { color: #427b58; }
+.irc-fg-colour-light-blue { color: #076678; }
+.irc-fg-colour-pink { color: #8f3f71; }
+.irc-fg-colour-grey { color: #7c6f64; }
+.irc-fg-colour-light-grey { color: #928374; }
+
+.irc-bg-colour-white { background-color: #fbf1c7; }
+.irc-bg-colour-black { background-color: #3c3836; }
+.irc-bg-colour-blue { background-color: #076678; }
+.irc-bg-colour-green { background-color: #79740e; }
+.irc-bg-colour-light-red { background-color: #9d0006; }
+.irc-bg-colour-brown { background-color: #8f3f71; }
+.irc-bg-colour-purple { background-color: #8f3f71; }
+.irc-bg-colour-orange { background-color: #af3a03; }
+.irc-bg-colour-yellow { background-color: #b57614; }
+.irc-bg-colour-light-green { background-color: #427b58; }
+.irc-bg-colour-cyan { background-color: #427b58; }
+.irc-bg-colour-light-cyan { background-color: #427b58; }
+.irc-bg-colour-light-blue { background-color: #076678; }
+.irc-bg-colour-pink { background-color: #8f3f71; }
+.irc-bg-colour-grey { background-color: #7c6f64; }
+.irc-bg-colour-light-grey { background-color: #928374; }

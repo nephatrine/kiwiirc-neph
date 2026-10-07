@@ -10,6 +10,19 @@ and this project adheres to
 
 ### Added
 
+- **Massive Theme Suite**: Integrated over 30 professional themes including
+  **Catppuccin** (all variants), **Nord**, **Everforest**, **Rosé Pine**,
+  **Gruvbox**, **Kanagawa**, **Solarized**, **Ayu**, **One**, **GitHub**,
+  **Tokyo Night**, **Monokai**, and **SynthWave '84**.
+- **Session Privacy & Isolation**: Added "Remember me on this computer"
+  functionality and implemented an identity guard that automatically purges
+  local state on nickname or account changes to prevent cross-account data
+  leakage.
+- **Authoritative Logout**: Implemented a global `logout()` method that issues a
+  `QUIT` command to the server and performs a full workspace reset.
+- **Deduplication Engine**: Added strict message deduplication using
+  server-assigned `irc_id` (`msgid`) to prevent duplicate entries during history
+  replays and gap-filling.
 - Implemented support for IRCv3 `echo-message` and `labeled-response` extensions
   for robust message synchronization and multi-client consistency.
 - Added a **Network Information** tab displaying IRCd details, negotiated
@@ -71,6 +84,15 @@ and this project adheres to
 
 ### Changed
 
+- **Intelligent History Sync**: Refactored history loading to use
+  `CHATHISTORY LATEST` for background synchronization and optimized the
+  reference engine to ignore non-conversation metadata.
+- **UI Normalization**: Standardized header backgrounds and normalized color
+  palettes across all themes to ensure maximum legibility for all 16 IRC message
+  colors.
+- **Reconnection Resilience**: Hardened connection handlers to ignore stale
+  closure events and implemented "join healing" when receiving member lists or
+  messages.
 - Refactored message promotion logic to utilize IRCv3 labels for precise, O(1)
   correlation of server echoes.
 - Centralized capability negotiation logic to ensure consistent feature

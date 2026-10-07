@@ -1381,9 +1381,29 @@ msgstr "IRCd Type"
 
 #: Enabled capabilities section header
 msgid "info_caps"
-msgstr "Enabled Capabilities"
+msgstr "IRCv3 Capabilities"
 
 #: ISUPPORT tokens section header
 msgid "info_isupport"
-msgstr "Server Options (ISUPPORT)"
+msgstr "ISUPPORT Tokens"
+
+#: Pin
+msgid "pin"
+msgstr "Pin"
+
+#: Remove
+msgid "remove"
+msgstr "Remove"
+
+#: Refresh
+msgid "refresh"
+msgstr "Refresh"
+
+#: Previous Page
+msgid "previous_page"
+msgstr "Previous Page"
+
+#: Next Page
+msgid "next_page"
+msgstr "Next Page"
 

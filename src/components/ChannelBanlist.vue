@@ -62,7 +62,12 @@
                     :key="`actions${ban.banned}`"
                     class="kiwi-sidebar-settings-access-actions"
                 >
-                    <i class="fa fa-trash" aria-hidden="true" @click="removeBan(ban.banned)" />
+                    <i
+                        :title="$t('remove')"
+                        class="fa fa-trash"
+                        aria-hidden="true"
+                        @click="removeBan(ban.banned)"
+                    />
                 </div>
             </template>
         </div>

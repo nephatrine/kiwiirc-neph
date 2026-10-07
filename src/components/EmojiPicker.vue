@@ -24,7 +24,7 @@
                         <i :class="['fa', cat.icon]" aria-hidden="true" />
                     </div>
                 </div>
-                <div class="kiwi-emojipicker-close" @click="close">
+                <div :title="$t('close')" class="kiwi-emojipicker-close" @click="close">
                     <i class="fa fa-times" aria-hidden="true" />
                 </div>
             </div>

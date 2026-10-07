@@ -9,6 +9,7 @@
                             'u-button-primary': !isLoading,
                             'u-button-secondary': isLoading,
                         }"
+                        :title="$t('refresh')"
                         class="u-button kiwi-channellist-refresh"
                         @click="maybeUpdateList"
                     >
@@ -17,9 +18,9 @@
                     </a>
                 </form>
                 <div v-if="list.length" class="kiwi-channellist-pagination">
-                    <a @click="prevPage"><i class="fa fa-step-backward" aria-hidden="true" /></a>
+                    <a :title="$t('previous_page')" @click="prevPage"><i class="fa fa-step-backward" aria-hidden="true" /></a>
                     {{ page + 1 }} / {{ maxPages + 1 }}
-                    <a @click="nextPage"><i class="fa fa-step-forward" aria-hidden="true" /></a>
+                    <a :title="$t('next_page')" @click="nextPage"><i class="fa fa-step-forward" aria-hidden="true" /></a>
                 </div>
             </div>
             <div v-if="!isLoading && !noResults" class="kiwi-channellist-table">
@@ -53,9 +54,9 @@
             <div v-else class="kiwi-channellist-info">{{ $t('channel_list_fetch') }}</div>
             <div class="kiwi-channellist-nav">
                 <div v-if="list.length" class="kiwi-channellist-pagination">
-                    <a @click="prevPage"><i class="fa fa-step-backward" aria-hidden="true" /></a>
+                    <a :title="$t('previous_page')" @click="prevPage"><i class="fa fa-step-backward" aria-hidden="true" /></a>
                     {{ page + 1 }} / {{ maxPages + 1 }}
-                    <a @click="nextPage"><i class="fa fa-step-forward" aria-hidden="true" /></a>
+                    <a :title="$t('next_page')" @click="nextPage"><i class="fa fa-step-forward" aria-hidden="true" /></a>
                 </div>
             </div>
         </div>

@@ -6,7 +6,7 @@
             :class="{ 'kiwi-aboutbuffer-section--closed': closedSections.about }"
             class="kiwi-aboutbuffer-section"
         >
-            <h4 @click="toggleSection('about')">
+            <h4 :title="$t('toggle_section')" @click="toggleSection('about')">
                 <i class="fa fa-angle-right" /> {{ $t('about') }}
             </h4>
             <div>
@@ -39,7 +39,7 @@
             :class="{ 'kiwi-aboutbuffer-section--closed': closedSections.highlights }"
             class="kiwi-aboutbuffer-section"
         >
-            <h4 @click="toggleSection('highlights')">
+            <h4 :title="$t('toggle_section')" @click="toggleSection('highlights')">
                 <i class="fa fa-angle-right" /> {{ $t('highlights') }}
             </h4>
             <div>
@@ -62,7 +62,7 @@
             :class="{ 'kiwi-aboutbuffer-section--closed': closedSections.invite }"
             class="kiwi-aboutbuffer-section"
         >
-            <h4 @click="toggleSection('invite')">
+            <h4 :title="$t('toggle_section')" @click="toggleSection('invite')">
                 <i class="fa fa-angle-right" /> {{ $t('invite_user') }}
             </h4>
             <div>
@@ -95,7 +95,7 @@
             :class="{ 'kiwi-aboutbuffer-section--closed': closedSections[plugin.id] }"
             class="kiwi-aboutbuffer-section"
         >
-            <h4 @click="toggleSection(plugin.id)">
+            <h4 :title="$t('toggle_section')" @click="toggleSection(plugin.id)">
                 <i class="fa fa-angle-right" /> {{ plugin.title() }}
             </h4>
             <component

@@ -1,7 +1,7 @@
 <template>
     <div class="kiwi-appsettings">
 
-        <div class="kiwi-appsettings-close" @click="closeSettings">
+        <div :title="$t('close')" class="kiwi-appsettings-close" @click="closeSettings">
             <span>{{ $t('close') }}</span>
             <i class="fa fa-times" aria-hidden="true" />
         </div>

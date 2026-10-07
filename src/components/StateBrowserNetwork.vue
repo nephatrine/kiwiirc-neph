@@ -98,7 +98,7 @@
             <transition-expand>
                 <div v-if="network.state !== 'connected'" class="kiwi-statebrowser-network-status">
                     <template v-if="network.state_error">
-                        <i class="fa fa-exclamation-triangle" aria-hidden="true" />
+                        <i :title="$t('error_unexpected')" class="fa fa-exclamation-triangle" aria-hidden="true" />
                         <a class="u-link" @click="showNetworkSettings(network)">
                             {{ $t('state_configure') }}
                         </a>
@@ -124,6 +124,7 @@
                 >
                     <div
                         :class="{ active: !!channel_add_display }"
+                        :title="$t('add_network')"
                         class="kiwi-statebrowser-network-option"
                         @click="toggleAddChannel()"
                     >
@@ -131,6 +132,7 @@
                     </div>
                     <div
                         :class="{ active: !!channel_filter_display }"
+                        :title="$t('filter_channels')"
                         class="kiwi-statebrowser-network-option"
                         @click="onSearchChannelClick()"
                     >
@@ -148,7 +150,7 @@
                     v-if="!channel_filter_display && showBufferGroups && type !== 'other'"
                     class="kiwi-statebrowser-channels-header"
                 >
-                    <div class="kiwi-statebrowser-buffertype" @click="toggleSection(type)">
+                    <div class="kiwi-statebrowser-buffertype" :title="$t('toggle_section')" @click="toggleSection(type)">
                         <i
                             class="fa kiwi-statebrowser-channels-toggle"
                             :class="[

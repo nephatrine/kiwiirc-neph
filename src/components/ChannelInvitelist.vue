@@ -92,6 +92,7 @@
                     class="kiwi-sidebar-settings-access-actions"
                 >
                     <i
+                        :title="$t('remove')"
                         class="fa fa-trash"
                         aria-hidden="true"
                         @click="removeInvite(invite.invited)"

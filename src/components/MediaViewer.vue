@@ -3,12 +3,14 @@
         <div class="kiwi-mediaviewer-controls">
             <a
                 v-if="showPin"
+                :title="$t('pin')"
                 class="u-button u-link kiwi-mediaviewer-controls-pin"
                 @click="$emit('pin')"
             >
                 <i class="fa fa-map-pin" aria-hidden="true" />
             </a>
             <a
+                :title="$t('close')"
                 class="u-button u-button-warning kiwi-mediaviewer-controls-close"
                 @click="$emit('close');"
             >

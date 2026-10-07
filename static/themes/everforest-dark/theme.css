@@ -1,0 +1,224 @@
+@import '../common/base.css';
+
+:root {
+    --brand-primary: #a7c080;
+    --brand-primary-hover: #83c092;
+    --brand-midtone: #343f44;
+    --brand-darktone: #3d484d;
+    --brand-default-bg: #2d353b;
+    --brand-default-fg: #d3c6aa;
+    --brand-notice: #dbbc7f;
+    --brand-warning: #e69875;
+    --brand-error: #e67e80;
+
+    /* Input elements */
+    --brand-input-border: #475258;
+    --brand-input-fg: #d3c6aa;
+    --brand-input-bg: #2d353b;
+
+    --comp-workspace-before-bg: var(--brand-primary);
+    --comp-bg-kiwi-workspace--disconnected-after-bg: var(--brand-error);
+    --comp-header-bg: var(--brand-default-bg);
+    --comp-header-name-fg: #d3c6aa;
+    --comp-header-option-active-fg: #2d353b;
+    --comp-header-option-active-bg: var(--brand-primary);
+    --comp-statebrowser-fg: #9da9a0;
+    --comp-statebrowser-bg: #2d353b;
+    --comp-statebrowser-bg-networkname: #343f44;
+    --comp-statebrowser-channel-active-bg: #3d484d;
+    --comp-statebrowser-channel-active-fg: #d3c6aa;
+    --comp-usermenu-open-bg: #343f44;
+    --comp-statebrowser-network-border: #3d484d;
+    --comp-sidebar-bg: var(--brand-default-bg);
+    --comp-sidebar-fg: #9da9a0;
+    --comp-scroller-bg: #3d484d;
+    --comp-scroller-fg: #475258;
+    --comp-aboutbuffer-bg: #343f44;
+    --comp-aboutbuffer-header-bg: var(--brand-primary);
+    --brand-link-normal: #7fbbb3;
+    --brand-link--hover: #83c092;
+    --brand-shadow: rgba(0, 0, 0, 0.1);
+    --comp-border: #3d484d;
+}
+
+.kiwi-wrap {
+    --kiwi-nickcolour-saturation: 50;
+    --kiwi-nickcolour-lightness: 70;
+}
+
+.kiwi-wrap select option {
+    background-color: var(--brand-default-bg);
+    color: var(--brand-default-fg);
+}
+.kiwi-header {
+    border-bottom-color: #000;
+}
+
+.kiwi-statebrowser-channels .kiwi-statebrowser-channel {
+    color: #e6dfcb;
+}
+
+.u-tabbed-view-tabs {
+    background: var(--brand-midtone);
+    border-bottom-color: #ffffff1a;
+}
+.u-tabbed-view-tabs .u-tabbed-view-tab {
+    border-bottom-color: #ffffff1a;
+}
+
+.kiwi-customserver {
+    background-color: var(--brand-default-bg);
+}
+
+button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
+    color: var(--brand-default-fg);
+}
+
+.kiwi-welcome-znc h2 {
+    color: var(--brand-default-bg);
+}
+
+.kiwi-welcome-znc-form .u-input-text {
+    background: transparent;
+    color: var(--brand-default-bg);
+}
+
+.kiwi-statebrowser {
+    box-shadow: 0px 0 4px #ffffff2b;
+}
+
+.kiwi-statebrowser-newchannel-inputwrap,
+.kiwi-statebrowser-newnetwork .u-button,
+.kiwi-header-option a:hover,
+.kiwi-header-option--active,
+.kiwi-network-name-hover-icon,
+.kiwi-statebrowser-newchannel-inputwrap input[type='text'],
+.kiwi-network-name-option,
+.kiwi-warning-block,
+.kiwi-notconnected-button,
+.u-button-warning,
+.kiwi-settings-advanced-notice,
+.kiwi-networksettings .kiwi-title,
+.kiwi-welcome-simple-form .u-submit {
+    color: var(--brand-default-fg);
+}
+
+.kiwi-notconnected-button {
+    border-color: var(--brand-default-fg);
+}
+.kiwi-notconnected-button:hover {
+    background-color: var(--brand-default-fg);
+    color: var(--brand-default-bg);
+    border-color: var(--brand-default-fg);
+}
+
+.kiwi-statebrowser-channel-leave {
+    background: transparent;
+    color: var(--brand-default-fg);
+}
+
+.kiwi-network-name-options {
+    background-color: #000;
+    color: var(--brand-default-fg);
+}
+.kiwi-network-name-option:hover,
+.kiwi-network-name-option.active {
+    background-color: var(--brand-primary);
+    color: #fff;
+}
+
+.kiwi-messagelist-seperator {
+    border-top: 2px dashed #a7c080;
+}
+
+.kiwi-messagelist-message--highlight {
+    background-color: var(--comp-scroller-bg);
+}
+
+.kiwi-messagelist-message-notice {
+    background: #332f22;
+}
+
+.kiwi-statebrowser {
+    box-shadow: 0px 0 4px #ffffff2b;
+}
+
+.kiwi-statebrowser-channelfilter input,
+.kiwi-statebrowser-channels-info .kiwi-statebrowser-newchannel-inputwrap input {
+    background-color: var(--brand-default-fg);
+    color: var(--brand-default-bg);
+}
+
+.kiwi-messagelist-message.kiwi-messagelist-message--highlight {
+    background: var(--brand-midtone);
+}
+
+.kiwi-messagelist-message--modern {
+    border-top-color: var(--brand-midtone);
+}
+
+.kiwi-container-toggledraw-statebrowser-messagecount  {
+    color: #fdf6e3;
+}
+
+.kiwi-messagelist-message--info-open {
+    background-color: var(--brand-midtone);
+}
+.kiwi-messagelist-message--info-open .u-link {
+    color: #fff;
+}
+
+.kiwi-channelsettings-disabled,
+.kiwi-sidebar-settings-access-actions:hover {
+    color: var(--comp-sidebar-fg);
+}
+
+.kiwi-welcome-simple-start.u-submit,
+.kiwi-customserver-form .u-submit {
+    color: #2d353b;
+}
+
+.kiwi-header-option--active a {
+    color: #2d353b !important;
+}
+
+/* Everforest Soft Layering */
+.kiwi-header,
+.u-input:focus {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* IRC Text Colours (Everforest Dark Optimized) */
+.irc-fg-colour-white { color: #d3c6aa; }
+.irc-fg-colour-black { color: #475258; }
+.irc-fg-colour-blue { color: #7fbbb3; }
+.irc-fg-colour-green { color: #a7c080; }
+.irc-fg-colour-light-red { color: #e67e80; }
+.irc-fg-colour-brown { color: #e69875; }
+.irc-fg-colour-purple { color: #d699b6; }
+.irc-fg-colour-orange { color: #e69875; }
+.irc-fg-colour-yellow { color: #dbbc7f; }
+.irc-fg-colour-light-green { color: #83c092; }
+.irc-fg-colour-cyan { color: #83c092; }
+.irc-fg-colour-light-cyan { color: #7fbbb3; }
+.irc-fg-colour-light-blue { color: #7fbbb3; }
+.irc-fg-colour-pink { color: #d699b6; }
+.irc-fg-colour-grey { color: #859289; }
+.irc-fg-colour-light-grey { color: #9da9a0; }
+
+.irc-bg-colour-white { background-color: #d3c6aa; }
+.irc-bg-colour-black { background-color: #2d353b; }
+.irc-bg-colour-blue { background-color: #7fbbb3; }
+.irc-bg-colour-green { background-color: #a7c080; }
+.irc-bg-colour-light-red { background-color: #e67e80; }
+.irc-bg-colour-brown { background-color: #e69875; }
+.irc-bg-colour-purple { background-color: #d699b6; }
+.irc-bg-colour-orange { background-color: #e69875; }
+.irc-bg-colour-yellow { background-color: #dbbc7f; }
+.irc-bg-colour-light-green { background-color: #83c092; }
+.irc-bg-colour-cyan { background-color: #83c092; }
+.irc-bg-colour-light-cyan { background-color: #7fbbb3; }
+.irc-bg-colour-light-blue { background-color: #7fbbb3; }
+.irc-bg-colour-pink { background-color: #d699b6; }
+.irc-bg-colour-grey { background-color: #859289; }
+.irc-bg-colour-light-grey { background-color: #9da9a0; }
