@@ -180,6 +180,19 @@
                             </label>
                         </div>
                     </div>
+                    <div class="kiwi-appsettings-block">
+                        <h3>{{ $t('troubleshooting') }}</h3>
+                        <div class="kiwi-appsettings-section">
+                            <div style="margin-bottom: 10px;">
+                                {{ $t('export_debug_description') }}
+                            </div>
+                            <div style="text-align: center;">
+                                <a class="u-button u-button-primary" @click="downloadDebugDump()">
+                                    <i>{{ $t('export_debug') }}</i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                     <div
                         v-if="!$state.setting('hide_advanced') && !settingAdvancedEnable"
                         class="kiwi-appsettings-block"
@@ -444,6 +457,16 @@ export default {
             const { origin, pathname } = document.location;
             navigator.registerProtocolHandler('irc', origin + pathname + '#%s', 'Kiwi IRC');
             navigator.registerProtocolHandler('ircs', origin + pathname + '#%s', 'Kiwi IRC');
+        },
+        downloadDebugDump() {
+            const dump = this.$state.getDebugDump();
+            const blob = new Blob([dump], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `kiwi-debug-${Date.now()}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
         },
     },
 };

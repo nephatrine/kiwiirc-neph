@@ -1,11 +1,36 @@
 'kiwi public';
 
+const logBuffer = [];
+const MAX_LOG_SIZE = 500;
+
 const defaultLogger = makeLogger();
+defaultLogger.getLogBuffer = () => logBuffer;
 export default defaultLogger;
 
 function makeLogger(label, rootLogger) {
     function logger(...args) {
         logger.info(...args);
+    }
+
+    function addToBuffer(type, args) {
+        const timestamp = new Date().toISOString();
+        const logEntry = {
+            time: timestamp,
+            type: type,
+            label: label || 'root',
+            content: args.map((arg) => {
+                try {
+                    return typeof arg === 'object' ? JSON.stringify(arg) : String(arg);
+                } catch (e) {
+                    return '[Unserializable Object]';
+                }
+            }).join(' '),
+        };
+
+        logBuffer.push(logEntry);
+        if (logBuffer.length > MAX_LOG_SIZE) {
+            logBuffer.shift();
+        }
     }
 
     logger.LEVEL_DEBUG = 2;
@@ -19,6 +44,7 @@ function makeLogger(label, rootLogger) {
     }
 
     logger.debug = function logDebug(...args) {
+        addToBuffer('DEBUG', args);
         if (logLevel(logger.LEVEL_DEBUG)) {
             if (label) {
                 args[0] = `[${label}] DEBUG ${args[0]}`;
@@ -28,6 +54,7 @@ function makeLogger(label, rootLogger) {
     };
 
     logger.info = function logInfo(...args) {
+        addToBuffer('INFO', args);
         if (logLevel(logger.LEVEL_INFO)) {
             if (label) {
                 args[0] = `[${label}] INFO ${args[0]}`;
@@ -37,6 +64,7 @@ function makeLogger(label, rootLogger) {
     };
 
     logger.error = function logError(...args) {
+        addToBuffer('ERROR', args);
         if (logLevel(logger.LEVEL_ERROR)) {
             if (label) {
                 args[0] = `[${label}] ERROR ${args[0]}`;

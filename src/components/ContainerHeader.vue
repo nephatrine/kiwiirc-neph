@@ -31,6 +31,11 @@
                         <i class="fa fa-cog" aria-hidden="true" />
                     </a>
                 </div>
+                <div class="kiwi-header-option">
+                    <a :title="$t('export_buffer')" @click="exportBuffer()">
+                        <i class="fa fa-download" aria-hidden="true" />
+                    </a>
+                </div>
                 <div
                     :class="{
                         'kiwi-header-option--active': sidebarSection === 'nicklist'
@@ -86,6 +91,13 @@
                 </div>
             </div>
             <div class="kiwi-header-center" />
+            <div class="kiwi-header-options">
+                <div class="kiwi-header-option">
+                    <a :title="$t('export_buffer')" @click="exportBuffer()">
+                        <i class="fa fa-download" aria-hidden="true" />
+                    </a>
+                </div>
+            </div>
             <div class="kiwi-header-server-connection">
                 <a
                     v-if="buffer.getNetwork().state === 'disconnected'"
@@ -120,6 +132,11 @@
             </div>
             <div class="kiwi-header-center" />
             <div :key="buffer.id" class="kiwi-header-options">
+                <div class="kiwi-header-option">
+                    <a :title="$t('export_buffer')" @click="exportBuffer()">
+                        <i class="fa fa-download" aria-hidden="true" />
+                    </a>
+                </div>
                 <div
                     v-if="userOnline"
                     :class="{
@@ -158,7 +175,11 @@
             </div>
             <div class="kiwi-header-center" />
             <div class="kiwi-header-options">
-                <!-- placeholder -->
+                <div class="kiwi-header-option">
+                    <a :title="$t('export_buffer')" @click="exportBuffer()">
+                        <i class="fa fa-download" aria-hidden="true" />
+                    </a>
+                </div>
             </div>
         </template>
     </div>
@@ -167,9 +188,11 @@
 <script>
 'kiwi public';
 
+import strftime from 'strftime';
 import GlobalApi from '@/libs/GlobalApi';
 import toHtml from '@/libs/renderers/Html';
 import parseMessage from '@/libs/MessageParser';
+import * as Misc from '@/helpers/Misc';
 import BufferSettings from './BufferSettings';
 import ChannelInfo from './ChannelInfo';
 import ChannelBanlist from './ChannelBanlist';
@@ -258,6 +281,35 @@ export default {
                 this.$state.addBuffer(this.buffer.networkid, channelName);
                 network.ircClient.join(channelName);
             }
+        },
+        exportBuffer() {
+            const messages = this.buffer.getMessages();
+            const logLines = messages.map((m) => {
+                const time = strftime('%Y-%m-%d %H:%M:%S', new Date(m.time));
+                let line = `[${time}] `;
+                if (m.type === 'action') {
+                    line += `* ${m.nick} ${m.message}`;
+                } else if (m.type === 'notice') {
+                    line += `-${m.nick}- ${m.message}`;
+                } else if (m.nick) {
+                    line += `<${m.nick}> ${m.message}`;
+                } else {
+                    line += m.message;
+                }
+                return Misc.stripStyles(line);
+            });
+
+            const blob = new Blob([logLines.join('\n')], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const networkName = this.buffer.getNetwork().name;
+            const bufferName = this.buffer.name;
+            const date = strftime('%Y-%m-%d', new Date());
+
+            link.href = url;
+            link.download = `${networkName}_${bufferName}_${date}.txt`.replace(/[/\\?%*:|"<>]/g, '-');
+            link.click();
+            URL.revokeObjectURL(url);
         },
     },
 };

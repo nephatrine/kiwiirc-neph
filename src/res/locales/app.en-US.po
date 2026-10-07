@@ -1091,6 +1091,22 @@ msgstr "Leave Channel"
 msgid "command_cycle"
 msgstr "Cycle Channel"
 
+#: Troubleshooting
+msgid "troubleshooting"
+msgstr "Troubleshooting"
+
+#: Export Debug Information
+msgid "export_debug"
+msgstr "Export State"
+
+#: Export Buffer Content
+msgid "export_buffer"
+msgstr "Export Buffer"
+
+#: Download a JSON file containing the application state and recent logs to help developers troubleshoot issues.
+msgid "export_debug_description"
+msgstr "Download a JSON file containing the application state and recent logs to help developers troubleshoot issues."
+
 #: Change your nickname
 msgid "command_nick"
 msgstr "Change Nickname"
@@ -1209,7 +1225,7 @@ msgstr "Redact Message"
 
 #: Redaction Reason (optional)
 msgid "redaction_reason"
-msgstr "Redaction Reason (optional)"
+msgstr "Redaction Reason (Optional)"
 
 #: Are you sure you want to redact this message?
 msgid "confirm_redaction_title"
