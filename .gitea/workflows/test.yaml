@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2026 Daniel Wolf <nephatrine@gmail.com>
+# SPDX-License-Identifier: ISC
+
+name: Test Package
+run-name: ${{ gitea.actor }} pushed to ${{ gitea.repository }}:${{ gitea.ref_name }}
+on:
+  push:
+    branches:
+      - "master"
+jobs:
+  test:
+    runs-on: nephnet-fast
+    container:
+      image: code.nephatrine.net/nephnet/nxb-alpine:latest
+    steps:
+      - name: Checkout Repository
+        uses: https://code.nephatrine.net/NephHub/checkout@v6
+      - name: Run Tests
+        run: cd "${{ gitea.workspace }}" && npm ci && npm run build --if-present && npm test && npm run lint
+      - name: Notify Discord
+        uses: https://code.nephatrine.net/NephHub/actions-status-discord@v1
+        if: failure()
+        with:
+          title: "FAIL: test"
+          webhook: ${{ secrets.DISCORD_WH_PROJECTS }}
