@@ -12,22 +12,32 @@ and this project adheres to
 
 - **Modern Theme Suite**: Integrated over 30 professional themes (Catppuccin,
   Nord, Rosé Pine, Tokyo Night, etc.) with unified UI normalization and
-  optimized contrast for all 16 IRC colors.
+  optimized contrast.
 - **IRCv3 Protocol Hardening**: Comprehensive implementation of `echo-message`,
-  `labeled-response`, and `standard-replies` ensuring robust message
-  synchronization, precise error handling, and multi-client consistency.
-- **Message Redaction**: Support for `draft/message-redaction` allowing
-  permanent removal of messages with informative placeholders and a
-  "spoiler-style" click-to-reveal toggle.
+  `labeled-response`, and `standard-replies` ensuring robust synchronization and
+  error handling.
+- **Message Redaction**: Support for `draft/message-redaction` with custom
+  confirmation prompts and spoiler-style click-to-reveal behavior.
 - **Advanced Messaging**: Full support for native Unicode emojis with a
-  searchable picker, threaded replies (`+reply`), per-message reactions
-  (`+draft/react`), and authoritative multiline sending.
+  searchable picker, threaded replies (`+reply`), and per-message reactions
+  (`+draft/react`).
 - **Authoritative History**: Implemented `draft/chathistory` and
-  `draft/event-playback` for gap-filling synchronization, including replayed
-  joins, parts, and mode changes.
+  `draft/event-playback` for precise gap-filling including replayed joins,
+  parts, and modes.
 - **Identity & Session Privacy**: Added explicit SASL account support,
   authoritative `/setname` updates, and a "Remember me" toggle with automatic
-  state purging on identity changes.
+  state purging.
+- **Synthesized Audio Earcons**: Replaced static assets with a low-latency Web
+  Audio API synthesis engine featuring unique tonal sequences for notifications
+  and errors.
+- **Centralized Error Feedback**: Integrated automatic audio alerts and visual
+  vibrating indicators with "!" markers for all protocol and UI failures.
+- **Enhanced Visual Activity**: Introduced scale-pulse animations for mentions
+  to improve discoverability in background buffers.
+- **Buffer Content Export**: Added functionality to download clean,
+  human-readable plain text logs for any active channel or private query.
+- **Diagnostic Troubleshooting**: Integrated a diagnostic state dump engine with
+  sensitive data masking to assist with technical support.
 - **UI/UX Refinements**: Added a "Message Actions" hover menu, reactive "Network
   Information" tab, and project-wide accessibility tooltips.
 
@@ -35,32 +45,24 @@ and this project adheres to
 
 - **Architecture**: Separated internal message IDs from authoritative `msgid`
   tags to ensure protocol compliance for all advanced features.
-- **Performance**: Optimized message state management to reduce CPU overhead
-  during high-volume traffic.
+- **Branding Architecture**: Introduced a dedicated `--brand-online` variable to
+  ensure status indicators remain distinct from primary theme accents.
 - **Modernized Environment**: Updated requirements to Node 22+ and transitioned
-  to modern browser targets (Chrome, Firefox, Safari 15+).
-- **Emoji System**: Replaced legacy image-based emoticons with native Unicode
-  characters.
+  to modern browser targets, removing legacy IE11/EdgeHTML polyfills.
+- **Performance**: Optimized message state management and replaced legacy
+  image-based emoticons with native Unicode rendering.
 - **Reconnection Logic**: Hardened connection handlers with capped delays and
   authoritative "join healing" to improve stability.
 
 ### Removed
 
-- Removed support for legacy IE11/EdgeHTML browsers and their associated
-  polyfills.
+- Removed support for legacy IE11/EdgeHTML browsers and associated polyfills.
 - Deprecated `znc.in/self-message` support in favor of the ratified
   `echo-message` standard.
+- Removed static `.mp3` and `.ogg` audio assets in favor of programmatic
+  client-side synthesis.
 
 ### Fixed
 
-- Resolved scroller instability and "jumping" issues across all message layouts.
-- Fixed numerous layout and whitespace inconsistencies in the Compact and Inline
-  views.
-- Stabilized state transitions to prevent data leakage between different IRC
-  accounts.
-
-### Security
-
-- Updated `postcss` to ^8.5.28 to address multiple high-severity
-  vulnerabilities.
-- Applied security patches via `npm audit fix` for various dependencies.
+- **Security**: Addressed multiple high-severity dependency vulnerabilities
+  including an update to `postcss` to ^8.5.28.

@@ -2,38 +2,52 @@
 
 ***A versatile web based messenger using IRC***
 
-
 - 100% static files. Host with your favourite web server or a CDN
-- For single networks, bouncer hosts, or a personal generic IRC client that remembers your networks
+- For single networks, bouncer hosts, or a personal generic IRC client that
+  remembers your networks
 - Works out of the box with a default IRC network - or use your own
 - Single or multiple IRC network connections
 - Multiple layouts for small areas or full page layouts
-- Light and dark modes
-- Desktop notifications
-- Extremely versatile via a [single JSON config file at runtime](https://github.com/kiwiirc/kiwiirc/wiki/Configuration)
-- Themable and rich [plugin support](https://github.com/kiwiirc/kiwiirc/wiki/Plugins) such as [file uploading](https://github.com/kiwiirc/plugin-fileuploader/) and [video calling](https://github.com/kiwiirc/plugin-conference)
+- Over 30 professional themes included with unified UI normalization
+- Desktop notifications and modern synthesized audio alerts
+- Clean, human-readable buffer content export for chat logs and debugging
+- Extremely versatile via a
+  [single JSON config file at runtime](https://github.com/kiwiirc/kiwiirc/wiki/02.-Configuration)
+- Themable and rich
+  [plugin support](https://github.com/kiwiirc/kiwiirc/wiki/03.-Plugins) such as
+  [file uploading](https://github.com/kiwiirc/plugin-fileuploader/) and
+  [video calling](https://github.com/kiwiirc/plugin-conference)
 - Team mode for workplaces
 
 Connection modes:
 
 - Directly to a websocket IRC server
-- Connect via the [webircgateway](https://github.com/kiwiirc/webircgateway) websocket proxy for normal IRC servers
+- Connect via the [webircgateway](https://github.com/kiwiirc/webircgateway)
+  websocket proxy for normal IRC servers
 - Stay connected with [KiwiBNC](https://github.com/kiwiirc/kiwibnc)
 
 ## Installing Kiwi IRC
-If you just want to embed an IRC client on your website, you can generate a custom client hosted by kiwiirc.com using the simple client builder, https://kiwiirc.com/clientbuilder/
 
-To install Kiwi IRC on your own server, pre-built and ready to use installers can be found at the downloads page, https://kiwiirc.com/downloads/
+If you just want to embed an IRC client on your website, you can generate a
+custom client hosted by kiwiirc.com using the simple client builder,
+https://kiwiirc.com/clientbuilder/
+
+To install Kiwi IRC on your own server, pre-built and ready to use installers
+can be found at the downloads page, https://kiwiirc.com/downloads/
 
 ## Building from source
+
 #### Dependencies
-Before you can build or start to develop on Kiwi IRC, make sure to have the following installed on your system:
-* [Nodejs](https://nodejs.org/)
-* [npm](https://www.npmjs.com/)
+
+Before you can build or start to develop on Kiwi IRC, make sure to have the
+following installed on your system:
+
+- [Nodejs](https://nodejs.org/) (>= 22.0.0)
+- [npm](https://www.npmjs.com/)
 
 #### Building for production
 
-``` bash
+```bash
 # Install dependencies
 $ npm install
 
@@ -41,12 +55,14 @@ $ npm install
 $ npm run build
 ```
 
-***Note:*** *Be sure to copy the files from the `dist/` folder to your webserver! This folder will be overwritten each time it is built.*
+***Note:*** *Be sure to copy the files from the `dist/` folder to your
+webserver! This folder will be overwritten each time it is built.*
 
 #### Development environment
+
 Kiwi IRC is built using Vuejs, webpack and babel.
 
-``` bash
+```bash
 # Install dependencies
 npm install
 
@@ -57,20 +73,31 @@ ln -s $PWD/scripts/pre-commit .git/hooks/
 npm run dev
 ```
 
-***Note:*** *Do not use this development environment on your live website. It is slow, very large, and unsecure.*
+***Note:*** *Do not use this development environment on your live website. It is
+slow, very large, and unsecure.*
 
 #### Configuration
 
 By default, the client will load the /static/config.json file on startup which
-contains the runtime configuration. When running in the development environment this can be found at [static/config.json](static/config.json)
-
+contains the runtime configuration. When running in the development environment
+this can be found at [static/config.json](static/config.json)
 
 ## Browser support
 
 Kiwi IRC is tested on all modern browsers.
-* Chrome
-* Chrome Mobile (Android)
-* Firefox
-* Safari 15+
-* Edge (Chromium)
 
+- Chrome
+- Chrome Mobile (Android)
+- Firefox
+- Safari 15+
+- Edge (Chromium)
+
+## Technical Documentation
+
+For more detailed technical information, refer to the following documents in the
+repository:
+
+- **[IRCv3.md](IRCv3.md)**: Detailed reference of supported IRCv3 capabilities,
+  extensions, and synchronization logic.
+- **[CHANGELOG.md](CHANGELOG.md)**: Complete history of features, changes, and
+  security updates.
