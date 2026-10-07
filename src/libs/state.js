@@ -777,6 +777,9 @@ function createNewState() {
                     if (isHighlight) {
                         buffer.flag('highlight', true);
                     }
+                    if (message.type === 'error') {
+                        buffer.flag('error', true);
+                    }
                 }
 
                 // Handle any notifications

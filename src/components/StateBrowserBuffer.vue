@@ -23,14 +23,16 @@
                     <div
                         v-if="buffer.flags.unread && showMessageCounts(buffer)"
                         :class="[
+                            buffer.flags.error
+                                ? 'kiwi-statebrowser-channel-label--error'
+                                : '',
                             buffer.flags.highlight
                                 ? 'kiwi-statebrowser-channel-label--highlight'
                                 : '',
                         ]"
                         class="kiwi-statebrowser-channel-label"
                     >
-                        {{ buffer.flags.unread > 999
-                            ? "999+" : buffer.flags.unread }}
+                        {{ buffer.flags.error ? '!' : (buffer.flags.unread > 999 ? "999+" : buffer.flags.unread) }}
                     </div>
                 </div>
 

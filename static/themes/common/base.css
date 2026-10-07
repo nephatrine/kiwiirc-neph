@@ -610,6 +610,27 @@
 
 .kiwi-statebrowser-channel-label--highlight {
     background: var(--brand-error);
+    animation: kiwi-label-pulse 2s infinite;
+}
+
+.kiwi-statebrowser-channel-label--error {
+    background: var(--brand-error);
+    animation: kiwi-label-urgent 0.8s infinite;
+}
+
+@keyframes kiwi-label-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+@keyframes kiwi-label-urgent {
+    0% { transform: scale(1) translateX(0); }
+    20% { transform: scale(1.1) translateX(-2px); }
+    40% { transform: scale(1.1) translateX(2px); }
+    60% { transform: scale(1.1) translateX(-2px); }
+    80% { transform: scale(1.1) translateX(2px); }
+    100% { transform: scale(1) translateX(0); }
 }
 
 .kiwi-statebrowser-usermenu-avatar:hover .kiwi-avatar-background,

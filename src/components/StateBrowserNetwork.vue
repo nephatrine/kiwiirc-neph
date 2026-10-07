@@ -16,13 +16,16 @@
                     <div
                         v-if="serverUnread && showMessageCounts(serverBuffer)"
                         :class="[
+                            serverError
+                                ? 'kiwi-statebrowser-channel-label--error'
+                                : '',
                             serverHighlight
                                 ? 'kiwi-statebrowser-channel-label--highlight'
                                 : '',
                         ]"
                         class="kiwi-statebrowser-channel-label"
                     >
-                        {{ serverUnread > 999 ? "999+" : serverUnread }}
+                        {{ serverError ? '!' : (serverUnread > 999 ? "999+" : serverUnread) }}
                     </div>
                 </div>
             </div>
@@ -200,14 +203,17 @@
                                     && channelActivity.unread > 0"
 
                                 :class="[
+                                    channelActivity.error
+                                        ? 'kiwi-statebrowser-channel-label--error'
+                                        : '',
                                     channelActivity.highlights
                                         ? 'kiwi-statebrowser-channel-label--highlight'
                                         : '',
                                 ]"
                                 class="kiwi-statebrowser-channel-label"
                             >
-                                {{ channelActivity.unread > 999
-                                    ? '999+' : channelActivity.unread }}
+                                {{ channelActivity.error ? '!' : (channelActivity.unread > 999
+                                    ? '999+' : channelActivity.unread) }}
                             </div>
                             <div
                                 v-else-if="!show_queries
@@ -215,14 +221,17 @@
                                     && queryActivity.unread > 0"
 
                                 :class="[
+                                    queryActivity.error
+                                        ? 'kiwi-statebrowser-channel-label--error'
+                                        : '',
                                     queryActivity.highlights
                                         ? 'kiwi-statebrowser-channel-label--highlight'
                                         : '',
                                 ]"
                                 class="kiwi-statebrowser-channel-label"
                             >
-                                {{ queryActivity.unread > 999
-                                    ? '999+' : queryActivity.unread }}
+                                {{ queryActivity.error ? '!' : (queryActivity.unread > 999
+                                    ? '999+' : queryActivity.unread) }}
                             </div>
                         </div>
                     </div>
@@ -311,6 +320,12 @@ export default {
                 totalUnread += buffer.flags.unread;
             });
             return totalUnread;
+        },
+        serverError() {
+            if (!this.collapsed) {
+                return this.serverBuffer.flags.error;
+            }
+            return this.network.buffers.some((buffer) => !buffer.isSpecial() && buffer.flags.error);
         },
         serverHighlight() {
             if (!this.collapsed) {
@@ -407,18 +422,23 @@ export default {
         activityFromBuffers(buffers) {
             let totalUnread = 0;
             let highlight = false;
+            let error = false;
             buffers.forEach((buffer) => {
                 if (buffer.isSpecial() || buffer.setting('hide_message_counts')) {
                     return;
                 }
                 totalUnread += buffer.flags.unread;
-                if (!highlight && buffer.flags.highlight) {
+                if (buffer.flags.highlight) {
                     highlight = true;
+                }
+                if (buffer.flags.error) {
+                    error = true;
                 }
             });
             return {
                 highlights: highlight,
                 unread: totalUnread,
+                error: error,
             };
         },
         onNewChannelInputFocus() {

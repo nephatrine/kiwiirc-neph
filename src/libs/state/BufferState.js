@@ -38,6 +38,7 @@ export default class BufferState {
             requested_invitelist: false,
             is_visible: false,
             is_requesting_chathistory: false,
+            error: false,
         };
         this.settings = { };
         this.last_read = 0;
@@ -153,6 +154,7 @@ export default class BufferState {
         if (newVal) {
             this.flag('unread', 0);
             this.flag('highlight', false);
+            this.flag('error', false);
             this.markAsRead(true);
 
             return;

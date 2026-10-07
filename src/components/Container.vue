@@ -11,6 +11,9 @@
             <div class="kiwi-container-toggledraw-statebrowser" @click.stop="toggleStateBrowser">
                 <div
                     :class="[
+                        unreadMessages.error
+                            ? 'kiwi-container-toggledraw-statebrowser-messagecount--error'
+                            : '',
                         unreadMessages.highlight
                             ? 'kiwi-container-toggledraw-statebrowser-messagecount--highlight'
                             : '',
@@ -18,7 +21,7 @@
                     class="kiwi-container-toggledraw-statebrowser-messagecount"
                 >
                     <span class="kiwi-container-statebrowser-messagecount-alert">
-                        {{ unreadMessages.count > 999 ? '999+' : unreadMessages.count }}
+                        {{ unreadMessages.error ? '!' : (unreadMessages.count > 999 ? '999+' : unreadMessages.count) }}
                     </span>
                     <span class="kiwi-container-statebrowser-messagecount-close">
                         <i class="fa fa-times" aria-hidden="true" />
@@ -103,15 +106,19 @@ export default {
         unreadMessages() {
             let count = 0;
             let highlight = false;
+            let error = false;
             this.$state.networks.forEach((network) => {
                 network.buffers.forEach((buffer) => {
                     count += (buffer.flags.unread || 0);
                     if (buffer.flags.highlight) {
                         highlight = true;
                     }
+                    if (buffer.flags.error) {
+                        error = true;
+                    }
                 });
             });
-            return { count, highlight };
+            return { count, highlight, error };
         },
     },
     created: function created() {
@@ -316,14 +323,17 @@ export default {
 }
 
 @keyframes kiwi-wiggle {
-    0% { margin-left: 5px; }
-    50% { margin-left: 0; }
-    100% { margin-left: 5px; }
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
 }
 
 .kiwi-container-toggledraw-statebrowser-messagecount--highlight {
-    animation: kiwi-wiggle 0.25s 4;
-    animation-timing-function: ease-in, linear, ease-out;
+    animation: kiwi-wiggle 2s infinite;
+}
+
+.kiwi-container-toggledraw-statebrowser-messagecount--error {
+    animation: kiwi-label-urgent 0.8s infinite;
 }
 
 .kiwi-container-toggledraw-statebrowser-messagecount--highlight:hover {
