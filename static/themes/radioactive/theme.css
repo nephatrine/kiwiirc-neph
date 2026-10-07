@@ -1,3 +1,12 @@
+:root {
+    --brand-primary: #00e3b5;
+    --brand-midtone: #032c14;
+    --brand-darktone: #1b2f24;
+    --brand-default-bg: #031e11;
+    --brand-default-fg: #14fdce;
+    --brand-input-border: #155d36;
+}
+
 /* Radioactive is your very own pipboy theme for Kiwi */
 
 @import url(https://fonts.googleapis.com/css?family=VT323);
@@ -187,6 +196,52 @@
 
 .kiwi-appsettings-close:hover{
     background: #5cd894;
+}
+
+/* Emoji Picker */
+.kiwi-emojipicker-modal {
+    background: #032c14;
+    border: 1px solid #5dd895;
+    font-family: 'VT323', monospace;
+}
+
+.kiwi-emojipicker-header {
+    background: #031e11;
+    border-bottom: 1px solid #5dd895;
+}
+
+.kiwi-emojipicker-close {
+    color: #5dd895;
+}
+
+.kiwi-emojipicker-close:hover {
+    background: #5cd894;
+    color: #031e11;
+}
+
+.kiwi-emojipicker-search input {
+    background: #031e11;
+    color: #14fdce;
+    border: 1px solid #5dd895;
+    font-family: 'VT323', monospace;
+}
+
+.kiwi-emojipicker-category {
+    color: #5dd895;
+}
+
+.kiwi-emojipicker-category.kiwi-emojipicker-category--active {
+    color: #14fdce;
+    text-shadow: 0 0 5px #14fdce;
+}
+
+.kiwi-emojipicker-emoji:hover {
+    background-color: rgba(93, 216, 149, 0.2);
+}
+
+.kiwi-emojipicker-category-title {
+    background: #032c14;
+    color: #5dd895;
 }
 
 /* Channel List ( ChannelList.vue ) */
@@ -452,16 +507,16 @@
 
 /* AutoComplete - If the user has enabled autocomplete in their options, this will style the options (AutoComplete.vue) */
 .kiwi-autocomplete {
-    box-shadow: 0 1px 15px rgba(64, 54, 63, 0.25);
-    border: 1px solid #ccc;
-    background: #07311a;
+    box-shadow: 0 1px 15px rgba(0, 0, 0, 0.5);
+    border: 1px solid #5dd895;
+    background: #031e11;
 }
 .kiwi-autocomplete-item {
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid #155d36;
 }
 .kiwi-autocomplete-item--selected {
     background: #1b2f24;
-    color: #fff;
+    color: #14fdce;
 }
 .kiwi-autocomplete-item--selected .u-link {
     color: #fff;
@@ -469,7 +524,7 @@
 
 /* Message list - Standard messages ( MessageList.vue ) */
 .kiwi-messagelist-seperator > span {
-    background: none;
+    background: #031e11;
 }
 
 .kiwi-messageinfo-urls {
@@ -551,6 +606,10 @@
 
 .kiwi-messagelist-message .kiwi-messagelist-body {
     color: #5dd895 !important;
+}
+
+.kiwi-messagelist-body--redacted-revealed {
+    text-decoration: line-through;
 }
 
 .kiwi-messagelist-message--compact .kiwi-messagelist-body {
@@ -833,8 +892,107 @@
 }
 
 .kiwi-messageinfo {
+    background: #032c14;
     border-bottom: 2px #14fdce solid;
     border-top: 1px #14fdce solid;
+}
+
+/* Message Actions */
+.kiwi-messageactions-badge {
+    background: #032f17;
+    border: 1px solid #5dd895;
+    color: #14fdce;
+}
+
+.kiwi-messageactions-badge:hover {
+    background: #155d36;
+    border-color: #14fdce;
+}
+
+.kiwi-messageactions-dropdown {
+    background: #032f17;
+    border: 1px solid #14fdce;
+}
+
+.kiwi-messageactions-item {
+    color: #14fdce;
+}
+
+.kiwi-messageactions-item:hover {
+    background-color: rgba(93, 216, 149, 0.2);
+}
+
+.kiwi-messageactions-divider {
+    background: rgba(20, 253, 206, 0.3);
+}
+
+/* Redaction Prompt */
+.kiwi-redactionprompt {
+    font-family: 'VT323', monospace;
+    border: 1px solid #5dd895;
+}
+
+.kiwi-redactionprompt-header {
+    background: #031e11;
+    border-bottom: 1px solid #5dd895;
+    color: #14fdce;
+}
+
+.kiwi-redactionprompt-header i {
+    color: #14fdce;
+}
+
+.kiwi-redactionprompt-body {
+    background: #032c14;
+}
+
+.kiwi-redactionprompt-footer {
+    background: #031e11;
+    border-top: 1px solid #5dd895;
+}
+
+/* Network Info */
+.kiwi-network-info-section h3 {
+    border-bottom-color: #5dd895;
+    color: #5dd895;
+}
+
+.kiwi-network-info-cap {
+    background: #1b2f24;
+    border-color: #5dd895;
+    color: #14fdce;
+}
+
+.kiwi-network-info-isupport-token {
+    background: #032c14;
+    border-color: #155d36;
+}
+
+/* Message Reactions */
+.kiwi-messagereaction {
+    background: #1b2f24;
+    border-color: #5dd895;
+    color: #14fdce;
+}
+
+.kiwi-messagereaction:hover {
+    background: #155d36;
+    border-color: #14fdce;
+}
+
+.kiwi-messagereaction--reacted {
+    background: rgba(93, 216, 149, 0.2);
+    border-color: #14fdce;
+}
+
+.kiwi-messagereaction-count {
+    color: #5dd895;
+}
+
+/* Media Viewer */
+.kiwi-mediaviewer-controls {
+    background: #031e11;
+    border: 1px solid #5dd895;
 }
 
 .kiwi-statebrowser-usermenu-avatar:hover .kiwi-avatar-background,
@@ -894,15 +1052,16 @@
 
 /* Add channel input */
 .kiwi-statebrowser-newchannel-inputwrap {
-    color: #fff;
+    color: #14fdce;
 }
 .kiwi-statebrowser-newchannel-inputwrap input[type='text'] {
-    color: #000;
-    background: #fff;
+    color: #14fdce;
+    background: #031e11;
+    border: 1px solid #155d36;
 }
 .kiwi-statebrowser-newchannel-inputwrap--focus {
     opacity: 1;
-    background-color: #fff;
+    background-color: #1b2f24;
 }
 
 .kiwi-statebrowser-newchannel-autocomplete.kiwi-autocomplete {
@@ -918,7 +1077,7 @@
 .kiwi-statebrowser-channelfilter {
     transition: all 0.3s;
     border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-    color: #131312;
+    color: #14fdce;
 }
 
 .kiwi-statebrowser-channelfilter p a {
@@ -926,11 +1085,12 @@
 }
 
 .kiwi-statebrowser-channelfilter::after {
-    color: #000;
+    color: #14fdce;
 }
 .kiwi-statebrowser-channelfilter input {
-    background-color: #fff;
-    color: #000;
+    background-color: #031e11;
+    color: #14fdce;
+    border: 1px solid #155d36;
     outline: none;
 }
 .kiwi-statebrowser-channelfilter p {
@@ -1188,6 +1348,15 @@
     background-color: rgba(0, 0, 0, 0.1);
 }
 
+.kiwi-selfuser-error-message {
+    background: #d16c6c;
+    color: #fff;
+}
+
+.kiwi-messagelist-message--own {
+    background-color: #3dc37829;
+}
+
 /* Away Status Indicator */
 .kiwi-awaystatusindicator,
 .kiwi-avatar-status {
@@ -1205,15 +1374,6 @@
 .kiwi-avatar-status--offline {
     background-color: #5e2b2b;
     fill: #5e2b2b;
-}
-
-.kiwi-selfuser-error-message {
-    background: #d16c6c;
-    color: #fff;
-}
-
-.kiwi-messagelist-message--own {
-    background-color: #3dc37829;
 }
 
 @media screen and (max-width: 769px) {

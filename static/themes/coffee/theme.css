@@ -13,6 +13,7 @@
     --brand-notice: #f6c358;
     --brand-warning: #fcb46e;
     --brand-error: #bf5155;
+    --brand-online: #42b992;
 
     /* Connection Indicator top */
     --comp-workspace-before-bg: var(--brand-primary);
@@ -101,25 +102,6 @@
 
 .kiwi-statebrowser-channel-label {
     background: #967f70;
-}
-
-/* Away Status Indicator */
-.kiwi-awaystatusindicator,
-.kiwi-avatar-status {
-    background-color: #42b992;
-    fill: #42b992;
-}
-
-.kiwi-awaystatusindicator.kiwi-awaystatusindicator--away,
-.kiwi-avatar-status--away {
-    background-color: var(--brand-warning);
-    fill: var(--brand-warning);
-}
-
-.kiwi-awaystatusindicator.kiwi-awaystatusindicator--offline,
-.kiwi-avatar-status--offline {
-    background-color: var(--brand-error);
-    fill: var(--brand-error);
 }
 
 /* IRC Text Colours */

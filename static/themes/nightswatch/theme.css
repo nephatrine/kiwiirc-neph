@@ -13,6 +13,7 @@
     --brand-notice: #f6c358;
     --brand-warning: #fcb46e;
     --brand-error: #bf5155;
+    --brand-online: #41e8c9;
 
     /* Input elements */
     --brand-input-border: #000000;
@@ -351,25 +352,6 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start,
 .kiwi-controlinput-send {
     color: var(--brand-default-fg);
     background-color: var(--brand-default-bg);
-}
-
-/* Away Status Indicator */
-.kiwi-awaystatusindicator,
-.kiwi-avatar-status {
-    background-color: #41e8c9;
-    fill: #41e8c9;
-}
-
-.kiwi-awaystatusindicator.kiwi-awaystatusindicator--away,
-.kiwi-avatar-status--away {
-    background-color: var(--brand-warning);
-    fill: var(--brand-warning);
-}
-
-.kiwi-awaystatusindicator.kiwi-awaystatusindicator--offline,
-.kiwi-avatar-status--offline {
-    background-color: var(--brand-error);
-    fill: var(--brand-error);
 }
 
 /* IRC Text Colours */

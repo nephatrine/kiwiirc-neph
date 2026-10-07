@@ -13,6 +13,7 @@
     --brand-notice: #f6c358;
     --brand-warning: #fcb46e;
     --brand-error: #bf5155;
+    --brand-online: #42b992;
 
     /* Connection Indicator top */
     --comp-workspace-before-bg: var(--brand-primary);
@@ -55,10 +56,6 @@
 }
 
 /* StateBrowser */
-.kiwi-awaystatusindicator {
-    background-color: #42b992;
-}
-
 .kiwi-network-name-options {
     background-color: #4e5c6b;
 }

@@ -1,3 +1,7 @@
+:root {
+    --brand-online: #42b992;
+}
+
 /* ---- Welcome Screens ----- */
 .kiwi-customserver-form {
     background-color: var(--brand-default-bg);
@@ -1078,8 +1082,8 @@
 /* Away Status Indicator */
 .kiwi-awaystatusindicator,
 .kiwi-avatar-status {
-    background-color: var(--brand-primary);
-    fill: var(--brand-primary);
+    background-color: var(--brand-online);
+    fill: var(--brand-online);
 }
 
 .kiwi-awaystatusindicator.kiwi-awaystatusindicator--away,
