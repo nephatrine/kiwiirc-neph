@@ -59,6 +59,7 @@
         </template>
         <AvatarCommon />
         <emoji-picker />
+        <redaction-prompt />
     </div>
 </template>
 
@@ -75,6 +76,7 @@ import ControlInput from '@/components/ControlInput';
 import MediaViewer from '@/components/MediaViewer';
 import AvatarCommon from '@/components/UserAvatarCommon';
 import EmojiPicker from '@/components/EmojiPicker';
+import RedactionPrompt from '@/components/RedactionPrompt';
 import { State as SidebarState } from '@/components/Sidebar';
 import ThemeManager from '@/libs/ThemeManager';
 import * as Notifications from '@/libs/Notifications';
@@ -91,6 +93,7 @@ export default {
         MediaViewer,
         AvatarCommon,
         EmojiPicker,
+        RedactionPrompt,
     },
     props: ['startupComponent'],
     data() {

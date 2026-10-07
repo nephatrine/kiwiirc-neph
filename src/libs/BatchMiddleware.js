@@ -53,6 +53,7 @@ function handleRawEvent(network, command, message, rawLine, client, next) {
             if (batch) {
                 resolveBatch(network, client, batch);
                 client.active_batches.delete(batchId);
+                network.active_outgoing_batches.delete(batchId);
             }
         }
         // Always "swallow" BATCH commands so irc-framework's flat handler doesn't interfere

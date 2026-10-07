@@ -5,6 +5,7 @@ import _ from 'lodash';
 
 import * as Misc from '@/helpers/Misc';
 import * as TextFormatting from '@/helpers/TextFormatting';
+import * as Reactions from '@/helpers/Reactions';
 import { configTemplates } from '@/res/configTemplates';
 import NetworkState from './state/NetworkState';
 import BufferState from './state/BufferState';
@@ -46,6 +47,11 @@ function createNewState() {
                 message: null,
                 buffer: null,
                 ircinput: null,
+            },
+            redaction_prompt: {
+                visible: false,
+                message: null,
+                buffer: null,
             },
         },
         networks: [],
@@ -644,9 +650,23 @@ function createNewState() {
                 let bufferMessage = new Message(message, user);
 
                 if (bufferMessage.is_pending) {
-                    // Set a timeout to clear the pending state if no echo arrives
+                    // Set a timeout to revert the pending state if no echo arrives
+                    // This is Scenario 2 (heuristic matching)
                     setTimeout(() => {
+                        if (!bufferMessage.is_pending) {
+                            return;
+                        }
+
+                        // Revert by marking as error
                         bufferMessage.is_pending = false;
+                        bufferMessage.type = 'error';
+
+                        this.addMessage(buffer, {
+                            time: Date.now(),
+                            nick: '*',
+                            message: TextFormatting.t('error_confirm_timeout'),
+                            type: 'error',
+                        });
                     }, 60000);
                 }
 
@@ -1020,6 +1040,201 @@ function createNewState() {
                 if (buffer) {
                     buffer.rename(newNick);
                 }
+            },
+
+            promotePendingLabel(networkid, label) {
+                let network = this.getNetwork(networkid);
+                if (!network) {
+                    return;
+                }
+
+                network.buffers.forEach((buffer) => {
+                    // 1. Messages
+                    const pendingMsg = buffer.messagesObj.messageLabels[label];
+                    if (pendingMsg) {
+                        pendingMsg.is_pending = false;
+                        delete buffer.messagesObj.messageLabels[label];
+                    }
+
+                    // 2. Reactions
+                    const pendingReaction = buffer.messagesObj.pendingReactions[label];
+                    if (pendingReaction) {
+                        const { message, emoji, isReacting } = pendingReaction;
+                        Reactions.applyReaction(
+                            message,
+                            network.nick,
+                            emoji,
+                            isReacting,
+                            { isPending: false }
+                        );
+                        delete buffer.messagesObj.pendingReactions[label];
+                    }
+
+                    // 3. Redactions
+                    const pendingRedaction = buffer.messagesObj.pendingRedactions[label];
+                    if (pendingRedaction) {
+                        const { message } = pendingRedaction;
+                        message.is_pending = false;
+                        delete buffer.messagesObj.pendingRedactions[label];
+                    }
+                });
+            },
+
+            revertPendingLabel(networkid, label, errorMsg) {
+                let network = this.getNetwork(networkid);
+                if (!network) {
+                    return false;
+                }
+
+                let finalError = errorMsg || TextFormatting.t('error_confirm_timeout');
+                let totalHandled = false;
+
+                network.buffers.forEach((buffer) => {
+                    let handled = false;
+
+                    // 1. Messages
+                    const pendingMsg = buffer.messagesObj.messageLabels[label];
+                    if (pendingMsg) {
+                        pendingMsg.is_pending = false;
+                        pendingMsg.type = 'error';
+                        delete buffer.messagesObj.messageLabels[label];
+                        handled = true;
+                    }
+
+                    // 2. Reactions
+                    const pendingReaction = buffer.messagesObj.pendingReactions[label];
+                    if (pendingReaction) {
+                        const { message, emoji, isReacting } = pendingReaction;
+                        // Revert the local echo by applying the opposite action
+                        Reactions.applyReaction(
+                            message,
+                            network.nick,
+                            emoji,
+                            !isReacting,
+                            { isPending: false }
+                        );
+                        delete buffer.messagesObj.pendingReactions[label];
+                        handled = true;
+                    }
+
+                    // 3. Redactions
+                    const pendingRedaction = buffer.messagesObj.pendingRedactions[label];
+                    if (pendingRedaction) {
+                        const { message } = pendingRedaction;
+                        message.is_redacted = false;
+                        message.redacted_by = '';
+                        message.redaction_reason = '';
+                        message.is_pending = false;
+                        delete buffer.messagesObj.pendingRedactions[label];
+                        handled = true;
+                    }
+
+                    if (handled) {
+                        this.addMessage(buffer, {
+                            time: Date.now(),
+                            nick: '*',
+                            message: finalError,
+                            type: 'error',
+                        });
+                        totalHandled = true;
+                    }
+                });
+
+                return totalHandled;
+            },
+
+            revertPendingHeuristic(networkid, command, args, errorMsg) {
+                let network = this.getNetwork(networkid);
+                if (!network || !args || args.length === 0) {
+                    return false;
+                }
+
+                const target = args[0];
+                let buffer = this.getBufferByName(networkid, target);
+
+                let finalError = errorMsg || TextFormatting.t('error_confirm_timeout');
+                let handled = false;
+
+                if (command === 'BATCH' && args.length >= 1) {
+                    const batchId = args[0];
+                    const batchInfo = network.active_outgoing_batches.get(batchId);
+                    if (batchInfo) {
+                        if (batchInfo.label) {
+                            return this.revertPendingLabel(networkid, batchInfo.label, errorMsg);
+                        }
+                        buffer = this.getBufferByName(networkid, batchInfo.target);
+                        if (buffer) {
+                            const bufMessages = buffer.getMessages();
+                            const startIdx = bufMessages.length - 1;
+                            const endIdx = Math.max(0, bufMessages.length - 20);
+                            for (let i = startIdx; i >= endIdx; i--) {
+                                const m = bufMessages[i];
+                                if (m.is_pending && m.nick === network.nick) {
+                                    m.is_pending = false;
+                                    m.type = 'error';
+                                    handled = true;
+                                    break;
+                                }
+                            }
+                        }
+                        network.active_outgoing_batches.delete(batchId);
+                    }
+                } else if (command === 'REDACT' && args.length >= 2) {
+                    const msgid = args[1];
+                    const message = buffer.messagesObj.messageIds[msgid];
+                    if (message && message.is_redacted && message.is_pending) {
+                        message.is_redacted = false;
+                        message.redacted_by = '';
+                        message.redaction_reason = '';
+                        message.is_pending = false;
+                        handled = true;
+                    }
+                } else if (['PRIVMSG', 'NOTICE'].includes(command)) {
+                    const bufMessages = buffer.getMessages();
+                    const startIdx = bufMessages.length - 1;
+                    const endIdx = Math.max(0, bufMessages.length - 20);
+                    for (let i = startIdx; i >= endIdx; i--) {
+                        if (bufMessages[i].is_pending && bufMessages[i].nick === network.nick) {
+                            bufMessages[i].is_pending = false;
+                            bufMessages[i].type = 'error';
+                            handled = true;
+                            break;
+                        }
+                    }
+                } else if (command === 'TAGMSG') {
+                    // Revert most recent pending reaction
+                    const label = Object.keys(buffer.messagesObj.pendingReactions).pop();
+                    if (label) {
+                        const pending = buffer.messagesObj.pendingReactions[label];
+                        const { message, emoji, isReacting } = pending;
+                        Reactions.applyReaction(
+                            message,
+                            network.nick,
+                            emoji,
+                            !isReacting,
+                            { isPending: false }
+                        );
+                        delete buffer.messagesObj.pendingReactions[label];
+                        handled = true;
+                    }
+                } else if (command === 'CHATHISTORY') {
+                    if (buffer.flag('is_requesting_chathistory')) {
+                        buffer.flag('is_requesting_chathistory', false);
+                        buffer.flag('chathistory_available', false);
+                        handled = true;
+                    }
+                }
+
+                if (handled) {
+                    this.addMessage(buffer, {
+                        time: Date.now(),
+                        nick: '*',
+                        message: finalError,
+                        type: 'error',
+                    });
+                }
+
+                return handled;
             },
 
             getStartups() {

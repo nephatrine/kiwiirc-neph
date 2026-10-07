@@ -128,6 +128,7 @@ export const configTemplates = {
             emoji_convert_as_typed: true,
             emoji_convert_incoming: true,
             ignore_bots: false,
+            show_redactions: 'placeholder',
         },
         avatars: {
             away_status_position: 1,

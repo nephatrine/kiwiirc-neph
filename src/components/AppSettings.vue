@@ -138,6 +138,14 @@
                                 <span>{{ $t('settings_ignore_bots') }} </span>
                                 <input v-model="settingBufferIgnoreBots" type="checkbox">
                             </label>
+                            <label class="kiwi-appsettings-messagelistDisplay">
+                                <span>{{ $t('settings_show_redactions') }} </span>
+                                <select v-model="settingBufferShowRedactions">
+                                    <option value="hidden">{{ $t('settings_show_redactions_hidden') }}</option>
+                                    <option value="placeholder">{{ $t('settings_show_redactions_placeholder') }}</option>
+                                    <option value="revealed">{{ $t('settings_show_redactions_revealed') }}</option>
+                                </select>
+                            </label>
                         </div>
                     </div>
 
@@ -304,6 +312,7 @@ export default {
         settingBufferMuteSound: bindSetting('buffers.mute_sound'),
         settingBufferShareTyping: bindSetting('buffers.share_typing'),
         settingBufferIgnoreBots: bindSetting('buffers.ignore_bots'),
+        settingBufferShowRedactions: bindSetting('buffers.show_redactions'),
         settingDefaultBanMask: bindSetting('buffers.default_ban_mask'),
         settingDefaultKickReason: bindSetting('buffers.default_kick_reason'),
         settingBufferInlineLinkPreviews: {

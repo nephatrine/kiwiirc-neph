@@ -995,6 +995,11 @@
     color: var(--brand-default-bg);
 }
 
+.kiwi-messageinfo-actions .kiwi-messageinfo-redact {
+    background: var(--brand-warning);
+    color: var(--brand-default-bg);
+}
+
 .kiwi-messageinfo-actions .kiwi-messageinfo-ban-user {
     background: var(--brand-error);
     color: var(--brand-default-bg);
@@ -1102,4 +1107,15 @@
 /* Selected text */
 :root {
     --brand-selected: rgba(0, 0, 255, 0.3);
+}
+
+.kiwi-messagelist-body--redacted {
+    cursor: pointer;
+    font-style: italic;
+    user-select: none;
+}
+
+.kiwi-messagelist-body--redacted-revealed {
+    opacity: 0.8;
+    text-decoration: line-through;
 }

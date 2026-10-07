@@ -74,20 +74,12 @@ export function theMiddleware(network, command, message, client, next) {
     const emoji = reactEmoji || unreactEmoji;
     const isReacting = !!reactEmoji;
 
-    // If this is an echo of our own reaction with a label, clear the pending state
-    if (label && targetNick.toLowerCase() === client.user.nick.toLowerCase()) {
-        const pending = buffer.messagesObj.pendingReactions[label];
-        if (pending) {
-            Reactions.applyReaction(
-                targetMessage,
-                targetNick,
-                emoji,
-                isReacting,
-                { isPending: false }
-            );
-            delete buffer.messagesObj.pendingReactions[label];
+    // If this is an echo of our own reaction, handle promotion
+    if (targetNick.toLowerCase() === client.user.nick.toLowerCase()) {
+        if (label) {
+            network.appState.promotePendingLabel(network.id, label);
         } else {
-            // Echo from another client, or local echo already timed out
+            // Normal incoming reaction or Scenario 2 (echo without label)
             Reactions.applyReaction(
                 targetMessage,
                 targetNick,
@@ -97,7 +89,7 @@ export function theMiddleware(network, command, message, client, next) {
             );
         }
     } else {
-        // Normal incoming reaction or Scenario C (echo without label)
+        // Normal incoming reaction from another user
         Reactions.applyReaction(
             targetMessage,
             targetNick,

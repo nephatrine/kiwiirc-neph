@@ -375,7 +375,29 @@ export default {
                 (new Date(time)).toLocaleString();
         },
         formatMessage(message) {
-            return message.toHtml(this);
+            let showRedactions = this.bufferSetting('show_redactions');
+
+            if (message.is_redacted && !message.is_redacted_revealed && showRedactions !== 'revealed') {
+                if (showRedactions === 'hidden') {
+                    return '';
+                }
+
+                if (showRedactions === 'placeholder') {
+                    let nick = message.redacted_by || 'unknown';
+                    let reason = message.redaction_reason;
+                    let text = reason ?
+                        this.$t('redacted_by_reason', { nick, reason }) :
+                        this.$t('redacted_by', { nick });
+
+                    return `<span class="kiwi-messagelist-body--redacted">${text}</span>`;
+                }
+            }
+
+            let html = message.toHtml(this);
+            if (message.is_redacted) {
+                return `<span class="kiwi-messagelist-body--redacted-revealed">${html}</span>`;
+            }
+            return html;
         },
         isMessageHighlight(message) {
             // Highlighting ourselves when we join or leave a channel is silly
@@ -458,6 +480,11 @@ export default {
             let avatarElement = event.target.closest('.kiwi-avatar');
             if (avatarElement && avatarElement.dataset.nick) {
                 this.openUserBox(avatarElement.dataset.nick);
+                return;
+            }
+
+            if (event.target.classList.contains('kiwi-messagelist-body--redacted')) {
+                message.is_redacted_revealed = !message.is_redacted_revealed;
                 return;
             }
 
@@ -898,7 +925,8 @@ div.kiwi-messagelist-item.kiwi-messagelist-item--selected .kiwi-messagelist-mess
     opacity: 0.3;
 }
 
-.kiwi-messagelist-message--pending {
+.kiwi-messagelist-message--pending,
+.kiwi-messagelist-message--redacted {
     opacity: 0.5;
 }
 

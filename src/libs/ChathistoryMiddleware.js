@@ -19,12 +19,16 @@ export default function chathistoryMiddleware(network) {
             client.chathistory.batchCallbacks.resolve(target, event);
         }
 
-        // This is sent as 'unknown command', its been structured this way so hopefully it
-        // will still work if a fail handler is ever created in irc-fw
+        // Standard Replies spec: FAIL CHATHISTORY <error> <target> ... :<description>
         if (event?.command?.toLowerCase() === 'fail' && event.params[0].toLowerCase() === 'chathistory') {
-            client.chathistory.batchCallbacks.resolve(event.params[3]);
+            const error = event.params[1];
+            const target = event.params[2];
+            const reason = event.params[event.params.length - 1];
 
-            if (event.params[1].toLowerCase() === 'invalid_target') {
+            // Resolve the callback with an error object
+            client.chathistory.batchCallbacks.resolve(target, { error, reason });
+
+            if (error.toLowerCase() === 'invalid_target') {
                 // suppress invalid target errors
                 next();
                 return;
@@ -45,10 +49,17 @@ function addFunctionsToClient(client, network) {
         add(cb, target, type, ...args) {
             this.callbacks[target.toUpperCase()] = this.callbacks[target.toUpperCase()] || [];
             this.callbacks[target.toUpperCase()].push(cb);
+
+            let tags = {};
+            if (network.hasCap('labeled-response')) {
+                tags.label = Misc.generateLabel();
+            }
+
             this.queue.push({
                 target,
                 type,
                 args,
+                tags,
             });
             if (!this.queueActive) {
                 this.queueNext();
@@ -78,7 +89,12 @@ function addFunctionsToClient(client, network) {
                 return;
             }
 
-            client.raw('CHATHISTORY', nextRequest.type, nextRequest.target, ...nextRequest.args);
+            const ircMessage = new client.Message('CHATHISTORY', nextRequest.type, nextRequest.target, ...nextRequest.args);
+            if (nextRequest.tags && Object.keys(nextRequest.tags).length > 0) {
+                ircMessage.tags = nextRequest.tags;
+            }
+
+            client.raw(ircMessage);
         },
     };
 

@@ -26,6 +26,9 @@
             props.message.is_pending
                 ? 'kiwi-messagelist-message--pending'
                 : '',
+            props.message.is_redacted
+                ? 'kiwi-messagelist-message--redacted'
+                : '',
             (props.message.user && props.m().userMode(props.message.user))
                 ? `kiwi-messagelist-message--user-mode-${props.m().userMode(props.message.user)}`
                 : '',
@@ -102,7 +105,7 @@
             />
             <component
                 :is="injections.components.MessageActions"
-                v-if="props.m().canReply(props.message) && props.message.irc_id && props.m().getNetwork().hasCap('message-tags')"
+                v-if="props.m().canReply(props.message) && props.message.irc_id && props.m().getNetwork().hasCap('message-tags') && !props.message.is_redacted"
                 :message="props.message"
                 :buffer="props.ml.buffer"
                 layout="inline"

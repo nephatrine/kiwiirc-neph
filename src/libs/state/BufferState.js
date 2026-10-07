@@ -5,6 +5,7 @@ import _ from 'lodash';
 import { def } from './common';
 import batchedAdd from '../batchedAdd';
 import * as bufferTools from '../bufferTools';
+import * as TextFormatting from '@/helpers/TextFormatting';
 import * as Reactions from '@/helpers/Reactions';
 import * as Misc from '@/helpers/Misc';
 
@@ -67,6 +68,7 @@ export default class BufferState {
             messageIds: Object.create(null),
             messageLabels: Object.create(null),
             pendingReactions: Object.create(null),
+            pendingRedactions: Object.create(null),
         };
         this.messageDict.push(messagesObj);
         def(this, 'messagesObj', messagesObj, false);
@@ -618,7 +620,7 @@ export default class BufferState {
         let hasEcho = network.hasCap('echo-message');
         let hasLabel = network.hasCap('labeled-response');
 
-        if (hasEcho && hasLabel) {
+        if (hasLabel) {
             const label = Misc.generateLabel();
             tags.label = label;
             this.messagesObj.pendingReactions[label] = {
@@ -630,25 +632,103 @@ export default class BufferState {
             // Local echo with pending status
             Reactions.applyReaction(message, network.nick, emoji, isReacting, { isPending: true });
 
-            // Set a timeout to clear the pending state if no echo arrives
+            // Set a timeout to revert the pending state if no confirm arrives
             setTimeout(() => {
                 if (this.messagesObj.pendingReactions[label]) {
-                    Reactions.applyReaction(
-                        message,
-                        network.nick,
-                        emoji,
-                        isReacting,
-                        { isPending: false }
-                    );
-                    delete this.messagesObj.pendingReactions[label];
+                    this.state.revertPendingLabel(this.networkid, label);
                 }
             }, 60000);
+        } else if (hasEcho) {
+            // Case 2: heuristic pending
+            Reactions.applyReaction(message, network.nick, emoji, isReacting, { isPending: true });
+            setTimeout(() => {
+                // Heuristic timeout - we can't reliably revert because we don't have a label
+                // but we can mark it as non-pending.
+                Reactions.applyReaction(
+                    message,
+                    network.nick,
+                    emoji,
+                    isReacting,
+                    { isPending: false }
+                );
+            }, 60000);
         } else {
-            // Case 2 & 3: immediate local echo
+            // Case 1: immediate local echo
             Reactions.applyReaction(message, network.nick, emoji, isReacting, { isPending: false });
         }
 
         network.ircClient.tagmsg(this.name, tags);
+    }
+
+    redact(message, reason) {
+        let network = this.getNetwork();
+        if (!network.hasCap('draft/message-redaction') || !message.irc_id || message.type === 'tagmsg') {
+            return;
+        }
+
+        let tags = {};
+        let hasEcho = network.hasCap('echo-message');
+        let hasLabel = network.hasCap('labeled-response');
+
+        if (hasLabel) {
+            const label = Misc.generateLabel();
+            tags.label = label;
+            this.messagesObj.pendingRedactions[label] = {
+                message,
+                reason,
+            };
+
+            // Local update with pending status
+            message.is_redacted = true;
+            message.redacted_by = network.nick;
+            message.redaction_reason = reason;
+            message.is_pending = true;
+
+            // Set a timeout to revert the pending state if no confirm arrives
+            setTimeout(() => {
+                if (this.messagesObj.pendingRedactions[label]) {
+                    this.state.revertPendingLabel(this.networkid, label);
+                }
+            }, 60000);
+        } else if (hasEcho) {
+            // Case 2: heuristic pending
+            message.is_redacted = true;
+            message.redacted_by = network.nick;
+            message.redaction_reason = reason;
+            message.is_pending = true;
+
+            setTimeout(() => {
+                if (message.is_pending) {
+                    message.is_redacted = false;
+                    message.redacted_by = '';
+                    message.redaction_reason = '';
+                    message.is_pending = false;
+
+                    this.state.addMessage(this, {
+                        time: Date.now(),
+                        nick: '*',
+                        message: TextFormatting.t('error_confirm_timeout'),
+                        type: 'error',
+                    });
+                }
+            }, 60000);
+        } else {
+            // Case 1: Immediate local update
+            message.is_redacted = true;
+            message.redacted_by = network.nick;
+            message.redaction_reason = reason;
+            message.is_pending = false;
+        }
+
+        let ircMessage = new network.ircClient.Message('REDACT', this.name, message.irc_id);
+        if (reason) {
+            ircMessage.params.push(reason);
+        }
+        if (Object.keys(tags).length > 0) {
+            ircMessage.tags = tags;
+        }
+
+        network.ircClient.raw(ircMessage);
     }
 
     join() {
@@ -864,6 +944,18 @@ function getBufferHistory(buffer, chathistoryFuncName, time) {
     let existingMessageIds = Object.assign({}, buffer.messagesObj.messageIds);
     ircClient.chathistory[chathistoryFuncName](buffer.name, time).then((event) => {
         if (!event) {
+            buffer.flag('chathistory_available', false);
+            return;
+        }
+
+        if (event.error) {
+            const errorMsg = event.reason || event.error;
+            buffer.state.addMessage(buffer, {
+                time: Date.now(),
+                nick: '*',
+                message: 'Failed to load history: ' + errorMsg,
+                type: 'error',
+            });
             buffer.flag('chathistory_available', false);
             return;
         }

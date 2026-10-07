@@ -187,6 +187,15 @@ export function sendMultiline(network, state, commandName, target, message, tags
     const batchId = Math.random().toString(36).substr(2, 8);
     const client = network.ircClient;
 
+    // Track this batch so we can handle FAIL BATCH
+    network.active_outgoing_batches.set(batchId, {
+        target: target,
+        label: tags ? tags.label : null,
+    });
+    setTimeout(() => {
+        network.active_outgoing_batches.delete(batchId);
+    }, 120000);
+
     // Metadata tags like +reply or msgid go on the BATCH command itself
     const batchStart = new client.Message('BATCH', '+' + batchId, 'draft/multiline', target);
     if (tags && Object.keys(tags).length) {

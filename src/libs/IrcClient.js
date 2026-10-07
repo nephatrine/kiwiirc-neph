@@ -6,12 +6,12 @@ import Irc from 'irc-framework';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import typingMiddleware from './TypingMiddleware';
 import reactionMiddleware from './ReactionMiddleware';
+import redactionMiddleware from './RedactionMiddleware';
 import saslMiddleware from './SaslMiddleware';
 import batchMiddleware from './BatchMiddleware';
 import chathistoryMiddleware from './ChathistoryMiddleware';
 import * as BatchHandlers from './BatchHandlers';
 import * as ServerConnection from './ServerConnection';
-import * as Reactions from '@/helpers/Reactions';
 
 const DESIRED_CAPS = [
     'echo-message',
@@ -30,6 +30,7 @@ const DESIRED_CAPS = [
     'setname',
     'cap-notify',
     'server-time',
+    'draft/message-redaction',
 ];
 
 export function create(state, network) {
@@ -52,6 +53,7 @@ export function create(state, network) {
     ircClient.use(clientMiddleware(state, network));
     ircClient.use(typingMiddleware(network));
     ircClient.use(reactionMiddleware(network));
+    ircClient.use(redactionMiddleware(network));
     ircClient.use(saslMiddleware(network));
     ircClient.use(batchMiddleware(network));
 
@@ -196,6 +198,57 @@ export function create(state, network) {
     });
 
     return ircClient;
+}
+
+function getEffectiveCommand(command, event) {
+    return (command === 'unknown command' && event && event.command) ?
+        event.command.toUpperCase() :
+        command.toUpperCase();
+}
+
+function handleStandardReply(command, event, network, state) {
+    const type = getEffectiveCommand(command, event);
+    const failedCmd = (event.params[0] || '').toUpperCase();
+    const errorCode = event.params[1] || '';
+    const description = event.params[event.params.length - 1] || '';
+    const args = event.params.slice(2, -1);
+    const label = event.tags?.label;
+
+    let handled = false;
+
+    if (type === 'FAIL') {
+        if (label) {
+            handled = state.revertPendingLabel(network.id, label, description);
+        } else {
+            handled = state.revertPendingHeuristic(network.id, failedCmd, args, description);
+        }
+    }
+
+    if (handled) {
+        return;
+    }
+
+    // Not handled by state reversion (or WARN/NOTE). Route to buffer.
+    let target = args[0] || '*';
+    if (failedCmd === 'INVITE' && args.length >= 2) {
+        // FAIL INVITE <code_name> <nick> <target> :<description>
+        target = args[1];
+    } else if (failedCmd === 'BATCH' && args.length >= 1) {
+        const batchInfo = network.active_outgoing_batches.get(args[0]);
+        if (batchInfo) {
+            target = batchInfo.target;
+        }
+    }
+
+    const buffer = network.bufferByName(target) || network.serverBuffer();
+    const messageType = ['FAIL', 'WARN'].includes(type) ? 'error' : 'message';
+
+    state.addMessage(buffer, {
+        time: Date.now(),
+        nick: '*',
+        message: description || `${type} ${failedCmd} ${errorCode}`,
+        type: messageType,
+    });
 }
 
 function clientMiddleware(state, network) {
@@ -422,40 +475,12 @@ function clientMiddleware(state, network) {
             (event && event.tags && typeof event.tags['draft/chathistory-context'] !== 'undefined')
         );
 
-        if (command === 'FAIL' && event.tags && event.tags.label) {
-            const label = event.tags.label;
-            const failedCommand = event.params ? event.params[0] : '';
-            let buffer = null;
+        if (['FAIL', 'WARN', 'NOTE'].includes(getEffectiveCommand(command, event))) {
+            handleStandardReply(command, event, network, state);
+        }
 
-            if (['PRIVMSG', 'TAGMSG', 'NOTICE'].includes(failedCommand) && event.params.length >= 3) {
-                const bufferName = event.params[2];
-                buffer = state.getBufferByName(networkid, bufferName);
-            }
-
-            if (buffer) {
-                // 1. Handle failed message
-                const pendingMsg = buffer.messagesObj.messageLabels[label];
-                if (pendingMsg) {
-                    pendingMsg.is_pending = false;
-                    pendingMsg.type = 'error';
-                    delete buffer.messagesObj.messageLabels[label];
-                }
-
-                // 2. Handle failed reaction
-                const pendingReaction = buffer.messagesObj.pendingReactions[label];
-                if (pendingReaction) {
-                    const { message, emoji, isReacting } = pendingReaction;
-                    // Revert the local echo by applying the opposite action
-                    Reactions.applyReaction(
-                        message,
-                        network.nick,
-                        emoji,
-                        !isReacting,
-                        { isPending: false }
-                    );
-                    delete buffer.messagesObj.pendingReactions[label];
-                }
-            }
+        if (getEffectiveCommand(command, event) === 'ACK' && event.tags && event.tags.label) {
+            state.promotePendingLabel(networkid, event.tags.label);
         }
 
         if (command.toLowerCase() === 'batch start chathistory' && client.chathistory) {

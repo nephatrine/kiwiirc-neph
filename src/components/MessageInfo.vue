@@ -42,6 +42,12 @@
                 @click="openQuery"
             >{{ $t('reply_in_private') }}</a>
 
+            <a
+                v-if="!requestingInput && canRedact"
+                class="u-link kiwi-messageinfo-button kiwi-messageinfo-redact"
+                @click="onRedact"
+            >{{ $t('redact') }}</a>
+
             <template v-if="!requestingInput">
                 <component
                     :is="plugin.component"
@@ -99,6 +105,15 @@ export default {
         supportsReactions() {
             return this.buffer.getNetwork().supportsTag('+draft/react') && this.message.irc_id;
         },
+        canRedact() {
+            if (!this.buffer.getNetwork().hasCap('draft/message-redaction') || !this.message.irc_id) {
+                return false;
+            }
+            if (this.message.is_redacted || this.message.type === 'tagmsg') {
+                return false;
+            }
+            return this.isSelf() || this.areWeAnOp();
+        },
     },
     methods: {
         emojiUrl(code) {
@@ -137,6 +152,12 @@ export default {
             let network = this.buffer.getNetwork();
             let buffer = this.$state.addBuffer(network.id, this.message.nick);
             this.$state.setActiveBuffer(network.id, buffer.name);
+        },
+        onRedact() {
+            this.$state.ui.redaction_prompt.message = this.message;
+            this.$state.ui.redaction_prompt.buffer = this.buffer;
+            this.$state.ui.redaction_prompt.visible = true;
+            this.$emit('close');
         },
     },
 };

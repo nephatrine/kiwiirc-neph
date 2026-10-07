@@ -73,6 +73,7 @@ describe('BatchHandlers.js', () => {
                 serverBuffer: jest.fn(),
                 isChannelName: jest.fn().mockReturnValue(true),
                 extractTargetGroup: jest.fn().mockReturnValue(null),
+                active_outgoing_batches: new Map(),
             };
 
             TextFormatting.t.mockImplementation((key, vars) => (

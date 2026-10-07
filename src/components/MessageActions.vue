@@ -21,6 +21,9 @@
             <div :title="$t('reply')" class="kiwi-messageactions-item" @click="onReply">
                 <i class="fa fa-reply" aria-hidden="true" />
             </div>
+            <div v-if="canRedact" :title="$t('redact')" class="kiwi-messageactions-item" @click="onRedact">
+                <i class="fa fa-eraser" aria-hidden="true" />
+            </div>
         </div>
     </div>
 </template>
@@ -44,6 +47,22 @@ export default {
             quickEmojis,
         };
     },
+    computed: {
+        canRedact() {
+            if (!this.buffer.getNetwork().hasCap('draft/message-redaction') || !this.message.irc_id) {
+                return false;
+            }
+            if (this.message.is_redacted) {
+                return false;
+            }
+
+            let ourNick = this.buffer.getNetwork().nick;
+            let isOurMessage = this.message.nick.toLowerCase() === ourNick.toLowerCase();
+            let areWeAnOp = this.buffer.isUserAnOp(ourNick);
+
+            return isOurMessage || areWeAnOp;
+        },
+    },
     methods: {
         hasReacted(emojiChar) {
             return this.message.reactions[emojiChar] && this.message.reactions[emojiChar].reacted;
@@ -61,6 +80,11 @@ export default {
         onReply() {
             this.buffer.replying_to = this.message;
             this.$state.$emit('input.reply', this.message.nick);
+        },
+        onRedact() {
+            this.$state.ui.redaction_prompt.message = this.message;
+            this.$state.ui.redaction_prompt.buffer = this.buffer;
+            this.$state.ui.redaction_prompt.visible = true;
         },
     },
 };

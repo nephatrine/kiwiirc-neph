@@ -70,6 +70,9 @@ export default class NetworkState {
         // Pending prviate messages awaiting whois operator check
         def(this, 'pendingPms', [], false);
 
+        // Map of batchId -> { bufferName, label }
+        def(this, 'active_outgoing_batches', new Map(), false);
+
         bufferDict.$set(bufferDict.networks, this.id, []);
     }
 

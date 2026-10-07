@@ -1175,9 +1175,57 @@ msgstr "Roll Dice"
 msgid "dice_roll"
 msgstr "Rolls a {{sides}} sided dice and gets {{number}}."
 
+#: Timed out waiting for server confirmation.
+msgid "error_confirm_timeout"
+msgstr "Timed out waiting for server confirmation."
+
 #: You were mentioned in {{channel}}
 msgid "notification_mentioned"
 msgstr "You were mentioned in {{channel}}."
+
+#: Show Redactions
+msgid "settings_show_redactions"
+msgstr "Show Redactions"
+
+#: Hidden
+msgid "settings_show_redactions_hidden"
+msgstr "Hidden"
+
+#: Placeholder
+msgid "settings_show_redactions_placeholder"
+msgstr "Placeholder"
+
+#: Revealed
+msgid "settings_show_redactions_revealed"
+msgstr "Revealed"
+
+#: Redact
+msgid "redact"
+msgstr "Redact"
+
+#: Redact Message
+msgid "redact_message"
+msgstr "Redact Message"
+
+#: Redaction Reason (optional)
+msgid "redaction_reason"
+msgstr "Redaction Reason (optional)"
+
+#: Are you sure you want to redact this message?
+msgid "confirm_redaction_title"
+msgstr "Are you sure you want to redact this message?"
+
+#: Redacting a message will permanently remove its content for everyone on the server.
+msgid "confirm_redaction_warn"
+msgstr "This does not guarantee deletion from all clients. Many clients either do not support redaction or still show the message merely notated as redacted."
+
+#: [Redacted by {{nick}}]
+msgid "redacted_by"
+msgstr "[REDACTed by {{nick}}]"
+
+#: [Redacted by {{nick}} - {{reason}}]
+msgid "redacted_by_reason"
+msgstr "[REDACTed by {{nick}} - {{reason}}]"
 
 #: Where are you connecting today?
 msgid "customserver_where"

@@ -1,5 +1,5 @@
 <template>
-    <div v-if="hasReactions" class="kiwi-messagereactions">
+    <div v-if="hasReactions && !message.is_redacted" class="kiwi-messagereactions">
         <div
             v-for="(reaction, emoji) in message.reactions"
             :key="emoji"

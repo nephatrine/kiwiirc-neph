@@ -221,7 +221,7 @@ function handleMessage(type, event, command, line, context) {
         let hasEcho = network.hasCap('echo-message');
         let hasLabel = network.hasCap('labeled-response');
 
-        if (hasEcho && hasLabel) {
+        if (hasLabel) {
             tags.label = Misc.generateLabel();
         }
 
@@ -231,7 +231,7 @@ function handleMessage(type, event, command, line, context) {
             message: messageBody,
             type: type,
             tags: _.clone(tags),
-            is_pending: hasEcho,
+            is_pending: hasEcho || hasLabel,
         };
 
         this.state.addMessage(buffer, newMessage);
@@ -978,7 +978,7 @@ inputCommands.setname = function inputCommandSetname(event, command, line, conte
     }
 
     const tags = {};
-    if (network.hasCap('echo-message') && network.hasCap('labeled-response')) {
+    if (network.hasCap('labeled-response')) {
         tags.label = Misc.generateLabel();
     }
 
