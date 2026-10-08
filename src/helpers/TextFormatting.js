@@ -213,11 +213,11 @@ export function formatDuration(timeSeconds) {
     seconds -= minutes * 60;
 
     const tmp = [];
-    (weeks) && tmp.push(t('week', { count: weeks }));
-    (weeks || days) && tmp.push(t('day', { count: days }));
-    (days || hours) && tmp.push(t('hour', { count: hours }));
-    (days || hours || minutes) && tmp.push(t('minute', { count: minutes }));
-    tmp.push(t('second', { count: seconds }));
+    (weeks) && tmp.push(t(weeks === 1 ? 'week' : 'week_plural', { count: weeks }));
+    (weeks || days) && tmp.push(t(days === 1 ? 'day' : 'day_plural', { count: days }));
+    (days || hours) && tmp.push(t(hours === 1 ? 'hour' : 'hour_plural', { count: hours }));
+    (days || hours || minutes) && tmp.push(t(minutes === 1 ? 'minute' : 'minute_plural', { count: minutes }));
+    tmp.push(t(seconds === 1 ? 'second' : 'second_plural', { count: seconds }));
 
     return tmp.join(' ');
 }

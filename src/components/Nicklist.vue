@@ -11,7 +11,7 @@
                 {{
                     userFilterVisible
                         ? sortedUsers.length
-                        : $t('person', { count: sortedUsers.length })
+                        : $t(sortedUsers.length === 1 ? 'person' : 'person_plural', { count: sortedUsers.length })
                 }}
             </div>
             <input

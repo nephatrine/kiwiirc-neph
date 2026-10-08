@@ -433,11 +433,14 @@ function initLocales() {
             $t() {
                 return (key, options) => {
                     const vueI18n = this.$i18n || api.vueI18n;
-                    let val = vueI18n.i18next.t(key, options, vueI18n.i18nLoadedAt);
+                    // Trigger reactivity without passing the value to i18next
+                    // eslint-disable-next-line no-unused-vars
+                    const trigger = vueI18n.i18nLoadedAt;
+                    let val = vueI18n.i18next.t(key, options);
                     if (!val) {
                         let opts = options || {};
                         opts.lng = 'en-us';
-                        val = vueI18n.i18next.t(key, opts, vueI18n.i18nLoadedAt);
+                        val = vueI18n.i18next.t(key, opts);
                     }
                     return val;
                 };

@@ -44,7 +44,7 @@
                     class="kiwi-header-option kiwi-header-option-nicklist"
                 >
                     <a
-                        :title="$t('person', { count: Object.keys(buffer.users).length })"
+                        :title="$t(Object.keys(buffer.users).length === 1 ? 'person' : 'person_plural', { count: Object.keys(buffer.users).length })"
                         @click="sidebarState.toggleNicklist()"
                     >
                         <i class="fa fa-users" aria-hidden="true" />

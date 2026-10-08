@@ -29,7 +29,7 @@
 
                 <p class="kiwi-aboutbuffer-usercount">
                     <a class="u-link " @click="sidebarState.showNicklist()">
-                        {{ $t('person', { count: Object.keys(b.users || {}).length }) }}
+                        {{ $t(Object.keys(b.users || {}).length === 1 ? 'person' : 'person_plural', { count: Object.keys(b.users || {}).length }) }}
                     </a>
                 </p>
             </div>
