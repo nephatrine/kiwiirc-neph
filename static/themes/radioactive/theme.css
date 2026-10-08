@@ -9,13 +9,13 @@
 
 /* Radioactive is your very own pipboy theme for Kiwi */
 
-@import url(https://fonts.googleapis.com/css?family=VT323);
-
 .kiwi-wrap {
     background: #3a5646;
     --kiwi-nickcolour-saturation: 80;
     --kiwi-nickcolour-lightness: 80;
     --kiwi-supports-monospace: 1;
+    --kiwi-font: 'Oxanium', 'Avenir Next', 'Futura', 'Segoe UI', 'Bahnschrift', 'Ubuntu', 'Cantarell', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
+    --kiwi-font-mono: 'Share Tech Mono', 'Menlo', 'Monaco', 'Cascadia Mono', 'Consolas', 'Ubuntu Mono', 'DejaVu Sans Mono', monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
     color: #201F1F;
 }
 
@@ -202,7 +202,6 @@
 .kiwi-emojipicker-modal {
     background: #032c14;
     border: 1px solid #5dd895;
-    font-family: 'VT323', monospace;
 }
 
 .kiwi-emojipicker-header {
@@ -223,7 +222,6 @@
     background: #031e11;
     color: #14fdce;
     border: 1px solid #5dd895;
-    font-family: 'VT323', monospace;
 }
 
 .kiwi-emojipicker-category {
@@ -412,7 +410,6 @@
 }
 
 .kiwi-messagelist-message {
-    font-family: 'VT323', monospace;
 }
 
 /* baseline styling for the 'topic' of the channel, if it has one, these are shared between traditional and modern view, but can be made more specific if need be */
@@ -470,7 +467,6 @@
 
 /* Control Input - displayed at bottom of Kiwi ( ControlInput.vue ) */
 .kiwi-controlinput {
-    font-family: 'VT323', monospace;
     font-weight: 900;
     letter-spacing: 2px;
     background: #07311a;
@@ -928,7 +924,6 @@
 
 /* Redaction Prompt */
 .kiwi-redactionprompt {
-    font-family: 'VT323', monospace;
     border: 1px solid #5dd895;
 }
 

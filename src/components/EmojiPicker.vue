@@ -184,6 +184,10 @@ export default {
     border-radius: 8px;
     overflow: hidden;
     user-select: none;
+
+    .kiwi-wrap--monospace & {
+        font-family: var(--kiwi-font-mono);
+    }
 }
 
 .kiwi-emojipicker-header {
@@ -225,6 +229,7 @@ export default {
         color: var(--brand-default-fg, #000);
         box-sizing: border-box;
         font-size: 0.9em;
+        font-family: inherit;
     }
 
     i {
@@ -286,6 +291,8 @@ export default {
     align-items: center;
     justify-content: center;
     height: 38px;
+    width: 38px;
+    overflow-x: hidden;
     font-size: 24px;
     cursor: pointer;
     border-radius: 4px;

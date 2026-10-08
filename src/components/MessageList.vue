@@ -838,7 +838,7 @@ div.kiwi-messagelist-item.kiwi-messagelist-item--selected .kiwi-messagelist-mess
 
 .kiwi-wrap--monospace .kiwi-messagelist-message,
 .kiwi-messagelist-message.kiwi-messagelist-message-help {
-    font-family: Consolas, monaco, monospace;
+    font-family: var(--kiwi-font-mono);
     font-size: 80%;
 }
 
@@ -1047,7 +1047,7 @@ div.kiwi-messagelist-item.kiwi-messagelist-item--selected .kiwi-messagelist-mess
 
 /* MOTD */
 .kiwi-messagelist-message-motd {
-    font-family: monospace;
+    font-family: var(--kiwi-font-mono);
 }
 
 .kiwi-messagelist-message.kiwi-messagelist-message--hover,

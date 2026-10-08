@@ -202,7 +202,7 @@ select {
     padding: 0 3px;
     border-radius: 3px;
     background: rgb(0, 0, 0, 0.05);
-    font-family: monospace;
+    font-family: var(--kiwi-font-mono);
 }
 
 .kiwi-formatting-extras-invisible {
@@ -214,7 +214,7 @@ select {
     padding: 1em;
     border-radius: 3px;
     background: rgb(0, 0, 0, 0.05);
-    font-family: monospace;
+    font-family: var(--kiwi-font-mono);
     white-space: pre-wrap;
     display: inline-block;
 }

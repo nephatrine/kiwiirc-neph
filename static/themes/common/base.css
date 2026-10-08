@@ -674,6 +674,8 @@
 /* ---- App ---- */
 .kiwi-wrap {
     color: var(--brand-default-fg);
+    --kiwi-font: 'Source Sans Pro', Helvetica, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
+    --kiwi-font-mono: 'Source Code Pro', Consolas, monaco, monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
     --kiwi-nickcolour-lightness: 40;
     --kiwi-supports-monospace: 1;
 }

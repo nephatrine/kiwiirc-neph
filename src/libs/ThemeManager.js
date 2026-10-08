@@ -19,6 +19,7 @@ export default class ThemeManager {
         this.varsElement = null;
         this.currentElement = null;
         this.loadingElement = null;
+        this.currentFontElement = null;
 
         Vue.observable(this);
 
@@ -85,6 +86,22 @@ export default class ThemeManager {
 
         const nextNameLower = nextTheme.name.toLowerCase();
         const themeElement = document.createElement('link');
+
+        // Handle Google Fonts if the theme specifies them
+        if (this.currentFontElement) {
+            document.head.removeChild(this.currentFontElement);
+            this.currentFontElement = null;
+        }
+
+        const fonts = nextTheme.google_fonts || this.state.getSetting('settings.google_fonts');
+        if (fonts && fonts.length > 0) {
+            const fontElement = document.createElement('link');
+            fontElement.rel = 'stylesheet';
+            const families = fonts.map((f) => `family=${f.replace(/ /g, '+')}`).join('&');
+            fontElement.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+            document.head.appendChild(fontElement);
+            this.currentFontElement = fontElement;
+        }
 
         if (this.previousTheme) {
             // If previousTheme is not set then this is the initial theme

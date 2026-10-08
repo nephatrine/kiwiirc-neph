@@ -43,6 +43,8 @@
 }
 
 .kiwi-wrap {
+    --kiwi-font: 'Inter', 'San Francisco', 'Helvetica Neue', 'Helvetica', 'Segoe UI', 'Ubuntu', 'Roboto', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
+    --kiwi-font-mono: 'Fira Code', 'Menlo', 'Monaco', 'Cascadia Code', 'Consolas', 'Fira Mono', 'Ubuntu Mono', 'DejaVu Sans Mono', monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
     --kiwi-nickcolour-saturation: 70;
     --kiwi-nickcolour-lightness: 35;
 }
