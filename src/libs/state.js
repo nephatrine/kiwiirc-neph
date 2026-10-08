@@ -830,6 +830,7 @@ function createNewState() {
                 if (
                     !state.ui.app_has_focus &&
                     message.type !== 'traffic' &&
+                    !buffer.isSpecial() &&
                     (
                         (buffer.setting('flash_title') === 'message') ||
                         (buffer.setting('flash_title') === 'highlight' && isHighlight)
