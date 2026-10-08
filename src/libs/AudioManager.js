@@ -51,7 +51,7 @@ export class AudioManager {
                 return;
             }
 
-            if (message.ignore || buffer.isSpecial()) {
+            if (message.ignore || buffer.isSpecial() || !message.is_new) {
                 return;
             }
 

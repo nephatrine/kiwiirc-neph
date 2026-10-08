@@ -162,6 +162,13 @@ export default {
             if (!this.hasStarted) {
                 this.warnOnPageClose();
 
+                // Listen for messages immediately so we don't miss anything on load
+                Notifications.listenForNewMessages(this.$state);
+
+                if (global.Notification && Notification.permission === 'granted') {
+                    Notifications.requestPermission(this.$state);
+                }
+
                 // Wait for a click or sending a message before asking for notification permission.
                 // Not doing this on an input event will get it blocked by some browsers.
                 let requestNotificationPermission = () => {
@@ -169,7 +176,6 @@ export default {
                     this.$state.$off('input.raw', requestNotificationPermission);
 
                     Notifications.requestPermission(this.$state);
-                    Notifications.listenForNewMessages(this.$state);
                 };
 
                 this.$state.$once('document.clicked', requestNotificationPermission);

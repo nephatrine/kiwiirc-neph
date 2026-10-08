@@ -160,6 +160,10 @@
                                 <span>{{ $t('settings_mute_sound') }} </span>
                                 <input v-model="settingBufferMuteSound" type="checkbox">
                             </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_show_notifications') }} </span>
+                                <input v-model="settingBufferShowNotifications" type="checkbox">
+                            </label>
                             <label class="kiwi-appsettings-full">
                                 <span>{{ $t('settings_highlight') }} </span>
                                 <input v-model="settingHighlights" type="text" class="u-input">
@@ -323,6 +327,7 @@ export default {
         settingBufferExtraFormatting: bindSetting('buffers.extra_formatting'),
         settingBufferTrafficAsActivity: bindSetting('buffers.traffic_as_activity'),
         settingBufferMuteSound: bindSetting('buffers.mute_sound'),
+        settingBufferShowNotifications: bindSetting('buffers.show_notifications'),
         settingBufferShareTyping: bindSetting('buffers.share_typing'),
         settingBufferIgnoreBots: bindSetting('buffers.ignore_bots'),
         settingBufferShowRedactions: bindSetting('buffers.show_redactions'),

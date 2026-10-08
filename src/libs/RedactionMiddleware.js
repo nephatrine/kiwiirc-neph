@@ -78,5 +78,5 @@ export function theMiddleware(network, command, message, client, next) {
         buffer: buffer,
     });
 
-    if (next) next();
+    // We handled it, do not call next() so the unknown command handler doesn't catch it
 }

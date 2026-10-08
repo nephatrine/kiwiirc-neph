@@ -44,6 +44,9 @@ KiwiIRC explicitly requests the following capabilities during connection and via
   specialized batches and tags.
 - **draft/message-redaction**: Enables permanent removal of message content from
   the authoritative log.
+- **draft/read-marker**: Synchronizes the read status of buffers across multiple
+  clients and sessions. Utilizes informational `MARKREAD` requests to establish
+  synchronization boundaries for query buffers where `JOIN` events are absent.
 
 ### Helper Capabilities
 
@@ -65,6 +68,10 @@ KiwiIRC employs a 3-scenario model to maintain a consistent state:
 1. **Scenario 3 (Labeled Pending)**: Utilizing `labeled-response`, provides
    $O(1)$ promotion of local "pending" state to authoritative server state using
    session-unique labels.
+
+The "seen" boundary for all scenarios is inclusive of the authoritative marker
+timestamp, ensuring context replayed exactly at the marker does not trigger
+visual or audio notifications.
 
 Pending items automatically revert and log an error after 60 seconds if no
 server confirmation arrives.

@@ -2,7 +2,8 @@
 
 import _ from 'lodash';
 
-let isEnabled = false;
+let isEnabled = (global.Notification && Notification.permission === 'granted');
+let hasRegistered = false;
 
 export function requestPermission(state) {
     // Do we support notifications?
@@ -50,18 +51,25 @@ export function show(title, body, opts) {
 const throttledShow = _.throttle(show, 2000);
 
 export function listenForNewMessages(state) {
-    state.$on('notification.show', (message, _opts) => {
-        if (!isEnabled) {
-            return;
-        }
+    if (hasRegistered) {
+        return;
+    }
+    hasRegistered = true;
 
+    state.$on('notification.show', (message, _opts) => {
         let opts = Object.assign({
             title: 'Kiwi IRC',
             message: message,
             icon: '',
             onclick: null,
             ttl: 10000,
+            force: false,
         }, _opts);
+
+        const showNotifications = state.setting('buffers.show_notifications');
+        if (!isEnabled || !showNotifications || (state.ui.app_has_focus && !opts.force)) {
+            return;
+        }
 
         if (!opts.message) {
             return;

@@ -122,6 +122,7 @@ function resolveBatch(network, client, batch) {
                 reEvent.batch = {
                     type: batch.type,
                     id: batch.id,
+                    params: batch.params,
                 };
             }
 

@@ -19,8 +19,10 @@ and this project adheres to
 - **Message Redaction**: Support for `draft/message-redaction` with custom
   confirmation prompts and spoiler-style click-to-reveal behavior.
 - **Advanced Messaging**: Full support for native Unicode emojis with a
-  searchable picker, threaded replies (`+reply`), and per-message reactions
-  (`+draft/react`).
+  searchable picker, threaded replies (`+reply`), per-message reactions
+  (`+draft/react`), and standardized read-markers (`draft/read-marker`).
+- **Global Desktop Notification Toggle**: Added a user-configurable setting to
+  enable or disable desktop alerts independently of audio notifications.
 - **Authoritative History**: Implemented `draft/chathistory` and
   `draft/event-playback` for precise gap-filling including replayed joins,
   parts, and modes.
@@ -57,6 +59,8 @@ and this project adheres to
 ### Removed
 
 - Removed support for legacy IE11/EdgeHTML browsers and associated polyfills.
+- Removed legacy proprietary BNC `bufferSeen` mechanism in favor of the
+  standardized `draft/read-marker` protocol.
 - Deprecated `znc.in/self-message` support in favor of the ratified
   `echo-message` standard.
 - Removed static `.mp3` and `.ogg` audio assets in favor of programmatic

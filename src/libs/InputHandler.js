@@ -957,7 +957,7 @@ inputCommands.beep = function inputCommandBeep(event, command, line, context) {
 
 inputCommands.notify = function inputCommandNotify(event, command, line, context) {
     event.handled = true;
-    this.state.$emit('notification.show', line);
+    this.state.$emit('notification.show', line || 'Test Notification', { force: true });
 };
 
 inputCommands.setname = function inputCommandSetname(event, command, line, context) {

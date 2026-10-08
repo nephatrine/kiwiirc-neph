@@ -359,6 +359,10 @@ msgstr "Notify on Join/Part Activity"
 msgid "settings_mute_sound"
 msgstr "Mute Notification Sound"
 
+#: Enable desktop notifications
+msgid "settings_show_notifications"
+msgstr "Enable Desktop Notifications"
+
 #: Highlight on words (space separated)
 msgid "settings_highlight"
 msgstr "Word Highlights (Space-Delimited)"

@@ -39,6 +39,7 @@ export default class BufferState {
             is_visible: false,
             is_requesting_chathistory: false,
             error: false,
+            last_read_authoritative: 0,
         };
         this.settings = { };
         this.last_read = 0;
@@ -79,7 +80,7 @@ export default class BufferState {
         def(this, 'addUserBatch', createUserBatch(this), false);
 
         // poll who to update away status if away-notify is not enabled
-        if (this.isChannel()) {
+        if (this.isChannel() || this.isQuery()) {
             maybeStartWhoLoop(this);
         }
 
@@ -92,17 +93,8 @@ export default class BufferState {
         }
 
         function onNetworkMotd(event, network) {
-            const bufferNetwork = this.getNetwork();
-            if (
-                network !== bufferNetwork
-                || !bufferNetwork.ircClient.chathistory.isSupported()
-                || !this.isQuery()
-            ) {
-                return;
-            }
-
-            if (['all', 'queries'].includes(this.setting('auto_request_history'))) {
-                this.requestLatestScrollback();
+            if (network === this.getNetwork()) {
+                this.initHistory();
             }
         }
 
@@ -122,6 +114,44 @@ export default class BufferState {
         state.$on('network.connecting', onNetworkConnectingBound);
         state.$on('buffer.close', onBufferCloseBound);
         state.$on('irc.motd', onNetworkMotdBound);
+
+        if (this.getNetwork()?.state === 'connected') {
+            this.initHistory();
+        }
+    }
+
+    initHistory() {
+        const network = this.getNetwork();
+        if (!network || !this.isQuery()) {
+            return;
+        }
+
+        const ircClient = network.ircClient;
+        const hasReadMarker = network.hasCap('draft/read-marker');
+        const hasChathistory = ircClient.chathistory.isSupported();
+
+        if (hasReadMarker && network.currentUser()?.account) {
+            // Force the server to tell us the last-read marker.
+            // History will be requested once the marker event arrives in IrcClient.js.
+            ircClient.readMarker.get(this.name);
+        } else if (hasChathistory) {
+            // Fallback for anonymous users or servers without read-marker support.
+            if (['all', 'queries'].includes(this.setting('auto_request_history'))) {
+                this.requestLatestScrollback();
+            }
+        }
+
+        this.initUserStatus();
+    }
+
+    initUserStatus() {
+        const network = this.getNetwork();
+        if (!network || !this.isQuery()) {
+            return;
+        }
+
+        // Fetch metadata for the query partner (away status, realname, host)
+        network.ircClient.who(this.name);
     }
 
     get topic() {
@@ -353,8 +383,11 @@ export default class BufferState {
 
     getHistoryReference(direction = 'backward') {
         const messages = this.getMessages();
+        const queue = this.addMessageBatch.queue();
+        const allMessages = [...messages, ...queue];
+
         const validTypes = ['privmsg', 'notice', 'action', 'message'];
-        const validMessages = messages.filter((m) => validTypes.includes(m.type) &&
+        const validMessages = allMessages.filter((m) => validTypes.includes(m.type) &&
             (m.irc_id || m.server_time));
 
         if (validMessages.length === 0) {
@@ -373,6 +406,10 @@ export default class BufferState {
     }
 
     requestScrollback(_direction) {
+        if (this.flags.is_requesting_chathistory) {
+            return;
+        }
+
         let history = this.getNetwork().ircClient.chathistory;
         if (!history.isSupported()) {
             return;
@@ -412,6 +449,10 @@ export default class BufferState {
     }
 
     requestLatestScrollback() {
+        if (this.flags.is_requesting_chathistory) {
+            return;
+        }
+
         let history = this.getNetwork().ircClient.chathistory;
         if (!history.isSupported()) {
             return;
@@ -443,11 +484,21 @@ export default class BufferState {
         } else {
             this.last_read = Date.now();
 
-            // If running under a bouncer, set it on the server-side too
             let network = this.getNetwork();
-            let allowedUpdate = !network ? false : this.isChannel() || this.isQuery();
-            if (allowedUpdate && network.connection.bncnetid) {
-                network.ircClient.bnc.bufferSeen(network.connection.bncnetid, this.name);
+            if (!network) {
+                return;
+            }
+
+            // 1. DRAFT read-marker (IRCv3 Standard)
+            // Only use this for chat buffers.
+            // Exclude special buffers (names starting with *) and server buffers.
+            if (this.name[0] !== '*' && network.hasCap('draft/read-marker')) {
+                const lastMsg = this.getHistoryReference('forward');
+                if (lastMsg && lastMsg.server_time > this.flags.last_read_authoritative) {
+                    // Update authoritative state optimistically
+                    this.flags.last_read_authoritative = lastMsg.server_time;
+                    network.ircClient.readMarker.set(this.name, new Date(lastMsg.server_time));
+                }
             }
         }
     }
@@ -921,11 +972,11 @@ function maybeStartWhoLoop(bufferState) {
         }
 
         let whoLoop = bufferState.setting('who_loop');
-        let isJoined = bufferState.joined;
+        let canWho = bufferState.isQuery() || bufferState.joined;
         let hasAwayNotify = network.hasCap('away-notify');
         let networkConnected = network.state === 'connected';
 
-        if (whoLoop && networkConnected && isJoined && !hasAwayNotify) {
+        if (whoLoop && networkConnected && canWho && !hasAwayNotify) {
             network.ircClient.who(bufferState.name, () => {
                 nextLoop();
             });
@@ -935,16 +986,18 @@ function maybeStartWhoLoop(bufferState) {
     }
 }
 
-function getBufferHistory(buffer, chathistoryFuncName, time) {
+function getBufferHistory(buffer, chathistoryFuncName, time, depth = 0) {
     let ircClient = buffer.getNetwork().ircClient;
     if (!ircClient.chathistory.isSupported()) {
-        return;
+        return Promise.resolve();
     }
 
-    buffer.flag('is_requesting_chathistory', true);
+    if (depth === 0) {
+        buffer.flag('is_requesting_chathistory', true);
+    }
     buffer.chathistory_request_count += 1;
     let existingMessageIds = Object.assign({}, buffer.messagesObj.messageIds);
-    ircClient.chathistory[chathistoryFuncName](buffer.name, time).then((event) => {
+    return ircClient.chathistory[chathistoryFuncName](buffer.name, time).then((event) => {
         if (!event) {
             buffer.flag('chathistory_available', false);
             return;
@@ -964,7 +1017,9 @@ function getBufferHistory(buffer, chathistoryFuncName, time) {
 
         if (typeof event.is_end !== 'undefined') {
             buffer.flag('chathistory_available', !event.is_end);
-            return;
+            if (event.is_end) {
+                return;
+            }
         }
 
         // The BNC server may reply with messages that are already in the buffer.
@@ -977,7 +1032,32 @@ function getBufferHistory(buffer, chathistoryFuncName, time) {
         // If there are new messages, then there could be more in the backlog.
         // If there are no new messages, then the chat history is empty.
         buffer.flag('chathistory_available', hasNewMessages);
+
+        if (!hasNewMessages) {
+            return;
+        }
+
+        // Recursive gap fill logic
+        // Check if our earliest message is still newer than the last_read marker.
+        // We fetch until we have covered all unread messages plus at least one chunk of context.
+        const earliest = buffer.getHistoryReference('backward');
+        if (earliest && buffer.last_read && earliest.time > buffer.last_read && depth < 10) {
+            const supportedTypes = ircClient.chathistory.supportedRefTypes();
+            let ref = null;
+            if (supportedTypes.includes('msgid') && earliest.irc_id) {
+                ref = earliest.irc_id;
+            } else if (supportedTypes.includes('timestamp') && earliest.server_time) {
+                ref = new Date(earliest.server_time);
+            }
+
+            if (ref) {
+                // Fetch the next chunk recursively
+                getBufferHistory(buffer, 'before', ref, depth + 1);
+            }
+        }
     }).finally(() => {
-        buffer.flag('is_requesting_chathistory', false);
+        if (depth === 0) {
+            buffer.flag('is_requesting_chathistory', false);
+        }
     });
 }

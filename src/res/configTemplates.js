@@ -124,11 +124,12 @@ export const configTemplates = {
             // prompt_leave: all/channels/queries/none
             prompt_leave: 'channels',
             // auto_request_history: all/channels/queries/none
-            auto_request_history: 'channels',
+            auto_request_history: 'all',
             emoji_convert_as_typed: true,
             emoji_convert_incoming: true,
             ignore_bots: false,
             show_redactions: 'placeholder',
+            show_notifications: true,
         },
         avatars: {
             away_status_position: 1,

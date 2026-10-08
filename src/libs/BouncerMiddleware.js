@@ -3,7 +3,6 @@
 /** @module */
 
 import { MessageTags } from 'irc-framework';
-import * as Misc from '@/helpers/Misc';
 
 /**
  * Adds the BOUNCER IRCv3 spec to irc-framework
@@ -61,7 +60,6 @@ export default function bouncerMiddleware(network) {
                 name: tags.buffer,
                 topic: tags.topic,
                 joined: tags.joined === '1',
-                seen: tags.seen,
                 notify: tags.notify || 'highlight',
             });
         } else if (params[0] === 'state') {
@@ -138,14 +136,6 @@ function addFunctionsToClient(client, network) {
     bnc.closeBuffer = function closeBuffer(netId, bufferName) {
         return new Promise((resolve, reject) => {
             client.raw(`BOUNCER delbuffer ${netId} ${bufferName}`);
-        });
-    };
-
-    bnc.bufferSeen = function bufferSeen(netId, bufferName, seenTime) {
-        return new Promise((resolve, reject) => {
-            // 1 tells the bouncer to use the current time
-            let timeStr = seenTime ? Misc.dateIso(seenTime) : '1';
-            client.raw(`BOUNCER changebuffer ${netId} ${bufferName} seen=${timeStr}`);
         });
     };
 

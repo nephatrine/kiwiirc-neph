@@ -7,6 +7,7 @@ import * as TextFormatting from '@/helpers/TextFormatting';
 import typingMiddleware from './TypingMiddleware';
 import reactionMiddleware from './ReactionMiddleware';
 import redactionMiddleware from './RedactionMiddleware';
+import readMarkerMiddleware from './ReadMarkerMiddleware';
 import saslMiddleware from './SaslMiddleware';
 import batchMiddleware from './BatchMiddleware';
 import chathistoryMiddleware from './ChathistoryMiddleware';
@@ -31,6 +32,7 @@ const DESIRED_CAPS = [
     'cap-notify',
     'server-time',
     'draft/message-redaction',
+    'draft/read-marker',
 ];
 
 export function create(state, network) {
@@ -50,12 +52,13 @@ export function create(state, network) {
     });
 
     ircClient.use(chathistoryMiddleware(network));
-    ircClient.use(clientMiddleware(state, network));
     ircClient.use(typingMiddleware(network));
     ircClient.use(reactionMiddleware(network));
     ircClient.use(redactionMiddleware(network));
+    ircClient.use(readMarkerMiddleware(network));
     ircClient.use(saslMiddleware(network));
     ircClient.use(batchMiddleware(network));
+    ircClient.use(clientMiddleware(state, network));
 
     // Overload the connect() function to make sure we are connecting with the
     // most recent connection details from the network state
@@ -197,13 +200,53 @@ export function create(state, network) {
         }
     });
 
+    ircClient.on('read-marker', (event) => {
+        const buffer = state.getBufferByName(networkid, event.target);
+        if (!buffer || !event.timestamp) {
+            return;
+        }
+
+        let time = 0;
+        let authoritativeTime = 0;
+        let ts = String(event.timestamp);
+
+        if (ts.indexOf('timestamp=') === 0) {
+            ts = ts.substr(10);
+        }
+
+        if (ts === '*') {
+            time = Date.now();
+            authoritativeTime = Date.now();
+        } else if (ts.indexOf('T') !== -1) {
+            // ISO8601 timestamp
+            authoritativeTime = new Date(ts).getTime();
+            time = network.timeToLocal(authoritativeTime);
+        }
+
+        if (authoritativeTime && authoritativeTime > buffer.flags.last_read_authoritative) {
+            buffer.last_read = time;
+            buffer.flags.last_read_authoritative = authoritativeTime;
+            buffer.flags.unread = 0;
+            buffer.flags.highlight = false;
+        }
+
+        // If this is a query and we haven't requested history yet, do it now that we
+        // have an authoritative last_read boundary.
+        if (
+            buffer.isQuery()
+            && buffer.chathistory_request_count === 0
+            && ['all', 'queries'].includes(buffer.setting('auto_request_history'))
+        ) {
+            buffer.requestLatestScrollback();
+        }
+    });
+
     return ircClient;
 }
 
 function getEffectiveCommand(command, event) {
-    return (command === 'unknown command' && event && event.command) ?
-        event.command.toUpperCase() :
-        command.toUpperCase();
+    const rawVerb = (event && (event.command || event.verb)) || command;
+    return (typeof rawVerb === 'string') ? rawVerb.toUpperCase() : '';
 }
 
 function handleStandardReply(command, event, network, state) {
@@ -475,12 +518,19 @@ function clientMiddleware(state, network) {
             (event && event.tags && typeof event.tags['draft/chathistory-context'] !== 'undefined')
         );
 
-        if (['FAIL', 'WARN', 'NOTE'].includes(getEffectiveCommand(command, event))) {
+        const effectiveCommand = getEffectiveCommand(command, event);
+        if (['FAIL', 'WARN', 'NOTE'].includes(effectiveCommand)) {
             handleStandardReply(command, event, network, state);
+            next();
+            return;
         }
 
-        if (getEffectiveCommand(command, event) === 'ACK' && event.tags && event.tags.label) {
-            state.promotePendingLabel(networkid, event.tags.label);
+        if (effectiveCommand === 'ACK') {
+            if (event.tags && event.tags.label) {
+                state.promotePendingLabel(networkid, event.tags.label);
+            }
+            next();
+            return;
         }
 
         if (command.toLowerCase() === 'batch start chathistory' && client.chathistory) {
@@ -560,6 +610,12 @@ function clientMiddleware(state, network) {
 
         // Show unhandled data from the server in the servers tab
         if (command === 'unknown command') {
+            const verb = getEffectiveCommand(command, event);
+            if (['FAIL', 'WARN', 'NOTE', 'ACK', 'MARKREAD', 'REDACT'].includes(verb)) {
+                next();
+                return;
+            }
+
             let buffer = network.serverBuffer();
             let containsNick = event.params[0] === network.ircClient.user.nick;
             let isChannelMessage = network.isChannelName(event.params[1]);
@@ -796,22 +852,31 @@ function clientMiddleware(state, network) {
         }
 
         if (command === 'join') {
+            let targetName = event.channel;
+            if (isHistory) {
+                if (event.batch && event.batch.params[0]) {
+                    targetName = event.batch.params[0];
+                } else {
+                    // History must be isolated to a batch target
+                    return;
+                }
+            }
             // If we have any buffers marked as being redirected to this new channel, update
             // that buffer instead of creating a new one
             if (!isHistory && event.nick === client.user.nick) {
                 network.buffers.forEach((b) => {
-                    if ((b.flags.redirect_to || '').toLowerCase() === event.channel.toLowerCase()) {
+                    if ((b.flags.redirect_to || '').toLowerCase() === targetName.toLowerCase()) {
                         state.$delete(b.flags, 'redirect_to');
-                        b.rename(event.channel);
+                        b.rename(targetName);
                     }
                 });
             }
 
-            let buffer = state.getOrAddBufferByName(networkid, event.channel);
+            let buffer = state.getOrAddBufferByName(networkid, targetName);
 
             // The case does not match, update buffer.name to the casing sent by the server
-            if (!isHistory && buffer.name !== event.channel) {
-                buffer.rename(event.channel);
+            if (!isHistory && buffer.name !== targetName) {
+                buffer.rename(targetName);
             }
 
             if (!isHistory) {
@@ -861,7 +926,16 @@ function clientMiddleware(state, network) {
             }
         }
         if (command === 'kick') {
-            let buffer = state.getOrAddBufferByName(networkid, event.channel);
+            let targetName = event.channel;
+            if (isHistory) {
+                if (event.batch && event.batch.params[0]) {
+                    targetName = event.batch.params[0];
+                } else {
+                    // History must be isolated to a batch target
+                    return;
+                }
+            }
+            let buffer = state.getOrAddBufferByName(networkid, targetName);
 
             if (!isHistory) {
                 state.removeUserFromBuffer(buffer, event.kicked);
@@ -913,7 +987,16 @@ function clientMiddleware(state, network) {
             }
         }
         if (command === 'part') {
-            let buffer = state.getBufferByName(networkid, event.channel);
+            let targetName = event.channel;
+            if (isHistory) {
+                if (event.batch && event.batch.params[0]) {
+                    targetName = event.batch.params[0];
+                } else {
+                    // History must be isolated to a batch target
+                    return;
+                }
+            }
+            let buffer = state.getBufferByName(networkid, targetName);
             if (!buffer) {
                 return;
             }
@@ -964,7 +1047,20 @@ function clientMiddleware(state, network) {
             }
         }
         if (command === 'quit') {
-            let buffers = state.getBuffersWithUser(networkid, event.nick);
+            let buffers = [];
+            if (isHistory) {
+                if (event.batch && event.batch.params[0]) {
+                    const b = network.bufferByName(event.batch.params[0]);
+                    if (b) {
+                        buffers.push(b);
+                    }
+                } else {
+                    // History must be isolated to a batch target
+                    return;
+                }
+            } else {
+                buffers = state.getBuffersWithUser(networkid, event.nick);
+            }
 
             buffers.forEach((buffer) => {
                 if (!buffer) {
@@ -1088,9 +1184,21 @@ function clientMiddleware(state, network) {
                     away: event.message || '',
                 });
             }
-            let buffer = state.getActiveBuffer();
-            if (buffer && event.nick === client.user.nick) {
-                if (!isHistory) {
+
+            let buffer = null;
+            if (isHistory) {
+                if (event.batch && event.batch.params[0]) {
+                    buffer = network.bufferByName(event.batch.params[0]);
+                } else {
+                    // History must be isolated to a batch target
+                    return;
+                }
+            } else if (event.nick === client.user.nick) {
+                buffer = state.getActiveBuffer();
+            }
+
+            if (buffer) {
+                if (!isHistory && event.nick === client.user.nick) {
                     network.away = 'away';
                 }
                 state.addMessage(buffer, {
@@ -1110,9 +1218,21 @@ function clientMiddleware(state, network) {
                     away: '',
                 });
             }
-            let buffer = state.getActiveBuffer();
-            if (buffer && event.nick === client.user.nick) {
-                if (!isHistory) {
+
+            let buffer = null;
+            if (isHistory) {
+                if (event.batch && event.batch.params[0]) {
+                    buffer = network.bufferByName(event.batch.params[0]);
+                } else {
+                    // History must be isolated to a batch target
+                    return;
+                }
+            } else if (event.nick === client.user.nick) {
+                buffer = state.getActiveBuffer();
+            }
+
+            if (buffer) {
+                if (!isHistory && event.nick === client.user.nick) {
                     network.away = '';
                 }
                 state.addMessage(buffer, {
@@ -1271,7 +1391,21 @@ function clientMiddleware(state, network) {
 
             let typeExtra = (event.nick === client.user.nick) ? 'nick_self' : '';
 
-            let buffers = state.getBuffersWithUser(networkid, event.new_nick);
+            let buffers = [];
+            if (isHistory) {
+                if (event.batch && event.batch.params[0]) {
+                    const b = network.bufferByName(event.batch.params[0]);
+                    if (b) {
+                        buffers.push(b);
+                    }
+                } else {
+                    // History must be isolated to a batch target
+                    return;
+                }
+            } else {
+                buffers = state.getBuffersWithUser(networkid, event.new_nick);
+            }
+
             buffers.forEach((buffer) => {
                 let ignoreEvent = state.setting('skipHiddenMessages') && !buffer.setting('show_nick_changes');
                 if (ignoreEvent && event.nick !== client.user.nick) {
@@ -1719,7 +1853,16 @@ function clientMiddleware(state, network) {
         }
 
         if (command === 'topic') {
-            let buffer = state.getOrAddBufferByName(networkid, event.channel);
+            let targetName = event.channel;
+            if (isHistory) {
+                if (event.batch && event.batch.params[0]) {
+                    targetName = event.batch.params[0];
+                } else {
+                    // History must be isolated to a batch target
+                    return;
+                }
+            }
+            let buffer = state.getOrAddBufferByName(networkid, targetName);
             if (!isHistory) {
                 buffer.topic = event.topic || '';
             }
@@ -1831,10 +1974,23 @@ function clientMiddleware(state, network) {
         if (command === 'loggedin' || command === 'loggedout') {
             let translationKey = command === 'loggedin' ? 'logged_in' : 'logged_out';
 
-            let buffers = [network.serverBuffer()];
-            let activeBuffer = state.getActiveBuffer();
-            if (activeBuffer?.networkid === network.id && activeBuffer !== buffers[0]) {
-                buffers.push(activeBuffer);
+            let buffers = [];
+            if (isHistory) {
+                if (event.batch && event.batch.params[0]) {
+                    const b = network.bufferByName(event.batch.params[0]);
+                    if (b) {
+                        buffers.push(b);
+                    }
+                } else {
+                    // History must be isolated to a batch target
+                    return;
+                }
+            } else {
+                buffers.push(network.serverBuffer());
+                let activeBuffer = state.getActiveBuffer();
+                if (activeBuffer?.networkid === network.id && activeBuffer !== buffers[0]) {
+                    buffers.push(activeBuffer);
+                }
             }
 
             let messageBody = TextFormatting.formatAndT(
@@ -1846,7 +2002,8 @@ function clientMiddleware(state, network) {
 
             buffers.forEach((buffer) => {
                 state.addMessage(buffer, {
-                    time: Date.now(),
+                    time: isHistory ? eventTime : Date.now(),
+                    server_time: isHistory ? serverTime : 0,
                     nick: '',
                     message: messageBody,
                     type: 'notice',

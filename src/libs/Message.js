@@ -60,6 +60,7 @@ export default class Message {
             typeof message.tags['kiwi-history'] !== 'undefined'
         ));
         this.is_pending = !!message.is_pending;
+        this.is_new = !!message.is_new;
         this.is_redacted = !!message.is_redacted;
         this.redacted_by = message.redacted_by || '';
         this.redaction_reason = message.redaction_reason || '';
@@ -174,6 +175,7 @@ export default class Message {
             type_extra: this.type_extra,
             is_history: this.is_history,
             is_pending: this.is_pending,
+            is_new: this.is_new,
             is_redacted: this.is_redacted,
             redacted_by: this.redacted_by,
             redaction_reason: this.redaction_reason,

@@ -3,6 +3,7 @@
 import Vue from 'vue';
 import _ from 'lodash';
 
+import Logger from '@/libs/Logger';
 import * as Misc from '@/helpers/Misc';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import * as Reactions from '@/helpers/Reactions';
@@ -677,6 +678,8 @@ function createNewState() {
 
                 let user = this.getUser(buffer.networkid, message.nick);
                 let bufferMessage = new Message(message, user);
+                let isNewMessage = message.time > buffer.last_read;
+                bufferMessage.is_new = isNewMessage;
 
                 if (bufferMessage.is_pending) {
                     // Set a timeout to revert the pending state if no echo arrives
@@ -720,7 +723,6 @@ function createNewState() {
                     includeAsActivity = true;
                 }
 
-                let isNewMessage = message.time >= buffer.last_read;
                 let isHighlight = !network || buffer.isRaw() ?
                     false :
                     Misc.mentionsNick(bufferMessage.message, network.ircClient.user.nick);
@@ -784,9 +786,11 @@ function createNewState() {
 
                 // Handle any notifications
                 let settingAlertOn = buffer.setting('alert_on');
+                let showNotifications = buffer.setting('show_notifications');
                 let isSelf = !network ? false : message.nick === network.nick;
                 if (
                     isNewMessage &&
+                    showNotifications &&
                     settingAlertOn !== 'never' &&
                     message.type !== 'nick' &&
                     message.type !== 'mode' &&
