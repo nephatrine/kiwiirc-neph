@@ -67,7 +67,7 @@
         >
             <component
                 :is="injections.components.AwayStatusIndicator"
-                v-if="props.message.user"
+                v-if="props.message.user && props.m().getNetwork()"
                 :network="props.m().getNetwork()" :user="props.message.user"
                 :toggle="false"
             />
@@ -118,7 +118,7 @@
 
         <component
             :is="injections.components.MessageActions"
-            v-if="props.m().canReply(props.message) && props.message.irc_id && props.m().getNetwork().hasCap('message-tags') && !props.message.is_redacted"
+            v-if="props.m().canReply(props.message) && props.message.irc_id && props.m().getNetwork() && props.m().getNetwork().hasCap('message-tags') && !props.message.is_redacted"
             :message="props.message"
             :buffer="props.ml.buffer"
             layout="compact"

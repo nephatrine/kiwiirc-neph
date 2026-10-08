@@ -90,7 +90,7 @@ export default {
             );
         },
         awayNotifySupported() {
-            return this.network.hasCap('away-notify');
+            return this.network && this.network.hasCap('away-notify');
         },
         showMessageCounts() {
             return !this.buffer.setting('hide_message_counts');

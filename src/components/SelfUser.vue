@@ -167,7 +167,7 @@ export default {
             this.self_user_settings_open = false;
         },
         networkSupportsAway() {
-            return this.network.hasCap('away-notify');
+            return this.network && this.network.hasCap('away-notify');
         },
     },
 };

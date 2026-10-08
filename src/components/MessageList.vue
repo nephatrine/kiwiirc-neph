@@ -589,11 +589,15 @@ export default {
         },
         restrictTextSelection() { // Prevents the selection cursor escaping the message list.
             document.querySelector('body').classList.add('kiwi-unselectable');
-            this.$el.style.userSelect = 'text';
+            if (this.$el && this.$el.style) {
+                this.$el.style.userSelect = 'text';
+            }
         },
         unrestrictTextSelection() { // Allows all page elements to be selected again.
             document.querySelector('body').classList.remove('kiwi-unselectable');
-            this.$el.style.userSelect = 'auto';
+            if (this.$el && this.$el.style) {
+                this.$el.style.userSelect = 'auto';
+            }
         },
         removeSelections(removeNative = false) {
             this.selectedMessages = Object.create(null);

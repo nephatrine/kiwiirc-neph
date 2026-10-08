@@ -135,9 +135,10 @@
 
             <component
                 :is="injections.components.MessageActions"
-                v-if="props.m().canReply(props.message) && props.message.irc_id && props.m().getNetwork().hasCap('message-tags') && !props.message.is_redacted"
+                v-if="props.m().canReply(props.message) && props.message.irc_id && props.m().getNetwork() && props.m().getNetwork().hasCap('message-tags') && !props.message.is_redacted"
                 :message="props.message"
                 :buffer="props.ml.buffer"
+                layout="modern"
                 class="kiwi-messagelist-actions"
             />
 
@@ -187,8 +188,10 @@ const methods = {
             return false;
         }
 
+        let network = this.getNetwork();
+
         // Server does not support extended-join so realname would be inconsistent
-        if (!this.network.hasCap('extended-join')) {
+        if (!network || !network.hasCap('extended-join')) {
             return false;
         }
 

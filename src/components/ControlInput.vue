@@ -771,7 +771,7 @@ export default {
             return list;
         },
         startTyping() {
-            if (!this.network.hasCap('message-tags')) {
+            if (!this.network || !this.network.hasCap('message-tags')) {
                 return;
             }
             if (!this.buffer || !this.buffer.shouldShareTyping()) {
@@ -793,7 +793,7 @@ export default {
             this.lastTypingTime = Date.now();
         },
         stopTyping(sendStop) {
-            if (!this.network.hasCap('message-tags')) {
+            if (!this.network || !this.network.hasCap('message-tags')) {
                 return;
             }
             if (!this.buffer || !this.buffer.shouldShareTyping()) {
