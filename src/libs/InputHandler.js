@@ -551,11 +551,14 @@ inputCommands.invite = function inputCommandInvite(event, command, line, context
     }
 
     network.ircClient.raw('INVITE', nick, channel);
-    this.state.addMessage(buffer, {
-        nick: '*',
-        message: `Invited ${nick} to ${channel}`,
-        type: 'message',
-    });
+
+    if (!network.hasCap('echo-message') || !network.hasCap('invite-notify')) {
+        this.state.addMessage(buffer, {
+            nick: '*',
+            message: `Invited ${nick} to ${channel}`,
+            type: 'message',
+        });
+    }
 };
 
 inputCommands.nick = function inputCommandNick(event, command, line, context) {

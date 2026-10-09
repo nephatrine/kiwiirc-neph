@@ -1186,11 +1186,14 @@ function clientMiddleware(state, network) {
         }
 
         if (command === 'invite') {
-            let buffer = network.serverBuffer();
-            let activeNetwork = state.getActiveNetwork();
-            let activeBuffer = state.getActiveBuffer();
-            if (network === activeNetwork && !activeBuffer.isSpecial()) {
-                buffer = activeBuffer;
+            let buffer = network.bufferByName(event.channel);
+            if (!buffer) {
+                buffer = network.serverBuffer();
+                let activeNetwork = state.getActiveNetwork();
+                let activeBuffer = state.getActiveBuffer();
+                if (network === activeNetwork && !activeBuffer.isSpecial()) {
+                    buffer = activeBuffer;
+                }
             }
 
             let translationKey = 'invited_other';
@@ -1205,6 +1208,7 @@ function clientMiddleware(state, network) {
                 time: eventTime,
                 server_time: serverTime,
                 type: 'invite',
+                tags: event.tags || {},
                 message: TextFormatting.t(translationKey, {
                     nick: event.nick,
                     invited: event.invited,
