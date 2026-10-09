@@ -619,7 +619,7 @@ function createNewState() {
                 // Some messages try to be added after a network has been removed, meaning no buffer
                 // will be available
                 if (!buffer || !buffer.getNetwork()) {
-                    return;
+                    return undefined;
                 }
 
                 let network = buffer.getNetwork();
@@ -643,7 +643,7 @@ function createNewState() {
                         }
                         // Cleanup label map
                         delete buffer.messagesObj.messageLabels[label];
-                        return;
+                        return m;
                     }
                 }
 
@@ -666,14 +666,14 @@ function createNewState() {
                             m.is_pending = false;
                             // Add the new IRC ID to the map for future lookups (e.g. replies)
                             Vue.set(buffer.messagesObj.messageIds, msgid, m);
-                            return;
+                            return m;
                         }
                     }
                 }
 
                 // If this message has an authoritative ID and we already have it, discard it
                 if (msgid && buffer.messagesObj.messageIds[msgid]) {
-                    return;
+                    return undefined;
                 }
 
                 let user = this.getUser(buffer.networkid, message.nick);
@@ -844,6 +844,8 @@ function createNewState() {
                 }
 
                 this.$emit('message.new', { message: bufferMessage, buffer });
+
+                return bufferMessage;
             },
 
             addMessageNoRepeat(buffer, message) {
@@ -852,15 +854,15 @@ function createNewState() {
                 if (!buffer || !buffer.getNetwork()) {
                     // Some messages try to be added after a network has been removed,
                     // meaning no buffer will be available
-                    return;
+                    return undefined;
                 }
 
                 let lastMessage = buffer.getLastMessage();
                 if (lastMessage && lastMessage.message === message.message) {
-                    return;
+                    return undefined;
                 }
 
-                this.addMessage(buffer, message);
+                return this.addMessage(buffer, message);
             },
 
             getUser(networkid, nick, usersArr_) {
@@ -868,10 +870,7 @@ function createNewState() {
                 let users = usersArr_;
 
                 if (!users) {
-                    let network = this.getNetwork(networkid);
-                    if (network) {
-                        users = network.users;
-                    }
+                    users = userDict.networks[networkid];
                 }
 
                 if (users) {
@@ -889,7 +888,7 @@ function createNewState() {
                     return;
                 }
 
-                let users = Object.assign(Object.create(null), network.users);
+                let users = Object.assign(Object.create(null), userDict.networks[network.id]);
                 fn(users);
                 network.users = users;
             },
@@ -908,17 +907,17 @@ function createNewState() {
                     return null;
                 }
 
-                let usersArr = usersArr_ || network.users;
+                let usersArr = usersArr_ || userDict.networks[network.id];
                 let userObj = null;
 
                 if (!usersArr[user.nick.toUpperCase()]) {
                     userObj = new UserState(network.id, user, state);
-                    usersArr[user.nick.toUpperCase()] = userObj;
+                    Vue.set(usersArr, user.nick.toUpperCase(), userObj);
                 } else {
                     // Update the existing user object with any new info we have
                     userObj = state.getUser(network.id, user.nick, usersArr);
                     _.each(user, (val, prop) => {
-                        if (typeof val !== 'undefined') {
+                        if (typeof val !== 'undefined' && userObj[prop] !== val) {
                             userObj[prop] = val;
                         }
                     });
@@ -938,7 +937,7 @@ function createNewState() {
                     state.removeUserFromBuffer(buffer, user.nick);
                 });
 
-                this.$delete(network.users, user.nick.toUpperCase());
+                Vue.delete(userDict.networks[network.id], user.nick.toUpperCase());
             },
 
             addMultipleUsersToBuffer(buffer, newUsers) {

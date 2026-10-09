@@ -47,6 +47,8 @@ KiwiIRC explicitly requests the following capabilities during connection and via
 - **draft/read-marker**: Synchronizes the read status of buffers across multiple
   clients and sessions. Utilizes informational `MARKREAD` requests to establish
   synchronization boundaries for query buffers where `JOIN` events are absent.
+- **+channel-context**: Client-only tag used on `PRIVMSG` and `NOTICE` to route
+  messages between buffers (e.g. PM to Channel or Channel to Channel).
 
 ### Helper Capabilities
 
@@ -76,6 +78,34 @@ visual or audio notifications.
 Pending items automatically revert and log an error after 60 seconds if no
 server confirmation arrives.
 
+## Metadata-Synchronized History Handshake
+
+KiwiIRC gates initial `CHATHISTORY` requests to ensure all necessary metadata
+(member lists, sync boundaries) is authoritatively established:
+
+- **Channel Synchronization**: requests strictly wait for the `RPL_ENDOFNAMES`
+  (366) numeric. This ensures member lists are fully populated for rerouting and
+  security checks.
+- **Query Synchronization**: requests wait for a `MARKREAD` echo or a 2-second
+  safety timeout.
+- **Network Readiness**: history retrieval is synchronized network-wide; every
+  enabled channel must finish its handshake (or timeout) before replayed traffic
+  is processed.
+
+## Intelligent Message Rerouting
+
+Utilizing the `+channel-context` tag, KiwiIRC supports two routing models:
+
+1. **Lenient (Default)**: Trust the tag for all traffic (live and history) if
+   the target buffer exists.
+1. **Strict**: Reroute only if both sender and receiver are present in the
+   destination channel, or if the original target was a private message queue.
+   Rerouting is explicitly disabled for historical traffic in this mode.
+
+**Dual-Path Interaction Security**: Reactions and redactions resolve correctly
+if the sender is present in either the context buffer (where displayed) or the
+original buffer (protocol destination).
+
 ## ISUPPORT Intelligence
 
 KiwiIRC examines specific `RPL_ISUPPORT` tokens to adjust its behavior:
@@ -88,6 +118,19 @@ KiwiIRC examines specific `RPL_ISUPPORT` tokens to adjust its behavior:
 - **ACCOUNTEXTBAN / EXTBAN**: Constructs protocol-compliant account-based bans
   based on server support.
 - **CLIENTTAGDENY**: Respects server restrictions on outgoing client tags.
+
+## Operational Constraints
+
+### History Limits
+
+KiwiIRC authoritatively caps single `CHATHISTORY` requests to 250 messages for
+efficiency. Larger unread backlogs are retrieved via automated recursive
+gap-filling.
+
+### Boundary Sanitization
+
+`CHATHISTORY` references strictly exclude synthetic traffic (e.g., local
+connection notices) to prevent synchronization boundary pollution.
 
 ## Specification Deviations & Constraints
 

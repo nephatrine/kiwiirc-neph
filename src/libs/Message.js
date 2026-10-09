@@ -61,6 +61,8 @@ export default class Message {
         ));
         this.is_pending = !!message.is_pending;
         this.is_new = !!message.is_new;
+        this.is_rerouted = !!message.is_rerouted;
+        this.protocol_target = message.protocol_target || '';
         this.is_redacted = !!message.is_redacted;
         this.redacted_by = message.redacted_by || '';
         this.redaction_reason = message.redaction_reason || '';
@@ -176,6 +178,8 @@ export default class Message {
             is_history: this.is_history,
             is_pending: this.is_pending,
             is_new: this.is_new,
+            is_rerouted: this.is_rerouted,
+            protocol_target: this.protocol_target,
             is_redacted: this.is_redacted,
             redacted_by: this.redacted_by,
             redaction_reason: this.redaction_reason,

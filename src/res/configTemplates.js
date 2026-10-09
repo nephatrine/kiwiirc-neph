@@ -131,6 +131,7 @@ export const configTemplates = {
             ignore_bots: false,
             show_redactions: 'placeholder',
             show_notifications: true,
+            lenient_rerouting: true,
         },
         avatars: {
             away_status_position: 1,

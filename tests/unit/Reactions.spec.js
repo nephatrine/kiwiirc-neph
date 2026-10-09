@@ -19,6 +19,8 @@ describe('ReactionMiddleware', () => {
         network.enabled_caps = ['message-tags'];
         network.isupport.CLIENTTAGDENY = '';
         network.ircClient.user.nick = 'TestNick';
+        s.addUserToBuffer(buffer, { nick: 'TestNick' });
+        s.addUserToBuffer(buffer, { nick: 'reactor' });
     });
 
     it('should add a reaction to an existing message', () => {

@@ -9,6 +9,7 @@
 - Single or multiple IRC network connections
 - Multiple layouts for small areas or full page layouts
 - Over 30 professional themes included with unified UI normalization
+- Intelligent message rerouting and authoritative context synchronization
 - Desktop notifications and modern synthesized audio alerts
 - Clean, human-readable buffer content export for chat logs and debugging
 - Extremely versatile via a

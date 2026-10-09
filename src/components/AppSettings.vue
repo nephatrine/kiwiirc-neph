@@ -126,7 +126,7 @@
                                 <span>{{ $t('settings_nick_colouring') }} </span>
                                 <input v-model="settingBufferColourNicknames" type="checkbox">
                             </label>
-                            <label class="u-checkbox-wrapper">
+                            <label v-if="messageTagsSupported" class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_share_typing') }} </span>
                                 <input v-model="settingBufferShareTyping" type="checkbox">
                             </label>
@@ -134,11 +134,15 @@
                                 <span>{{ $t('settings_show_inline_previews') }} </span>
                                 <input v-model="settingBufferInlineLinkPreviews" type="checkbox">
                             </label>
-                            <label class="u-checkbox-wrapper">
+                            <label v-if="!botSupportFound" class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_ignore_bots') }} </span>
                                 <input v-model="settingBufferIgnoreBots" type="checkbox">
                             </label>
-                            <label class="kiwi-appsettings-messagelistDisplay">
+                            <label v-if="messageTagsSupported" class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_lenient_rerouting') }} </span>
+                                <input v-model="settingBufferLenientRerouting" type="checkbox">
+                            </label>
+                            <label v-if="redactionsSupported" class="kiwi-appsettings-messagelistDisplay">
                                 <span>{{ $t('settings_show_redactions') }} </span>
                                 <select v-model="settingBufferShowRedactions">
                                     <option value="hidden">{{ $t('settings_show_redactions_hidden') }}</option>
@@ -299,6 +303,18 @@ export default {
         canRegisterProtocolHandler() {
             return !!navigator.registerProtocolHandler && this.$state.setting('allowRegisterProtocolHandler');
         },
+        messageTagsSupported() {
+            let activeNetwork = this.$state.getActiveNetwork();
+            return activeNetwork && activeNetwork.hasCap('message-tags');
+        },
+        redactionsSupported() {
+            let activeNetwork = this.$state.getActiveNetwork();
+            return activeNetwork && activeNetwork.hasCap('draft/message-redaction');
+        },
+        botSupportFound() {
+            let activeNetwork = this.$state.getActiveNetwork();
+            return activeNetwork && typeof activeNetwork.supports('BOT') !== 'undefined';
+        },
         timestamps_24h: {
             get() {
                 // %H is 24 hour format
@@ -330,6 +346,7 @@ export default {
         settingBufferShowNotifications: bindSetting('buffers.show_notifications'),
         settingBufferShareTyping: bindSetting('buffers.share_typing'),
         settingBufferIgnoreBots: bindSetting('buffers.ignore_bots'),
+        settingBufferLenientRerouting: bindSetting('buffers.lenient_rerouting'),
         settingBufferShowRedactions: bindSetting('buffers.show_redactions'),
         settingDefaultBanMask: bindSetting('buffers.default_ban_mask'),
         settingDefaultKickReason: bindSetting('buffers.default_kick_reason'),

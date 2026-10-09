@@ -68,7 +68,11 @@
                 </span>
             </div>
             <div class="kiwi-messagelist-top">
-                <span v-if="props.message.is_bot" :title="props.ml.$t('bot')" class="kiwi-messagelist-nick-bot">🤖</span><a
+                <span v-if="props.message.is_bot" :title="props.ml.$t('bot')" class="kiwi-messagelist-nick-bot">🤖</span><span
+                    v-if="props.message.is_rerouted"
+                    :title="props.ml.$t('rerouted')"
+                    class="kiwi-messagelist-nick-rerouted"
+                >⤮</span><a
                     v-if="props.message.nick"
                     :style="{ color: props.ml.userColour(props.message.user) }"
                     :class="[
@@ -273,13 +277,8 @@ const methods = {
     },
     getReplyMessage(replyId) {
         let props = this.props;
-        let m = props.ml.buffer.messagesObj.messageIds[replyId];
-        if (!m) {
-            // If not found in the official ID map, it might still be in the batching queue
-            const queue = props.ml.buffer.addMessageBatch.queue();
-            m = queue.find((msg) => msg.irc_id === replyId);
-        }
-        return m;
+        const resolved = props.m().getNetwork().resolveMessage(replyId, props.ml.buffer);
+        return resolved ? resolved.message : null;
     },
     scrollToReply(replyId) {
         let props = this.props;
@@ -432,7 +431,8 @@ export default {
     margin-right: 10px;
 }
 
-.kiwi-messagelist-nick-bot {
+.kiwi-messagelist-nick-bot,
+.kiwi-messagelist-nick-rerouted {
     font-size: 1.1em;
 }
 

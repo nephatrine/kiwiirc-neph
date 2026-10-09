@@ -1355,9 +1355,17 @@ msgstr "{{nick}} changed the channel topic to: {{topic}}."
 msgid "bot"
 msgstr "Bot"
 
+#: Rerouted message
+msgid "rerouted"
+msgstr "Rerouted Message"
+
 #: Hide all bot messages
 msgid "settings_ignore_bots"
 msgstr "Hide Bot Messages"
+
+#: Lenient message rerouting
+msgid "settings_lenient_rerouting"
+msgstr "Lax Message Rerouting"
 
 #: Message Actions
 msgid "message_actions_title"

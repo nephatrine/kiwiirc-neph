@@ -21,6 +21,11 @@ and this project adheres to
 - **Advanced Messaging**: Full support for native Unicode emojis with a
   searchable picker, threaded replies (`+reply`), per-message reactions
   (`+draft/react`), and standardized read-markers (`draft/read-marker`).
+- **Intelligent Message Rerouting**: Implemented support for the
+  `+channel-context` tag with lenient and strict security policies.
+- **Metadata-Synchronized History**: Gated history requests by metadata
+  readiness (End of NAMES, MARKREAD boundary) to ensure accurate filtering and
+  rerouting.
 - **Global Desktop Notification Toggle**: Added a user-configurable setting to
   enable or disable desktop alerts independently of audio notifications.
 - **Authoritative History**: Implemented `draft/chathistory` and
@@ -46,15 +51,20 @@ and this project adheres to
 ### Changed
 
 - **Architecture**: Separated internal message IDs from authoritative `msgid`
-  tags to ensure protocol compliance for all advanced features.
+  tags to ensure protocol compliance for all advanced features. Added
+  `protocol_target` tracking for spec-compliant interactions.
 - **Branding Architecture**: Introduced a dedicated `--brand-online` variable to
   ensure status indicators remain distinct from primary theme accents.
+- **UI/UX Intelligence**: App Settings now dynamically hide options based on
+  network capabilities (Typing, Redactions, Bot filters).
 - **Modernized Environment**: Updated requirements to Node 22+ and transitioned
   to modern browser targets, removing legacy IE11/EdgeHTML polyfills.
 - **Performance**: Optimized message state management and replaced legacy
-  image-based emoticons with native Unicode rendering.
+  image-based emoticons with native Unicode rendering. Capped single-chunk
+  history requests for better memory hygiene.
 - **Reconnection Logic**: Hardened connection handlers with capped delays and
   authoritative "join healing" to improve stability.
+- **Diagnostics**: Increased `*raw` buffer scrollback to 5000 lines.
 
 ### Removed
 
@@ -70,3 +80,7 @@ and this project adheres to
 
 - **Security**: Addressed multiple high-severity dependency vulnerabilities
   including an update to `postcss` to ^8.5.28.
+- **Reactivity**: Fixed inconsistent away status indicators and user discovery
+  gaps during high-traffic logins.
+- **Synchronization**: Fixed "vanishing" historical messages by sanitizing
+  boundary references and synchronizing metadata handshakes.

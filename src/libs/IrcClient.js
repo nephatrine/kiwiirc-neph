@@ -230,15 +230,9 @@ export function create(state, network) {
             buffer.flags.highlight = false;
         }
 
-        // If this is a query and we haven't requested history yet, do it now that we
-        // have an authoritative last_read boundary.
-        if (
-            buffer.isQuery()
-            && buffer.chathistory_request_count === 0
-            && ['all', 'queries'].includes(buffer.setting('auto_request_history'))
-        ) {
-            buffer.requestLatestScrollback();
-        }
+        // Set the marker received flag and attempt history request
+        buffer.flags.marker_received = true;
+        buffer.maybeRequestHistory();
     });
 
     return ircClient;
@@ -286,6 +280,12 @@ function handleStandardReply(command, event, network, state) {
     const buffer = network.bufferByName(target) || network.serverBuffer();
     const messageType = ['FAIL', 'WARN'].includes(type) ? 'error' : 'message';
 
+    // If a MARKREAD request fails, we should still unblock history retrieval for that buffer
+    if (type === 'FAIL' && failedCmd === 'MARKREAD' && buffer) {
+        buffer.flags.marker_received = true;
+        buffer.maybeRequestHistory();
+    }
+
     state.addMessage(buffer, {
         time: Date.now(),
         nick: '*',
@@ -312,6 +312,7 @@ function clientMiddleware(state, network) {
             client.sasl_scram = null;
             client.sasl_buffer = '';
             network.cap_values = {};
+            network.metadata_timeout_active = false;
         });
 
         client.on('connected', () => {
@@ -571,6 +572,17 @@ function clientMiddleware(state, network) {
                 currentUser.away = '';
             }
 
+            // Start a 10-second safety timeout for metadata synchronization.
+            // If some channels fail to load NAMES within this window, we authoritatively
+            // unblock history requests to ensure the UI remains responsive.
+            network.metadata_timeout_active = false;
+            setTimeout(() => {
+                if (network.state === 'connected') {
+                    network.metadata_timeout_active = true;
+                    network.buffers.forEach((b) => b.maybeRequestHistory());
+                }
+            }, 10000);
+
             let serverBuffer = network.serverBuffer();
             state.addMessage(serverBuffer, {
                 time: eventTime,
@@ -703,15 +715,53 @@ function clientMiddleware(state, network) {
         if (command === 'message') {
             let isPrivateMessage = false;
             let bufferName = event.from_server ? '*' : event.target;
+            let isRerouted = false;
 
-            // If the message came from a batch then params[0] is the bufferName
-            if (event.batch && event.batch.type === 'chathistory' && event.batch.params[0]) {
-                bufferName = event.batch.params[0];
-                isPrivateMessage = !network.isChannelName(bufferName);
-            } else if (!event.from_server && event.target === client.user.nick) {
-                // PMs should go to a buffer with the name of the other user
-                isPrivateMessage = true;
-                bufferName = event.nick;
+            const lenientRerouting = state.setting('buffers.lenient_rerouting');
+
+            // 1. Determine the protocol destination (original buffer)
+            if (!event.from_server) {
+                if (event.target === client.user.nick) {
+                    isPrivateMessage = true;
+                    bufferName = event.nick;
+                }
+
+                // If replaying history, the batch target is our protocol destination
+                if (isHistory && event.batch && event.batch.params[0]) {
+                    bufferName = event.batch.params[0];
+                    isPrivateMessage = !network.isChannelName(bufferName);
+                }
+            }
+
+            const protocolTarget = bufferName;
+
+            // 2. Decide if we should reroute locally based on +channel-context
+            if (!event.from_server && event.tags && event.tags['+channel-context']) {
+                const contextChannel = event.tags['+channel-context'];
+                const targetBuffer = network.bufferByName(contextChannel);
+
+                let canReroute = false;
+                if (lenientRerouting && targetBuffer) {
+                    // Lenient mode: route if the buffer exists
+                    canReroute = true;
+                } else if (targetBuffer && targetBuffer.isChannel()) {
+                    // Strict mode: sender and receiver must both be in the channel
+                    // OR it must be coming from a PM
+                    const sender = state.getUser(networkid, event.nick);
+                    const senderInChannel = sender && sender.buffers[targetBuffer.id];
+                    const receiverInChannel = targetBuffer.joined;
+                    const wasPm = (protocolTarget === event.nick);
+
+                    if (wasPm || (senderInChannel && receiverInChannel)) {
+                        canReroute = true;
+                    }
+                }
+
+                if (canReroute) {
+                    bufferName = contextChannel;
+                    isPrivateMessage = false;
+                    isRerouted = true;
+                }
             }
 
             // Chanserv sometimes PMs messages about a channel on join in the format of
@@ -773,6 +823,8 @@ function clientMiddleware(state, network) {
                 message: messageBody,
                 type: event.type,
                 tags: event.tags || {},
+                is_rerouted: isRerouted,
+                protocol_target: protocolTarget,
             };
 
             // If ignore_bots is enabled and the user is a known bot or the message has a bot tag,
@@ -786,14 +838,22 @@ function clientMiddleware(state, network) {
             }
 
             // If this is a new PM and the sending user is not exempt from blocks, ignore it
-            if (blockNewPms && isPrivateMessage && !buffer && pmBlock === PM_BLOCK_BLOCKED) {
+            const shouldBlockPm = blockNewPms &&
+                isPrivateMessage &&
+                !buffer &&
+                pmBlock === PM_BLOCK_BLOCKED;
+            if (shouldBlockPm) {
                 return;
             }
 
             // If we need to manually check if this user is blocked..
             // PM_BLOCK_REQUIRES_CHECK means we should whois the user to get their oper status. We
             // allways allow messages from opers.
-            if (blockNewPms && isPrivateMessage && !buffer && pmBlock === PM_BLOCK_REQUIRES_CHECK) {
+            const shouldCheckPm = blockNewPms &&
+                isPrivateMessage &&
+                !buffer &&
+                pmBlock === PM_BLOCK_REQUIRES_CHECK;
+            if (shouldCheckPm) {
                 // if the nick is in pendingPms it has already issued a whois request
                 let awaitingWhois = !!_.find(network.pendingPms, { nick: event.nick });
                 network.pendingPms.push({ bufferName, message });
@@ -832,7 +892,16 @@ function clientMiddleware(state, network) {
 
             const isHandledBatch = event.batch && ['netsplit', 'netjoin'].includes(event.batch.type);
             if (!isHandledBatch) {
-                state.addMessage(buffer, message);
+                let bufferMessage = state.addMessage(buffer, message);
+                if (bufferMessage && isRerouted) {
+                    // Rerouted messages should always be treated as highlights in the channel
+                    bufferMessage.isHighlight = true;
+
+                    // Track rerouted messages for interaction resolution
+                    if (bufferMessage.irc_id) {
+                        network.reroute_map.set(bufferMessage.irc_id, buffer);
+                    }
+                }
             }
         }
 
@@ -1432,10 +1501,6 @@ function clientMiddleware(state, network) {
                 buffer.enabled = true;
             }
 
-            let ucNick = client.user.nick.toUpperCase();
-            let hadExistingUsers = Object.keys(buffer.users)
-                .filter((u) => u !== ucNick)
-                .length > 0;
             let users = [];
             event.users.forEach((user) => {
                 if (!user || !user.nick) {
@@ -1455,19 +1520,13 @@ function clientMiddleware(state, network) {
                 state.addMultipleUsersToBuffer(buffer, users);
             }
 
-            if (!isHistory && !hadExistingUsers && network.ircClient.chathistory.isSupported()) {
-                // TODO: If this is a reconnect (numConnects > 1) then paginate backwards
-                //       until we reach our last message.
-                //       OR
-                //       Add a marker at the gap between this new chathistory block starts and when
-                //       the existing messages end so that we can add a "load missing messages"
-                //       button there or have it auto request them when it scrolls into view
-                if (
-                    buffer.isChannel()
-                    && ['all', 'channels'].includes(buffer.setting('auto_request_history'))
-                ) {
-                    buffer.requestLatestScrollback();
-                }
+            if (!isHistory) {
+                // If the userlist is replayed outside of history, it's the authoritative
+                // list for the current session.
+                buffer.flags.names_received = true;
+                // Attempt to trigger history for all buffers now that the network state
+                // has evolved (one more channel ready).
+                network.buffers.forEach((b) => b.maybeRequestHistory());
             }
         }
 
@@ -2108,6 +2167,9 @@ function clientMiddleware(state, network) {
             // or do some action on it. Disable it until we manually reattempt to join.
             if (buffer.isChannel() && !buffer.joined) {
                 buffer.enabled = false;
+                // Attempt to trigger history for other buffers since this channel no longer
+                // blocks the network-wide readiness signal.
+                network.buffers.forEach((b) => b.maybeRequestHistory());
             }
         }
 

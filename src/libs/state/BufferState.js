@@ -40,6 +40,8 @@ export default class BufferState {
             is_requesting_chathistory: false,
             error: false,
             last_read_authoritative: 0,
+            names_received: false,
+            marker_received: false,
         };
         this.settings = { };
         this.last_read = 0;
@@ -89,6 +91,8 @@ export default class BufferState {
         function onNetworkConnecting(event) {
             if (event.network === this.getNetwork()) {
                 this.chathistory_request_count = 0;
+                this.flags.names_received = false;
+                this.flags.marker_received = false;
             }
         }
 
@@ -122,26 +126,68 @@ export default class BufferState {
 
     initHistory() {
         const network = this.getNetwork();
-        if (!network || !this.isQuery()) {
+        if (!network) {
             return;
         }
 
         const ircClient = network.ircClient;
         const hasReadMarker = network.hasCap('draft/read-marker');
-        const hasChathistory = ircClient.chathistory.isSupported();
 
-        if (hasReadMarker && network.currentUser()?.account) {
-            // Force the server to tell us the last-read marker.
-            // History will be requested once the marker event arrives in IrcClient.js.
-            ircClient.readMarker.get(this.name);
-        } else if (hasChathistory) {
-            // Fallback for anonymous users or servers without read-marker support.
-            if (['all', 'queries'].includes(this.setting('auto_request_history'))) {
-                this.requestLatestScrollback();
+        if (this.isQuery()) {
+            if (hasReadMarker) {
+                // For queries, we wait for the MARKREAD echo to establish the boundary.
+                // Request the current marker now using the middleware helper.
+                ircClient.readMarker.get(this.name);
+
+                // Safety fallback timer (2 seconds) for the marker handshake
+                setTimeout(() => {
+                    if (!this.flags.marker_received) {
+                        this.flags.marker_received = true;
+                        this.maybeRequestHistory();
+                    }
+                }, 2000);
+            } else {
+                // Fallback for servers without read-marker support.
+                this.flags.marker_received = true;
+                this.maybeRequestHistory();
             }
+            this.initUserStatus();
+        } else if (this.isChannel()) {
+            // For channels, we rely on the network-wide isReadyForHistory signal,
+            // which depends on names_received.
+        }
+    }
+
+    maybeRequestHistory() {
+        const network = this.getNetwork();
+        if (!network || this.chathistory_request_count > 0) {
+            return;
         }
 
-        this.initUserStatus();
+        const hasChathistory = network.ircClient.chathistory.isSupported();
+        if (!hasChathistory) {
+            return;
+        }
+
+        // We only request history when the entire network is ready (all member lists populated)
+        // to ensure that security guards (+channel-context, block_pms) have full context.
+        if (!network.isReadyForHistory) {
+            return;
+        }
+
+        const autoHistory = this.setting('auto_request_history');
+        let shouldRequest = false;
+
+        if (this.isChannel()) {
+            // All channels are ready because network.isReadyForHistory is true
+            shouldRequest = ['all', 'channels'].includes(autoHistory);
+        } else if (this.isQuery() && this.flags.marker_received) {
+            shouldRequest = ['all', 'queries'].includes(autoHistory);
+        }
+
+        if (shouldRequest) {
+            this.requestLatestScrollback();
+        }
     }
 
     initUserStatus() {
@@ -220,6 +266,11 @@ export default class BufferState {
     }
 
     clearMessages() {
+        this.messagesObj.messages.forEach((m) => {
+            if (m.irc_id) {
+                this.getNetwork().reroute_map.delete(m.irc_id);
+            }
+        });
         this.messagesObj.messages.splice(0, this.messagesObj.messages.length);
         this.messagesObj.messageIds = Object.create(null);
     }
@@ -235,6 +286,7 @@ export default class BufferState {
             delete this.messagesObj.messageIds[message.id];
             if (message.irc_id) {
                 delete this.messagesObj.messageIds[message.irc_id];
+                this.getNetwork().reroute_map.delete(message.irc_id);
             }
             return false;
         });
@@ -350,11 +402,17 @@ export default class BufferState {
         }
 
         // Check the buffer specific settings before reverting to global settings
-        let result = typeof this.settings[name] !== 'undefined' ?
-            this.settings[name] :
-            this.state.setting('buffers.' + name);
+        let result = this.settings[name];
+        if (typeof result !== 'undefined') {
+            return result;
+        }
 
-        return result;
+        // Special default for the *raw buffer scrollback size
+        if (name === 'scrollback_size' && this.isRaw()) {
+            return 5000;
+        }
+
+        return this.state.setting('buffers.' + name);
     }
 
     rename(newName) {
@@ -387,8 +445,10 @@ export default class BufferState {
         const allMessages = [...messages, ...queue];
 
         const validTypes = ['privmsg', 'notice', 'action', 'message'];
-        const validMessages = allMessages.filter((m) => validTypes.includes(m.type) &&
-            (m.irc_id || m.server_time));
+        const validMessages = allMessages.filter((m) => (
+            validTypes.includes(m.type) &&
+            (m.irc_id || m.is_history)
+        ));
 
         if (validMessages.length === 0) {
             return null;
@@ -619,12 +679,20 @@ export default class BufferState {
     say(message, opts = {}) {
         let network = this.getNetwork();
         let tags = opts.tags || {};
+        let outgoingTarget = this.name;
 
         if (this.replying_to && this.replying_to.irc_id && network.hasCap('message-tags')) {
             if (network.supportsTag('+reply')) {
                 tags['+reply'] = this.replying_to.irc_id;
             } else if (network.supportsTag('+draft/reply')) {
                 tags['+draft/reply'] = this.replying_to.irc_id;
+            }
+
+            // If replying to a rerouted message, we must target the protocol_target
+            // and include the +channel-context tag to maintain the thread
+            if (this.replying_to.is_rerouted && this.replying_to.protocol_target) {
+                outgoingTarget = this.replying_to.protocol_target;
+                tags['+channel-context'] = this.name;
             }
         }
 
@@ -634,6 +702,7 @@ export default class BufferState {
             message: message,
             tags: tags,
             type: opts.type || 'privmsg',
+            is_rerouted: !!tags['+channel-context'],
         };
 
         this.state.addMessage(this, newMessage);
@@ -645,7 +714,7 @@ export default class BufferState {
             tagmsg: 'tagmsg',
         };
         let fnName = fnNames[opts.type] || 'say';
-        network.ircClient[fnName](this.name, message, tags);
+        network.ircClient[fnName](outgoingTarget, message, tags);
 
         this.replying_to = null;
     }
@@ -710,7 +779,9 @@ export default class BufferState {
             Reactions.applyReaction(message, network.nick, emoji, isReacting, { isPending: false });
         }
 
-        network.ircClient.tagmsg(this.name, tags);
+        // Use protocol_target if the message was rerouted
+        const outgoingTarget = message.protocol_target || this.name;
+        network.ircClient.tagmsg(outgoingTarget, tags);
     }
 
     redact(message, reason) {
@@ -773,7 +844,9 @@ export default class BufferState {
             message.is_pending = false;
         }
 
-        let ircMessage = new network.ircClient.Message('REDACT', this.name, message.irc_id);
+        // Use protocol_target if the message was rerouted
+        const outgoingTarget = message.protocol_target || this.name;
+        let ircMessage = new network.ircClient.Message('REDACT', outgoingTarget, message.irc_id);
         if (reason) {
             ircMessage.params.push(reason);
         }
@@ -925,6 +998,7 @@ function createMessageBatch(bufferState) {
                 delete bufferState.messagesObj.messageIds[msg.id];
                 if (msg.irc_id) {
                     delete bufferState.messagesObj.messageIds[msg.irc_id];
+                    bufferState.getNetwork().reroute_map.delete(msg.irc_id);
                 }
                 if (msg.tags && msg.tags.label) {
                     delete bufferState.messagesObj.messageLabels[msg.tags.label];

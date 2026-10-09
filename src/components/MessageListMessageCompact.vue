@@ -134,6 +134,11 @@
         />
 
         <span v-if="props.message.is_bot" :title="props.ml.$t('bot')" class="kiwi-messagelist-nick-bot">🤖</span>
+        <span
+            v-if="props.message.is_rerouted"
+            :title="props.ml.$t('rerouted')"
+            class="kiwi-messagelist-nick-rerouted"
+        >⤮</span>
 
         <div v-if="props.message.embed.payload && props.ml.shouldAutoEmbed">
             <component
@@ -194,13 +199,8 @@ const methods = {
     },
     getReplyMessage(replyId) {
         let props = this.props;
-        let m = props.ml.buffer.messagesObj.messageIds[replyId];
-        if (!m) {
-            // If not found in the official ID map, it might still be in the batching queue
-            const queue = props.ml.buffer.addMessageBatch.queue();
-            m = queue.find((msg) => msg.irc_id === replyId);
-        }
-        return m;
+        const resolved = props.m().getNetwork().resolveMessage(replyId, props.ml.buffer);
+        return resolved ? resolved.message : null;
     },
     canReply(message) {
         let types = ['privmsg', 'action', 'message'];
@@ -270,18 +270,28 @@ export default {
     width: auto;
 }
 
-.kiwi-messagelist-nick-bot {
+.kiwi-messagelist-nick-bot,
+.kiwi-messagelist-nick-rerouted {
     position: absolute;
     right: 72px;
     top: 2px;
     font-size: 1.1em;
 }
 
+.kiwi-messagelist-nick-rerouted {
+    right: 90px;
+}
+
 .kiwi-messagelist-message--no-timestamps .kiwi-messagelist-nick-bot {
     right: 10px;
 }
 
-.kiwi-messagelist-message--compact:hover .kiwi-messagelist-nick-bot {
+.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-nick-rerouted {
+    right: 28px;
+}
+
+.kiwi-messagelist-message--compact:hover .kiwi-messagelist-nick-bot,
+.kiwi-messagelist-message--compact:hover .kiwi-messagelist-nick-rerouted {
     display: none;
 }
 

@@ -205,11 +205,20 @@ function handleMessage(type, event, command, line, context) {
         }
 
         let tags = {};
+        let outgoingTarget = bufferName;
+
         if (buffer.replying_to && buffer.replying_to.irc_id && network.hasCap('message-tags')) {
             if (network.supportsTag('+reply')) {
                 tags['+reply'] = buffer.replying_to.irc_id;
             } else if (network.supportsTag('+draft/reply')) {
                 tags['+draft/reply'] = buffer.replying_to.irc_id;
+            }
+
+            // If replying to a rerouted message, we must target the protocol_target
+            // and include the +channel-context tag to maintain the thread
+            if (buffer.replying_to.is_rerouted && buffer.replying_to.protocol_target) {
+                outgoingTarget = buffer.replying_to.protocol_target;
+                tags['+channel-context'] = buffer.name;
             }
         }
 
@@ -232,6 +241,7 @@ function handleMessage(type, event, command, line, context) {
             type: type,
             tags: _.clone(tags),
             is_pending: hasEcho || hasLabel,
+            is_rerouted: !!tags['+channel-context'],
         };
 
         this.state.addMessage(buffer, newMessage);
@@ -242,7 +252,7 @@ function handleMessage(type, event, command, line, context) {
             notice: 'notice',
         };
         let fnName = fnNames[type] || 'say';
-        network.ircClient[fnName](bufferName, message, tags);
+        network.ircClient[fnName](outgoingTarget, message, tags);
 
         buffer.replying_to = null;
     }

@@ -104,7 +104,8 @@ function addFunctionsToClient(client, network) {
 
     history.maxLimit = () => {
         let limit = parseInt(network.supports('CHATHISTORY'), 10);
-        return (Number.isNaN(limit) || limit <= 0) ? 50 : limit;
+        let max = (Number.isNaN(limit) || limit <= 0) ? 50 : limit;
+        return Math.min(max, 250);
     };
 
     history.supportedRefTypes = () => {

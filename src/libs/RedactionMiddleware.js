@@ -25,7 +25,7 @@ export function theMiddleware(network, command, message, client, next) {
     }
 
     // REDACT <target> <msgid> [:<reason>]
-    const target = message.params[0];
+    let target = message.params[0];
     const msgid = message.params[1];
     const reason = message.params[2] || '';
     const label = message.tags.label;
@@ -35,24 +35,14 @@ export function theMiddleware(network, command, message, client, next) {
         return;
     }
 
-    const buffer = network.bufferByName(target);
-    if (!buffer) {
+    const initialBuffer = network.bufferByName(target);
+    const resolved = network.resolveMessage(msgid, initialBuffer, message.nick);
+    if (!resolved) {
         if (next) next();
         return;
     }
 
-    let targetMessage = buffer.messagesObj.messageIds[msgid];
-    if (!targetMessage) {
-        // If not found in the official ID map, it might still be in the batching queue
-        // (common during history playback)
-        const queue = buffer.addMessageBatch.queue();
-        targetMessage = queue.find((m) => m.irc_id === msgid);
-    }
-
-    if (!targetMessage) {
-        if (next) next();
-        return;
-    }
+    const { message: targetMessage, buffer } = resolved;
 
     if (targetMessage.type === 'tagmsg') {
         if (next) next();

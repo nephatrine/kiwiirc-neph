@@ -73,7 +73,30 @@ export default class NetworkState {
         // Map of batchId -> { bufferName, label }
         def(this, 'active_outgoing_batches', new Map(), false);
 
+        // Map of msgid -> Buffer object for rerouted messages
+        def(this, 'reroute_map', new Map(), false);
+
+        this.metadata_timeout_active = false;
+
         bufferDict.$set(bufferDict.networks, this.id, []);
+    }
+
+    get isReadyForHistory() {
+        if (this.state !== 'connected') {
+            return false;
+        }
+
+        // If the 10s safety timeout has fired, we are authoritatively ready
+        if (this.metadata_timeout_active) {
+            return true;
+        }
+
+        // Network is ready when all enabled channels have received their NAMES list
+        const pendingChannels = this.buffers.filter((b) => (
+            b.isChannel() && b.enabled && !b.flags.names_received
+        ));
+
+        return pendingChannels.length === 0;
     }
 
     get ircClient() {
@@ -233,6 +256,69 @@ export default class NetworkState {
 
     timeToLocal(serverTimeMs) {
         return this.ircClient.network.timeToLocal(serverTimeMs);
+    }
+
+    /**
+     * Resolve a message by msgid across the network, respecting security guards.
+     * @param {string} msgid The authoritative IRC msgid
+     * @param {BufferState} [targetBuffer] The buffer specified by the protocol (if any)
+     * @param {string} [senderNick] The nick of the user performing the action (for security)
+     * @returns {{message: Message, buffer: BufferState}|null}
+     */
+    resolveMessage(msgid, targetBuffer, senderNick) {
+        if (!msgid) {
+            return null;
+        }
+
+        let message = null;
+        let buffer = targetBuffer;
+
+        // 1. Try resolving in the specified buffer
+        if (buffer) {
+            message = buffer.messagesObj.messageIds[msgid];
+            if (!message) {
+                const queue = buffer.addMessageBatch.queue();
+                message = queue.find((m) => m.irc_id === msgid);
+            }
+        }
+
+        // 2. If not found, try the reroute map
+        if (!message) {
+            buffer = this.reroute_map.get(msgid);
+            if (buffer) {
+                message = buffer.messagesObj.messageIds[msgid];
+                if (!message) {
+                    const queue = buffer.addMessageBatch.queue();
+                    message = queue.find((m) => m.irc_id === msgid);
+                }
+            }
+        }
+
+        if (!message || !buffer) {
+            return null;
+        }
+
+        // 3. Security Guard for cross-buffer resolution
+        if (buffer !== targetBuffer) {
+            const user = senderNick ? this.appState.getUser(this.id, senderNick) : null;
+
+            // Interaction is valid if sender is in the context buffer OR the original buffer
+            const senderInContext = buffer.isChannel() && user && user.buffers[buffer.id];
+            const senderInOriginal = targetBuffer && targetBuffer.isChannel() &&
+                user && user.buffers[targetBuffer.id];
+
+            // If it's a PM, the sender is always "in" their own PM queue
+            const wasPm = (message.protocol_target === this.nick);
+
+            const lenientRerouting = this.appState.setting('buffers.lenient_rerouting');
+
+            if (!lenientRerouting && !wasPm &&
+                !senderInContext && !senderInOriginal) {
+                return null;
+            }
+        }
+
+        return { message, buffer };
     }
 
     // Support '@#channel' and '++channel' formats

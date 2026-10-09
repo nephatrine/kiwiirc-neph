@@ -41,8 +41,19 @@ export function theMiddleware(network, command, message, client, next) {
         return;
     }
 
-    // If we are the target then the sender is the target (direct message)
-    if (target.toLowerCase() === client.user.nick.toLowerCase()) {
+    // Handle +channel-context tag for routing
+    if (message.tags && message.tags['+channel-context']) {
+        const contextChannel = message.tags['+channel-context'];
+        const targetBuffer = network.bufferByName(contextChannel);
+        if (targetBuffer && targetBuffer.isChannel() && targetBuffer.joined) {
+            // Check if sender is also in the channel
+            const sender = network.appState.getUser(network.id, message.nick);
+            if (sender && sender.buffers[targetBuffer.id]) {
+                target = contextChannel;
+            }
+        }
+    } else if (target.toLowerCase() === client.user.nick.toLowerCase()) {
+        // If we are the target then the sender is the target (direct message)
         target = message.nick;
     }
 
@@ -52,24 +63,14 @@ export function theMiddleware(network, command, message, client, next) {
         target = targetGroup.target;
     }
 
-    const buffer = network.bufferByName(target);
-    if (!buffer) {
+    const initialBuffer = network.bufferByName(target);
+    const resolved = network.resolveMessage(replyId, initialBuffer, message.nick);
+    if (!resolved) {
         if (next) next();
         return;
     }
 
-    let targetMessage = buffer.messagesObj.messageIds[replyId];
-    if (!targetMessage) {
-        // If not found in the official ID map, it might still be in the batching queue
-        // (common during history playback)
-        const queue = buffer.addMessageBatch.queue();
-        targetMessage = queue.find((m) => m.irc_id === replyId);
-    }
-
-    if (!targetMessage) {
-        if (next) next();
-        return;
-    }
+    const { message: targetMessage, buffer } = resolved;
 
     const emoji = reactEmoji || unreactEmoji;
     const isReacting = !!reactEmoji;

@@ -63,6 +63,10 @@
                 {{ props.ml.formatTime(props.message.time) }}
             </span>
             <span v-if="props.message.is_bot" :title="props.ml.$t('bot')" class="kiwi-messagelist-nick-bot">🤖</span><span
+                v-if="props.message.is_rerouted"
+                :title="props.ml.$t('rerouted')"
+                class="kiwi-messagelist-nick-rerouted"
+            >⤮</span><span
                 :style="{ color: props.ml.userColour(props.message.user) }"
                 :class="[
                     'kiwi-messagelist-nick',
@@ -164,13 +168,8 @@ const methods = {
     },
     getReplyMessage(replyId) {
         let props = this.props;
-        let m = props.ml.buffer.messagesObj.messageIds[replyId];
-        if (!m) {
-            // If not found in the official ID map, it might still be in the batching queue
-            const queue = props.ml.buffer.addMessageBatch.queue();
-            m = queue.find((msg) => msg.irc_id === replyId);
-        }
-        return m;
+        const resolved = props.m().getNetwork().resolveMessage(replyId, props.ml.buffer);
+        return resolved ? resolved.message : null;
     },
     canReply(message) {
         let types = ['privmsg', 'action', 'message'];
@@ -256,7 +255,8 @@ export default {
     width: auto;
 }
 
-.kiwi-messagelist-nick-bot {
+.kiwi-messagelist-nick-bot,
+.kiwi-messagelist-nick-rerouted {
     font-size: 1.1em;
 }
 
