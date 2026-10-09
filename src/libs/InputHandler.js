@@ -572,6 +572,46 @@ inputCommands.nick = function inputCommandNick(event, command, line, context) {
     network.ircClient.changeNick(newNick);
 };
 
+inputCommands.encoding = function inputCommandEncoding(event, command, line, context) {
+    event.handled = true;
+    const { network, buffer } = context;
+
+    let newEncoding = line.trim();
+    if (!newEncoding) {
+        this.state.addMessage(buffer, {
+            nick: '*',
+            message: TextFormatting.t('encoding_current', { encoding: network.connection.encoding }),
+        });
+        return;
+    }
+
+    if (typeof network.isupport.UTF8ONLY !== 'undefined') {
+        let normalized = newEncoding.toLowerCase();
+        if (normalized !== 'utf8' && normalized !== 'utf-8') {
+            this.state.addMessage(buffer, {
+                nick: '*',
+                message: TextFormatting.t('encoding_invalid_utf8only'),
+                type: 'error',
+            });
+            return;
+        }
+    }
+
+    network.connection.encoding = newEncoding;
+    if (
+        network.ircClient.connection
+        && network.ircClient.connection.transport
+        && network.ircClient.connection.transport.setEncoding
+    ) {
+        network.ircClient.connection.transport.setEncoding(newEncoding);
+    }
+
+    this.state.addMessage(buffer, {
+        nick: '*',
+        message: TextFormatting.t('encoding_changed_to', { encoding: newEncoding }),
+    });
+};
+
 inputCommands.away = function inputCommandAway(event, command, line, context) {
     event.handled = true;
 

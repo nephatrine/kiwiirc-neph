@@ -6,8 +6,8 @@
 
         <template v-if="isChannel()">
             <div class="kiwi-header-name-container">
-                <div class="kiwi-header-name">
-                    <div class="kiwi-header-name-full">{{ buffer.name }}</div>{{ buffer.name }}
+                <div :title="buffer.name" class="kiwi-header-name">
+                    {{ buffer.name }}
                 </div>
             </div>
             <div class="kiwi-header-center">
@@ -85,8 +85,14 @@
 
         <template v-else-if="isServer()">
             <div class="kiwi-header-name-container">
-                <div class="kiwi-header-name">
-                    <div class="kiwi-header-name-full">{{ buffer.getNetwork().name }}</div>
+                <div :title="buffer.getNetwork().name" class="kiwi-header-name">
+                    <img
+                        v-if="buffer.getNetwork().iconUrl && !iconError"
+                        :src="buffer.getNetwork().iconUrl"
+                        alt=""
+                        class="kiwi-header-network-icon"
+                        @error="iconError = true"
+                    >
                     {{ buffer.getNetwork().name }}
                 </div>
             </div>
@@ -115,14 +121,7 @@
 
         <template v-else-if="isQuery()">
             <div class="kiwi-header-name-container">
-                <div class="kiwi-header-name">
-                    <div class="kiwi-header-name-full">
-                        <away-status-indicator
-                            :network="buffer.getNetwork()"
-                            :user="network.userByName(buffer.name)"
-                            class="kiwi-header-awaystatus"
-                        />{{ buffer.name }}
-                    </div>
+                <div :title="buffer.name" class="kiwi-header-name">
                     <away-status-indicator
                         :network="buffer.getNetwork()"
                         :user="network.userByName(buffer.name)"
@@ -168,8 +167,7 @@
 
         <template v-else-if="isSpecial()">
             <div class="kiwi-header-name-container">
-                <div class="kiwi-header-name">
-                    <div class="kiwi-header-name-full">{{ buffer.name }}</div>
+                <div :title="buffer.name" class="kiwi-header-name">
                     {{ buffer.name }}
                 </div>
             </div>
@@ -208,6 +206,7 @@ export default {
     props: ['buffer', 'sidebarState'],
     data() {
         return {
+            iconError: false,
             self: this,
             pluginUiChannelElements: GlobalApi.singleton().channelHeaderPlugins,
             pluginUiQueryElements: GlobalApi.singleton().queryHeaderPlugins,
@@ -361,17 +360,15 @@ export default {
 .kiwi-header-name {
     text-overflow: ellipsis;
     overflow: hidden;
+    display: flex;
+    align-items: center;
 }
 
-.kiwi-header-name-full {
-    display: none;
-    position: absolute;
-    padding-right: 10px;
-    z-index: 1;
-}
-
-.kiwi-header-name:hover .kiwi-header-name-full {
-    display: block;
+.kiwi-header-network-icon {
+    width: 1em;
+    height: 1em;
+    margin-right: 4px;
+    object-fit: contain;
 }
 
 .kiwi-header-center {

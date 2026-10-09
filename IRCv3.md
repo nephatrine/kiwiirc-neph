@@ -57,6 +57,8 @@ KiwiIRC explicitly requests the following capabilities during connection and via
 - **userhost-in-names**: Provides full hostmasks in `NAMES` replies for
   immediate user state initialization.
 - **invite-notify**: Receives notifications when users are invited to channels.
+  Notifications are contextually routed to the relevant channel buffer if the
+  user is already present.
 - **cap-notify**: Dynamically reacts to capability changes on the server.
 
 ## Authoritative Synchronization Logic
@@ -118,6 +120,16 @@ KiwiIRC examines specific `RPL_ISUPPORT` tokens to adjust its behavior:
 - **ACCOUNTEXTBAN / EXTBAN**: Constructs protocol-compliant account-based bans
   based on server support.
 - **CLIENTTAGDENY**: Respects server restrictions on outgoing client tags.
+- **UTF8ONLY**: Automatically enforces `utf8` encoding and restricts non-ASCII
+  outgoing actions (like emoji reactions) on traditional networks to prevent
+  protocol-level garbling.
+- **NETWORK**: Displays the canonical network name in the server information
+  view.
+- **DRAFT/ICON**: Supports server-provided network branding. Template variables
+  like `{size}` are automatically resolved (standardized on 64px for caching).
+
+Note: All `RPL_ISUPPORT` keys are normalized to uppercase within the state
+singleton to ensure robust architectural lookups.
 
 ## Operational Constraints
 

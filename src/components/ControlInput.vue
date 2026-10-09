@@ -211,6 +211,10 @@ export default {
             return this.$state.ui.is_touch || this.$state.setting('showSendButton');
         },
         shouldShowEmojiPicker() {
+            if (this.network && !this.network.isUtf8) {
+                return false;
+            }
+
             return (
                 this.$state.setting('forceShowEmojiPicker') ||
                 (this.$state.setting('showEmojiPicker') && !this.$state.ui.is_touch)
@@ -629,7 +633,7 @@ export default {
                 }
             }
 
-            if (this.$state.setting('buffers.emoji_convert_as_typed')) {
+            if (this.$state.setting('buffers.emoji_convert_as_typed') && (!this.network || this.network.isUtf8)) {
                 ircText = Emoji.replaceShortcodes(ircText);
             }
 
@@ -687,7 +691,7 @@ export default {
             }
         },
         maybeReplaceEmoji() {
-            if (this.$state.setting('buffers.emoji_convert_as_typed')) {
+            if (this.$state.setting('buffers.emoji_convert_as_typed') && (!this.network || this.network.isUtf8)) {
                 let currentWord = this.$refs.input.getCurrentWord(true);
                 let emojis = EmojiProvider.getEmojis(currentWord.word);
                 if (emojis.length && emojis[0].char) {

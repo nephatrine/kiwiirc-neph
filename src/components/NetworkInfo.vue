@@ -2,6 +2,18 @@
     <div class="kiwi-network-info">
         <div class="kiwi-network-info-section">
             <h3>{{ $t('info_server') }}</h3>
+            <div v-if="network.iconUrl && !iconError" class="kiwi-network-info-item">
+                <img
+                    :src="network.iconUrl"
+                    alt=""
+                    class="kiwi-network-info-icon"
+                    @error="iconError = true"
+                >
+            </div>
+            <div v-if="network.isupport.NETWORK" class="kiwi-network-info-item">
+                <span class="kiwi-network-info-label">{{ $t('info_network_name') }}:</span>
+                <span class="kiwi-network-info-value">{{ network.isupport.NETWORK }}</span>
+            </div>
             <div class="kiwi-network-info-item">
                 <span class="kiwi-network-info-label">{{ $t('info_ircd') }}:</span>
                 <span class="kiwi-network-info-value">{{ network.ircd || 'Unknown' }}</span>
@@ -42,6 +54,11 @@
 
 export default {
     props: ['network'],
+    data() {
+        return {
+            iconError: false,
+        };
+    },
     computed: {
         sortedCaps() {
             return [...this.network.enabled_caps].sort();
@@ -70,6 +87,7 @@ export default {
 
 .kiwi-network-info-section {
     margin-bottom: 30px;
+    clear: both;
 }
 
 .kiwi-network-info-section h3 {
@@ -86,6 +104,14 @@ export default {
 .kiwi-network-info-label {
     font-weight: bold;
     margin-right: 10px;
+}
+
+.kiwi-network-info-icon {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    float: left;
+    margin-right: 8px;
 }
 
 .kiwi-network-info-caps {

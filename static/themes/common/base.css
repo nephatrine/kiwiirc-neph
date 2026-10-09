@@ -148,8 +148,7 @@
     color: var(--comp-header-name-fg);
 }
 
-.kiwi-header-name,
-.kiwi-header-name-full {
+.kiwi-header-name {
     background-color: var(--comp-header-bg);
 }
 
@@ -586,6 +585,10 @@
     margin-right: 2px;
     font-weight: 100;
     text-decoration: none;
+}
+.kiwi-statebrowser-network-name--hasicon::before {
+    content: none;
+    margin-right: 0;
 }
 
 /* Icons in the Channel List */

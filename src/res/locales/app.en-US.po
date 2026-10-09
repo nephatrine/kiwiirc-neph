@@ -1195,6 +1195,22 @@ msgstr "Roll Dice"
 msgid "dice_roll"
 msgstr "Rolls a {{sides}} sided dice and gets {{number}}."
 
+#: The server only supports UTF-8. Your connection encoding has been automatically switched.
+msgid "encoding_forced_utf8"
+msgstr "The server only supports UTF-8. Your connection encoding has been automatically switched."
+
+#: This server requires UTF-8 and does not allow other encodings.
+msgid "encoding_invalid_utf8only"
+msgstr "This server requires UTF-8 and does not allow other encodings."
+
+#: Your connection encoding is currently {{encoding}}.
+msgid "encoding_current"
+msgstr "Your connection encoding is currently {{encoding}}."
+
+#: Your connection encoding has been changed to {{encoding}}.
+msgid "encoding_changed_to"
+msgstr "Your connection encoding has been changed to {{encoding}}."
+
 #: Timed out waiting for server confirmation.
 msgid "error_confirm_timeout"
 msgstr "Timed out waiting for server confirmation."
@@ -1450,6 +1466,14 @@ msgstr "Information"
 #: Server information section header
 msgid "info_server"
 msgstr "Server Information"
+
+#: Network name label
+msgid "info_network_name"
+msgstr "Network Name"
+
+#: Network icon label
+msgid "info_network_icon"
+msgstr "Network Icon"
 
 #: IRCd type label
 msgid "info_ircd"

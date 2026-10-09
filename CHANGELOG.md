@@ -45,6 +45,10 @@ and this project adheres to
   human-readable plain text logs for any active channel or private query.
 - **Diagnostic Troubleshooting**: Integrated a diagnostic state dump engine with
   sensitive data masking to assist with technical support.
+- **Authoritative Branding**: Implemented support for `NETWORK` and `draft/ICON`
+  ISUPPORT tokens for visual network identification across the UI.
+- **On-the-fly Encoding**: Added a functional `/encoding` command to display or
+  change the connection charset at runtime.
 - **UI/UX Refinements**: Added a "Message Actions" hover menu, reactive "Network
   Information" tab, and project-wide accessibility tooltips.
 
@@ -55,8 +59,16 @@ and this project adheres to
   `protocol_target` tracking for spec-compliant interactions.
 - **Branding Architecture**: Introduced a dedicated `--brand-online` variable to
   ensure status indicators remain distinct from primary theme accents.
+- **Encoding Security**: Hardened protocol stability via `UTF8ONLY` enforcement
+  and strict ASCII-safe interaction guarding for non-UTF8 connections.
+- **Improved Header Reliability**: Replaced legacy absolute-positioned CSS
+  overlays with standard accessible tooltips for channel and network names.
 - **UI/UX Intelligence**: App Settings now dynamically hide options based on
-  network capabilities (Typing, Redactions, Bot filters).
+  network capabilities (Typing, Redactions, Bot filters, Emoji shortcodes).
+- **Sidebar Identity**: Optimized the user menu to show the current nickname in
+  single-network setups to reduce redundancy.
+- **Refined Notifications**: Improved `invite-notify` with context-aware routing
+  to the relevant channel buffer.
 - **Modernized Environment**: Updated requirements to Node 22+ and transitioned
   to modern browser targets, removing legacy IE11/EdgeHTML polyfills.
 - **Performance**: Optimized message state management and replaced legacy

@@ -4,20 +4,22 @@
             <i class="fa fa-ellipsis-h" aria-hidden="true" />
         </div>
         <div class="kiwi-messageactions-dropdown">
-            <div
-                v-for="emoji in quickEmojis"
-                :key="emoji.shortcode"
-                :class="{ 'kiwi-messageactions-emoji--reacted': hasReacted(emoji.char) }"
-                :title="emoji.shortcode"
-                class="kiwi-messageactions-item kiwi-messageactions-emoji"
-                @click="onReact(emoji.char)"
-            >
-                {{ emoji.char }}
-            </div>
-            <div :title="$t('emoji_picker')" class="kiwi-messageactions-item" @click="showPicker">
-                <i class="fa fa-plus" aria-hidden="true" />
-            </div>
-            <div class="kiwi-messageactions-divider" />
+            <template v-if="isUtf8">
+                <div
+                    v-for="emoji in quickEmojis"
+                    :key="emoji.shortcode"
+                    :class="{ 'kiwi-messageactions-emoji--reacted': hasReacted(emoji.char) }"
+                    :title="emoji.shortcode"
+                    class="kiwi-messageactions-item kiwi-messageactions-emoji"
+                    @click="onReact(emoji.char)"
+                >
+                    {{ emoji.char }}
+                </div>
+                <div :title="$t('emoji_picker')" class="kiwi-messageactions-item" @click="showPicker">
+                    <i class="fa fa-plus" aria-hidden="true" />
+                </div>
+                <div class="kiwi-messageactions-divider" />
+            </template>
             <div :title="$t('reply')" class="kiwi-messageactions-item" @click="onReply">
                 <i class="fa fa-reply" aria-hidden="true" />
             </div>
@@ -48,6 +50,10 @@ export default {
         };
     },
     computed: {
+        isUtf8() {
+            let network = this.buffer.getNetwork();
+            return !network || network.isUtf8;
+        },
         canRedact() {
             if (!this.buffer.getNetwork().hasCap('draft/message-redaction') || !this.message.irc_id) {
                 return false;

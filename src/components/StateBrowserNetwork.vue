@@ -6,9 +6,19 @@
     >
         <div class="kiwi-statebrowser-network-header">
             <a
+                :class="{
+                    'kiwi-statebrowser-network-name--hasicon': network.iconUrl && !iconError,
+                }"
                 class="kiwi-statebrowser-network-name u-link"
                 @click="setActiveBuffer(serverBuffer)"
             >
+                <img
+                    v-if="network.iconUrl && !iconError"
+                    :src="network.iconUrl"
+                    alt=""
+                    class="kiwi-statebrowser-network-icon"
+                    @error="iconError = true"
+                >
                 {{ network.name }}
             </a>
             <div class="kiwi-statebrowser-buffer-actions">
@@ -288,6 +298,7 @@ export default {
     props: ['network', 'sidebarState', 'activePrompt'],
     data: function data() {
         return {
+            iconError: false,
             collapsed: false,
             channel_filter: '',
             channel_filter_display: false,
@@ -635,13 +646,21 @@ export default {
 .kiwi-statebrowser-network-name {
     flex: 1;
     font-size: 1.1em;
-    text-align: center;
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
     padding: 4px 0;
     box-sizing: border-box;
     overflow-x: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+}
+
+.kiwi-statebrowser-network-icon {
+    width: 1em;
+    height: 1em;
+    margin-right: 4px;
+    object-fit: contain;
 }
 
 .kiwi-network-name-options {

@@ -99,6 +99,15 @@ export default class NetworkState {
         return pendingChannels.length === 0;
     }
 
+    get iconUrl() {
+        let iconToken = this.supports('DRAFT/ICON');
+        if (!iconToken || typeof iconToken !== 'string') {
+            return '';
+        }
+
+        return iconToken.replace('{size}', '64');
+    }
+
     get ircClient() {
         if (!this.frameworkClient) {
             this.frameworkClient = IrcClient.create(this.appState, this);
@@ -186,6 +195,11 @@ export default class NetworkState {
             return true;
         }
         return false;
+    }
+
+    get isUtf8() {
+        let encoding = (this.connection.encoding || 'utf8').toLowerCase();
+        return encoding === 'utf8' || encoding === 'utf-8';
     }
 
     currentUser() {

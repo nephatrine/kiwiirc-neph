@@ -15,7 +15,7 @@
                 >{{ url }}</a>
             </div>
         </div>
-        <div v-if="supportsReactions" class="kiwi-messageinfo-reactions">
+        <div v-if="supportsReactions && isUtf8" class="kiwi-messageinfo-reactions">
             <div
                 v-for="emoji in curatedEmojis"
                 :key="emoji.code"
@@ -101,6 +101,10 @@ export default {
     computed: {
         showLinkPreviews() {
             return this.$state.setting('buffers.show_link_previews');
+        },
+        isUtf8() {
+            let network = this.buffer.getNetwork();
+            return !network || network.isUtf8;
         },
         supportsReactions() {
             return this.buffer.getNetwork().supportsTag('+draft/react') && this.message.irc_id;

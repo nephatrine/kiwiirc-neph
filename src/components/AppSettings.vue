@@ -96,11 +96,11 @@
                                 <span>{{ $t('settings_24hour_timestamps') }} </span>
                                 <input v-model="timestamps_24h" type="checkbox">
                             </label>
-                            <label class="u-checkbox-wrapper">
+                            <label v-if="activeNetworkIsUtf8" class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_emoji_convert_incoming') }} </span>
                                 <input v-model="settingBufferEmojiConvertIncoming" type="checkbox">
                             </label>
-                            <label class="u-checkbox-wrapper">
+                            <label v-if="activeNetworkIsUtf8" class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_emoji_convert_as_typed') }} </span>
                                 <input v-model="settingBufferEmojiConvertAsTyped" type="checkbox">
                             </label>
@@ -314,6 +314,10 @@ export default {
         botSupportFound() {
             let activeNetwork = this.$state.getActiveNetwork();
             return activeNetwork && typeof activeNetwork.supports('BOT') !== 'undefined';
+        },
+        activeNetworkIsUtf8() {
+            let activeNetwork = this.$state.getActiveNetwork();
+            return !activeNetwork || activeNetwork.isUtf8;
         },
         timestamps_24h: {
             get() {

@@ -327,11 +327,31 @@ function clientMiddleware(state, network) {
         });
 
         client.on('server options', (event) => {
-            network.isupport = event.options;
+            const options = {};
+            Object.keys(event.options).forEach((key) => {
+                options[key.toUpperCase()] = event.options[key];
+            });
+            network.isupport = options;
 
             // Default BOT token to 'B' if present but empty
             if (typeof network.isupport.BOT !== 'undefined' && !network.isupport.BOT) {
                 network.isupport.BOT = 'B';
+            }
+
+            if (typeof network.isupport.UTF8ONLY !== 'undefined') {
+                let currentEncoding = (network.connection.encoding || 'utf8').toLowerCase();
+                if (currentEncoding !== 'utf8' && currentEncoding !== 'utf-8') {
+                    network.connection.encoding = 'utf8';
+                    const transport = client.connection && client.connection.transport;
+                    if (transport && transport.setEncoding) {
+                        transport.setEncoding('utf8');
+                    }
+                    state.addMessage(network.serverBuffer(), {
+                        time: Date.now(),
+                        nick: '*',
+                        message: TextFormatting.t('encoding_forced_utf8'),
+                    });
+                }
             }
 
             if (client.network.name !== 'Network' && !network.connection.bncnetid) {

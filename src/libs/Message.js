@@ -102,7 +102,10 @@ export default class Message {
         this.hasRendered = true;
 
         let state = getState();
-        let showEmoticons = state.setting('buffers.emoji_convert_incoming') && !messageList.buffer.isSpecial();
+        let network = messageList.buffer.getNetwork();
+        let showEmoticons = state.setting('buffers.emoji_convert_incoming') &&
+            !messageList.buffer.isSpecial() &&
+            (!network || network.isUtf8);
 
         this.toBlocks(messageList.buffer, messageList.useExtraFormatting);
 

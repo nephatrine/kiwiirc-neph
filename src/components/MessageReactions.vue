@@ -47,6 +47,10 @@ export default {
             });
             return map;
         },
+        isUtf8() {
+            const network = this.buffer.getNetwork();
+            return !network || network.isUtf8;
+        },
     },
     methods: {
         isPending(reaction) {
@@ -67,6 +71,21 @@ export default {
             return filename ? `${this.emojiLocation}${filename}` : null;
         },
         onReactionClick(emoji) {
+            // If the user has already reacted, they can always unreact (safe)
+            if (this.message.reactions[emoji] && this.message.reactions[emoji].reacted) {
+                this.buffer.react(this.message, emoji);
+                return;
+            }
+
+            // If not UTF-8, only allow reacting if the string is ASCII
+            if (!this.isUtf8) {
+                // eslint-disable-next-line no-control-regex
+                const isAscii = /^[\x00-\x7F]*$/.test(emoji);
+                if (!isAscii) {
+                    return;
+                }
+            }
+
             this.buffer.react(this.message, emoji);
         },
     },

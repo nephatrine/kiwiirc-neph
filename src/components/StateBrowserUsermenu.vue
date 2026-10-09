@@ -30,7 +30,7 @@
             </div>
         </div>
         <div v-else class="kiwi-statebrowser-usermenu-network">
-            {{ networkName }}
+            {{ userMenuLabel }}
         </div>
     </div>
 </template>
@@ -55,12 +55,16 @@ export default {
         };
     },
     computed: {
-        networkName() {
-            let name = TextFormatting.t('no_network');
-            if (this.network) {
-                name = this.network.name;
+        userMenuLabel() {
+            if (!this.network) {
+                return TextFormatting.t('no_network');
             }
-            return name;
+
+            if (this.$state.networks.length > 1) {
+                return this.network.name;
+            }
+
+            return this.network.nick || this.network.name;
         },
         getUser() {
             if (this.network && this.network.state && this.network.currentUser()) {
