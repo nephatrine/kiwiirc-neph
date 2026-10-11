@@ -18,8 +18,8 @@ and this project adheres to
   theme-aware styles, and a responsive formatting toolbar with an integrated HEX
   color picker.
 - **IRCv3 Protocol Hardening**: Comprehensive implementation of `echo-message`,
-  `labeled-response`, `extended-isupport`, and `standard-replies` ensuring
-  robust synchronization and error handling.
+  `labeled-response`, `extended-isupport`, `multi-prefix`, `userhost-in-names`,
+  and `standard-replies` ensuring robust synchronization and error handling.
 - **Message Redaction**: Support for `draft/message-redaction` with custom
   confirmation prompts and click-to-reveal behavior.
 - **Authoritative History**: Implemented `draft/chathistory` and

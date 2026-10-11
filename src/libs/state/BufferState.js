@@ -357,12 +357,15 @@ export default class BufferState {
 
         let network = this.getNetwork();
         let netPrefixes = network.supports('PREFIX');
-        // Find the first (highest) netPrefix in the users buffer modes
-        let prefix = _.find(netPrefixes, (p) => modes.indexOf(p.mode) > -1);
+        // Filter and map all netPrefixes found in the users buffer modes, maintaining rank order
+        let symbols = [];
+        netPrefixes.forEach((p) => {
+            if (modes.indexOf(p.mode) > -1) {
+                symbols.push(p.symbol);
+            }
+        });
 
-        return prefix ?
-            prefix.symbol :
-            '';
+        return symbols.join('');
     }
 
     /**

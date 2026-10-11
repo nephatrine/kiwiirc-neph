@@ -30,6 +30,8 @@ const DESIRED_CAPS = [
     'chghost',
     'setname',
     'cap-notify',
+    'multi-prefix',
+    'userhost-in-names',
     'server-time',
     'extended-isupport',
     'draft/message-redaction',
