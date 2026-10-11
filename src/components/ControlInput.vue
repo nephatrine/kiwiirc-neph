@@ -542,8 +542,8 @@ export default {
                 this.historyBack();
             } else if (event.key === 'ArrowDown') {
                 // Down
-                let end = this.$refs.input.getRawText().replace(/\r?\n/g, '').length;
-                if (this.$refs.input.getCaretIdx() < end) {
+                let text = this.$refs.input.getRawText().replace(/\r?\n/g, '');
+                if (this.$refs.input.getCaretIdx() < text.length) {
                     // not at the end of input, allow normal input behaviour
                     return;
                 }

@@ -785,6 +785,10 @@ export default Vue.component('irc-input', {
             return this.$refs.editor.innerText;
         },
 
+        getCaretIdx() {
+            return this.current_focus_offset;
+        },
+
         // Focus the editable div and move the caret to the end
         focus() {
             this.$refs.editor.focus();
