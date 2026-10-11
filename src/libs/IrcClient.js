@@ -31,6 +31,7 @@ const DESIRED_CAPS = [
     'setname',
     'cap-notify',
     'server-time',
+    'extended-isupport',
     'draft/message-redaction',
     'draft/read-marker',
 ];

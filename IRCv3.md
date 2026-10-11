@@ -60,6 +60,9 @@ KiwiIRC explicitly requests the following capabilities during connection and via
   Notifications are contextually routed to the relevant channel buffer if the
   user is already present.
 - **cap-notify**: Dynamically reacts to capability changes on the server.
+- **extended-isupport**: Enables receipt of `RPL_ISUPPORT` tokens during
+  capability negotiation, allowing for early branding and state initialization
+  before registration finishes.
 
 ## Authoritative Synchronization Logic
 
