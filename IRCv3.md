@@ -63,6 +63,14 @@ KiwiIRC explicitly requests the following capabilities during connection and via
 - **extended-isupport**: Enables receipt of `RPL_ISUPPORT` tokens during
   capability negotiation, allowing for early branding and state initialization
   before registration finishes.
+- **draft/metadata-2**: Supports retrieval and synchronization of public user
+  and channel metadata (`display-name`, `pronouns`, `description`, `homepage`,
+  `status`, `color`) for enriched social interaction. KiwiIRC authoritatively
+  respects server-provided resource limits (`max-subs`, `max-keys`,
+  `max-value-bytes`) and enforces a 30-minute proactive fetch cooldown. Social
+  colors are automatically snapped to a 4.5:1 contrast ratio against the theme
+  background, and standard IRC `/AWAY` messages take precedence over social
+  status keys.
 
 ## Authoritative Synchronization Logic
 
@@ -130,6 +138,8 @@ KiwiIRC examines specific `RPL_ISUPPORT` tokens to adjust its behavior:
   view.
 - **DRAFT/ICON**: Supports server-provided network branding. Template variables
   like `{size}` are automatically resolved (standardized on 64px for caching).
+  If no token is provided but the server is identified as Ergo (via `IRCD` token
+  or numeric `002`), KiwiIRC automatically falls back to `/static/ergo.svg`.
 
 Note: All `RPL_ISUPPORT` keys are normalized to uppercase within the state
 singleton to ensure robust architectural lookups.

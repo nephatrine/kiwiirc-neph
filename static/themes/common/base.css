@@ -125,7 +125,13 @@
 }
 
 .u-button-secondary {
-    background: rgba(117, 117, 117, 0.2);
+    background: rgba(128, 128, 128, 0.25);
+    color: var(--brand-default-fg);
+    transition: background-color 0.2s;
+}
+
+.u-button-secondary:hover {
+    background: rgba(128, 128, 128, 0.35);
 }
 
 .u-button-warning {
@@ -524,6 +530,19 @@
 
 .kiwi-statebrowser-channel-active .kiwi-statebrowser-channel-name {
     color: var(--comp-statebrowser-channel-active-fg);
+}
+
+.kiwi-statebrowser-channel--favorite .kiwi-statebrowser-channel-name {
+    color: var(--brand-primary) !important;
+}
+
+.kiwi-statebrowser-channel--muted {
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.kiwi-statebrowser-channel--muted:hover {
+    opacity: 1;
 }
 
 .kiwi-network-name-option-chanfilter.active {

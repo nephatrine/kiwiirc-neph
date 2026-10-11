@@ -127,7 +127,6 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
 .kiwi-notconnected-button,
 .u-button-warning,
 .kiwi-settings-advanced-notice,
-.kiwi-networksettings .kiwi-title,
 .kiwi-welcome-simple-form .u-submit {
     color: var(--brand-default-fg);
 }
@@ -157,7 +156,7 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
 }
 
 .kiwi-messagelist-seperator {
-    border-top: 2px dashed #00b100;
+    border-top: 2px dashed #3AAB85;
 }
 
 .kiwi-messagelist-message--highlight {

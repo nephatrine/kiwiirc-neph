@@ -10,6 +10,32 @@ export function orderBuffers(buffers) {
 
     list = _.filter(list, (buffer) => !buffer.isServer());
     list = list.sort((a, b) => {
+        const aFav = a.setting('favorite');
+        const bFav = b.setting('favorite');
+
+        if (aFav && !bFav) {
+            return -1;
+        }
+        if (!aFav && bFav) {
+            return 1;
+        }
+
+        const isMuted = (buffer) => (
+            buffer.setting('alert_on') === 'never' &&
+            buffer.setting('hide_message_counts') &&
+            !buffer.setting('favorite')
+        );
+
+        const aMuted = isMuted(a);
+        const bMuted = isMuted(b);
+
+        if (aMuted && !bMuted) {
+            return 1;
+        }
+        if (!aMuted && bMuted) {
+            return -1;
+        }
+
         let order = 0;
         if (a.isChannel() && b.isQuery()) {
             order = -1;
@@ -85,8 +111,11 @@ export function orderedMessages(buffer, opts = {}) {
             continue;
         }
 
-        // Ignored users have the ignore flag set
-        if (messages[i].ignore) {
+        // Ignored users have the ignore flag set. Prefer the current user state
+        // if available to allow for dynamic hiding/showing of messages.
+        const user = messages[i].user;
+        const isIgnored = user ? user.ignore : messages[i].ignore;
+        if (isIgnored) {
             continue;
         }
 

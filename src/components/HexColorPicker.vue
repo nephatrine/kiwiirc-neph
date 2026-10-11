@@ -330,14 +330,5 @@ export default {
         padding: 10px 20px;
         min-width: 80px;
     }
-
-    .u-button-secondary {
-        background: rgba(128, 128, 128, 0.25);
-        color: var(--brand-default-fg);
-
-        &:hover {
-            background: rgba(128, 128, 128, 0.35);
-        }
-    }
 }
 </style>

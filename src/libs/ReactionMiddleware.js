@@ -17,18 +17,28 @@ export function theMiddleware(network, command, message, client, next) {
         return;
     }
 
+    const effectiveCommand = (command === 'unknown command' && message.command)
+        ? message.command.toUpperCase()
+        : command.toUpperCase();
+
     const reactEmoji = message.tags['+draft/react'];
     const unreactEmoji = message.tags['+draft/unreact'];
     const replyId = message.tags['+reply'] || message.tags['+draft/reply'];
     const label = message.tags.label;
 
     if ((!reactEmoji && !unreactEmoji) || !replyId) {
+        if (effectiveCommand === 'TAGMSG') {
+            return;
+        }
         if (next) next();
         return;
     }
 
     const targetNick = message.nick;
     if (!targetNick) {
+        if (effectiveCommand === 'TAGMSG') {
+            return;
+        }
         if (next) next();
         return;
     }
@@ -37,6 +47,9 @@ export function theMiddleware(network, command, message, client, next) {
     // In parsedEvents 'target' is used, in rawEvents 'params[0]' is used
     let target = message.target || (message.params && message.params[0]);
     if (!target) {
+        if (effectiveCommand === 'TAGMSG') {
+            return;
+        }
         if (next) next();
         return;
     }
@@ -66,6 +79,9 @@ export function theMiddleware(network, command, message, client, next) {
     const initialBuffer = network.bufferByName(target);
     const resolved = network.resolveMessage(replyId, initialBuffer, message.nick);
     if (!resolved) {
+        if (effectiveCommand === 'TAGMSG') {
+            return;
+        }
         if (next) next();
         return;
     }
@@ -113,7 +129,7 @@ export function theMiddleware(network, command, message, client, next) {
     });
 
     // If it's a TAGMSG, we've handled it completely
-    if (command.toUpperCase() === 'TAGMSG') {
+    if (effectiveCommand === 'TAGMSG') {
         return;
     }
 

@@ -86,6 +86,7 @@ export const configTemplates = {
         buffers: {
             messageLayout: 'modern',
             alert_on: 'highlight',
+            favorite: false,
             timestamp_format: '%H:%M:%S',
             // If timestamp_full_format is falsy, the browsers locale date format will be used
             timestamp_full_format: '',
@@ -138,6 +139,7 @@ export const configTemplates = {
             initials_length: 1,
             show_image_background: true,
             show_without_user: false,
+            fallback_avatar_url: '',
         },
         // Startup screen default
         startupOptions: {

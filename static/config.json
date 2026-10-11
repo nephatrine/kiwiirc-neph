@@ -45,6 +45,9 @@
         { "name": "SynthWave '84", "url": "static/themes/synthwave84", "google_fonts": ["Rajdhani:wght@400;700", "Share Tech Mono"] },
         { "name": "Tokyo Night", "url": "static/themes/tokyo-night", "google_fonts": ["Urbanist:wght@400;700", "Chivo Mono:wght@400;700"] }
     ],
+    "avatars": {
+        "fallback_avatar_url": "https://robohash.org/{nickname}?set=set3"
+    },
     "startupOptions" : {
         "channel": "#kiwiirc-default",
         "nick": "kiwi-n?"

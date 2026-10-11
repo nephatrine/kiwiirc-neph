@@ -6,8 +6,16 @@
 
         <template v-if="isChannel()">
             <div class="kiwi-header-name-container">
-                <div :title="buffer.name" class="kiwi-header-name">
-                    {{ buffer.name }}
+                <div :title="buffer.metadata.description || buffer.name" class="kiwi-header-name">
+                    <img
+                        v-if="buffer.avatarUrl() && !iconError"
+                        :src="buffer.avatarUrl(64)"
+                        alt=""
+                        class="kiwi-header-network-icon"
+                        @error="iconError = true"
+                    >
+                    {{ buffer.metadata['display-name'] || buffer.name }}
+                    <span v-if="buffer.metadata['display-name']" class="kiwi-header-name-id">({{ buffer.name }})</span>
                 </div>
             </div>
             <div class="kiwi-header-center">
@@ -192,14 +200,12 @@ import toHtml from '@/libs/renderers/Html';
 import parseMessage from '@/libs/MessageParser';
 import * as Misc from '@/helpers/Misc';
 import BufferSettings from './BufferSettings';
-import ChannelInfo from './ChannelInfo';
 import ChannelBanlist from './ChannelBanlist';
 import AwayStatusIndicator from './AwayStatusIndicator';
 
 export default {
     components: {
         BufferSettings,
-        ChannelInfo,
         ChannelBanlist,
         AwayStatusIndicator,
     },
@@ -238,6 +244,11 @@ export default {
         userOnline() {
             let user = this.$state.getUser(this.buffer.getNetwork().id, this.buffer.name);
             return !!user;
+        },
+    },
+    watch: {
+        buffer() {
+            this.iconError = false;
         },
     },
     methods: {
@@ -362,6 +373,13 @@ export default {
     overflow: hidden;
     display: flex;
     align-items: center;
+}
+
+.kiwi-header-name-id {
+    font-weight: normal;
+    opacity: 0.6;
+    font-size: 0.8em;
+    margin-left: 6px;
 }
 
 .kiwi-header-network-icon {

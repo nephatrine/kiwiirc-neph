@@ -451,6 +451,23 @@ function createNewState() {
                 let buffer = this.getBufferByName(networkid, bufferName);
                 if (buffer) {
                     buffer.isVisible = true;
+
+                    // Proactively sync/get metadata for the buffer if it hasn't
+                    // been fetched in 30 mins
+                    const network = buffer.getNetwork();
+                    const now = Date.now();
+                    const cooldown = 30 * 60 * 1000;
+                    const hasCap = network && network.hasCap('draft/metadata-2');
+                    const isOld = now - (buffer.lastMetadataFetch || 0) > cooldown;
+                    if (hasCap && isOld) {
+                        if (buffer.isChannel() && buffer.joined) {
+                            network.syncMetadata(buffer.name);
+                        } else if (buffer.isQuery() && !network.isService(buffer.name)) {
+                            const keys = ['avatar', 'pronouns',
+                                'display-name', 'description'];
+                            network.getMetadata(buffer.name, keys);
+                        }
+                    }
                 }
             },
 
@@ -730,18 +747,20 @@ function createNewState() {
                     includeAsActivity = true;
                 }
 
-                let isHighlight = !network || buffer.isRaw() ?
-                    false :
-                    Misc.mentionsNick(bufferMessage.message, network.ircClient.user.nick);
+                let isSelf = !network ? false : message.nick === network.nick;
 
-                if (message.type && message.type === 'invite') {
+                let isHighlight = !network || buffer.isRaw() || isSelf ?
+                    false :
+                    Misc.mentionsNick(bufferMessage.message, network.nick);
+
+                if (!isSelf && message.type && message.type === 'invite') {
                     // Invites should be treated as highlights
                     isHighlight = true;
                 }
 
                 // Check for extra custom highlight words
                 let extraHighlights = (state.setting('highlights') || '').toLowerCase().split(' ');
-                if (!isHighlight && !buffer.isRaw() && extraHighlights.length > 0) {
+                if (!isHighlight && !buffer.isRaw() && !isSelf && extraHighlights.length > 0) {
                     extraHighlights.forEach((word) => {
                         if (!word) {
                             return;
@@ -753,7 +772,7 @@ function createNewState() {
                     });
                 }
 
-                if (!buffer.isRaw() && state.setting('teamHighlights')) {
+                if (!isSelf && !buffer.isRaw() && state.setting('teamHighlights')) {
                     let m = bufferMessage.message;
                     let patterns = {
                         everyone: /(^|\s)@everybody($|\s|[,.;])/,
@@ -794,7 +813,6 @@ function createNewState() {
                 // Handle any notifications
                 let settingAlertOn = buffer.setting('alert_on');
                 let showNotifications = buffer.setting('show_notifications');
-                let isSelf = !network ? false : message.nick === network.nick;
                 if (
                     isNewMessage &&
                     showNotifications &&

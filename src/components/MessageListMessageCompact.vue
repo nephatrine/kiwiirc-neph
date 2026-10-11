@@ -55,6 +55,7 @@
         </div>
         <a
             :style="{ color: props.ml.userColour(props.message.user) }"
+            :title="props.message.user ? props.message.user.displayTooltip() : props.message.nick"
             :class="[
                 'kiwi-messagelist-nick',
                 (props.message.user && props.m().userMode(props.message.user))
@@ -73,7 +74,9 @@
             />
             <span class="kiwi-messagelist-nick--prefix">{{
                 props.message.user ? props.m().userModePrefix(props.message.user) : ''
-            }}</span>{{ props.message.nick }}
+            }}</span>{{
+                props.message.user ? props.message.user.displayName() : props.message.nick
+            }}
         </a>
 
         <div class="kiwi-messagelist-body-container">

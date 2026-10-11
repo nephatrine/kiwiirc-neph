@@ -19,7 +19,24 @@
                     ( {{ modeString }} )
                 </template>
             </span>
-            <div v-if="networkSupportsAway()" class="u-form kiwi-away-checkbox-form">
+            <div v-if="hasMetadata" class="u-form kiwi-selfuser-status-form">
+                <div class="kiwi-selfuser-status-input-wrap">
+                    <i class="fa fa-comment-o" aria-hidden="true" />
+                    <input
+                        v-model.lazy="statusMessage"
+                        :placeholder="$t('no_status_set')"
+                        type="text"
+                        class="u-input"
+                    >
+                    <i
+                        v-if="statusMessage"
+                        class="fa fa-times kiwi-selfuser-status-clear"
+                        aria-hidden="true"
+                        @click="statusMessage = ''"
+                    />
+                </div>
+            </div>
+            <div v-if="networkSupportsAway" class="u-form kiwi-away-checkbox-form">
                 <label class="kiwi-selfuser-away-label">
                     <span>{{ $t('away') }}</span>
                     <input v-model="awayStatus" type="checkbox">
@@ -80,6 +97,20 @@ export default {
             },
             set(val) {
                 this.network.ircClient.raw('AWAY', val ? 'Currently away' : '');
+            },
+        },
+        networkSupportsAway() {
+            return this.network && this.network.hasCap('away-notify');
+        },
+        hasMetadata() {
+            return this.network && this.network.hasCap('draft/metadata-2');
+        },
+        statusMessage: {
+            get() {
+                return this.user.metadata.status || '';
+            },
+            set(val) {
+                this.network.setMetadata('status', val);
             },
         },
     },
@@ -166,9 +197,6 @@ export default {
             this.removeNickEventListeners();
             this.self_user_settings_open = false;
         },
-        networkSupportsAway() {
-            return this.network && this.network.hasCap('away-notify');
-        },
     },
 };
 </script>
@@ -232,6 +260,41 @@ export default {
 
 .u-form.kiwi-away-checkbox-form {
     padding: 0 0 5px 24px;
+}
+
+.kiwi-selfuser-status-form {
+    padding: 5px 10px;
+}
+
+.kiwi-selfuser-status-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.kiwi-selfuser-status-input-wrap i:first-of-type {
+    opacity: 0.6;
+    font-size: 0.9em;
+}
+
+.kiwi-selfuser-status-input-wrap .u-input {
+    flex: 1;
+    height: 28px;
+    font-size: 0.9em;
+    padding: 0 25px 0 8px;
+}
+
+.kiwi-selfuser-status-input-wrap .kiwi-selfuser-status-clear {
+    position: absolute;
+    right: 8px;
+    opacity: 0.4;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.kiwi-selfuser-status-input-wrap .kiwi-selfuser-status-clear:hover {
+    opacity: 1;
 }
 
 .u-form .kiwi-selfuser-away-label {

@@ -21,11 +21,11 @@
             <h3>{{ $t('settings') }}</h3>
             <hr>
             <form class="u-form">
-                <label>
+                <label class="u-checkbox-wrapper">
                     <span>{{ $t('settings_notify_mute') }}</span>
-                    <input v-model="settingMuteSound" type="checkbox">
+                    <input v-model="settingMuteSound" :disabled="settingAlertOn === 'never'" type="checkbox">
                 </label>
-                <label>
+                <label class="u-checkbox-wrapper">
                     <span>{{ $t('settings_show_message_counts') }}</span>
                     <input v-model="settingHideMessageCount" type="checkbox">
                 </label>
@@ -38,13 +38,7 @@
 'kiwi public';
 
 export default {
-    components: {
-    },
     props: ['buffer'],
-    data: function data() {
-        return {
-        };
-    },
     computed: {
         settingAlertOn: {
             get: function getSettingAlertOn() {
@@ -55,20 +49,23 @@ export default {
                 let netId = network.connection.bncnetid;
                 if (netId) {
                     // If this buffer is on a BOUNCER account, update the setting there too
-                    // TODO: Move this to BouncerProvider snapshots
                     network.ircClient.raw(
                         `BOUNCER changebuffer ${netId} ${this.buffer.name} notify=${val}`
                     );
+                }
+
+                if (val === 'never') {
+                    this.buffer.setting('mute_sound', true);
                 }
 
                 return this.buffer.setting('alert_on', val);
             },
         },
         settingMuteSound: {
-            get: function getSettingAlertOn() {
+            get: function getsettingMuteSound() {
                 return this.buffer.setting('mute_sound');
             },
-            set: function setSettingAlertOn(val) {
+            set: function setsettingMuteSound(val) {
                 return this.buffer.setting('mute_sound', val);
             },
         },
@@ -85,7 +82,6 @@ export default {
 </script>
 
 <style>
-
 .kiwi-buffersettings {
     box-sizing: border-box;
 }
@@ -94,4 +90,44 @@ export default {
     margin-bottom: 1em;
 }
 
+.kiwi-buffersettings h3 {
+    margin-top: 20px;
+    margin-bottom: 5px;
+    font-size: 1.1em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.7;
+}
+
+.kiwi-buffersettings hr {
+    margin-bottom: 15px;
+    opacity: 0.2;
+}
+
+.kiwi-buffersettings .u-form label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.kiwi-buffersettings .u-form label span {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.kiwi-buffersettings .u-checkbox-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.kiwi-buffersettings .u-checkbox-wrapper span {
+    order: 2;
+    margin-bottom: 0;
+    font-weight: normal;
+    margin-left: 10px;
+}
+
+.kiwi-buffersettings .u-checkbox-wrapper input {
+    order: 1;
+}
 </style>

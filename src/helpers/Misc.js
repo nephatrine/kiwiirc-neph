@@ -70,6 +70,25 @@ export function stripStyles(str) {
 }
 
 /**
+ * Sanitize a URL to prevent dangerous schemes and remove control characters
+ * @param {string} url The URL to sanitize
+ * @returns {string} The sanitized URL or an empty string
+ */
+export function sanitizeUrl(url) {
+    if (!url || typeof url !== 'string') {
+        return '';
+    }
+
+    // Strip all control codes (0x00-0x1F and 0x7F-0x9F) from URLs
+    // Unlike other metadata, URLs should never contain \n, \r, or \t
+    const cleanUrl = url.replace(/[\x00-\x1F\x7F-\x9F]/g, '').trim();
+
+    // Only allow http, https, relative paths, or template variables
+    const isSafe = /^(https?:\/\/|\/|\{)/i.test(cleanUrl);
+    return isSafe ? cleanUrl : '';
+}
+
+/**
  * Replace IRC control characters with visible Unicode glyphs
  * @param {string} str The string to process
  */

@@ -1,6 +1,16 @@
 <template>
     <div class="kiwi-aboutbuffer">
-        <h3>{{ b.name }}</h3>
+        <div v-if="buffer.avatarUrl()" class="kiwi-aboutbuffer-avatar">
+            <img :src="buffer.avatarUrl(256)" alt="">
+        </div>
+        <div class="kiwi-aboutbuffer-header">
+            <div class="kiwi-aboutbuffer-displayname">
+                {{ b.metadata['display-name'] || b.name }}
+            </div>
+            <div v-if="b.metadata['display-name']" class="kiwi-aboutbuffer-name">
+                {{ b.name }}
+            </div>
+        </div>
 
         <div
             :class="{ 'kiwi-aboutbuffer-section--closed': closedSections.about }"
@@ -10,22 +20,28 @@
                 <i class="fa fa-angle-right" /> {{ $t('about') }}
             </h4>
             <div>
-                <p v-if="b.created_at">
+                <div v-if="hasMetadata && b.metadata.description" class="kiwi-aboutbuffer-branding">
+                    <div class="kiwi-aboutbuffer-description" v-html="formattedDescription" />
+                </div>
+
+                <div v-if="b.topic || !b.metadata.description" class="kiwi-aboutbuffer-topic-wrap">
+                    <template v-if="b.topic">
+                        <div class="kiwi-aboutbuffer-topic" v-html="formattedTopic" />
+                        <p v-if="b.topic_by && b.topic_when" class="kiwi-aboutbuffer-topic-setby">
+                            {{
+                                $t('topic_setby', {
+                                    who: b.topic_by,
+                                    when: new Intl.DateTimeFormat().format(b.topic_when),
+                                })
+                            }}
+                        </p>
+                    </template>
+                    <p v-else>{{ $t('no_topic_set') }}</p>
+                </div>
+
+                <p v-if="b.created_at" class="kiwi-aboutbuffer-created">
                     {{ $t('created_on', { when: new Intl.DateTimeFormat().format(b.created_at) }) }}
                 </p>
-
-                <template v-if="b.topic">
-                    <p v-html="formattedTopic" />
-                    <p v-if="b.topic_by && b.topic_when">
-                        {{
-                            $t('topic_setby', {
-                                who: b.topic_by,
-                                when: new Intl.DateTimeFormat().format(b.topic_when),
-                            })
-                        }}
-                    </p>
-                </template>
-                <p v-else>{{ $t('no_topic_set') }}</p>
 
                 <p class="kiwi-aboutbuffer-usercount">
                     <a class="u-link " @click="sidebarState.showNicklist()">
@@ -140,7 +156,12 @@ export default {
         },
         formattedTopic() {
             let blocks = parseMessage(this.b.topic || '', { extras: false });
-            let content = toHtml(blocks);
+            let content = toHtml(blocks, false);
+            return content;
+        },
+        formattedDescription() {
+            let blocks = parseMessage(this.b.metadata.description || '', { extras: false });
+            let content = toHtml(blocks, false);
             return content;
         },
         highlights() {
@@ -149,7 +170,10 @@ export default {
             /* eslint-disable no-unused-vars */
             let tmp = this.buffer.message_count;
             return this.buffer.getMessages()
-                .filter((m) => m.isHighlight)
+                .filter((m) => {
+                    const isIgnored = m.user ? m.user.ignore : m.ignore;
+                    return m.isHighlight && !isIgnored;
+                })
                 .filter((m) => m.type !== 'traffic')
                 .filter((m) => m.type !== 'topic')
                 .filter((m) => m.type !== 'mode')
@@ -159,12 +183,31 @@ export default {
         areWeAnOp() {
             return this.buffer.isUserAnOp(this.network.nick);
         },
+        hasMetadata() {
+            return this.network && this.network.hasCap('draft/metadata-2');
+        },
         invitableUsers() {
             const wantedBuffer = (userBuffer) => userBuffer.buffer.name === this.buffer.name;
             return Object.values(this.network.users)
                 .filter((user) => !Object.values(user.buffers).find(wantedBuffer))
                 .map((user) => ({ text: user.nick }));
         },
+    },
+    created() {
+        const now = Date.now();
+        const cooldown = 30 * 60 * 1000;
+        const isOld = now - (this.buffer.lastMetadataFetch || 0) > cooldown;
+        const isService = this.buffer.isQuery() && this.network.isService(this.buffer.name);
+
+        const canFetch = this.hasMetadata && (this.buffer.joined || this.buffer.isQuery());
+
+        if (isOld && !isService && canFetch) {
+            this.network.getMetadata(this.buffer.name, [
+                'description',
+                'display-name',
+                'avatar',
+            ]);
+        }
     },
     methods: {
         toggleSection(section) {
@@ -194,8 +237,8 @@ export default {
 <style lang="less">
 /* Adjust the sidebars width when this component is in view */
 .kiwi-sidebar.kiwi-sidebar-section-about {
-    max-width: 300px;
-    width: 300px;
+    max-width: 400px;
+    width: 400px;
 }
 
 .kiwi-aboutbuffer {
@@ -212,15 +255,107 @@ export default {
     align-items: flex-start;
 }
 
+.kiwi-aboutbuffer-avatar {
+    width: 100%;
+    text-align: center;
+    padding: 20px 0;
+    background: rgba(128, 128, 128, 0.05);
+
+    img {
+        max-width: 150px;
+        max-height: 150px;
+        border-radius: 8px;
+        object-fit: contain;
+    }
+}
+
+.kiwi-aboutbuffer-header {
+    padding: 10px 20px;
+    width: 100%;
+    box-sizing: border-box;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+    margin-bottom: 10px;
+
+    .kiwi-aboutbuffer-displayname {
+        font-size: 1.6em;
+        font-weight: bold;
+        word-break: break-all;
+    }
+
+    .kiwi-aboutbuffer-name {
+        font-size: 0.9em;
+        opacity: 0.6;
+    }
+}
+
+.kiwi-aboutbuffer-section {
+    display: block;
+    width: 100%;
+
+    h4 {
+        padding: 10px 20px;
+        cursor: pointer;
+        user-select: none;
+        text-transform: uppercase;
+        font-size: 0.9em;
+        letter-spacing: 1px;
+        font-weight: bold;
+    }
+
+    h4 i {
+        margin-right: 5px;
+        transition: transform 0.2s;
+    }
+
+    &--closed h4 i {
+        transform: rotate(90deg);
+    }
+
+    > div {
+        padding: 10px 20px 20px 20px;
+        transition: max-height 0.2s, padding 0.2s, opacity 0.2s;
+        overflow: hidden;
+    }
+
+    &--closed > div {
+        max-height: 0;
+        padding: 0;
+        opacity: 0;
+    }
+}
+
+.kiwi-aboutbuffer-description,
+.kiwi-aboutbuffer-topic {
+    padding: 10px;
+    background: rgba(128, 128, 128, 0.1);
+    border-radius: 4px;
+    line-height: 1.4em;
+    word-break: break-word;
+    margin-bottom: 10px;
+}
+
+.kiwi-aboutbuffer-topic-setby,
+.kiwi-aboutbuffer-created {
+    font-size: 0.85em;
+    opacity: 0.7;
+    font-style: italic;
+}
+
+.kiwi-aboutbuffer-usercount {
+    text-align: center;
+    margin-top: 10px;
+}
+
 .kiwi-aboutbuffer-invite {
     display: flex;
     width: 100%;
     box-sizing: border-box;
-}
+    margin-top: 10px;
 
-.kiwi-aboutbuffer-invite > input {
-    flex-grow: 1;
-    margin-right: 10px;
+    > input {
+        flex-grow: 1;
+        margin-right: 10px;
+    }
 }
 
 .kiwi-aboutbuffer-invite-auto-complete {
@@ -235,56 +370,12 @@ export default {
 
 .kiwi-aboutbuffer-highlight {
     cursor: pointer;
-}
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.1);
 
-.kiwi-aboutbuffer h3 {
-    padding: 10px;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.kiwi-aboutbuffer-section {
-    display: block;
-    width: 100%;
-}
-
-.kiwi-aboutbuffer-section h4 {
-    padding: 10px;
-    cursor: pointer;
-    user-select: none;
-}
-
-.kiwi-aboutbuffer-section h4 i {
-    margin-right: 5px;
-    transition: transform 0.2s;
-}
-
-.kiwi-aboutbuffer-section--closed h4 i {
-    transform: rotate(90deg);
-}
-
-.kiwi-aboutbuffer-section > div {
-    padding: 1em;
-    transition: max-height 0.2s, padding 0.2s, opacity 0.2s;
-    overflow: hidden;
-}
-
-.kiwi-aboutbuffer-section .kiwi-aboutbuffer-usercount {
-    text-align: center;
-}
-
-.kiwi-aboutbuffer-section > div p {
-    margin: 0 0 1em 0;
-}
-
-.kiwi-aboutbuffer-section > div p:last-of-type {
-    margin-bottom: 0;
-}
-
-.kiwi-aboutbuffer-section--closed > div {
-    max-height: 0;
-    padding: 0;
-    opacity: 0;
+    &:last-child {
+        border-bottom: none;
+    }
 }
 
 @media screen and (max-width: 769px) {

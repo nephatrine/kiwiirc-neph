@@ -3,27 +3,78 @@
         <tabbed-view ref="tabs">
             <tabbed-tab :header="$t('settings')" :focus="true" name="settings">
                 <div
-                    :class="{ 'kiwi-sidebar-settings-disabled': !areWeAnOp }"
+                    v-if="buffer.isChannel() && areWeAnOp"
                     class="kiwi-sidebar-settings"
                 >
-                    <h3>
-                        {{ $t('channel_settings') }}
-                        <span
-                            v-if="!areWeAnOp"
-                            class="kiwi-channelsettings-disabled"
-                        >
-                            {{ $t('mods_only') }}
-                            <i class="fa fa-lock" aria-hidden="true" />
-                        </span>
-                    </h3>
+                    <h3>{{ $t('channel_topic') }}</h3>
                     <hr>
-                    <channel-info :buffer="buffer" />
+                    <form class="u-form" @submit.prevent="">
+                        <label>
+                            <textarea v-model.lazy="topic" rows="2" />
+                        </label>
+                    </form>
+
+                    <template v-if="hasMetadata">
+                        <h3>{{ $t('channel_branding') }}</h3>
+                        <hr>
+                        <p class="kiwi-sidebar-settings-warning">
+                            <i class="fa fa-exclamation-triangle" aria-hidden="true" />
+                            {{ $t('channel_metadata_warning') }}
+                        </p>
+                        <form class="u-form" @submit.prevent="">
+                            <label>
+                                <span>{{ $t('display_name') }}</span>
+                                <input v-model.lazy="displayName" type="text" class="u-input">
+                            </label>
+                            <label>
+                                <span>{{ $t('description') }}</span>
+                                <textarea v-model.lazy="description" rows="2" />
+                            </label>
+                            <label>
+                                <span>{{ $t('avatar_url') }}</span>
+                                <input v-model.lazy="avatar" type="text" class="u-input">
+                            </label>
+                        </form>
+                    </template>
+
+                    <h3>{{ $t('channel_settings') }}</h3>
+                    <hr>
+                    <form class="u-form" @submit.prevent="">
+                        <label class="u-checkbox-wrapper">
+                            <span>{{ $t('channel_moderated') }}</span>
+                            <input v-model="modeM" type="checkbox">
+                        </label>
+                        <label class="u-checkbox-wrapper">
+                            <span>{{ $t('channel_invite') }}</span>
+                            <input v-model="modeI" type="checkbox">
+                        </label>
+                        <label class="u-checkbox-wrapper">
+                            <span>{{ $t('channel_secret') }}</span>
+                            <input v-model="modeS" type="checkbox">
+                        </label>
+                        <label class="u-checkbox-wrapper">
+                            <span>{{ $t('channel_moderated_topic') }}</span>
+                            <input v-model="modeT" type="checkbox">
+                        </label>
+                        <label class="u-checkbox-wrapper">
+                            <span>{{ $t('channel_external') }}</span>
+                            <input v-model="modeN" type="checkbox">
+                        </label>
+                        <label>
+                            <span>{{ $t('password') }}</span>
+                            <input v-model.lazy="modeK" type="text" class="u-input">
+                        </label>
+                    </form>
                 </div>
 
                 <div class="kiwi-sidebar-settings">
                     <h3>{{ $t('side_settings') }}</h3>
                     <hr>
                     <form class="u-form">
+                        <label class="u-checkbox-wrapper">
+                            <span>{{ $t('favorite_channel') }}</span>
+                            <input v-model="settingFavorite" type="checkbox">
+                        </label>
                         <label class="u-checkbox-wrapper">
                             <span>{{ $t('side_joins') }}</span>
                             <input v-model="settingShowJoinParts" type="checkbox">
@@ -107,10 +158,42 @@
 
 import GlobalApi from '@/libs/GlobalApi';
 
-import ChannelInfo from './ChannelInfo';
 import ChannelBanlist from './ChannelBanlist';
 import ChannelInvitelist from './ChannelInvitelist';
 import BufferSettings from './BufferSettings';
+
+// Helper to generate Vues computed methods for simple channel modes.
+// Eg. +i, +n, etc
+function generateComputedMode(mode) {
+    return {
+        get() {
+            return this.modeVal(mode);
+        },
+        set(newVal) {
+            return this.setMode((newVal ? '+' : '-') + mode);
+        },
+    };
+}
+
+// Helper to generate Vues computed methods for channel modes with a parameter
+// Eg. "+k key"
+function generateComputedModeWithParam(mode) {
+    return {
+        get() {
+            let val = this.modeVal(mode);
+            return val === false ?
+                '' :
+                val;
+        },
+        set(newVal) {
+            if (newVal) {
+                this.setMode('+' + mode, newVal);
+            } else {
+                this.setMode('-' + mode, this.modeVal(mode));
+            }
+        },
+    };
+}
 
 // Helper to generate Vue's computed methods for getting/setting settings.
 function generateComputedSetting(setting) {
@@ -126,7 +209,6 @@ function generateComputedSetting(setting) {
 
 export default {
     components: {
-        ChannelInfo,
         ChannelBanlist,
         ChannelInvitelist,
         BufferSettings,
@@ -146,12 +228,80 @@ export default {
         settingColouredNicklist: generateComputedSetting('coloured_nicklist'),
         settingExtraFormatting: generateComputedSetting('extra_formatting'),
         settingShareTyping: generateComputedSetting('share_typing'),
+        settingFavorite: generateComputedSetting('favorite'),
         messageTagsSupported() {
             let network = this.buffer.getNetwork();
             return network && network.hasCap('message-tags');
         },
         areWeAnOp() {
             return this.buffer.isUserAnOp(this.buffer.getNetwork().nick);
+        },
+        hasMetadata() {
+            return this.buffer.getNetwork().hasCap('draft/metadata-2');
+        },
+        topic: {
+            get() {
+                return this.buffer.topic;
+            },
+            set(newVal) {
+                let newTopic = newVal.replace('\n', ' ');
+                if (!newTopic.trim()) {
+                    this.buffer.getNetwork().ircClient.raw(`TOPIC ${this.buffer.name} :`);
+                } else {
+                    this.buffer.getNetwork().ircClient.setTopic(this.buffer.name, newTopic);
+                }
+            },
+        },
+        displayName: {
+            get() {
+                return this.buffer.metadata['display-name'] || '';
+            },
+            set(newVal) {
+                this.buffer.getNetwork().setMetadata(this.buffer.name, 'display-name', newVal);
+            },
+        },
+        description: {
+            get() {
+                return this.buffer.metadata.description || '';
+            },
+            set(newVal) {
+                this.buffer.getNetwork().setMetadata(this.buffer.name, 'description', newVal);
+            },
+        },
+        avatar: {
+            get() {
+                return this.buffer.metadata.avatar || '';
+            },
+            set(newVal) {
+                this.buffer.getNetwork().setMetadata(this.buffer.name, 'avatar', newVal);
+            },
+        },
+        modeM: generateComputedMode('m'),
+        modeI: generateComputedMode('i'),
+        modeS: generateComputedMode('s'),
+        modeT: generateComputedMode('t'),
+        modeN: generateComputedMode('n'),
+        modeK: generateComputedModeWithParam('k'),
+    },
+    methods: {
+        setMode(mode, param) {
+            this.buffer.getNetwork().ircClient.raw('MODE', this.buffer.name, mode, param);
+        },
+        modeVal(mode) {
+            let val = false;
+
+            if (typeof this.buffer.modes[mode] === 'undefined') {
+                // Specifically undefined = mode not set
+                val = false;
+            } else if (!this.buffer.modes[mode]) {
+                // Falsy value = mode set without value
+                val = true;
+            } else {
+                // Anything else = mode set with a value
+                val = this.buffer.modes[mode];
+            }
+
+            return val;
         },
     },
 };
@@ -170,8 +320,59 @@ export default {
         margin-top: 1em;
     }
 
+    h3 {
+        margin-top: 20px;
+        margin-bottom: 5px;
+        font-size: 1.1em;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        opacity: 0.7;
+    }
+
+    hr {
+        margin-bottom: 15px;
+        opacity: 0.2;
+    }
+
     label {
         display: block;
+        margin-bottom: 10px;
+
+        span {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    }
+
+    textarea,
+    input[type='text'] {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .kiwi-sidebar-settings-warning {
+        font-size: 0.9em;
+        opacity: 0.8;
+        color: var(--brand-warning);
+        margin-bottom: 1em;
+        font-style: italic;
+    }
+
+    .u-checkbox-wrapper {
+        display: flex;
+        align-items: center;
+
+        span {
+            order: 2;
+            margin-bottom: 0;
+            font-weight: normal;
+            margin-left: 10px;
+        }
+
+        input {
+            order: 1;
+        }
     }
 }
 

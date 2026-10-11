@@ -68,6 +68,9 @@
                 class="kiwi-messagelist-nick-rerouted"
             >⤮</span><span
                 :style="{ color: props.ml.userColour(props.message.user) }"
+                :title="props.message.user
+                    ? props.message.user.displayTooltip()
+                    : props.message.nick"
                 :class="[
                     'kiwi-messagelist-nick',
                     (props.message.user && props.m().userMode(props.message.user))
@@ -157,7 +160,11 @@ const methods = {
             ':' :
             '';
 
-        return props.message.nick + suffix;
+        let nick = props.message.user ?
+            props.message.user.displayName() :
+            props.message.nick;
+
+        return nick + suffix;
     },
     userMode(user) {
         let props = this.props;

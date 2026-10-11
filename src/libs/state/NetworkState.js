@@ -1,6 +1,7 @@
 /** @module */
 
 import Vue from 'vue';
+import * as Misc from '@/helpers/Misc';
 import { def } from './common';
 import * as IrcClient from '../IrcClient';
 
@@ -44,6 +45,12 @@ export default class NetworkState {
         this.nick = '';
         this.username = '';
         this.gecos = '';
+        this.metadata = {};
+        this.metadata_limits = {
+            maxSubs: 32,
+            maxKeys: 32,
+            maxValueBytes: 4096,
+        };
         // SASL password
         this.account = {
             account: '',
@@ -78,6 +85,11 @@ export default class NetworkState {
 
         this.metadata_timeout_active = false;
 
+        // Session-local metadata subscription tracking
+        this.active_metadata_subs = Object.create(null);
+        this.metadata_throttles = new Map();
+        this.metadata_label_targets = new Map();
+
         bufferDict.$set(bufferDict.networks, this.id, []);
     }
 
@@ -101,11 +113,18 @@ export default class NetworkState {
 
     get iconUrl() {
         let iconToken = this.supports('DRAFT/ICON');
-        if (!iconToken || typeof iconToken !== 'string') {
-            return '';
+        if (iconToken && typeof iconToken === 'string') {
+            const sanitized = Misc.sanitizeUrl(iconToken);
+            return sanitized.replace('{size}', '64');
         }
 
-        return iconToken.replace('{size}', '64');
+        // Fallback for Ergo IRCd
+        const ircd = this.supports('IRCD') || this.ircd || '';
+        if (ircd.toLowerCase().includes('ergo')) {
+            return '/static/ergo.svg';
+        }
+
+        return '';
     }
 
     get ircClient() {
@@ -157,6 +176,35 @@ export default class NetworkState {
 
         let chanPrefixes = this.supports('CHANTYPES') || '#&';
         return chanPrefixes.indexOf(input[0]) > -1;
+    }
+
+    /**
+     * Check if a nick belongs to a known network service
+     * @param {String} nick
+     * @returns {Boolean}
+     */
+    isService(nick) {
+        if (!nick) {
+            return false;
+        }
+
+        const commonServices = [
+            'nickserv', 'chanserv', 'memoserv', 'hostserv',
+            'operserv', 'botserv', 'rootserv', 'helpserv',
+            'statserv',
+        ];
+
+        const lowerNick = nick.toLowerCase();
+        if (commonServices.includes(lowerNick)) {
+            return true;
+        }
+
+        // Check for network-specific services if they were provided during creation
+        if (this.services && Array.isArray(this.services)) {
+            return this.services.some((s) => s.toLowerCase() === lowerNick);
+        }
+
+        return false;
     }
 
     showServerBuffer(tabName) {

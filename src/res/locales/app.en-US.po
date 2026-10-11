@@ -755,6 +755,10 @@ msgstr "Channel Options"
 msgid "side_settings"
 msgstr "Your Settings"
 
+#: Favorite Channel
+msgid "favorite_channel"
+msgstr "Favorite Channel"
+
 #: Show when people join
 msgid "side_joins"
 msgstr "Show User Joins/Parts"
@@ -1572,4 +1576,73 @@ msgstr "Previous Page"
 #: Next Page
 msgid "next_page"
 msgstr "Next Page"
+
+#: Edit Profile
+msgid "edit_profile"
+msgstr "Edit Profile"
+
+#: Public Profile
+msgid "public_profile"
+msgstr "Public Profile"
+
+#: Public Profile Warning
+msgid "public_profile_warning"
+msgstr "Changes made here are public to the network."
+
+#: Anonymous Profile Warning
+msgid "anonymous_profile_warning"
+msgstr "Changes made here are public to the network. User metadata may not persist beyond this session unless you register your nickname."
+
+#: Display Name
+msgid "display_name"
+msgstr "Display Name"
+
+#: Pronouns
+msgid "pronouns"
+msgstr "Pronouns"
+
+#: Avatar URL
+msgid "avatar_url"
+msgstr "Avatar URL"
+
+#: Homepage URL
+msgid "homepage_url"
+msgstr "Homepage URL"
+
+#: Status
+msgid "status"
+msgstr "Status"
+
+#: Nickname Color
+msgid "nickname_color"
+msgstr "Nickname Color"
+
+#: Save
+msgid "save"
+msgstr "Save"
+
+#: Channel Branding
+msgid "channel_branding"
+msgstr "Channel Branding"
+
+#: Channel Metadata Warning
+msgid "channel_metadata_warning"
+msgstr "Channel metadata may not persist if the channel is not registered and all users leave."
+
+#: No description set
+msgid "no_description_set"
+msgstr "No description set"
+
+#: Set status message...
+msgid "no_status_set"
+msgstr "Set status message..."
+
+#: Description
+msgid "description"
+msgstr "Description"
+
+#: Metadata too long
+msgid "metadata_too_long"
+msgstr "Value Too Long ({{current}} / {{max}} bytes)"
+
 

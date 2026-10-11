@@ -15,8 +15,13 @@
                 <span
                     class="kiwi-userbox-nick"
                     :style="{ color: user.getColour() }"
-                >{{ user.nick }}</span>
+                >{{ user.metadata['display-name'] || user.nick }}</span>
+                <span v-if="user.metadata.pronouns" class="kiwi-userbox-pronouns">({{ user.metadata.pronouns }})</span>
                 <span v-if="userMode" class="kiwi-userbox-modestring">+{{ userMode }}</span>
+                <span
+                    v-if="user.metadata['display-name'] && user.metadata['display-name'] !== user.nick"
+                    class="kiwi-userbox-truenick"
+                >{{ user.nick }} (irc)</span>
                 <span v-if="realname" class="kiwi-userbox-realname" v-html="formattedRealname" />
                 <span class="kiwi-userbox-usermask">{{ user.username }}@{{ user.host }}</span>
                 <span v-if="user.is_bot" :title="$t('bot')" class="kiwi-userbox-bot">🤖</span>
@@ -40,9 +45,147 @@
             />
         </template>
 
-        <div class="kiwi-userbox-basicinfo" />
+        <div class="kiwi-userbox-basicinfo">
+            <div v-if="user.statusMessage()" class="kiwi-userbox-status">
+                <strong>{{ $t('status') }}:</strong> {{ user.statusMessage() }}
+            </div>
+            <div v-if="user.metadata.description && !isEditingProfile" class="kiwi-userbox-description">
+                {{ user.metadata.description }}
+            </div>
+            <div v-if="user.metadata.homepage && !isEditingProfile" class="kiwi-userbox-homepage">
+                <i class="fa fa-globe" aria-hidden="true" />
+                <a
+                    :href="user.metadata.homepage"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="u-link"
+                >{{ user.metadata.homepage }}</a>
+            </div>
+
+            <div v-if="isSelf && isEditingProfile" class="kiwi-userbox-editprofile u-form">
+                <h3>{{ $t('public_profile') }}</h3>
+                <p class="kiwi-userbox-editprofile-warning">
+                    <i class="fa fa-exclamation-triangle" aria-hidden="true" />
+                    {{ user.account ? $t('public_profile_warning') : $t('anonymous_profile_warning') }}
+                </p>
+                <label :class="{ 'kiwi-userbox-editprofile--invalid': editProfileErrors.displayName }">
+                    <span>{{ $t('display_name') }}</span>
+                    <input v-model="editProfile.displayName" type="text" class="u-input">
+                    <div v-if="editProfileErrors.displayName" class="kiwi-userbox-editprofile-error">
+                        {{ $t('metadata_too_long', {
+                            current: getByteLength(editProfile.displayName),
+                            max: network.metadata_limits.maxValueBytes,
+                        }) }}
+                    </div>
+                </label>
+                <label :class="{ 'kiwi-userbox-editprofile--invalid': editProfileErrors.pronouns }">
+                    <span>{{ $t('pronouns') }}</span>
+                    <input v-model="editProfile.pronouns" type="text" class="u-input" placeholder="they/them">
+                    <div v-if="editProfileErrors.pronouns" class="kiwi-userbox-editprofile-error">
+                        {{ $t('metadata_too_long', {
+                            current: getByteLength(editProfile.pronouns),
+                            max: network.metadata_limits.maxValueBytes,
+                        }) }}
+                    </div>
+                </label>
+                <label :class="{ 'kiwi-userbox-editprofile--invalid': editProfileErrors.avatar }">
+                    <span>{{ $t('avatar_url') }}</span>
+                    <input v-model="editProfile.avatar" type="text" class="u-input">
+                    <div v-if="editProfileErrors.avatar" class="kiwi-userbox-editprofile-error">
+                        {{ $t('metadata_too_long', {
+                            current: getByteLength(editProfile.avatar),
+                            max: network.metadata_limits.maxValueBytes,
+                        }) }}
+                    </div>
+                </label>
+                <label :class="{ 'kiwi-userbox-editprofile--invalid': editProfileErrors.homepage }">
+                    <span>{{ $t('homepage_url') }}</span>
+                    <input v-model="editProfile.homepage" type="text" class="u-input">
+                    <div v-if="editProfileErrors.homepage" class="kiwi-userbox-editprofile-error">
+                        {{ $t('metadata_too_long', {
+                            current: getByteLength(editProfile.homepage),
+                            max: network.metadata_limits.maxValueBytes,
+                        }) }}
+                    </div>
+                </label>
+                <label :class="{ 'kiwi-userbox-editprofile--invalid': editProfileErrors.status }">
+                    <span>{{ $t('status') }}</span>
+                    <input v-model="editProfile.status" type="text" class="u-input">
+                    <div v-if="editProfileErrors.status" class="kiwi-userbox-editprofile-error">
+                        {{ $t('metadata_too_long', {
+                            current: getByteLength(editProfile.status),
+                            max: network.metadata_limits.maxValueBytes,
+                        }) }}
+                    </div>
+                </label>
+                <div class="kiwi-userbox-editprofile-field" :class="{ 'kiwi-userbox-editprofile--invalid': editProfileErrors.color }">
+                    <span>{{ $t('nickname_color') }}</span>
+                    <div class="kiwi-userbox-editprofile-color-wrap">
+                        <div class="kiwi-userbox-editprofile-color-input" @click="$refs.colorInput.click()">
+                            <input
+                                ref="colorInput"
+                                v-model="editProfile.color"
+                                type="color"
+                                @change="onColorChange"
+                            >
+                            <div class="kiwi-userbox-editprofile-color-swatch" :style="{ backgroundColor: editProfile.color || user.getColour() }" />
+                        </div>
+                        <input
+                            v-model="editProfile.color"
+                            type="text"
+                            class="u-input kiwi-userbox-editprofile-color-hex"
+                            placeholder="#000000"
+                        >
+                        <button
+                            type="button"
+                            class="u-button u-button-secondary"
+                            :title="$t('ok')"
+                            @click="confirmColor"
+                        >
+                            <i class="fa fa-check" aria-hidden="true" />
+                        </button>
+                        <button
+                            v-if="editProfile.color"
+                            type="button"
+                            class="u-button u-button-secondary"
+                            :title="$t('reset')"
+                            @click="editProfile.color = ''"
+                        >
+                            <i class="fa fa-undo" aria-hidden="true" />
+                        </button>
+                    </div>
+                </div>
+                <label :class="{ 'kiwi-userbox-editprofile--invalid': editProfileErrors.description }">
+                    <span>{{ $t('description') }}</span>
+                    <textarea v-model="editProfile.description" class="u-input" rows="3" />
+                    <div v-if="editProfileErrors.description" class="kiwi-userbox-editprofile-error">
+                        {{ $t('metadata_too_long', {
+                            current: getByteLength(editProfile.description),
+                            max: network.metadata_limits.maxValueBytes,
+                        }) }}
+                    </div>
+                </label>
+                <div class="kiwi-userbox-editprofile-actions">
+                    <button
+                        :disabled="hasEditProfileErrors"
+                        type="button"
+                        class="u-button u-button-primary"
+                        @click="saveProfile"
+                    >
+                        {{ $t('save') }}
+                    </button>
+                    <button type="button" class="u-button u-button-secondary" @click="isEditingProfile = false">
+                        {{ $t('cancel') }}
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <div class="kiwi-userbox-actions">
+            <a v-if="isSelf && !isEditingProfile && network.hasCap('draft/metadata-2')" class="kiwi-userbox-action" @click="startEditProfile">
+                <i class="fa fa-pencil" aria-hidden="true" />
+                {{ $t('edit_profile') }}
+            </a>
             <a v-if="!isSelf && !buffer.isQuery()" class="kiwi-userbox-action" @click="openQuery">
                 <i class="fa fa-comment-o" aria-hidden="true" />
                 {{ $t('send_a_message') }}
@@ -231,6 +374,16 @@ export default {
             whoisRequested: false,
             whoisLoading: false,
             inviteChan: '',
+            isEditingProfile: false,
+            editProfile: {
+                displayName: '',
+                pronouns: '',
+                avatar: '',
+                description: '',
+                homepage: '',
+                status: '',
+                color: '',
+            },
             pluginUiButtonElements: GlobalApi.singleton().userboxButtonPlugins,
             pluginUiInfoElements: GlobalApi.singleton().userboxInfoPlugins,
             pluginUiWhoisElements: GlobalApi.singleton().userboxWhoisPlugins,
@@ -349,15 +502,52 @@ export default {
             });
             return buffers;
         },
+        editProfileErrors() {
+            const max = this.network.metadata_limits.maxValueBytes;
+            return {
+                displayName: this.getByteLength(this.editProfile.displayName) > max,
+                pronouns: this.getByteLength(this.editProfile.pronouns) > max,
+                avatar: this.getByteLength(this.editProfile.avatar) > max,
+                description: this.getByteLength(this.editProfile.description) > max,
+                homepage: this.getByteLength(this.editProfile.homepage) > max,
+                status: this.getByteLength(this.editProfile.status) > max,
+                color: this.getByteLength(this.editProfile.color) > max,
+            };
+        },
+        hasEditProfileErrors() {
+            return Object.values(this.editProfileErrors).some((v) => v);
+        },
     },
     watch: {
         user() {
             // Reset the whois view since the user is now different
             this.whoisRequested = false;
             this.whoisLoading = false;
+
+            this.maybeFetchMetadata();
         },
     },
+    mounted() {
+        this.maybeFetchMetadata();
+    },
     methods: {
+        maybeFetchMetadata() {
+            const now = Date.now();
+            const cooldown = 30 * 60 * 1000;
+            const isOld = now - (this.user.lastMetadataFetch || 0) > cooldown;
+            const isService = this.network.isService(this.user.nick);
+
+            if (isOld && !isService && this.network.hasCap('draft/metadata-2')) {
+                this.network.getMetadata(this.user.nick, [
+                    'avatar',
+                    'pronouns',
+                    'display-name',
+                    'description',
+                    'homepage',
+                    'status',
+                ]);
+            }
+        },
         openQuery() {
             this.sidebarState.showNicklist();
             let buffer = this.$state.addBuffer(this.network.id, this.user.nick);
@@ -386,6 +576,51 @@ export default {
                 return;
             }
             this.network.ircClient.invite(this.inviteChan, this.user.nick);
+        },
+        startEditProfile() {
+            this.editProfile.displayName = this.user.metadata['display-name'] || '';
+            this.editProfile.pronouns = this.user.metadata.pronouns || '';
+            this.editProfile.avatar = this.user.metadata.avatar || '';
+            this.editProfile.description = this.user.metadata.description || '';
+            this.editProfile.homepage = this.user.metadata.homepage || '';
+            this.editProfile.status = this.user.metadata.status || '';
+            this.editProfile.color = this.user.metadata.color || '';
+            this.isEditingProfile = true;
+        },
+        saveProfile() {
+            const m = this.network;
+            const meta = this.user.metadata;
+            const mapping = {
+                'display-name': 'displayName',
+                'pronouns': 'pronouns',
+                'avatar': 'avatar',
+                'description': 'description',
+                'homepage': 'homepage',
+                'status': 'status',
+                'color': 'color',
+            };
+
+            Object.entries(mapping).forEach(([metaKey, editKey]) => {
+                const newValue = this.editProfile[editKey];
+                const oldValue = meta[metaKey] || '';
+                if (newValue !== oldValue) {
+                    m.setMetadata(metaKey, newValue);
+                }
+            });
+
+            this.isEditingProfile = false;
+        },
+        getByteLength(str) {
+            return new TextEncoder().encode(str).length;
+        },
+        onColorChange() {
+            // No specific action needed here yet, the v-model handles it.
+            // This method exists to provide a hook if we need to force focus away.
+        },
+        confirmColor() {
+            if (this.$refs.colorInput) {
+                this.$refs.colorInput.blur();
+            }
         },
     },
 };
@@ -446,6 +681,12 @@ export default {
     margin-left: 6px;
 }
 
+.kiwi-userbox-pronouns {
+    font-size: 0.9em;
+    opacity: 0.7;
+    margin-left: 5px;
+}
+
 .kiwi-userbox-usermask {
     display: block;
     opacity: 0.6;
@@ -466,6 +707,12 @@ export default {
     opacity: 0.8;
 }
 
+.kiwi-userbox-truenick {
+    display: block;
+    color: var(--comp-sidebar-fg);
+    opacity: 0.8;
+}
+
 .fa-user.kiwi-userbox-icon {
     display: inline-block;
     font-size: 2em;
@@ -476,6 +723,143 @@ export default {
     display: block;
     padding: 0 1.5em 0.5em 1.5em;
     box-sizing: border-box;
+}
+
+.kiwi-userbox-description {
+    font-style: italic;
+    margin-bottom: 1em;
+    padding: 0.5em;
+    background: rgba(128, 128, 128, 0.1);
+    border-radius: 4px;
+}
+
+.kiwi-userbox-status {
+    margin-bottom: 0.5em;
+    font-size: 0.9em;
+}
+
+.kiwi-userbox-homepage {
+    margin-top: 0.5em;
+    font-size: 0.9em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    i {
+        margin-right: 5px;
+    }
+}
+
+.kiwi-userbox-editprofile-color-wrap {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+
+    .u-button {
+        padding: 0 12px;
+        height: 38px;
+        line-height: 38px;
+    }
+}
+
+.kiwi-userbox-editprofile-color-hex {
+    flex: 1;
+    text-align: center;
+    font-family: var(--kiwi-font-mono);
+}
+
+.kiwi-userbox-editprofile-field {
+    margin-bottom: 1em;
+
+    span {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 0.3em;
+    }
+}
+
+.kiwi-userbox-editprofile-color-input {
+    position: relative;
+    width: 60px;
+    height: 38px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--brand-input-border);
+    cursor: pointer;
+
+    input[type='color'] {
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        width: 100px;
+        height: 100px;
+        cursor: pointer;
+        opacity: 0;
+    }
+}
+
+.kiwi-userbox-editprofile-color-swatch {
+    width: 100%;
+    height: 100%;
+}
+
+.kiwi-userbox-editprofile {
+    border-top: 1px solid rgba(128, 128, 128, 0.2);
+    padding-top: 1em;
+    margin-top: 1em;
+    text-align: left;
+
+    h3 {
+        margin: 0 0 0.5em 0;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 1em;
+
+        span {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 0.3em;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+        }
+    }
+}
+
+.kiwi-userbox-editprofile--invalid {
+    input,
+    textarea {
+        border-color: var(--brand-error) !important;
+    }
+
+    span {
+        color: var(--brand-error);
+    }
+}
+
+.kiwi-userbox-editprofile-error {
+    color: var(--brand-error);
+    font-size: 0.8em;
+    margin-top: 2px;
+}
+
+.kiwi-userbox-editprofile-warning {
+    font-size: 0.9em;
+    opacity: 0.8;
+    color: var(--brand-warning);
+    margin-bottom: 1em;
+    font-style: italic;
+}
+
+.kiwi-userbox-editprofile-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
 }
 
 .kiwi-userbox-basicinfo-title,

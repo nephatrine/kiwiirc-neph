@@ -3,6 +3,7 @@
 import Vue from 'vue';
 import ipRegex from 'ip-regex';
 import getState from '@/libs/state';
+import ThemeManager from '@/libs/ThemeManager';
 import * as IrcdDiffs from '@/helpers/IrcdDiffs';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import { def } from './common';
@@ -27,6 +28,8 @@ export default class UserState {
         this.hasWhois = false;
         this.hasWhoFlags = false;
         this.typingState = Object.create(null);
+        this.metadata = {};
+        this.lastMetadataFetch = 0;
         this.ignore = false;
 
         this.avatarCache = null;
@@ -66,6 +69,17 @@ export default class UserState {
     }
 
     get avatar() {
+        if (this.metadata.avatar) {
+            let url = this.metadata.avatar.replace('{size}', '256');
+            return { small: url, large: url };
+        }
+
+        let fallbackUrl = this.state.setting('avatars.fallback_avatar_url');
+        if (fallbackUrl) {
+            let url = fallbackUrl.replace('{nickname}', encodeURIComponent(this.nick.toLowerCase()));
+            return { small: url, large: url };
+        }
+
         if (!this.avatarCache) {
             this.avatar = { small: '', large: '' };
             getState().$emit('user.avatar.create', { user: this });
@@ -78,6 +92,11 @@ export default class UserState {
     }
 
     getColour() {
+        if (this.metadata.color) {
+            const bg = ThemeManager.instance().themeVar('brand-default-bg') || '#ffffff';
+            return TextFormatting.ensureContrast(this.metadata.color, bg);
+        }
+
         if (!this.colour) {
             this.colour = TextFormatting.createNickColour(this.nick);
         }
@@ -95,6 +114,31 @@ export default class UserState {
 
     isOffline() {
         return this.away === 'offline';
+    }
+
+    statusMessage() {
+        return this.isAway() ? this.away : (this.metadata.status || '');
+    }
+
+    displayName() {
+        return this.metadata['display-name'] || this.nick;
+    }
+
+    displayTooltip() {
+        let name = this.metadata['display-name'];
+        let pronouns = this.metadata.pronouns;
+        let parts = [];
+
+        // If we have a custom display name, include the raw nick in the tooltip
+        if (name && name !== this.nick) {
+            parts.push(this.nick);
+        }
+
+        if (pronouns) {
+            parts.push(pronouns);
+        }
+
+        return parts.join(', ');
     }
 
     createBanMask() {

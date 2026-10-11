@@ -75,6 +75,9 @@
                 >⤮</span><a
                     v-if="props.message.nick"
                     :style="{ color: props.ml.userColour(props.message.user) }"
+                    :title="props.message.user
+                        ? props.message.user.displayTooltip()
+                        : props.message.nick"
                     :class="[
                         'kiwi-messagelist-nick',
                         props.message.user && props.m().userMode(props.message.user)
@@ -89,7 +92,9 @@
                         props.message.user
                             ? props.m().userModePrefix(props.message.user)
                             : ''
-                    }}</span>{{ props.message.nick }}
+                    }}</span>{{
+                        props.message.user ? props.message.user.displayName() : props.message.nick
+                    }}
                 </a>
                 <div
                     v-if="props.m().showRealName()"

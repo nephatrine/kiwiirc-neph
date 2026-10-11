@@ -11,15 +11,18 @@ and this project adheres to
 ### Added
 
 - **Modern Theme Suite**: Integrated over 30 professional themes (Catppuccin,
-  Nord, Rosé Pine, Tokyo Night, etc.) with unified normalization and strictly
-  standardized color hierarchies.
+  Nord, Rosé Pine, Tokyo Night, etc.) with unified normalization, strictly
+  standardized color hierarchies, and mathematically balanced message separator
+  colors for all dark themes.
 - **Advanced Text Formatting**: Introduced an extensive formatting suite
   supporting Markdown-inspired syntax, native IRC colors (0-99/HEX), 'Fancy'
   theme-aware styles, and a responsive formatting toolbar with an integrated HEX
   color picker.
 - **IRCv3 Protocol Hardening**: Comprehensive implementation of `echo-message`,
   `labeled-response`, `extended-isupport`, `multi-prefix`, `userhost-in-names`,
-  and `standard-replies` ensuring robust synchronization and error handling.
+  `draft/metadata-2` (with resource limit enforcement), and `standard-replies`
+  ensuring robust synchronization and error handling. Optimized metadata traffic
+  via proactive fetch throttling and automated service-specific suppressions.
 - **Message Redaction**: Support for `draft/message-redaction` with custom
   confirmation prompts and click-to-reveal behavior.
 - **Authoritative History**: Implemented `draft/chathistory` and
@@ -32,8 +35,8 @@ and this project adheres to
   authoritative `/setname` updates, and a "Remember me" toggle with automatic
   state purging.
 - **Synthesized Audio Earcons**: Replaced static assets with a low-latency Web
-  Audio API synthesis engine featuring unique tonal sequences for notifications
-  and errors.
+  Audio API synthesis engine featuring unique tonal sequences for notifications,
+  errors, general chat activity, and successful network registration.
 - **Intelligent Message Rerouting**: Implemented support for the
   `+channel-context` tag with flexible security policies.
 - **Global Desktop Notification Toggle**: Added a user-configurable setting to
@@ -44,8 +47,18 @@ and this project adheres to
   human-readable plain text logs for any active buffer.
 - **Diagnostic Troubleshooting**: Integrated a diagnostic state dump engine with
   sensitive data masking.
-- **Authoritative Branding**: Implemented support for `NETWORK` and `draft/ICON`
-  tokens for visual network identification.
+- **Authoritative Branding**: Implemented support for `NETWORK`, `draft/ICON`
+  (with automatic Ergo fallback), and channel-specific avatars in headers and
+  information panels.
+- **Enriched Social Context**: Integrated support for `draft/metadata-2` to
+  display user pronouns, display names, descriptions, and homepages in profile
+  cards. Also introduced an application-wide fallback avatar template system,
+  real-time status synchronization, a contrast-aware social color engine,
+  dynamic user ignoring (hiding historical traffic), self-highlight suppression,
+  and contextual metadata persistence warnings.
+- **Channel Prioritization**: Introduced high-visibility "Favorite" pinning to
+  the top of the sidebar and "Silenced" de-prioritization (dimming and hidden
+  unread counts) for improved buffer management.
 
 ### Changed
 

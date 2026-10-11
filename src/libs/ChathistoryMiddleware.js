@@ -14,13 +14,12 @@ export default function chathistoryMiddleware(network) {
     };
 
     function theMiddleware(command, event, client, next) {
-        if (command.toLowerCase() === 'batch end chathistory' && client.chathistory) {
-            let target = event.params[0];
-            client.chathistory.batchCallbacks.resolve(target, event);
-        }
+        const effectiveCommand = (command === 'unknown command' && event.command)
+            ? event.command.toUpperCase()
+            : command.toUpperCase();
 
         // Standard Replies spec: FAIL CHATHISTORY <error> <target> ... :<description>
-        if (event?.command?.toLowerCase() === 'fail' && event.params[0].toLowerCase() === 'chathistory') {
+        if (effectiveCommand === 'FAIL' && event.params[0].toUpperCase() === 'CHATHISTORY') {
             const error = event.params[1];
             const target = event.params[2];
             const reason = event.params[event.params.length - 1];

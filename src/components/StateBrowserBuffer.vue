@@ -6,17 +6,20 @@
                 'kiwi-statebrowser-channel-active': isActiveBuffer(),
                 'kiwi-statebrowser-channel-notjoined': buffer.isChannel()
                     && !buffer.joined,
+                'kiwi-statebrowser-channel--favorite': buffer.setting('favorite'),
+                'kiwi-statebrowser-channel--muted': isMuted,
             }"
             class="kiwi-statebrowser-channel"
         >
             <div
                 class="kiwi-statebrowser-channel-name"
+                :title="buffer.name"
                 @click="$emit('selected')"
             >
                 <away-status-indicator
                     v-if="buffer.isQuery() && awayNotifySupported()"
                     :network="network" :user="network.userByName(buffer.name)"
-                />{{ buffer.name }}
+                />{{ buffer.metadata['display-name'] || buffer.name }}
             </div>
             <div class="kiwi-statebrowser-buffer-actions">
                 <div class="kiwi-statebrowser-channel-labels">
@@ -74,6 +77,13 @@ export default {
     computed: {
         network() {
             return this.buffer.getNetwork();
+        },
+        isMuted() {
+            return (
+                this.buffer.setting('alert_on') === 'never' &&
+                this.buffer.setting('hide_message_counts') &&
+                !this.buffer.setting('favorite')
+            );
         },
         showPromptClose() {
             return (this.activePrompt &&

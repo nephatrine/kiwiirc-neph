@@ -25,10 +25,18 @@
         />
         <span class="kiwi-nicklist-user-prefix">{{ userModePrefix }}</span>
         <span
-            class="kiwi-nicklist-user-nick"
+            :title="user.displayTooltip()"
             :style="{ color: userColour }"
-        >{{ user.nick }} </span>
+            class="kiwi-nicklist-user-nick"
+        >{{ user.displayName() }} </span>
         <span v-if="user.is_bot" :title="$t('bot')" class="kiwi-nicklist-user-bot">🤖</span>
+        <i
+            v-else-if="user.statusMessage()"
+            :title="user.statusMessage()"
+            class="fa fa-ellipsis-h kiwi-nicklist-user-status"
+            aria-hidden="true"
+        />
+
         <div class="kiwi-nicklist-user-buttons">
             <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -164,6 +172,16 @@ export default {
 .kiwi-nicklist-user-bot {
     margin-right: 4px;
     font-size: 1.1em;
+}
+
+.kiwi-nicklist-user-status {
+    margin-right: 6px;
+    opacity: 0.6;
+    font-size: 0.9em;
+
+    .kiwi-nicklist-user:hover & {
+        opacity: 1;
+    }
 }
 
 .kiwi-nicklist-user-buttons {

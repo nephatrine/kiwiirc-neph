@@ -44,6 +44,8 @@ export default class BufferState {
             marker_received: false,
         };
         this.settings = { };
+        this.metadata = {};
+        this.lastMetadataFetch = 0;
         this.last_read = 0;
         this.active_tab = null;
         this.active_timeout = null;
@@ -244,6 +246,16 @@ export default class BufferState {
 
     getNetwork() {
         return this.state.getNetwork(this.networkid);
+    }
+
+    avatarUrl(size = 64) {
+        const iconToken = this.metadata.avatar;
+        if (!iconToken || typeof iconToken !== 'string') {
+            return '';
+        }
+
+        const sanitized = Misc.sanitizeUrl(iconToken);
+        return sanitized.replace('{size}', size.toString());
     }
 
     getMessages() {

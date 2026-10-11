@@ -28,7 +28,13 @@ export class AudioManager {
             this.play('notification');
         });
 
-        state.$on('audio.play', (type) => {
+        state.$on('audio.play', (type, network) => {
+            if (type === 'startup' && network) {
+                const serverBuffer = network.serverBuffer();
+                if (serverBuffer && serverBuffer.setting('mute_sound')) {
+                    return;
+                }
+            }
             this.play(type);
         });
     }
@@ -60,12 +66,24 @@ export class AudioManager {
                 return;
             }
 
-            let shouldBleep = buffer.getNetwork().nick !== message.nick && ((message.isHighlight && buffer.setting('alert_on') === 'highlight') || buffer.setting('alert_on') === 'message');
-            let isActiveBuffer = state.getActiveBuffer() === buffer;
-            let inFocus = isActiveBuffer && state.ui.app_has_focus;
+            const network = buffer.getNetwork();
+            const isSelf = network && network.nick === message.nick;
+            if (isSelf) {
+                return;
+            }
 
-            if (shouldBleep || (buffer.isQuery() && !inFocus)) {
+            const isActiveBuffer = state.getActiveBuffer() === buffer;
+            const inFocus = isActiveBuffer && state.ui.app_has_focus;
+
+            if (inFocus) {
+                return;
+            }
+
+            const alertOn = buffer.setting('alert_on');
+            if (message.isHighlight && (alertOn === 'highlight' || alertOn === 'message')) {
                 this.play('notification');
+            } else if (alertOn === 'message' || buffer.isQuery()) {
+                this.play('message');
             }
         });
     }
