@@ -193,6 +193,7 @@ export default {
     border-bottom-right-radius: 14px;
     transition: background 0.2s, opacity 0.2s;
     z-index: 1;
+    user-select: none;
 }
 
 .kiwi-statebrowser-logout {
@@ -210,6 +211,7 @@ export default {
     border-bottom-left-radius: 14px;
     transition: background 0.2s, opacity 0.2s;
     z-index: 1;
+    user-select: none;
 }
 
 /* Add network button */

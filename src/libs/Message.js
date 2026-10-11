@@ -124,10 +124,13 @@ export default class Message {
         let state = getState();
         let userList = buffer.users;
 
+        let isSpecial = buffer.isSpecial();
         let blocks = parseMessage(
             this.message,
             {
-                extras: !buffer.isSpecial() && useExtraFormatting && this.type === 'privmsg',
+                extras: !isSpecial && useExtraFormatting && this.type === 'privmsg',
+                noformatting: isSpecial,
+                visibleControlChars: isSpecial,
             },
             userList
         );

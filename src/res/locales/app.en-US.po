@@ -1211,7 +1211,73 @@ msgstr "Your connection encoding is currently {{encoding}}."
 msgid "encoding_changed_to"
 msgstr "Your connection encoding has been changed to {{encoding}}."
 
-#: Timed out waiting for server confirmation.
+#: Formatting Tools
+msgid "formatting_tools"
+msgstr "Formatting Tools"
+
+#: Bold
+msgid "bold"
+msgstr "Bold"
+
+#: Italic
+msgid "italic"
+msgstr "Italic"
+
+#: Underline
+msgid "underline"
+msgstr "Underline"
+
+#: Strikethrough
+msgid "strikethrough"
+msgstr "Strikethrough"
+
+#: Spoiler
+msgid "spoiler"
+msgstr "Spoiler"
+
+#: Shift+Click to set background color
+msgid "color_shift_hint"
+msgstr "Shift+Click Sets Background"
+
+#: Monospace
+msgid "monospace"
+msgstr "Monospace"
+
+#: Clear Formatting
+msgid "clear_formatting"
+msgstr "Clear Formatting"
+
+#: Clear Colors & Styles
+msgid "clear_styles"
+msgstr "Clear Formatting"
+
+#: Reset
+msgid "reset"
+msgstr "Reset"
+
+#: HEX Color Picker
+msgid "color_picker_hex"
+msgstr "HEX Color Picker"
+
+#: Foreground
+msgid "foreground"
+msgstr "Foreground"
+
+#: Background
+msgid "background"
+msgstr "Background"
+
+#: Use Background
+msgid "use_background"
+msgstr "Use Background"
+
+#: Text Styling
+msgid "styling_tools"
+msgstr "Text Styling"
+
+ #: Timed out waiting for server confirmation.
+
+
 msgid "error_confirm_timeout"
 msgstr "Timed out waiting for server confirmation."
 

@@ -11,88 +11,70 @@ and this project adheres to
 ### Added
 
 - **Modern Theme Suite**: Integrated over 30 professional themes (Catppuccin,
-  Nord, Rosé Pine, Tokyo Night, etc.) with unified UI normalization and
-  optimized contrast.
+  Nord, Rosé Pine, Tokyo Night, etc.) with unified normalization and strictly
+  standardized color hierarchies.
+- **Advanced Text Formatting**: Introduced an extensive formatting suite
+  supporting Markdown-inspired syntax, native IRC colors (0-99/HEX), 'Fancy'
+  theme-aware styles, and a responsive formatting toolbar with an integrated HEX
+  color picker.
 - **IRCv3 Protocol Hardening**: Comprehensive implementation of `echo-message`,
   `labeled-response`, and `standard-replies` ensuring robust synchronization and
   error handling.
 - **Message Redaction**: Support for `draft/message-redaction` with custom
-  confirmation prompts and spoiler-style click-to-reveal behavior.
-- **Advanced Messaging**: Full support for native Unicode emojis with a
-  searchable picker, threaded replies (`+reply`), per-message reactions
-  (`+draft/react`), and standardized read-markers (`draft/read-marker`).
-- **Intelligent Message Rerouting**: Implemented support for the
-  `+channel-context` tag with lenient and strict security policies.
-- **Metadata-Synchronized History**: Gated history requests by metadata
-  readiness (End of NAMES, MARKREAD boundary) to ensure accurate filtering and
-  rerouting.
-- **Global Desktop Notification Toggle**: Added a user-configurable setting to
-  enable or disable desktop alerts independently of audio notifications.
+  confirmation prompts and click-to-reveal behavior.
 - **Authoritative History**: Implemented `draft/chathistory` and
   `draft/event-playback` for precise gap-filling including replayed joins,
   parts, and modes.
+- **Advanced Messaging**: Full support for native Unicode emojis with a
+  searchable picker, threaded replies (+reply), per-message reactions, and
+  standardized read-markers.
 - **Identity & Session Privacy**: Added explicit SASL account support,
   authoritative `/setname` updates, and a "Remember me" toggle with automatic
   state purging.
 - **Synthesized Audio Earcons**: Replaced static assets with a low-latency Web
   Audio API synthesis engine featuring unique tonal sequences for notifications
   and errors.
-- **Centralized Error Feedback**: Integrated automatic audio alerts and visual
-  vibrating indicators with "!" markers for all protocol and UI failures.
+- **Intelligent Message Rerouting**: Implemented support for the
+  `+channel-context` tag with flexible security policies.
+- **Global Desktop Notification Toggle**: Added a user-configurable setting to
+  enable or disable desktop alerts independently of audio notifications.
 - **Enhanced Visual Activity**: Introduced scale-pulse animations for mentions
   to improve discoverability in background buffers.
 - **Buffer Content Export**: Added functionality to download clean,
-  human-readable plain text logs for any active channel or private query.
+  human-readable plain text logs for any active buffer.
 - **Diagnostic Troubleshooting**: Integrated a diagnostic state dump engine with
-  sensitive data masking to assist with technical support.
+  sensitive data masking.
 - **Authoritative Branding**: Implemented support for `NETWORK` and `draft/ICON`
-  ISUPPORT tokens for visual network identification across the UI.
-- **On-the-fly Encoding**: Added a functional `/encoding` command to display or
-  change the connection charset at runtime.
-- **UI/UX Refinements**: Added a "Message Actions" hover menu, reactive "Network
-  Information" tab, and project-wide accessibility tooltips.
+  tokens for visual network identification.
 
 ### Changed
 
-- **Architecture**: Separated internal message IDs from authoritative `msgid`
-  tags to ensure protocol compliance for all advanced features. Added
-  `protocol_target` tracking for spec-compliant interactions.
-- **Branding Architecture**: Introduced a dedicated `--brand-online` variable to
-  ensure status indicators remain distinct from primary theme accents.
-- **Encoding Security**: Hardened protocol stability via `UTF8ONLY` enforcement
-  and strict ASCII-safe interaction guarding for non-UTF8 connections.
-- **Improved Header Reliability**: Replaced legacy absolute-positioned CSS
-  overlays with standard accessible tooltips for channel and network names.
-- **UI/UX Intelligence**: App Settings now dynamically hide options based on
-  network capabilities (Typing, Redactions, Bot filters, Emoji shortcodes).
-- **Sidebar Identity**: Optimized the user menu to show the current nickname in
-  single-network setups to reduce redundancy.
-- **Refined Notifications**: Improved `invite-notify` with context-aware routing
-  to the relevant channel buffer.
+- **Architecture**: Separated internal message IDs from authoritative protocol
+  tags and added `protocol_target` tracking for spec-compliant interactions.
+- **UI/UX Intelligence**: Optimized settings and headers to dynamically react to
+  network capabilities and viewport sizes.
 - **Modernized Environment**: Updated requirements to Node 22+ and transitioned
   to modern browser targets, removing legacy IE11/EdgeHTML polyfills.
 - **Performance**: Optimized message state management and replaced legacy
-  image-based emoticons with native Unicode rendering. Capped single-chunk
-  history requests for better memory hygiene.
+  image-based emoticons with native Unicode rendering.
 - **Reconnection Logic**: Hardened connection handlers with capped delays and
-  authoritative "join healing" to improve stability.
-- **Diagnostics**: Increased `*raw` buffer scrollback to 5000 lines.
+  authoritative "join healing".
 
 ### Removed
 
 - Removed support for legacy IE11/EdgeHTML browsers and associated polyfills.
-- Removed legacy proprietary BNC `bufferSeen` mechanism in favor of the
-  standardized `draft/read-marker` protocol.
-- Deprecated `znc.in/self-message` support in favor of the ratified
-  `echo-message` standard.
-- Removed static `.mp3` and `.ogg` audio assets in favor of programmatic
-  client-side synthesis.
+- Removed legacy proprietary BNC `bufferSeen` mechanism in favor of
+  `draft/read-marker`.
+- Deprecated `znc.in/self-message` support in favor of `echo-message`.
+- Removed static `.mp3` and `.ogg` audio assets.
 
 ### Fixed
 
-- **Security**: Addressed multiple high-severity dependency vulnerabilities
-  including an update to `postcss` to ^8.5.28.
-- **Reactivity**: Fixed inconsistent away status indicators and user discovery
-  gaps during high-traffic logins.
-- **Synchronization**: Fixed "vanishing" historical messages by sanitizing
-  boundary references and synchronizing metadata handshakes.
+- **Security**: Addressed high-severity dependency vulnerabilities including
+  PostCSS updates.
+- **Synchronization**: Fixed "vanishing" historical messages and improved user
+  discovery during high-traffic logins.
+- **Chrome UI Stability**: Applied `user-select: none` to all persistent UI
+  buttons to prevent accidental text cursor insertion.
+- **Spoiler Fidelity**: Hardened spoiler rendering to ensure content remains
+  hidden regardless of theme adjustments.

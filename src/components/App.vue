@@ -60,6 +60,7 @@
         <AvatarCommon />
         <emoji-picker />
         <redaction-prompt />
+        <hex-color-picker />
     </div>
 </template>
 
@@ -77,6 +78,7 @@ import MediaViewer from '@/components/MediaViewer';
 import AvatarCommon from '@/components/UserAvatarCommon';
 import EmojiPicker from '@/components/EmojiPicker';
 import RedactionPrompt from '@/components/RedactionPrompt';
+import HexColorPicker from '@/components/HexColorPicker';
 import { State as SidebarState } from '@/components/Sidebar';
 import ThemeManager from '@/libs/ThemeManager';
 import * as Notifications from '@/libs/Notifications';
@@ -94,6 +96,7 @@ export default {
         AvatarCommon,
         EmojiPicker,
         RedactionPrompt,
+        HexColorPicker,
     },
     props: ['startupComponent'],
     data() {

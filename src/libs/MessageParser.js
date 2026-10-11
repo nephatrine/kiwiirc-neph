@@ -21,7 +21,11 @@ import { urlRegex, channelRegex } from '@/helpers/TextFormatting';
  * @returns An array of blocks, where each special content will be extracted into a separate block.
  */
 export default function parseMessage(message, formatOpts = {}, userList = null) {
-    const blocks = formatIrcMessage(message, formatOpts);
+    let msg = message;
+    if (formatOpts.visibleControlChars) {
+        msg = Misc.controlCharsToGlyphs(msg);
+    }
+    const blocks = formatIrcMessage(msg, formatOpts);
     let formatedBlocks = blocks.reduce(
         (acc, block, i) => acc.concat(processBlock(block, userList)),
         []

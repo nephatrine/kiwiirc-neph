@@ -61,7 +61,7 @@
                     {{ props.m().getReplyMessage(props.message.reply).nick }}:
                 </span>
                 <span v-if="props.m().getReplyMessage(props.message.reply)" class="kiwi-messagelist-reply-preview-message">
-                    {{ props.m().getReplyMessage(props.message.reply).message }}
+                    {{ props.m().getReplyMessageText(props.message.reply) }}
                 </span>
                 <span v-else class="kiwi-messagelist-reply-preview-id">
                     {{ props.message.reply }}
@@ -175,6 +175,7 @@
 /* eslint-disable max-len */
 
 import { urlRegex } from '@/helpers/TextFormatting';
+import * as Misc from '@/helpers/Misc';
 import MessageInfo from './MessageInfo';
 import AwayStatusIndicator from './AwayStatusIndicator';
 import UserAvatar from './UserAvatar';
@@ -279,6 +280,11 @@ const methods = {
         let props = this.props;
         const resolved = props.m().getNetwork().resolveMessage(replyId, props.ml.buffer);
         return resolved ? resolved.message : null;
+    },
+    getReplyMessageText(replyId) {
+        let props = this.props;
+        let m = props.m().getReplyMessage(replyId);
+        return m ? Misc.stripStyles(m.message) : '';
     },
     scrollToReply(replyId) {
         let props = this.props;

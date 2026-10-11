@@ -1364,3 +1364,23 @@ msgstr "{{nick}} is now known as {{newnick}}"
 #: {{nick}} changed the topic to: {{topic}}
 msgid "changed_topic_to"
 msgstr "{{nick}} changed the topic to: {{topic}}"
+
+#: HEX Color Picker
+msgid "color_picker_hex"
+msgstr "HEX Color Picker"
+
+#: Foreground
+msgid "foreground"
+msgstr "Foreground"
+
+#: Background
+msgid "background"
+msgstr "Background"
+
+#: Use Background
+msgid "use_background"
+msgstr "Use Background"
+
+#: Text Styling
+msgid "styling_tools"
+msgstr "Text Styling"

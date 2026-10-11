@@ -20,20 +20,36 @@ function render(blocks, renderEmoticons) {
         Object.keys(block.styles).forEach((s) => {
             if (s === 'underline') {
                 style += 'text-decoration:underline;';
+            } else if (s === 'strikethrough') {
+                style += 'text-decoration:line-through;';
             } else if (s === 'bold') {
                 style += 'font-weight:bold;';
             } else if (s === 'italic') {
                 style += 'font-style:italic;';
-            } else if (s === 'quote') {
-                classes += 'kiwi-formatting-extras-quote ';
+            } else if (s === 'monospace') {
+                classes += 'kiwi-formatting-extras-monospace ';
+            } else if (s === 'reverse') {
+                classes += 'kiwi-formatting-reverse ';
             } else if (s === 'block') {
                 classes += 'kiwi-formatting-extras-block ';
             } else if (s === 'color') {
-                classes += `irc-fg-colour-${block.styles[s]} `;
+                if (block.styles[s][0] === '#') {
+                    style += `color:${block.styles[s]};`;
+                } else {
+                    classes += `irc-fg-colour-${block.styles[s]} `;
+                }
             } else if (s === 'background') {
-                classes += `irc-bg-colour-${block.styles[s]} `;
+                if (block.styles[s][0] === '#') {
+                    style += `background-color:${block.styles[s]};`;
+                } else {
+                    classes += `irc-bg-colour-${block.styles[s]} `;
+                }
             }
         });
+
+        if (block.styles.color && block.styles.color === block.styles.background) {
+            classes += 'kiwi-spoiler ';
+        }
 
         let content;
         switch (block.type) {

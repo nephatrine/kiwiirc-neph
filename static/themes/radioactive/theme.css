@@ -14,7 +14,7 @@
     --kiwi-nickcolour-saturation: 80;
     --kiwi-nickcolour-lightness: 80;
     --kiwi-supports-monospace: 1;
-    --kiwi-font: 'Oxanium', 'Avenir Next', 'Futura', 'Segoe UI', 'Bahnschrift', 'Ubuntu', 'Cantarell', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
+    --kiwi-font: 'Oxanium', 'Avenir Next', 'Futura', 'Segoe UI', 'Bahnschrift', 'Ubuntu', 'Cantarell', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
     --kiwi-font-mono: 'Share Tech Mono', 'Menlo', 'Monaco', 'Cascadia Mono', 'Consolas', 'Ubuntu Mono', 'DejaVu Sans Mono', monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
     color: #201F1F;
 }
@@ -75,6 +75,33 @@
     opacity: 1;
     pointer-events: none;
     z-index: 100;
+}
+
+.kiwi-formatting-reverse {
+    display: inline;
+    background: repeating-linear-gradient(
+        0deg,
+        rgb(3 30 17 / 95%) 0px,
+        rgb(3 30 17 / 95%) 2px,
+        rgb(20 253 206 / 25%) 3px,
+        rgb(3 30 17 / 95%) 4px
+    );
+    color: var(--brand-default-fg);
+    border: 1px solid var(--brand-default-fg);
+    padding: 0.12em 0.4em;
+    border-radius: 2px;
+    text-shadow: 0 0 6px rgb(20 253 206 / 90%), 0 0 12px rgb(20 253 206 / 50%);
+    animation: crt-flicker 0.12s infinite;
+    letter-spacing: 0.05em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes crt-flicker {
+    0% { opacity: 0.93; filter: brightness(0.97); }
+    50% { opacity: 1; filter: brightness(1.08); }
+    100% { opacity: 0.95; filter: brightness(1.02); }
 }
 
 /* App - Tabs */
@@ -478,7 +505,7 @@
 }
 
 .kiwi-controlinput-active-tool {
-    background: #053118;
+    background: transparent;
     border-top: 1px solid #155d36;
 }
 
@@ -1314,6 +1341,10 @@
     margin-right: 2px;
     font-weight: 100;
     text-decoration: none;
+}
+.kiwi-statebrowser-network-name--hasicon::before {
+    content: none;
+    margin-right: 0;
 }
 
 /* Icons in the Channel List */

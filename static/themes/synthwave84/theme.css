@@ -43,10 +43,30 @@
 }
 
 .kiwi-wrap {
-    --kiwi-font: 'Rajdhani', 'Avenir Next Condensed', 'Futura-Medium', 'Impact', 'Segoe UI Bold', 'Ubuntu Condensed', 'DejaVu Sans Condensed', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
+    --kiwi-font: 'Rajdhani', 'Avenir Next Condensed', 'Futura-Medium', 'Impact', 'Segoe UI Bold', 'Ubuntu Condensed', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'DejaVu Sans Condensed', sans-serif;
     --kiwi-font-mono: 'Share Tech Mono', 'Menlo', 'Monaco', 'Cascadia Mono', 'Consolas', 'Ubuntu Mono', 'DejaVu Sans Mono', monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
     --kiwi-nickcolour-saturation: 80;
     --kiwi-nickcolour-lightness: 75;
+}
+
+.kiwi-formatting-reverse {
+    background: linear-gradient(135deg, rgb(255 42 133 / 32%), rgb(3 237 249 / 28%));
+    color: var(--brand-default-fg);
+    border-bottom: 2.5px solid #ff2a85;
+    padding: 0.1em 0.45em;
+    border-radius: 3px;
+    box-shadow: 0 2px 14px rgb(255 42 133 / 65%), 0 0 16px rgb(3 237 249 / 45%);
+    text-shadow: 0 0 8px #ff2a85, 0 0 16px #03edf9;
+    animation: synth-pulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes synth-pulse {
+    0% {
+        box-shadow: 0 2px 10px rgb(255 42 133 / 50%), 0 0 12px rgb(3 237 249 / 30%);
+    }
+    100% {
+        box-shadow: 0 3px 20px rgb(255 42 133 / 90%), 0 0 22px rgb(3 237 249 / 70%);
+    }
 }
 
 .kiwi-wrap select option {
@@ -199,34 +219,34 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
 /* IRC Text Colours (SynthWave '84 Optimized) */
 .irc-fg-colour-white { color: #ffffff; }
 .irc-fg-colour-black { color: #44475a; }
-.irc-fg-colour-blue { color: #36f9f6; }
+.irc-fg-colour-blue { color: #3467f4; }
 .irc-fg-colour-green { color: #72f1b8; }
 .irc-fg-colour-light-red { color: #fe4450; }
-.irc-fg-colour-brown { color: #f97e72; }
+.irc-fg-colour-brown { color: #d26b60; }
 .irc-fg-colour-purple { color: #ff7edb; }
 .irc-fg-colour-orange { color: #f97e72; }
 .irc-fg-colour-yellow { color: #fff800; }
-.irc-fg-colour-light-green { color: #72f1b8; }
+.irc-fg-colour-light-green { color: #91ffd1; }
 .irc-fg-colour-cyan { color: #03ead7; }
 .irc-fg-colour-light-cyan { color: #36f9f6; }
-.irc-fg-colour-light-blue { color: #36f9f6; }
-.irc-fg-colour-pink { color: #ff7edb; }
+.irc-fg-colour-light-blue { color: #5de3ff; }
+.irc-fg-colour-pink { color: #ff9be3; }
 .irc-fg-colour-grey { color: #b3a5d8; }
-.irc-fg-colour-light-grey { color: #ffffff; }
+.irc-fg-colour-light-grey { color: #e0e0e0; }
 
 .irc-bg-colour-white { background-color: #ffffff; }
 .irc-bg-colour-black { background-color: #262335; }
 .irc-bg-colour-blue { background-color: #1a0b3d; }
 .irc-bg-colour-green { background-color: #2b0f54; }
 .irc-bg-colour-light-red { background-color: #fe4450; }
-.irc-bg-colour-brown { background-color: #f97e72; }
+.irc-bg-colour-brown { background-color: #d26b60; }
 .irc-bg-colour-purple { background-color: #ff7edb; }
 .irc-bg-colour-orange { background-color: #f97e72; }
 .irc-bg-colour-yellow { background-color: #fff800; }
-.irc-bg-colour-light-green { background-color: #72f1b8; }
+.irc-bg-colour-light-green { background-color: #91ffd1; }
 .irc-bg-colour-cyan { background-color: #03ead7; }
 .irc-bg-colour-light-cyan { background-color: #36f9f6; }
-.irc-bg-colour-light-blue { background-color: #36f9f6; }
-.irc-bg-colour-pink { background-color: #ff7edb; }
+.irc-bg-colour-light-blue { background-color: #5de3ff; }
+.irc-bg-colour-pink { background-color: #ff9be3; }
 .irc-bg-colour-grey { background-color: #b3a5d8; }
-.irc-bg-colour-light-grey { background-color: #ffffff; }
+.irc-bg-colour-light-grey { background-color: #e0e0e0; }

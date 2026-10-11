@@ -54,6 +54,13 @@ function createNewState() {
                 message: null,
                 buffer: null,
             },
+            hex_color_picker: {
+                visible: false,
+                ircinput: null,
+                fg: '#000000',
+                bg: '#ffffff',
+                use_bg: false,
+            },
         },
         networks: [],
     };

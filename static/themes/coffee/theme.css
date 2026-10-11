@@ -50,6 +50,20 @@
     --comp-border: #b2b2b2;
 }
 
+.kiwi-formatting-reverse {
+    background: #fef08a;
+    color: #78350f;
+    font-weight: 600;
+    padding: 0.12em 0.35em;
+    margin: 0 0.1em;
+    border-radius: 3px;
+    border-bottom: 2px solid #f59e0b;
+    box-shadow:
+        0 1px 3px rgb(245 158 11 / 25%),
+        0 1px 0 rgb(0 0 0 / 4%);
+    animation: none;
+}
+
 .kiwi-appsettings-close,
 .kiwi-appsettings-block h3,
 .kiwi-networksettings .kiwi-title,

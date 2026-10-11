@@ -10,8 +10,90 @@ const tokens = Object.create(null);
  */
 
 /* eslint-disable dot-notation */
-tokens['_'] = {
-    token: '_',
+tokens['***'] = {
+    token: '***',
+    extra: true,
+    fn: function parseToken(inp, pos, block, prevBlock, openToks) {
+        if (openToks[this.token]) {
+            delete block.styles.bold;
+            delete block.styles.italic;
+            openToks[this.token] = null;
+            prevBlock.content += this.token;
+            return null;
+        }
+
+        if (block.styles.bold === true || block.styles.italic === true) {
+            return -1;
+        }
+
+        if (inp.substr(pos + 3).indexOf(this.token) === -1) {
+            return -1;
+        }
+
+        openToks[this.token] = true;
+        block.styles.bold = true;
+        block.styles.italic = true;
+        block.content += this.token;
+
+        return null;
+    },
+};
+tokens['___'] = {
+    token: '___',
+    extra: true,
+    fn: function parseToken(inp, pos, block, prevBlock, openToks) {
+        if (openToks[this.token]) {
+            delete block.styles.underline;
+            delete block.styles.italic;
+            openToks[this.token] = null;
+            prevBlock.content += this.token;
+            return null;
+        }
+
+        if (block.styles.underline === true || block.styles.italic === true) {
+            return -1;
+        }
+
+        if (inp.substr(pos + 3).indexOf(this.token) === -1) {
+            return -1;
+        }
+
+        openToks[this.token] = true;
+        block.styles.underline = true;
+        block.styles.italic = true;
+        block.content += this.token;
+
+        return null;
+    },
+};
+tokens['~~'] = {
+    token: '~~',
+    extra: true,
+    fn: function parseToken(inp, pos, block, prevBlock, openToks) {
+        if (openToks[this.token]) {
+            delete block.styles.strikethrough;
+            openToks[this.token] = null;
+            prevBlock.content += this.token;
+            return null;
+        }
+
+        if (block.styles.strikethrough === true) {
+            return -1;
+        }
+
+        if (inp.substr(pos + 2).indexOf(this.token) === -1) {
+            return -1;
+        }
+
+        openToks[this.token] = true;
+        block.styles.strikethrough = true;
+        block.content += this.token;
+
+        return null;
+    },
+};
+tokens['__'] = {
+    token: '__',
     extra: true,
     fn: function parseToken(inp, pos, block, prevBlock, openToks) {
         if (openToks[this.token]) {
@@ -27,18 +109,80 @@ tokens['_'] = {
         }
 
         // Underscores may be part of a word or URL so consider it an opening
+        // token if it's at the start of a word or after a space
         if (pos > 0 && inp[pos - 1] !== ' ') {
             return -1;
         }
 
-        // token if it's on it's own
-        // Only underline if we have a closing _ further on
-        if (inp.substr(pos + 1).indexOf(this.token) === -1) {
+        // Only underline if we have a closing __ further on
+        if (inp.substr(pos + 2).indexOf(this.token) === -1) {
             return -1;
         }
 
         openToks[this.token] = true;
         block.styles.underline = true;
+        block.content += this.token;
+
+        return null;
+    },
+};
+tokens['_'] = {
+    token: '_',
+    extra: true,
+    fn: function parseToken(inp, pos, block, prevBlock, openToks) {
+        if (openToks[this.token]) {
+            delete block.styles.italic;
+            openToks[this.token] = null;
+            prevBlock.content += this.token;
+            return null;
+        }
+
+        // If this style is alrady open by something else, ignore it
+        if (block.styles.italic === true) {
+            return -1;
+        }
+
+        // Underscores may be part of a word or URL so consider it an opening
+        if (pos > 0 && inp[pos - 1] !== ' ') {
+            return -1;
+        }
+
+        // token if it's on it's own
+        // Only italic if we have a closing _ further on
+        if (inp.substr(pos + 1).indexOf(this.token) === -1) {
+            return -1;
+        }
+
+        openToks[this.token] = true;
+        block.styles.italic = true;
+        block.content += this.token;
+
+        return null;
+    },
+};
+tokens['||'] = {
+    token: '||',
+    extra: true,
+    fn: function parseToken(inp, pos, block, prevBlock, openToks) {
+        if (openToks[this.token]) {
+            delete block.styles.color;
+            delete block.styles.background;
+            openToks[this.token] = null;
+            prevBlock.content += this.token;
+            return null;
+        }
+
+        if (block.styles.color === 'black' && block.styles.background === 'black') {
+            return -1;
+        }
+
+        if (inp.substr(pos + 2).indexOf(this.token) === -1) {
+            return -1;
+        }
+
+        openToks[this.token] = true;
+        block.styles.color = 'black';
+        block.styles.background = 'black';
         block.content += this.token;
 
         return null;
@@ -123,7 +267,7 @@ tokens['`'] = {
     extra: true,
     fn: function parseToken(inp, pos, block, prevBlock, openToks) {
         if (openToks[this.token]) {
-            delete block.styles.quote;
+            delete block.styles.monospace;
             openToks[this.token] = null;
             prevBlock.content += this.token;
             return null;
@@ -154,7 +298,7 @@ tokens['`'] = {
         // No styling should appear in this codeblock. Add all the content we can
         // before jumping the position forward in the input
         openToks[this.token] = true;
-        block.styles.quote = true;
+        block.styles.monospace = true;
         block.content += this.token + str.substr(0, endPos);
         block.containsContent = true;
         // The + 1 because:
@@ -215,6 +359,40 @@ tokens['\x1F'] = {
     },
 };
 
+// Strikethrough
+tokens['\x1E'] = {
+    token: '\x1E',
+    extra: false,
+    fn: function parseToken(inp, pos, block, prevBlock, openToks) {
+        if (openToks[this.token]) {
+            delete block.styles.strikethrough;
+            openToks[this.token] = null;
+        } else {
+            openToks[this.token] = true;
+            block.styles.strikethrough = true;
+        }
+
+        return null;
+    },
+};
+
+// Monospace
+tokens['\x11'] = {
+    token: '\x11',
+    extra: false,
+    fn: function parseToken(inp, pos, block, prevBlock, openToks) {
+        if (openToks[this.token]) {
+            delete block.styles.monospace;
+            openToks[this.token] = null;
+        } else {
+            openToks[this.token] = true;
+            block.styles.monospace = true;
+        }
+
+        return null;
+    },
+};
+
 // Clear all styles
 tokens['\x0F'] = {
     token: '\x0F',
@@ -254,14 +432,29 @@ tokens['\x03'] = {
         let colourMatchRegexp = /^\x03(([0-9][0-9]?)(,([0-9][0-9]?))?)/;
         let match = colourMatchRegexp.exec(inp.substr(pos, 6));
         if (match) {
-            // fg colour = 2, bg colour = 4
-            let fgColour = colours[parseInt(match[2], 10)];
-            let bgColour = colours[parseInt(match[4], 10)];
-            if (typeof fgColour !== 'undefined') {
-                block.styles.color = fgColour;
+            let fgCode = parseInt(match[2], 10);
+            let bgCode = match[4] ? parseInt(match[4], 10) : undefined;
+
+            if (fgCode === 99) {
+                delete block.styles.color;
+            } else {
+                let fgColour = colours[fgCode] ||
+                    (fgCode >= 16 && fgCode <= 98 ? fgCode.toString() : undefined);
+                if (typeof fgColour !== 'undefined') {
+                    block.styles.color = fgColour;
+                }
             }
-            if (typeof bgColour !== 'undefined') {
-                block.styles.background = bgColour;
+
+            if (typeof bgCode !== 'undefined') {
+                if (bgCode === 99) {
+                    delete block.styles.background;
+                } else {
+                    let bgColour = colours[bgCode] ||
+                        (bgCode >= 16 && bgCode <= 98 ? bgCode.toString() : undefined);
+                    if (typeof bgColour !== 'undefined') {
+                        block.styles.background = bgColour;
+                    }
+                }
             }
 
             return pos + match[0].length;
@@ -275,11 +468,42 @@ tokens['\x03'] = {
     },
 };
 
-// Reverse (unimplemented)
+// Hex Colours
+tokens['\x04'] = {
+    token: '\x04',
+    extra: false,
+    fn: function parseToken(inp, pos, block, prevBlock, openToks) {
+        let colourMatchRegexp = /^\x04([0-9a-fA-F]{6})(,([0-9a-fA-F]{6}))?/;
+        let match = colourMatchRegexp.exec(inp.substr(pos, 14));
+        if (match) {
+            block.styles.color = '#' + match[1].toLowerCase();
+            if (match[3]) {
+                block.styles.background = '#' + match[3].toLowerCase();
+            }
+            return pos + match[0].length;
+        }
+
+        // 04 without a colour = delete any existing colour
+        delete block.styles.color;
+        delete block.styles.background;
+
+        return null;
+    },
+};
+
+// Reverse
 tokens['\x16'] = {
     token: '\x16',
     extra: false,
     fn: function parseToken(inp, pos, block, prevBlock, openToks) {
+        if (openToks[this.token]) {
+            delete block.styles.reverse;
+            openToks[this.token] = null;
+        } else {
+            openToks[this.token] = true;
+            block.styles.reverse = true;
+        }
+
         return null;
     },
 };
@@ -295,7 +519,7 @@ export default function parse(inp, _opts) {
 
     while (pos < len) {
         let tok = findTokenAtPosition();
-        if (!tok || (!opts.extras && tok.extra)) {
+        if (opts.noformatting || !tok || (!opts.extras && tok.extra)) {
             block.content += inp[pos];
             block.containsContent = true;
             pos++;
@@ -342,7 +566,7 @@ export default function parse(inp, _opts) {
     return blocks;
 
     function findTokenAtPosition() {
-        let tok = tokens[inp.substr(pos, 2)] || tokens[inp[pos]];
+        let tok = tokens[inp.substr(pos, 3)] || tokens[inp.substr(pos, 2)] || tokens[inp[pos]];
         return tok;
     }
 }

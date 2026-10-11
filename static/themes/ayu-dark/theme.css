@@ -43,7 +43,7 @@
 }
 
 .kiwi-wrap {
-    --kiwi-font: 'Inter', 'San Francisco', 'Helvetica Neue', 'Helvetica', 'Segoe UI', 'Ubuntu', 'Roboto', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
+    --kiwi-font: 'Inter', 'San Francisco', 'Helvetica Neue', 'Helvetica', 'Segoe UI', 'Ubuntu', 'Roboto', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
     --kiwi-font-mono: 'Fira Code', 'Menlo', 'Monaco', 'Cascadia Code', 'Consolas', 'Fira Mono', 'Ubuntu Mono', 'DejaVu Sans Mono', monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
     --kiwi-nickcolour-saturation: 60;
     --kiwi-nickcolour-lightness: 75;
@@ -52,6 +52,15 @@
 .kiwi-wrap select option {
     background-color: var(--brand-default-bg);
     color: var(--brand-default-fg);
+}
+
+.kiwi-formatting-reverse {
+    background: linear-gradient(180deg, transparent 58%, rgb(230 180 80 / 45%) 58%);
+    color: var(--brand-primary);
+    font-weight: 600;
+    padding: 0 0.25em;
+    border-bottom: 2px solid var(--brand-warning);
+    animation: none;
 }
 
 .kiwi-header {
@@ -189,15 +198,15 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
 /* IRC Text Colours (Ayu Dark Optimized) */
 .irc-fg-colour-white { color: #BFBDB6; }
 .irc-fg-colour-black { color: #292D38; }
-.irc-fg-colour-blue { color: #59C2FF; }
-.irc-fg-colour-green { color: #AAD94C; }
+.irc-fg-colour-blue { color: #39BAE6; }
+.irc-fg-colour-green { color: #91B362; }
 .irc-fg-colour-light-red { color: #D95757; }
-.irc-fg-colour-brown { color: #FF8F40; }
+.irc-fg-colour-brown { color: #D9854D; }
 .irc-fg-colour-purple { color: #D2A6FF; }
 .irc-fg-colour-orange { color: #FF8F40; }
 .irc-fg-colour-yellow { color: #E6B450; }
 .irc-fg-colour-light-green { color: #AAD94C; }
-.irc-fg-colour-cyan { color: #95E6CB; }
+.irc-fg-colour-cyan { color: #73D0B1; }
 .irc-fg-colour-light-cyan { color: #95E6CB; }
 .irc-fg-colour-light-blue { color: #59C2FF; }
 .irc-fg-colour-pink { color: #F29668; }
@@ -206,15 +215,15 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
 
 .irc-bg-colour-white { background-color: #BFBDB6; }
 .irc-bg-colour-black { background-color: #0D1017; }
-.irc-bg-colour-blue { background-color: #59C2FF; }
-.irc-bg-colour-green { background-color: #AAD94C; }
+.irc-bg-colour-blue { background-color: #39BAE6; }
+.irc-bg-colour-green { background-color: #91B362; }
 .irc-bg-colour-light-red { background-color: #D95757; }
-.irc-bg-colour-brown { background-color: #FF8F40; }
+.irc-bg-colour-brown { background-color: #D9854D; }
 .irc-bg-colour-purple { background-color: #D2A6FF; }
 .irc-bg-colour-orange { background-color: #FF8F40; }
 .irc-bg-colour-yellow { background-color: #E6B450; }
 .irc-bg-colour-light-green { background-color: #AAD94C; }
-.irc-bg-colour-cyan { background-color: #95E6CB; }
+.irc-bg-colour-cyan { background-color: #73D0B1; }
 .irc-bg-colour-light-cyan { background-color: #95E6CB; }
 .irc-bg-colour-light-blue { background-color: #59C2FF; }
 .irc-bg-colour-pink { background-color: #F29668; }

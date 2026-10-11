@@ -43,7 +43,7 @@
 }
 
 .kiwi-wrap {
-    --kiwi-font: 'Plus Jakarta Sans', 'Inter', 'Avenir Next', 'Avenir', 'Helvetica Neue', 'Segoe UI', 'Roboto', 'Ubuntu', 'Cantarell', 'DejaVu Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
+    --kiwi-font: 'Plus Jakarta Sans', 'Inter', 'Avenir Next', 'Avenir', 'Helvetica Neue', 'Segoe UI', 'Roboto', 'Ubuntu', 'Cantarell', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'DejaVu Sans', sans-serif;
     --kiwi-font-mono: 'JetBrains Mono', 'Menlo', 'Monaco', 'Cascadia Code', 'Consolas', 'Ubuntu Mono', 'DejaVu Sans Mono', monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
     --kiwi-nickcolour-saturation: 65;
     --kiwi-nickcolour-lightness: 70;
@@ -52,6 +52,17 @@
 .kiwi-wrap select option {
     background-color: var(--brand-default-bg);
     color: var(--brand-default-fg);
+}
+
+.kiwi-formatting-reverse {
+    background: var(--brand-primary);
+    color: var(--comp-header-option-active-fg);
+    font-weight: 700;
+    padding: 0.12em 0.65em;
+    border-radius: 9999px;
+    box-shadow: 0 3px 10px rgb(245 189 230 / 45%);
+    border: 1px solid rgb(255 255 255 / 40%);
+    animation: none;
 }
 
 .kiwi-header {

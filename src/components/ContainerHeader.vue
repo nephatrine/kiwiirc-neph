@@ -429,6 +429,7 @@ export default {
     opacity: 0.8;
     cursor: pointer;
     transition: all 0.3s;
+    user-select: none;
 }
 
 .kiwi-header-option a:hover {

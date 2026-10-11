@@ -66,7 +66,7 @@
                         @input="inputUpdate"
                         @keydown="inputKeyDown($event)"
                         @keyup="inputKeyUp($event)"
-                        @click="closeToolsPlugins"
+                        @click="showPlugins = false"
                         @focus="focusChanged"
                         @blur="focusChanged"
                     />
@@ -95,6 +95,7 @@
                     class="kiwi-controlinput-tools-expand kiwi-controlinput-button"
                     :class="{ 'kiwi-controlinput-tools-expand--closed': !showPlugins }"
                     @click="showPlugins = !showPlugins"
+                    @mousedown.prevent
                 >
                     <i class="fa fa-bars" aria-hidden="true" />
                 </div>
@@ -104,18 +105,38 @@
                         class="kiwi-controlinput-tools-container"
                     >
                         <div
-                            v-if="shouldShowColorPicker"
-                            :title="$t('color_picker')"
+                            v-if="shouldShowColorPicker && isWideEnough"
+                            :title="$t('styling_tools')"
                             class="kiwi-controlinput-button"
-                            @click.prevent="onToolClickTextStyle"
+                            @click.prevent="onToolClickStyling"
+                            @mousedown.prevent
                         >
-                            <i class="fa fa-adjust" aria-hidden="true" />
+                            <i class="fa fa-font" aria-hidden="true" />
                         </div>
+                        <template v-if="shouldShowColorPicker && !isWideEnough">
+                            <div
+                                :title="`${$t('color_picker')} (${$t('color_shift_hint')})`"
+                                class="kiwi-controlinput-button"
+                                @click.prevent="onToolClickTextStyle"
+                                @mousedown.prevent
+                            >
+                                <i class="fa fa-adjust" aria-hidden="true" />
+                            </div>
+                            <div
+                                :title="$t('formatting_tools')"
+                                class="kiwi-controlinput-button"
+                                @click.prevent="onToolClickFormatting"
+                                @mousedown.prevent
+                            >
+                                <i class="fa fa-font" aria-hidden="true" />
+                            </div>
+                        </template>
                         <div
                             v-if="shouldShowEmojiPicker"
                             :title="$t('emoji_picker')"
                             class="kiwi-controlinput-button"
                             @click.prevent="onToolClickEmoji"
+                            @mousedown.prevent
                         >
                             <i class="fa fa-smile-o" aria-hidden="true" />
                         </div>
@@ -138,8 +159,13 @@
         </div>
 
         <div class="kiwi-controlinput-active-tool">
-            <component :is="active_tool" v-bind="active_tool_props" />
+            <template v-if="active_tool === 'styling'">
+                <tool-text-style v-bind="active_tool_props" />
+                <tool-formatting v-bind="active_tool_props" />
+            </template>
+            <component :is="active_tool" v-else v-bind="active_tool_props" />
         </div>
+
     </div>
 </template>
 
@@ -158,6 +184,7 @@ import autocompleteCommands from '@/res/autocompleteCommands';
 import GlobalApi from '@/libs/GlobalApi';
 import AutoComplete from './AutoComplete';
 import ToolTextStyle from './inputtools/TextStyle';
+import ToolFormatting from './inputtools/Formatting';
 import SelfUser from './SelfUser';
 import AwayStatusIndicator from './AwayStatusIndicator';
 import TypingUsersList from './TypingUsersList';
@@ -168,6 +195,8 @@ export default {
         AwayStatusIndicator,
         SelfUser,
         TypingUsersList,
+        ToolTextStyle,
+        ToolFormatting,
     },
     props: ['network', 'buffer', 'sidebarState'],
     data() {
@@ -239,10 +268,10 @@ export default {
                 toolCount++;
             }
             if (this.shouldShowColorPicker) {
-                toolCount++;
+                toolCount += (this.isWideEnough ? 1 : 2);
             }
 
-            if (toolCount === 1) {
+            if (toolCount <= 1) {
                 // No point showing a menu button to replace one item
                 return true;
             }
@@ -251,10 +280,14 @@ export default {
             // Total buttons width < 1/5 screen width
             return (36 * toolCount < this.$state.ui.app_width / 5);
         },
+        isWideEnough() {
+            return this.$state.ui.app_width > 1030;
+        },
         history() {
             if (this.$state.setting('buffers.shared_input')) {
                 return this.$state.ui.input_history;
             }
+
             return this.buffer.input_history;
         },
         history_pos: {
@@ -394,15 +427,25 @@ export default {
         onToolClickTextStyle() {
             this.toggleInputTool(ToolTextStyle);
         },
+        onToolClickFormatting() {
+            this.toggleInputTool(ToolFormatting);
+        },
+        onToolClickStyling() {
+            if (this.active_tool === 'styling') {
+                this.active_tool = null;
+            } else {
+                this.active_tool_props = {
+                    buffer: this.buffer,
+                    ircinput: this.$refs.input,
+                };
+                this.active_tool = 'styling';
+            }
+        },
         onToolClickEmoji() {
             this.$state.$emit('emojipicker.show', {
                 type: 'input',
                 ircinput: this.$refs.input,
             });
-        },
-        closeToolsPlugins() {
-            this.showPlugins = false;
-            this.closeInputTool();
         },
         closeInputTool() {
             this.active_tool = null;
@@ -426,6 +469,12 @@ export default {
         },
         toggleUnderline() {
             this.$refs.input.toggleUnderline();
+        },
+        toggleStrikethrough() {
+            this.$refs.input.toggleStrikethrough();
+        },
+        toggleMonospace() {
+            this.$refs.input.toggleMonospace();
         },
         onAutocompleteCancel() {
             this.autocomplete_open = false;
@@ -548,6 +597,14 @@ export default {
             } else if (meta && event.key === 'u') {
                 // meta + u
                 this.toggleUnderline();
+                event.preventDefault();
+            } else if (meta && event.key === 'e') {
+                // meta + e
+                this.toggleStrikethrough();
+                event.preventDefault();
+            } else if (meta && event.key === 'q') {
+                // meta + q
+                this.toggleMonospace();
                 event.preventDefault();
             }
         },
@@ -855,6 +912,7 @@ export default {
     cursor: pointer;
     line-height: 38px;
     transition: width 0.2s 0.1s;
+    user-select: none;
 
     > i {
         font-size: 120%;
@@ -1076,6 +1134,7 @@ export default {
     border-radius: 8px;
     box-sizing: border-box;
     cursor: pointer;
+    user-select: none;
 
     i {
         font-size: 20px;

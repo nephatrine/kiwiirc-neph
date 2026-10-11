@@ -70,6 +70,25 @@ export function stripStyles(str) {
 }
 
 /**
+ * Replace IRC control characters with visible Unicode glyphs
+ * @param {string} str The string to process
+ */
+export function controlCharsToGlyphs(str) {
+    const glyphMap = {
+        '\x02': '\u2402', // ␂
+        '\x03': '\u2403', // ␃
+        '\x04': '\u2404', // ␄
+        '\x0f': '\u240F', // ␏
+        '\x11': '\u2411', // ␑
+        '\x16': '\u2416', // ␖
+        '\x1d': '\u241D', // ␝
+        '\x1e': '\u241E', // ␞
+        '\x1f': '\u241F', // ␟
+    };
+    return str.replace(/[\x02\x03\x04\x0f\x11\x16\x1d\x1e\x1f]/g, (match) => glyphMap[match] || match);
+}
+
+/**
  * Does a string mention a nickname?
  * @param {string} input The string to search within
  * @param {string} nick The nick to search for

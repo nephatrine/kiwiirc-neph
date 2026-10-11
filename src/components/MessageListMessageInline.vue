@@ -50,7 +50,7 @@
                     {{ props.m().getReplyMessage(props.message.reply).nick }}:
                 </span>
                 <span v-if="props.m().getReplyMessage(props.message.reply)" class="kiwi-messagelist-reply-preview-message">
-                    {{ props.m().getReplyMessage(props.message.reply).message }}
+                    {{ props.m().getReplyMessageText(props.message.reply) }}
                 </span>
                 <span v-else class="kiwi-messagelist-reply-preview-id">
                     {{ props.message.reply }}
@@ -140,6 +140,7 @@
 <script>
 
 import MediaViewer from './MediaViewer';
+import * as Misc from '@/helpers/Misc';
 import MessageInfo from './MessageInfo';
 import MessageReactions from './MessageReactions';
 import MessageActions from './MessageActions';
@@ -170,6 +171,11 @@ const methods = {
         let props = this.props;
         const resolved = props.m().getNetwork().resolveMessage(replyId, props.ml.buffer);
         return resolved ? resolved.message : null;
+    },
+    getReplyMessageText(replyId) {
+        let props = this.props;
+        let m = props.m().getReplyMessage(replyId);
+        return m ? Misc.stripStyles(m.message) : '';
     },
     canReply(message) {
         let types = ['privmsg', 'action', 'message'];

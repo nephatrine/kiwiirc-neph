@@ -43,7 +43,7 @@
 }
 
 .kiwi-wrap {
-    --kiwi-font: 'DM Sans', 'Inter', 'Avenir Next', 'Avenir', 'Helvetica Neue', 'Helvetica', 'Segoe UI', 'Ubuntu', 'Cantarell', 'DejaVu Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
+    --kiwi-font: 'DM Sans', 'Inter', 'Avenir Next', 'Avenir', 'Helvetica Neue', 'Helvetica', 'Segoe UI', 'Ubuntu', 'Cantarell', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'DejaVu Sans', sans-serif;
     --kiwi-font-mono: 'Red Hat Mono', 'Menlo', 'Monaco', 'Cascadia Mono', 'Consolas', 'Ubuntu Mono', 'DejaVu Sans Mono', monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
     --kiwi-nickcolour-saturation: 70;
     --kiwi-nickcolour-lightness: 35;
@@ -52,6 +52,17 @@
 .kiwi-wrap select option {
     background-color: var(--brand-default-bg);
     color: var(--brand-default-fg);
+}
+
+.kiwi-formatting-reverse {
+    background: var(--brand-default-bg);
+    color: var(--brand-primary);
+    border: 1.5px solid rgb(9 105 218 / 65%);
+    border-radius: 5px;
+    padding: 0.12em 0.42em;
+    font-weight: 600;
+    box-shadow: 0 0 0 3px rgb(9 105 218 / 18%);
+    animation: none;
 }
 
 /* GitHub Light Optimized IRC Colors */
@@ -66,11 +77,11 @@
 .irc-fg-colour-yellow { color: #bf8700; }
 .irc-fg-colour-light-green { color: #2da44e; }
 .irc-fg-colour-cyan { color: #0598bc; }
-.irc-fg-colour-light-cyan { color: #0598bc; }
+.irc-fg-colour-light-cyan { color: #31d2f2; }
 .irc-fg-colour-light-blue { color: #218bff; }
 .irc-fg-colour-pink { color: #bf3989; }
 .irc-fg-colour-grey { color: #57606a; }
-.irc-fg-colour-light-grey { color: #24292f; }
+.irc-fg-colour-light-grey { color: #8c959f; }
 
 .irc-bg-colour-white { background-color: #ffffff; }
 .irc-bg-colour-black { background-color: #24292f; }
@@ -83,8 +94,8 @@
 .irc-bg-colour-yellow { background-color: #bf8700; }
 .irc-bg-colour-light-green { background-color: #2da44e; }
 .irc-bg-colour-cyan { background-color: #0598bc; }
-.irc-bg-colour-light-cyan { background-color: #0598bc; }
+.irc-bg-colour-light-cyan { background-color: #31d2f2; }
 .irc-bg-colour-light-blue { background-color: #218bff; }
 .irc-bg-colour-pink { background-color: #bf3989; }
 .irc-bg-colour-grey { background-color: #57606a; }
-.irc-bg-colour-light-grey { background-color: #24292f; }
+.irc-bg-colour-light-grey { background-color: #8c959f; }
