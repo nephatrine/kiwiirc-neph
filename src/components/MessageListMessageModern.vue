@@ -159,7 +159,7 @@
                 @close="props.ml.toggleMessageInfo()"
             />
 
-            <div v-if="props.message.embed.payload && props.ml.shouldAutoEmbed">
+            <div v-if="props.message.embed.payload && props.ml.shouldAutoEmbed" class="kiwi-messagelist-embed">
                 <component
                     :is="injections.components.MediaViewer"
                     :url="props.message.embed.payload"
@@ -396,7 +396,8 @@ export default {
     display: none;
 }
 
-.kiwi-messagelist-message--modern .kiwi-messagelist-body {
+.kiwi-messagelist-message--modern .kiwi-messagelist-body,
+.kiwi-messagelist-message--modern .kiwi-messagelist-embed {
     white-space: pre-wrap;
     word-wrap: break-word;
     display: block;
@@ -406,7 +407,8 @@ export default {
     transition: padding-right 0.2s ease;
 }
 
-.kiwi-messagelist-message--modern:hover .kiwi-messagelist-body {
+.kiwi-messagelist-message--modern:hover .kiwi-messagelist-body,
+.kiwi-messagelist-message--modern:hover .kiwi-messagelist-embed {
     padding-right: 45px;
 }
 

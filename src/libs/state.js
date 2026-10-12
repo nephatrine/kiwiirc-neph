@@ -41,6 +41,7 @@ function createNewState() {
             current_input: '',
             input_history: [],
             input_history_pos: 0,
+            lightbox_url: '',
             show_advanced_tab: false,
             emoji_picker: {
                 visible: false,
@@ -238,7 +239,9 @@ function createNewState() {
 
                             let latestMessages = impBuffer.latest_messages || [];
                             latestMessages.forEach((msg) => {
-                                buffer.latest_messages.push(new Message(msg));
+                                let m = new Message(msg);
+                                m.toBlocks(buffer, buffer.setting('extra_formatting'));
+                                buffer.latest_messages.push(m);
                             });
 
                             network.buffers.push(buffer);
@@ -729,6 +732,8 @@ function createNewState() {
                 if (user && user.ignore) {
                     bufferMessage.ignore = true;
                 }
+
+                bufferMessage.toBlocks(buffer, buffer.setting('extra_formatting'));
 
                 buffer.addMessage(bufferMessage);
 

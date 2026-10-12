@@ -61,6 +61,7 @@
         <emoji-picker />
         <redaction-prompt />
         <hex-color-picker />
+        <media-lightbox />
     </div>
 </template>
 
@@ -79,6 +80,7 @@ import AvatarCommon from '@/components/UserAvatarCommon';
 import EmojiPicker from '@/components/EmojiPicker';
 import RedactionPrompt from '@/components/RedactionPrompt';
 import HexColorPicker from '@/components/HexColorPicker';
+import MediaLightbox from '@/components/MediaLightbox';
 import { State as SidebarState } from '@/components/Sidebar';
 import ThemeManager from '@/libs/ThemeManager';
 import * as Notifications from '@/libs/Notifications';
@@ -97,6 +99,7 @@ export default {
         EmojiPicker,
         RedactionPrompt,
         HexColorPicker,
+        MediaLightbox,
     },
     props: ['startupComponent'],
     data() {
@@ -337,6 +340,12 @@ export default {
         },
         onKeyDown(event) {
             this.$state.$emit('document.keydown', event);
+
+            if (event.key === 'Escape' && this.$state.ui.lightbox_url) {
+                this.$state.ui.lightbox_url = '';
+                event.preventDefault();
+                return;
+            }
 
             let meta = false;
 

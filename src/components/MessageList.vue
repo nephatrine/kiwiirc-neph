@@ -161,13 +161,13 @@ export default {
             return this;
         },
         shouldAutoEmbed() {
+            let res = false;
             if (this.buffer.isChannel() && this.buffer.setting('inline_link_auto_previews')) {
-                return true;
+                res = true;
+            } else if (this.buffer.isQuery() && this.buffer.setting('inline_link_auto_previews_query')) {
+                res = true;
             }
-            if (this.buffer.isQuery() && this.buffer.setting('inline_link_auto_previews_query')) {
-                return true;
-            }
-            return false;
+            return res;
         },
         listType() {
             if (this.$state.setting('messageLayout')) {

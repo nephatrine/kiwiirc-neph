@@ -56,6 +56,22 @@ and this project adheres to
   real-time status synchronization, a contrast-aware social color engine,
   dynamic user ignoring (hiding historical traffic), self-highlight suppression,
   and contextual metadata persistence warnings.
+- **Robust Media Embedding**: Integrated a comprehensive media detection and
+  rendering engine supporting direct images, audio, and video files (including
+  complex URLs from Discord and Shopify).
+- **Official Platform Integration**: Added native, script-free iframe support
+  for **YouTube** (Landscape & Shorts), **Twitch** (Channels & Clips),
+  **Streamable**, **RedGifs**, **Giphy**, and **Imgur**.
+- **Intelligent Aspect Ratio Sizing**: Implemented responsive containers for
+  16:9 and 9:16 content with double-constraint scaling to prevent layout shifts
+  and eliminate vertical scrolling in the pinned viewer.
+- **Global Image Lightbox**: Added a centered, darkened full-screen overlay for
+  viewing images at full resolution with global Escape-key support.
+- **Eager Link Processing**: Refactored the state engine to parse links
+  instantly upon message ingestion, ensuring 100% consistent auto-expansion and
+  respecting per-channel whitelists.
+- **Pinned Workspace Optimization**: Refactored the top-fixed media viewer to
+  preserve sidebar alignment and provide centered, cinematic previews.
 - **Channel Prioritization**: Introduced high-visibility "Favorite" pinning to
   the top of the sidebar and "Silenced" de-prioritization (dimming and hidden
   unread counts) for improved buffer management.

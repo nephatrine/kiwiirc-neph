@@ -11,6 +11,8 @@
 - Over 30 professional themes included with unified UI normalization
 - Intelligent message rerouting and authoritative context synchronization
 - Desktop notifications and modern synthesized audio alerts
+- **Robust media embedding**: High-performance native players for direct media
+  and official rich previews for YouTube, Twitch, Streamable, Giphy, and more.
 - Clean, human-readable buffer content export for chat logs and debugging
 - Extremely versatile via a
   [single JSON config file at runtime](https://github.com/kiwiirc/kiwiirc/wiki/02.-Configuration)

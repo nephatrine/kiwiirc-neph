@@ -89,6 +89,158 @@ export function sanitizeUrl(url) {
 }
 
 /**
+ * Get information about media from a URL
+ * @param {string} url The URL to analyze
+ * @returns {object} { type: string, url: string, id: string }
+ */
+export function getMediaInfo(url) {
+    const info = {
+        type: '',
+        url: url,
+        id: '',
+    };
+
+    if (!url) {
+        return info;
+    }
+
+    // Exclude common file-wrapper pages (e.g. Wikipedia File: pages)
+    if (url.match(/\/wiki\/File:/i)) {
+        return info;
+    }
+
+    // Google Image Search thumbnails
+    if (url.match(/encrypted-tbn[0-9]\.gstatic\.com\/images/i) &&
+        (url.includes('tbn:') || url.includes('ANd9Gc'))) {
+        info.type = 'image';
+        return info;
+    }
+
+    const cleanUrl = url.split('?')[0].split('#')[0].toLowerCase();
+    const isImage = cleanUrl.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i) ||
+                   url.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp)([?#]|$)/i);
+
+    if (isImage) {
+        info.type = 'image';
+        return info;
+    }
+
+    const isAudio = cleanUrl.match(/\.(mp3|wav|ogg|m4a|flac)$/i) ||
+                   url.match(/\.(mp3|wav|ogg|m4a|flac)([?#]|$)/i);
+
+    if (isAudio) {
+        info.type = 'audio';
+        return info;
+    }
+
+    const isVideo = cleanUrl.match(/\.(mp4|webm|ogv|mov)$/i) ||
+                   url.match(/\.(mp4|webm|ogv|mov)([?#]|$)/i);
+
+    if (isVideo) {
+        info.type = 'video';
+        return info;
+    }
+
+    // YouTube
+    const ytShortsMatch = url.match(/youtube\.com\/shorts\/([^"&?/\s]{11})/i);
+    if (ytShortsMatch) {
+        info.type = 'youtube-shorts';
+        info.id = ytShortsMatch[1];
+        return info;
+    }
+
+    const ytMatch = url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i);
+    if (ytMatch) {
+        info.type = 'youtube';
+        info.id = ytMatch[1];
+        return info;
+    }
+
+    // Twitch
+    const twitchClipMatch = url.match(/clips\.twitch\.tv\/([a-z0-9_-]+)/i) || url.match(/twitch\.tv\/\w+\/clip\/([a-z0-9_-]+)/i);
+    if (twitchClipMatch) {
+        info.type = 'twitch-clip';
+        info.id = twitchClipMatch[1];
+        return info;
+    }
+    const twitchChannelMatch = url.match(/twitch\.tv\/([a-z0-9_]+)/i);
+    if (twitchChannelMatch) {
+        // Exclude some common twitch paths that aren't channels
+        const excluded = ['directory', 'videos', 'p', 'about', 'jobs', 'press'];
+        if (!excluded.includes(twitchChannelMatch[1].toLowerCase())) {
+            info.type = 'twitch-channel';
+            info.id = twitchChannelMatch[1];
+            return info;
+        }
+    }
+
+    // Mastodon/Fediverse heuristic
+    // Matches patterns like /@user/12345 or /users/user/statuses/12345
+    if (url.match(/\/@\w+\/\d+/) || url.match(/\/users\/\w+\/statuses\/\d+/)) {
+        info.type = 'fediverse';
+        return info;
+    }
+
+    // Giphy
+    const giphyMatch = url.match(/giphy\.com\/(?:gifs|clips)\/.*-([a-z0-9_-]+)/i) || url.match(/giphy\.com\/gifs\/([a-z0-9_-]+)/i);
+    if (giphyMatch) {
+        info.type = 'giphy';
+        info.id = giphyMatch[1];
+        return info;
+    }
+
+    // Streamable
+    const streamableMatch = url.match(/streamable\.com\/(?:[seo]\/)?([a-z0-9]+)/i);
+    if (streamableMatch) {
+        info.type = 'streamable';
+        info.id = streamableMatch[1];
+        return info;
+    }
+
+    // RedGifs
+    const redgifsMatch = url.match(/redgifs\.com\/watch\/([a-z0-9_-]+)/i);
+    if (redgifsMatch) {
+        info.type = 'redgifs';
+        info.id = redgifsMatch[1];
+        return info;
+    }
+
+    // Steam Store
+    const steamMatch = url.match(/store\.steampowered\.com\/app\/([0-9]+)/i);
+    if (steamMatch) {
+        info.type = 'steam';
+        info.id = steamMatch[1];
+        return info;
+    }
+
+    // Imgur
+    const imgurMatch = url.match(/imgur\.com\/(?:gallery\/|a\/)?(?:.*-)?([a-z0-9]+)/i);
+    if (imgurMatch) {
+        const id = imgurMatch[1];
+        const excluded = ['gallery', 'upload', 'about', 'apps', 'privacy', 'tos', 'jobs'];
+        if (!excluded.includes(id.toLowerCase())) {
+            // Check for a specific image ID in the fragment (e.g. gallery/slug#imageID)
+            const fragmentMatch = url.match(/#([a-z0-9]{5,10})$/i);
+            if (fragmentMatch) {
+                info.type = 'image';
+                info.url = `https://i.imgur.com/${fragmentMatch[1]}.png`;
+                return info;
+            }
+
+            const isPageWithId = !url.match(/imgur\.com\/(?:gallery\/|a\/)/i);
+            if (isPageWithId) {
+                // Transform single image page to direct image link to avoid X-Frame-Options block
+                info.type = 'image';
+                info.url = `https://i.imgur.com/${id}.png`;
+                return info;
+            }
+        }
+    }
+
+    return info;
+}
+
+/**
  * Replace IRC control characters with visible Unicode glyphs
  * @param {string} str The string to process
  */

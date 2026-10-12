@@ -45,6 +45,8 @@ export default class Message {
         this.embed = { type: 'url', payload: null };
         this.html = '';
         this.blocks = [];
+        this.hasParsed = false;
+        this.lastUsedExtraFormatting = null;
         this.hasRendered = false;
         this.hasUserLink = false;
         // template should be null or a Vue component to render this message
@@ -121,6 +123,10 @@ export default class Message {
     }
 
     toBlocks(buffer, useExtraFormatting) {
+        if (this.hasParsed && this.lastUsedExtraFormatting === useExtraFormatting) {
+            return this.blocks;
+        }
+
         let state = getState();
         let userList = buffer.users;
 
@@ -136,35 +142,38 @@ export default class Message {
         );
 
         this.mentioned_urls = blocks.filter((block) => block.type === 'url').map((block) => block.meta.url);
-        this.maybeAutoEmbed();
+        this.maybeAutoEmbed(buffer);
 
         state.$emit('message.blocks', { message: this, blocks: blocks });
         this.blocks = blocks;
+        this.hasParsed = true;
+        this.lastUsedExtraFormatting = useExtraFormatting;
         return blocks;
     }
 
-    maybeAutoEmbed() {
+    maybeAutoEmbed(buffer) {
         if (!this.mentioned_urls || this.mentioned_urls.length === 0) {
             return;
         }
 
         // Only auto preview links on user messages. Traffic, topics, notices, etc would get
         // annoying as they usually contain links of some sort
-        if (this.type !== 'privmsg') {
+        const type = (this.type || '').toLowerCase();
+        if (type !== 'privmsg' && type !== 'message') {
             return;
         }
 
         let url = this.mentioned_urls[0];
 
-        let whitelistRegex = getState().setting('buffers.inline_link_auto_preview_whitelist');
-        whitelistRegex = (whitelistRegex || '').trim();
+        // Ensure we have a valid whitelist, defaulting to allow-all
+        let whitelistRegex = buffer.setting('inline_link_auto_preview_whitelist') || '.*';
+        whitelistRegex = (whitelistRegex || '').trim() || '.*';
         try {
-            if (!whitelistRegex || !(new RegExp(whitelistRegex, 'i')).test(url)) {
+            if (!(new RegExp(whitelistRegex, 'i')).test(url)) {
                 return;
             }
         } catch (err) {
-            // A bad regex pattern will throw an error
-            return;
+            // A bad regex pattern should not block all previews
         }
 
         this.embed.payload = url;

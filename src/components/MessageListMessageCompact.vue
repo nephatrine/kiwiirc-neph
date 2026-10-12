@@ -117,6 +117,16 @@
                 :message="props.message"
                 :buffer="props.ml.buffer"
             />
+
+            <div v-if="props.message.embed.payload && props.ml.shouldAutoEmbed" class="kiwi-messagelist-embed">
+                <component
+                    :is="injections.components.MediaViewer"
+                    :url="props.message.embed.payload"
+                    :show-pin="true"
+                    @close="props.message.embed.payload = ''"
+                    @pin="props.ml.openEmbedInPreview(props.message)"
+                />
+            </div>
         </div>
 
         <component
@@ -142,16 +152,6 @@
             :title="props.ml.$t('rerouted')"
             class="kiwi-messagelist-nick-rerouted"
         >⤮</span>
-
-        <div v-if="props.message.embed.payload && props.ml.shouldAutoEmbed">
-            <component
-                :is="injections.components.MediaViewer"
-                :url="props.message.embed.payload"
-                :show-pin="true"
-                @close="props.message.embed.payload = ''"
-                @pin="props.ml.openEmbedInPreview(props.message)"
-            />
-        </div>
     </div>
 </template>
 

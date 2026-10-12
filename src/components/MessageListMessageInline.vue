@@ -118,6 +118,15 @@
                 layout="inline"
                 class="kiwi-messagelist-actions"
             />
+            <div v-if="props.message.embed.payload && props.ml.shouldAutoEmbed" class="kiwi-messagelist-embed">
+                <component
+                    :is="injections.components.MediaViewer"
+                    :url="props.message.embed.payload"
+                    :show-pin="true"
+                    @close="props.message.embed.payload = ''"
+                    @pin="props.ml.openEmbedInPreview(props.message)"
+                />
+            </div>
         </div>
 
         <component
@@ -127,16 +136,6 @@
             :buffer="props.ml.buffer"
             @close="props.ml.toggleMessageInfo()"
         />
-
-        <div v-if="props.message.embed.payload && props.ml.shouldAutoEmbed">
-            <component
-                :is="injections.components.MediaViewer"
-                :url="props.message.embed.payload"
-                :show-pin="true"
-                @close="props.message.embed.payload = ''"
-                @pin="props.ml.openEmbedInPreview(props.message)"
-            />
-        </div>
     </div>
 </template>
 

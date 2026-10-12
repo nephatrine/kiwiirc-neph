@@ -30,8 +30,6 @@
             </div>
             <container-header :buffer="buffer" :sidebar-state="sidebarState" />
 
-            <slot name="before" />
-
             <not-connected
                 v-if="buffer.getNetwork().state !== 'connected' && !buffer.isServer()"
                 :buffer="buffer"
@@ -43,7 +41,10 @@
                     <server-view :network="network" />
                 </template>
                 <template v-else>
-                    <message-list :buffer="buffer" />
+                    <div class="kiwi-container-messages">
+                        <slot name="before" />
+                        <message-list :buffer="buffer" />
+                    </div>
                     <sidebar
                         v-if="!buffer.isSpecial()"
                         :network="network"
@@ -235,6 +236,13 @@ export default {
     flex: 1;
     display: flex;
     flex-direction: row;
+    overflow: hidden;
+}
+
+.kiwi-container-messages {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
 }
 
