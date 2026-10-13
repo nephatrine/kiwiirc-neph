@@ -10,117 +10,88 @@ and this project adheres to
 
 ### Added
 
-- **Modern Theme Suite**: Integrated over 30 professional themes (Catppuccin,
-  Nord, Rosé Pine, Tokyo Night, etc.) with unified normalization, strictly
-  standardized color hierarchies, and mathematically balanced message separator
-  colors for all dark themes.
-- **Advanced Text Formatting**: Introduced an extensive formatting suite
-  supporting Markdown-inspired syntax, native IRC colors (0-99/HEX), 'Fancy'
-  theme-aware styles, and a responsive formatting toolbar with an integrated HEX
-  color picker.
-- **IRCv3 Protocol Hardening**: Comprehensive implementation of `echo-message`,
-  `labeled-response`, `extended-isupport`, `multi-prefix`, `userhost-in-names`,
-  `draft/metadata-2` (with resource limit enforcement), and `standard-replies`
-  ensuring robust synchronization and error handling. Optimized metadata traffic
-  via proactive fetch throttling and automated service-specific suppressions.
-- **Message Redaction**: Support for `draft/message-redaction` with custom
-  confirmation prompts and click-to-reveal behavior.
-- **Authoritative History**: Implemented `draft/chathistory` and
-  `draft/event-playback` for precise gap-filling including replayed joins,
-  parts, and modes.
-- **Advanced Messaging**: Full support for native Unicode emojis with a
-  searchable picker, threaded replies (+reply), per-message reactions, and
-  standardized read-markers.
-- **Identity & Session Privacy**: Added explicit SASL account support,
-  authoritative `/setname` updates, and a "Remember me" toggle with automatic
-  state purging.
-- **Synthesized Audio Earcons**: Replaced static assets with a low-latency Web
-  Audio API synthesis engine featuring unique tonal sequences for notifications,
-  errors, general chat activity, and successful network registration.
-- **Intelligent Message Rerouting**: Implemented support for the
-  `+channel-context` tag with flexible security policies.
-- **Global Desktop Notification Toggle**: Added a user-configurable setting to
-  enable or disable desktop alerts independently of audio notifications.
-- **Enhanced Visual Activity**: Introduced scale-pulse animations for mentions
-  to improve discoverability in background buffers.
-- **Buffer Content Export**: Added functionality to download clean,
-  human-readable plain text logs for any active buffer.
-- **Diagnostic Troubleshooting**: Integrated a diagnostic state dump engine with
-  sensitive data masking.
-- **Authoritative Branding**: Implemented support for `NETWORK`, `draft/ICON`
-  (with automatic Ergo fallback), and channel-specific avatars in headers and
-  information panels.
-- **Enriched Social Context**: Integrated support for `draft/metadata-2` to
-  display user pronouns, display names, descriptions, and homepages in profile
-  cards. Also introduced an application-wide fallback avatar template system,
-  real-time status synchronization, a contrast-aware social color engine,
-  dynamic user ignoring (hiding historical traffic), self-highlight suppression,
-  and contextual metadata persistence warnings.
-- **Robust Media Embedding**: Integrated a comprehensive media detection and
-  rendering engine supporting direct images, audio, and video files (including
-  complex URLs from Discord and Shopify).
-- **Official Platform Integration**: Added native, script-free iframe support
-  for **YouTube** (Landscape & Shorts), **Twitch** (Channels & Clips),
-  **Streamable**, **RedGifs**, **Giphy**, and **Imgur**.
-- **Intelligent Aspect Ratio Sizing**: Implemented responsive containers for
-  16:9 and 9:16 content with double-constraint scaling to prevent layout shifts
-  and eliminate vertical scrolling in the pinned viewer.
-- **Global Image Lightbox**: Added a centered, darkened full-screen overlay for
-  viewing images at full resolution with global Escape-key support.
-- **Eager Link Processing**: Refactored the state engine to parse links
-  instantly upon message ingestion, ensuring 100% consistent auto-expansion and
-  respecting per-channel whitelists.
-- **Pinned Workspace Optimization**: Refactored the top-fixed media viewer to
-  preserve sidebar alignment and provide centered, cinematic previews.
-- **Channel Prioritization**: Introduced high-visibility "Favorite" pinning to
-  the top of the sidebar and "Silenced" de-prioritization (dimming and hidden
-  unread counts) for improved buffer management.
-- **Built-in File Uploads**: Upload from the input bar, file picker, drag-drop,
-  or paste. `fileupload.service` is `none` (default) or `litterbox`.
-  `fileupload.litterbox.retention` is `1h`, `12h`, `24h`, or `72h` (default
+- **Themes**: Added 40 themes with a shared color system, including balanced
+  separators on dark themes, and a custom theme URL.
+- **Formatting**: Added Markdown-inspired formatting, IRC colors (0-99 and hex),
+  theme-aware styles, a formatting toolbar with a hex picker, and an emoji
+  picker. Shortcodes can be converted while typing and on incoming messages.
+- **Conversations**: Added threaded replies (`+reply`, falling back to
+  `+draft/reply`), per-message reactions (`+draft/react`), and typing indicators
+  (`+typing`). Long messages can use `draft/multiline`. Redaction uses
+  `draft/message-redaction`, with a confirmation prompt and click-to-reveal.
+- **History and read state**: Added `draft/chathistory` and
+  `draft/event-playback` for gap-filling, including replayed joins, parts, and
+  modes. `draft/read-marker` keeps read state in sync across sessions.
+  `echo-message` and `labeled-response` confirm outgoing messages. Also requests
+  `extended-isupport`, `multi-prefix`, and `userhost-in-names`. `FAIL`, `WARN`,
+  and `NOTE` are routed to the relevant buffer. The `standard-replies`
+  capability is not requested.
+- **Identity**: Added SASL login, preferring `SCRAM-SHA-256` over `PLAIN`, live
+  `/setname` updates, and a "Remember me" toggle that can purge saved state.
+  `draft/metadata-2` shows display names, pronouns, descriptions, homepages,
+  status, and contrast-adjusted color. Away text takes precedence over social
+  status. Includes a fallback avatar template and a warning when metadata will
+  not persist. Ignored users stay hidden in history, and self-highlights are
+  suppressed.
+- **Media**: Added image, audio, and video embeds, including Discord and Shopify
+  URLs. Iframe previews cover YouTube, Twitch, Streamable, RedGifs, and Giphy.
+  Imgur single images are shown as images, not iframes. Links are parsed when
+  the message arrives. The pinned viewer keeps sidebar alignment, and images
+  open in a lightbox.
+- **Buffers**: Added favorite pinning and mute, which dims a buffer and hides
+  its unread count. Mentions use a short scale pulse. Buffers can be exported as
+  plain text. Desktop notifications can be toggled separately from synthesized
+  sounds.
+- **File uploads**: Added optional uploads from the input bar, file picker,
+  drag-drop, and paste. `fileupload.service` is `none` (default), `litterbox`,
+  or `filehost`. Litterbox retention is `1h`, `12h`, `24h`, or `72h` (default
   `72h`). Users can override the service and retention even when the admin sets
-  `none`. Successful uploads post the bare URL; failures stay local. `filehost`
-  uses the same setting and is not a config URL: prefer `draft/FILEHOST`, else
-  `soju.im/FILEHOST`, and only after a completed SASL login. Requests use HTTP
-  Basic, refuse `http` on a TLS connection, and treat `201` plus `Location` as
-  success.
+  `none`. Successful uploads post the URL to the current channel or query;
+  failures stay local. `filehost` is not a URL in config. It prefers
+  `draft/FILEHOST`, then `soju.im/FILEHOST`, and only when a SASL account and
+  password are available. Requests use HTTP Basic, refuse `http` when the client
+  connection is marked TLS, and treat `201` plus `Location` as success.
+- **Routing**: Added `+channel-context` rerouting with lenient and strict
+  policies.
+- **Branding**: Added `NETWORK` and `draft/ICON` support, with an Ergo icon
+  fallback, plus channel avatars in headers and info panels.
+- **Diagnostics**: Added an anonymized state and log dump for troubleshooting.
 
 ### Changed
 
-- **Architecture**: Separated internal message IDs from authoritative protocol
-  tags and added `protocol_target` tracking for spec-compliant interactions.
-- **UI/UX Intelligence**: Optimized settings and headers to dynamically react to
-  network capabilities and viewport sizes.
-- **Modernized Environment**: Updated requirements to Node 22+ and transitioned
-  to modern browser targets, removing legacy IE11/EdgeHTML polyfills.
-- **Performance**: Optimized message state management and replaced legacy
-  image-based emoticons with native Unicode rendering.
-- **Reconnection Logic**: Hardened connection handlers with capped delays and
-  authoritative "join healing".
-- **Channel List Requests**: No `LIST` for 30 seconds after connect. Automatic
-  fetches wait 30 minutes; manual refresh and bare `/list` wait 5 minutes.
-  In-flight lists are not resent. Filtered `/list` still sends immediately
-  unless one is already in flight. The refresh button stays disabled during
-  those waits.
+- **Message IDs**: Separated local message IDs from protocol IDs and added
+  `protocol_target` tracking for reactions, replies, and redactions.
+- **Interface**: Settings and headers follow network capabilities and viewport
+  size.
+- **Runtime**: Requires Node 22+ and modern browsers. Removed legacy IE11 and
+  EdgeHTML polyfills.
+- **Performance**: Reduced reactivity in message state and replaced image
+  emoticons with Unicode emoji.
+- **Reconnection**: Capped reconnect delays and heals channel joins after
+  reconnect.
+- **Channel list requests**: Deferred `LIST` for 30 seconds after connect. After
+  a completed list, automatic fetches wait 30 minutes. Manual refresh and bare
+  `/list` wait 5 minutes. In-flight lists are not resent. Filtered `/list` is
+  sent only after the connect window and when no list is in flight; otherwise it
+  is dropped. The refresh button stays disabled during the connect window and
+  the 5-minute cooldown.
 
 ### Removed
 
-- Removed support for legacy IE11/EdgeHTML browsers and associated polyfills.
-- Removed legacy proprietary BNC `bufferSeen` mechanism in favor of
-  `draft/read-marker`.
-- Deprecated `znc.in/self-message` support in favor of `echo-message`.
+- Removed support for legacy IE11 and EdgeHTML browsers and their polyfills.
+- Removed the legacy BNC `bufferSeen` mechanism in favor of `draft/read-marker`.
+- Removed `znc.in/self-message` support in favor of `echo-message`.
 - Removed static `.mp3` and `.ogg` audio assets.
 
 ### Fixed
 
-- **Security**: Addressed high-severity dependency vulnerabilities including
-  PostCSS updates.
-- **Synchronization**: Fixed "vanishing" historical messages and improved user
-  discovery during high-traffic logins.
-- **Chrome UI Stability**: Applied `user-select: none` to all persistent UI
-  buttons to prevent accidental text cursor insertion.
-- **Spoiler Fidelity**: Hardened spoiler rendering to ensure content remains
-  hidden regardless of theme adjustments.
-- **Same-Origin Links**: Same-origin document links, including `.svg`, download
-  instead of opening. Same-origin iframes are not rendered. Image, audio, and
-  video embeds and the lightbox are unchanged.
+- **Security**: Updated dependencies, including PostCSS, to address known
+  vulnerabilities.
+- **History sync**: Stopped historical messages from disappearing and improved
+  user discovery during busy logins.
+- **Text selection**: Set `user-select: none` on persistent buttons so clicks do
+  not insert a text cursor.
+- **Spoilers**: Kept spoiler text hidden when the theme changes.
+- **Same-origin links**: Same-origin document links, including `.svg`, now
+  download instead of opening. Same-origin iframes are not rendered. Image,
+  audio, and video embeds and the lightbox are unchanged.

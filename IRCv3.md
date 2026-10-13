@@ -1,192 +1,166 @@
 # KiwiIRC IRCv3 Technical Reference
 
-KiwiIRC utilizes IRCv3 capabilities and extensions to provide a high-fidelity,
-authoritative, and synchronized chat experience across multiple sessions.
+KiwiIRC requests a fixed set of IRCv3 capabilities and uses several client-only
+tags. `RPL_ISUPPORT` tokens adjust history, branding, bans, and file uploads.
 
 ## Capability Negotiation
 
-KiwiIRC explicitly requests the following capabilities during connection and via
-`CAP NEW`:
+KiwiIRC requests the following capabilities during connection and again on
+`CAP NEW`.
 
-### Synchronization & Consistency
+### Synchronization
 
-- **echo-message**: Authoritatively acknowledges outgoing messages by echoing
-  them back.
+- **echo-message**: Echoes outgoing messages so the client can confirm them.
 - **labeled-response**: Correlates echoes and server responses with outgoing
   commands using unique labels.
-- **message-tags**: Enables parsing of rich metadata attached to IRC messages.
-- **batch**: Groups related commands (e.g., multiline or history playback) for
-  atomic processing.
-- **server-time**: Ensures accurate message timestamps by utilizing
-  server-provided UTC times.
+- **message-tags**: Parses tags attached to IRC messages.
+- **batch**: Groups related commands, such as multiline sends or history
+  playback.
+- **server-time**: Uses server-provided UTC timestamps.
+- **draft/chathistory**: Retrieves backlog with `BEFORE`, `AFTER`, and `LATEST`.
+- **draft/event-playback**: Includes joins, parts, and modes in history.
+- **draft/multiline**: Sends long messages as one batch.
+- **draft/message-redaction**: Removes message content from the log.
+- **draft/read-marker**: Syncs read status across clients. Informational
+  `MARKREAD` requests set a boundary for query buffers, which have no `JOIN`.
 
-### User Identity & State
+### Identity
 
-- **sasl (v3.1 & v3.2)**: Modern authentication with priority for
-  `SCRAM-SHA-256` over `PLAIN`.
-- **account-notify**: Tracks service login/logout status of users in real-time.
-- **account-tag**: Provides the authoritative account name on every incoming
-  message.
-- **extended-join**: Retrieves account names and realnames immediately upon user
-  join.
-- **chghost**: Updates user hostnames dynamically without requiring a cycle.
-- **setname**: Allows authoritative updates to a user's realname (gecos) at
-  runtime.
-- **away-notify**: Synchronizes real-time "away" status for all visible users.
+- **away-notify**: Tracks away status for visible users.
+- **invite-notify**: Shows invites. If the user is already in the channel, the
+  notice goes to that channel buffer.
+- **account-notify**: Tracks account login and logout for visible users.
+- **account-tag**: Carries the account name on incoming messages.
+- **extended-join**: Includes account and realname on join.
+- **chghost**: Updates a user's hostname without a rejoin.
+- **setname**: Updates the user's realname (gecos) at runtime.
+- **draft/metadata-2**: Syncs public user and channel metadata (`display-name`,
+  `pronouns`, `description`, `homepage`, `status`, `color`). KiwiIRC respects
+  `max-subs`, `max-keys`, and `max-value-bytes`, and waits 30 minutes between
+  proactive fetches. Social colors are adjusted to at least 4.5:1 contrast
+  against the theme background. An IRC away message takes precedence over the
+  social `status` key.
 
-### Advanced Messaging
+SASL is negotiated when an account password is set. It is not in the
+always-requested list above. KiwiIRC prefers `SCRAM-SHA-256` over `PLAIN`.
 
-- **draft/chathistory**: High-fidelity backlog retrieval using `BEFORE`,
-  `AFTER`, and `LATEST` operations.
-- **draft/event-playback**: Requests inclusion of non-message events (joins,
-  parts, modes) in history streams.
-- **draft/multiline**: Supports atomic delivery of long messages using
-  specialized batches and tags.
-- **draft/message-redaction**: Enables permanent removal of message content from
-  the authoritative log.
-- **draft/read-marker**: Synchronizes the read status of buffers across multiple
-  clients and sessions. Utilizes informational `MARKREAD` requests to establish
-  synchronization boundaries for query buffers where `JOIN` events are absent.
-- **+channel-context**: Client-only tag used on `PRIVMSG` and `NOTICE` to route
-  messages between buffers (e.g. PM to Channel or Channel to Channel).
+### Helpers
 
-### Helper Capabilities
-
-- **multi-prefix**: Shows all applicable user prefixes (e.g., `~@`) in member
-  lists.
-- **userhost-in-names**: Provides full hostmasks in `NAMES` replies for
-  immediate user state initialization.
-- **invite-notify**: Receives notifications when users are invited to channels.
-  Notifications are contextually routed to the relevant channel buffer if the
-  user is already present.
-- **cap-notify**: Dynamically reacts to capability changes on the server.
-- **extended-isupport**: Enables receipt of `RPL_ISUPPORT` tokens during
-  capability negotiation, allowing for early branding and state initialization
+- **cap-notify**: Reacts to capability changes after registration.
+- **multi-prefix**: Shows every user prefix in member lists, such as `~@`.
+- **userhost-in-names**: Includes full hostmasks in `NAMES` replies.
+- **extended-isupport**: Receives `RPL_ISUPPORT` during capability negotiation,
   before registration finishes.
-- **draft/metadata-2**: Supports retrieval and synchronization of public user
-  and channel metadata (`display-name`, `pronouns`, `description`, `homepage`,
-  `status`, `color`) for enriched social interaction. KiwiIRC authoritatively
-  respects server-provided resource limits (`max-subs`, `max-keys`,
-  `max-value-bytes`) and enforces a 30-minute proactive fetch cooldown. Social
-  colors are automatically snapped to a 4.5:1 contrast ratio against the theme
-  background, and standard IRC `/AWAY` messages take precedence over social
-  status keys.
 
-## Authoritative Synchronization Logic
+## Client Tags
 
-KiwiIRC employs a 3-scenario model to maintain a consistent state:
+These tags are not capabilities. KiwiIRC sends them only when the server allows
+the tag.
 
-1. **Scenario 1 (Instant)**: For networks lacking echo support, UI updates are
-   performed optimistically.
-1. **Scenario 2 (Heuristic Pending)**: On `echo-message` networks without
-   labels, matches echoes via "nick + text + time window" or `msgid` heuristics.
-1. **Scenario 3 (Labeled Pending)**: Utilizing `labeled-response`, provides
-   $O(1)$ promotion of local "pending" state to authoritative server state using
-   session-unique labels.
+- **+channel-context**: Sent on `PRIVMSG` and `NOTICE` to show a message in a
+  different buffer, such as a query copied into a channel.
+- **+reply**: Points a message at another message by `msgid`. If the server does
+  not allow `+reply`, KiwiIRC falls back to `+draft/reply`.
+- **+draft/react**: Adds or removes a reaction on a message with an `msgid`.
+- **+typing**: Shares typing state (`active`, `paused`, `done`) when the user
+  has typing sharing enabled.
 
-The "seen" boundary for all scenarios is inclusive of the authoritative marker
-timestamp, ensuring context replayed exactly at the marker does not trigger
-visual or audio notifications.
+## Message Confirmation
 
-Pending items automatically revert and log an error after 60 seconds if no
-server confirmation arrives.
+KiwiIRC uses one of three paths for outgoing messages:
 
-## Metadata-Synchronized History Handshake
+1. **No echo**: The UI updates immediately.
+1. **Echo without labels**: Matches the echo by nick, text, and a time window,
+   or by `msgid`.
+1. **Labeled echo**: Matches the echo with the label from `labeled-response`.
 
-KiwiIRC gates initial `CHATHISTORY` requests to ensure all necessary metadata
-(member lists, sync boundaries) is authoritatively established:
+The seen boundary includes the server read-marker time. Traffic replayed at that
+exact time does not notify. Pending messages revert and log an error after 60
+seconds if the server does not confirm them.
 
-- **Channel Synchronization**: requests strictly wait for the `RPL_ENDOFNAMES`
-  (366) numeric. This ensures member lists are fully populated for rerouting and
-  security checks.
-- **Query Synchronization**: requests wait for a `MARKREAD` echo or a 2-second
-  safety timeout.
-- **Network Readiness**: history retrieval is synchronized network-wide; every
-  enabled channel must finish its handshake (or timeout) before replayed traffic
-  is processed.
+## History Handshake
 
-## Intelligent Message Rerouting
+The first `CHATHISTORY` request waits until the buffer is ready:
 
-Utilizing the `+channel-context` tag, KiwiIRC supports two routing models:
+- **Channels**: Wait for `RPL_ENDOFNAMES` (366) so the member list is complete.
+- **Queries**: Wait for a `MARKREAD` echo, or 2 seconds.
+- **Network**: Every enabled channel must finish this handshake, or time out,
+  before replayed traffic is processed.
 
-1. **Lenient (Default)**: Trust the tag for all traffic (live and history) if
-   the target buffer exists.
-1. **Strict**: Reroute only if both sender and receiver are present in the
-   destination channel, or if the original target was a private message queue.
-   Rerouting is explicitly disabled for historical traffic in this mode.
+## Message Rerouting
 
-**Dual-Path Interaction Security**: Reactions and redactions resolve correctly
-if the sender is present in either the context buffer (where displayed) or the
-original buffer (protocol destination).
+`+channel-context` has two modes:
 
-## ISUPPORT Intelligence
+1. **Lenient (default)**: Trust the tag for live and historical traffic when the
+   target buffer exists.
+1. **Strict**: Reroute only when both users are in the destination channel, or
+   when the original target was a query. Historical traffic is not rerouted.
 
-KiwiIRC examines specific `RPL_ISUPPORT` tokens to adjust its behavior:
+Reactions and redactions are accepted when the sender is in either the buffer
+where the message is shown or the buffer it was sent to.
 
-- **CHATHISTORY / MSGREFTYPES**: Determines retrieval limits and preferred
-  reference formats (e.g., `msgid` vs `timestamp`).
-- **BOT**: Identifies automated users for specialized UI rendering (🤖).
-- **WHOX**: Optimizes metadata retrieval (accounts, SSL status) via token-based
-  correlation.
-- **ACCOUNTEXTBAN / EXTBAN**: Constructs protocol-compliant account-based bans
-  based on server support.
-- **CLIENTTAGDENY**: Respects server restrictions on outgoing client tags.
-- **UTF8ONLY**: Automatically enforces `utf8` encoding and restricts non-ASCII
-  outgoing actions (like emoji reactions) on traditional networks to prevent
-  protocol-level garbling.
-- **NETWORK**: Displays the canonical network name in the server information
-  view.
-- **DRAFT/ICON**: Supports server-provided network branding. Template variables
-  like `{size}` are automatically resolved (standardized on 64px for caching).
-  If no token is provided but the server is identified as Ergo (via `IRCD` token
-  or numeric `002`), KiwiIRC automatically falls back to `/static/ergo.svg`.
+## ISUPPORT Tokens
+
+Keys are stored in uppercase.
+
+- **CHATHISTORY / MSGREFTYPES**: Sets retrieval limits and whether references
+  use `msgid` or `timestamp`.
+- **BOT**: Marks automated users in the UI.
+- **WHOX**: Retrieves accounts and TLS status with token correlation.
+- **ACCOUNTEXTBAN / EXTBAN**: Builds account bans in the form the server
+  accepts.
+- **CLIENTTAGDENY**: Blocks outgoing client tags the server rejects.
+- **UTF8ONLY**: Forces `utf8` and blocks non-ASCII outgoing actions, including
+  emoji reactions, on networks that cannot carry them.
+- **NETWORK**: Shows the network name in the server view.
+- **DRAFT/ICON**: Network icon URL. `{size}` is replaced with `64`. If the token
+  is missing and the server is Ergo (`IRCD` or numeric `002`), KiwiIRC uses
+  `/static/ergo.svg`.
 - **DRAFT/FILEHOST**: Preferred upload URI when `fileupload.service` is
-  `filehost`.
+  `filehost`. See File Host Uploads.
 - **SOJU.IM/FILEHOST**: Fallback upload URI when `draft/FILEHOST` is absent or
   unusable.
-
-Note: All `RPL_ISUPPORT` keys are normalized to uppercase within the state
-singleton to ensure robust architectural lookups.
 
 ## File Host Uploads
 
 When `fileupload.service` is `filehost`, KiwiIRC uploads to the ISUPPORT URI.
 `draft/FILEHOST` is preferred. `soju.im/FILEHOST` is used only if the draft
-token is absent or unusable. Empty or non-string tokens are ignored. Plain
-`http` is refused when the IRC connection is TLS.
+token is missing or unusable. Empty and non-string tokens are ignored.
 
-Uploads require a completed SASL login. The request is an HTTP `POST` of the
-file body with `Content-Type` and `Content-Disposition: attachment`, using HTTP
-Basic. KiwiIRC does not implement `OAUTHBEARER`, so Bearer auth is not used.
-Success is `201 Created` plus a `Location` header, resolved against the upload
-URL. Resumable uploads are not implemented.
+Plain `http` is refused when `connection.tls` is set. That flag means the client
+connection is TLS, including a TLS websocket to a gateway. It is not a separate
+check of the gateway's upstream IRC link.
+
+Uploads require a completed SASL login and the stored SASL password. A NickServ
+`ACCOUNT` notify is not enough. The request is an HTTP `POST` of the file body
+with `Content-Type` and `Content-Disposition: attachment`, using HTTP Basic.
+KiwiIRC does not implement `OAUTHBEARER`, so Bearer auth is not used.
+`Content-Length` is left to the browser. Success is `201 Created` plus a
+`Location` header, resolved against the upload URL. Resumable uploads are not
+implemented.
 
 ## Operational Constraints
 
 ### History Limits
 
-KiwiIRC authoritatively caps single `CHATHISTORY` requests to 250 messages for
-efficiency. Larger unread backlogs are retrieved via automated recursive
-gap-filling.
+A single `CHATHISTORY` request is capped at 250 messages. Larger unread gaps are
+filled with follow-up requests.
 
 ### Boundary Sanitization
 
-`CHATHISTORY` references strictly exclude synthetic traffic (e.g., local
-connection notices) to prevent synchronization boundary pollution.
+`CHATHISTORY` references skip local notices, such as connection messages, so
+those lines do not become sync boundaries.
 
-## Specification Deviations & Constraints
+## Specification Notes
 
-### Message Redaction (TAGMSG Suppression)
+### Message Redaction
 
-KiwiIRC intentionally ignores `REDACT` commands targeting `TAGMSG` events (e.g.,
-reactions).
+KiwiIRC ignores `REDACT` commands that target `TAGMSG` events, including
+reactions. Reactions already have `+draft/unreact`. Redacting them as well can
+desync the reaction state from the message log.
 
-- **Rationale**: Reactions already possess a ratified `+draft/unreact` mechanism
-  for state removal. Supporting redaction for these is redundant and increases
-  the risk of state desync between the reaction engine and the message log.
+### Standard Replies
 
-### Authoritative Replies
-
-KiwiIRC strictly routes `FAIL`, `WARN`, and `NOTE` messages to the relevant
-buffer context (channel or query) based on command arguments or active labels,
-rather than cluttering the server status tab.
+`FAIL`, `WARN`, and `NOTE` are routed to the relevant channel or query from the
+command arguments or the active label. They are not dumped on the server tab.
+KiwiIRC does not request the `standard-replies` capability.

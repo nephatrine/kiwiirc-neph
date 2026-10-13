@@ -3,23 +3,23 @@
 ***A versatile web based messenger using IRC***
 
 - 100% static files. Host with your favourite web server or a CDN
-- For single networks, bouncer hosts, or a personal generic IRC client that
-  remembers your networks
-- Works out of the box with a default IRC network - or use your own
-- Single or multiple IRC network connections
-- Multiple layouts for small areas or full page layouts
-- Over 30 professional themes included with unified UI normalization
-- Intelligent message rerouting and authoritative context synchronization
-- Desktop notifications and modern synthesized audio alerts
-- **Robust media embedding**: High-performance native players for direct media
-  and official rich previews for YouTube, Twitch, Streamable, Giphy, and more.
-- Clean, human-readable buffer content export for chat logs and debugging
-- Built-in file uploads via Litterbox or a server `FILEHOST`, with a per-user
-  service override
-- Extremely versatile via a
-  [single JSON config file at runtime](https://github.com/kiwiirc/kiwiirc/wiki/02.-Configuration)
-- Themable and rich
-  [plugin support](https://github.com/kiwiirc/kiwiirc/wiki/03.-Plugins) such as
+- One public JSON config file. The browser fetches it, so do not put secrets in
+  it
+- One or many networks, over a websocket,
+  [webircgateway](https://github.com/kiwiirc/webircgateway), or
+  [KiwiBNC](https://github.com/kiwiirc/kiwibnc)
+- 40 included themes, plus a custom theme URL
+- Replies, reactions, typing indicators, and an emoji picker
+- Display names, pronouns, and profile color when the server provides them
+- History and read markers that stay in sync across sessions
+- Image, audio, and video embeds, with previews for YouTube, Twitch, Streamable,
+  Giphy, and RedGifs. Imgur single images are shown as images
+- Optional uploads through Litterbox or the server `FILEHOST`, with per-user
+  service and retention overrides
+- Favourite and mute channels, and export a buffer as plain text
+- Desktop notifications, independent of synthesized sounds
+- [Plugin support](https://github.com/kiwiirc/kiwiirc/wiki/03.-Plugins),
+  including self-hosted
   [file uploading](https://github.com/kiwiirc/plugin-fileuploader/) and
   [video calling](https://github.com/kiwiirc/plugin-conference)
 - Team mode for workplaces
@@ -79,17 +79,20 @@ npm run dev
 ```
 
 ***Note:*** *Do not use this development environment on your live website. It is
-slow, very large, and unsecure.*
+slow, very large, and insecure.*
 
 #### Configuration
 
-By default, the client will load the /static/config.json file on startup which
-contains the runtime configuration. When running in the development environment
-this can be found at [static/config.json](static/config.json). The browser
-fetches this file, so do not put secrets in it. File uploads are set under
-`fileupload`: `service` is `none` or `litterbox`, and `litterbox.retention` is
-`1h`, `12h`, `24h`, or `72h`. `filehost` uses the server ISUPPORT token and is
-not a URL in this file.
+By default, the client loads
+[/static/config.json](https://github.com/kiwiirc/kiwiirc/wiki/02.-Configuration)
+on startup. In development that file is
+[static/config.json](static/config.json). The browser fetches it, so do not put
+secrets in it.
+
+File uploads are set under `fileupload`. `service` is `none` (default),
+`litterbox`, or `filehost`. `litterbox.retention` is `1h`, `12h`, `24h`, or
+`72h` (default `72h`). Users can override the service and retention in settings.
+`filehost` uses the server ISUPPORT token and is not a URL in this file.
 
 ## Browser support
 
@@ -106,7 +109,6 @@ Kiwi IRC is tested on all modern browsers.
 For more detailed technical information, refer to the following documents in the
 repository:
 
-- **[IRCv3.md](IRCv3.md)**: Detailed reference of supported IRCv3 capabilities,
-  extensions, and synchronization logic.
-- **[CHANGELOG.md](CHANGELOG.md)**: Complete history of features, changes, and
-  security updates.
+- **[IRCv3.md](IRCv3.md)**: Supported capabilities, client tags, and
+  synchronization behavior.
+- **[CHANGELOG.md](CHANGELOG.md)**: Features, changes, and security updates.
