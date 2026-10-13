@@ -1,7 +1,15 @@
 {
-  "name": "kiwiirc",
-  "version": "1.7.1",
+  "name": "kiwiirc-neph",
+  "version": "2.0.0",
   "description": "Web based IRC client",
+  "homepage": "https://code.nephatrine.net/nephatrine/kiwiirc",
+  "repository": {
+    "type": "git",
+    "url": "https://code.nephatrine.net/nephatrine/kiwiirc"
+  },
+  "bugs": {
+    "url": "https://code.nephatrine.net/nephatrine/kiwiirc/issues"
+  },
   "author": "Darren <darren@darrenwhitlen.com>",
   "scripts": {
     "build": "vue-cli-service build --no-module",

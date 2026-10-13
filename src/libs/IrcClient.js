@@ -92,7 +92,7 @@ export function create(state, network) {
         }
         ircClient.options.nick = network.connection.nick;
         ircClient.options.username = network.username || network.connection.nick;
-        ircClient.options.gecos = network.gecos || 'https://kiwiirc.com/';
+        ircClient.options.gecos = network.gecos || 'Using KiwiIRC';
         ircClient.options.encoding = network.connection.encoding;
         ircClient.options.sasl_mechanism = network.connection.sasl_mechanism || state.setting('defaultSaslMechanism') || 'AUTO';
         ircClient.options.auto_reconnect = !!state.setting('autoReconnect');

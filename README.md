@@ -33,12 +33,13 @@ Connection modes:
 
 ## Installing Kiwi IRC
 
-If you just want to embed an IRC client on your website, you can generate a
-custom client hosted by kiwiirc.com using the simple client builder,
-https://kiwiirc.com/clientbuilder/
+Source and issues: https://code.nephatrine.net/nephatrine/kiwiirc
 
-To install Kiwi IRC on your own server, pre-built and ready to use installers
-can be found at the downloads page, https://kiwiirc.com/downloads/
+File issues at https://code.nephatrine.net/nephatrine/kiwiirc/issues
+
+For help, join `#support` on `irc.nephatrine.net`.
+
+To install on your own server, build from source below.
 
 ## Building from source
 
