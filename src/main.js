@@ -20,6 +20,7 @@ import getState from '@/libs/state';
 import ThemeManager from '@/libs/ThemeManager';
 import InputHandler from '@/libs/InputHandler';
 import StatePersistence from '@/libs/StatePersistence';
+import * as MetadataCache from '@/libs/MetadataCache';
 import * as Storage from '@/libs/storage/Local';
 import * as Misc from '@/helpers/Misc';
 import GlobalApi from '@/libs/GlobalApi';
@@ -509,6 +510,11 @@ async function initState() {
     if (stateKey) {
         await persist.loadStateIfExists();
     }
+
+    await MetadataCache.load(Storage);
+    getState().networks.forEach((network) => {
+        MetadataCache.paintNetwork(network);
+    });
 
     api.setState(getState());
 }

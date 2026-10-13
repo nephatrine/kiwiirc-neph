@@ -1,6 +1,7 @@
 import Irc from 'irc-framework';
 import * as Misc from '@/helpers/Misc';
 import * as TextFormatting from '@/helpers/TextFormatting';
+import * as MetadataCache from '@/libs/MetadataCache';
 
 function alertUnknownVisibility(network, target, key, visibility, visCache) {
     if (visibility && visibility !== '*') {
@@ -343,9 +344,13 @@ export default function metadataMiddleware(network) {
 function updateMetadataState(network, target, key, value, event, isAuth) {
     const state = network.appState;
     const isChannel = network.isChannelName(target);
+    const sanitizedValue = sanitizeMetadata(key, value);
+
+    if (isChannel && key === 'display-name') {
+        MetadataCache.rememberChannel(network, target, sanitizedValue);
+    }
 
     if (target.toLowerCase() === network.nick.toLowerCase()) {
-        const sanitizedValue = sanitizeMetadata(key, value);
         if (sanitizedValue === '') {
             state.$delete(network.metadata, key);
         } else {
@@ -357,7 +362,6 @@ function updateMetadataState(network, target, key, value, event, isAuth) {
         const buffer = network.bufferByName(target);
         if (buffer) {
             buffer.lastMetadataFetch = Date.now();
-            const sanitizedValue = sanitizeMetadata(key, value);
             if (sanitizedValue === '') {
                 state.$delete(buffer.metadata, key);
             } else {
@@ -371,11 +375,13 @@ function updateMetadataState(network, target, key, value, event, isAuth) {
 
         if (user) {
             user.lastMetadataFetch = Date.now();
-            const sanitizedValue = sanitizeMetadata(key, value);
             if (sanitizedValue === '') {
                 state.$delete(user.metadata, key);
             } else {
                 state.$set(user.metadata, key, sanitizedValue);
+            }
+            if (key === 'display-name' || key === 'avatar') {
+                MetadataCache.rememberUser(network, user);
             }
         }
     }

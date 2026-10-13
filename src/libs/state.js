@@ -12,6 +12,7 @@ import NetworkState from './state/NetworkState';
 import BufferState from './state/BufferState';
 import UserState from './state/UserState';
 import Message from './Message';
+import * as MetadataCache from './MetadataCache';
 
 function createNewState() {
     const stateObj = {
@@ -246,6 +247,7 @@ function createNewState() {
 
                             network.buffers.push(buffer);
                         });
+                        MetadataCache.paintNetwork(network);
                     });
                 }
 
@@ -585,6 +587,7 @@ function createNewState() {
 
                 buffer = new BufferState(bufferName, network.id, state, messages);
                 network.buffers.push(buffer);
+                MetadataCache.paintBuffer(network, buffer);
 
                 let eventObj = { buffer };
                 state.$emit('buffer.new', eventObj);
@@ -953,6 +956,7 @@ function createNewState() {
                     });
                 }
 
+                MetadataCache.paintUser(network, userObj);
                 return userObj;
             },
 

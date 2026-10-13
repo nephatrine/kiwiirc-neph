@@ -1,6 +1,7 @@
 'kiwi public';
 
 import _ from 'lodash';
+import * as MetadataCache from '@/libs/MetadataCache';
 
 export default class StatePersistence {
     constructor(storageKey, state, storage, logger) {
@@ -86,5 +87,6 @@ export default class StatePersistence {
     async forgetState() {
         this.state.resetState();
         await this.storage.set(this.storageKey, null);
+        await MetadataCache.clear();
     }
 }
