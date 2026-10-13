@@ -31,6 +31,7 @@ export const services = {
     filehost: {
         id: 'filehost',
         label: 'Filehost',
+        persistent: true,
         upload(file, options) {
             return uploadFilehost(file, options && options.network);
         },

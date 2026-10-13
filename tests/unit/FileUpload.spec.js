@@ -23,6 +23,11 @@ describe('fileupload', () => {
         expect(serviceFromId('missing')).toBe(null);
     });
 
+    test('marks only non-ephemeral services as persistent', () => {
+        expect(services.filehost.persistent).toBe(true);
+        expect(services.litterbox.persistent).toBeFalsy();
+    });
+
     test('falls back to the default retention', () => {
         let service = services.litterbox;
         expect(retentionFor(service, '1h')).toBe('1h');

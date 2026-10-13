@@ -1661,6 +1661,14 @@ msgstr "Upload File"
 msgid "fileupload_failed"
 msgstr "Could not upload {{name}}."
 
+#: Upload an avatar image
+msgid "fileupload_avatar"
+msgstr "Upload Avatar"
+
+#: Selected file is not an image
+msgid "fileupload_not_image"
+msgstr "Only image files can be used as an avatar."
+
 #: File uploads
 msgid "settings_fileupload"
 msgstr "File Uploads"

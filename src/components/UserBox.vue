@@ -90,7 +90,30 @@
                 </label>
                 <label :class="{ 'kiwi-userbox-editprofile--invalid': editProfileErrors.avatar }">
                     <span>{{ $t('avatar_url') }}</span>
-                    <input v-model="editProfile.avatar" type="text" class="u-input">
+                    <div class="kiwi-userbox-editprofile-avatar-wrap">
+                        <input v-model="editProfile.avatar" type="text" class="u-input">
+                        <button
+                            v-if="avatarUploadService"
+                            type="button"
+                            class="u-button u-button-secondary"
+                            :disabled="avatarUploading"
+                            :title="$t('fileupload_avatar')"
+                            @click="$refs.avatarFile.click()"
+                        >
+                            <i
+                                class="fa"
+                                :class="avatarUploading ? 'fa-spinner fa-spin' : 'fa-upload'"
+                                aria-hidden="true"
+                            />
+                        </button>
+                        <input
+                            ref="avatarFile"
+                            type="file"
+                            accept="image/*"
+                            class="kiwi-userbox-editprofile-avatar-file"
+                            @change="onAvatarFile"
+                        >
+                    </div>
                     <div v-if="editProfileErrors.avatar" class="kiwi-userbox-editprofile-error">
                         {{ $t('metadata_too_long', {
                             current: getByteLength(editProfile.avatar),
@@ -359,6 +382,7 @@ import * as Misc from '@/helpers/Misc';
 import GlobalApi from '@/libs/GlobalApi';
 import toHtml from '@/libs/renderers/Html';
 import parseMessage from '@/libs/MessageParser';
+import { effectiveRetention, effectiveService } from '@/libs/fileupload';
 import UserAvatar from './UserAvatar';
 import AwayStatusIndicator from './AwayStatusIndicator';
 
@@ -375,6 +399,8 @@ export default {
             whoisLoading: false,
             inviteChan: '',
             isEditingProfile: false,
+            avatarUploading: false,
+            avatarUploadId: 0,
             editProfile: {
                 displayName: '',
                 pronouns: '',
@@ -517,6 +543,16 @@ export default {
         hasEditProfileErrors() {
             return Object.values(this.editProfileErrors).some((v) => v);
         },
+        avatarUploadService() {
+            if (!this.network || this.network.state !== 'connected') {
+                return null;
+            }
+            let service = effectiveService(this.$state, this.network);
+            if (!service || !service.persistent) {
+                return null;
+            }
+            return service;
+        },
     },
     watch: {
         user() {
@@ -578,6 +614,8 @@ export default {
             this.network.ircClient.invite(this.inviteChan, this.user.nick);
         },
         startEditProfile() {
+            this.avatarUploadId += 1;
+            this.avatarUploading = false;
             this.editProfile.displayName = this.user.metadata['display-name'] || '';
             this.editProfile.pronouns = this.user.metadata.pronouns || '';
             this.editProfile.avatar = this.user.metadata.avatar || '';
@@ -621,6 +659,58 @@ export default {
             if (this.$refs.colorInput) {
                 this.$refs.colorInput.blur();
             }
+        },
+        async onAvatarFile(event) {
+            let input = event.target;
+            let file = input.files && input.files[0];
+            input.value = '';
+            if (!file || this.avatarUploading) {
+                return;
+            }
+            if (!file.type || file.type.indexOf('image/') !== 0) {
+                this.showAvatarUploadError(file, 'fileupload_not_image');
+                return;
+            }
+            let service = this.avatarUploadService;
+            if (!service || !this.network) {
+                this.showAvatarUploadError(file, 'fileupload_failed');
+                return;
+            }
+            this.avatarUploadId += 1;
+            let uploadId = this.avatarUploadId;
+            this.avatarUploading = true;
+            try {
+                let url = await service.upload(file, {
+                    network: this.network,
+                    retention: effectiveRetention(this.$state, service),
+                });
+                if (this.avatarUploadId === uploadId && this.isEditingProfile) {
+                    this.editProfile.avatar = url;
+                }
+            } catch (err) {
+                if (this.avatarUploadId === uploadId) {
+                    this.showAvatarUploadError(file, 'fileupload_failed');
+                }
+            }
+            if (this.avatarUploadId === uploadId) {
+                this.avatarUploading = false;
+            }
+        },
+        showAvatarUploadError(file, key) {
+            if (!this.buffer) {
+                return;
+            }
+            let message = key === 'fileupload_failed'
+                ? this.$t('fileupload_failed', {
+                    name: file && file.name ? file.name : '',
+                })
+                : this.$t(key);
+            this.$state.addMessage(this.buffer, {
+                time: Date.now(),
+                nick: '*',
+                message,
+                type: 'error',
+            });
         },
     },
 };
@@ -748,6 +838,27 @@ export default {
     i {
         margin-right: 5px;
     }
+}
+
+.kiwi-userbox-editprofile-avatar-wrap {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+
+    .u-input {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .u-button {
+        padding: 0 12px;
+        height: 38px;
+        line-height: 38px;
+    }
+}
+
+.kiwi-userbox-editprofile-avatar-file {
+    display: none;
 }
 
 .kiwi-userbox-editprofile-color-wrap {
