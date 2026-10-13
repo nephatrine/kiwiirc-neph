@@ -700,3 +700,64 @@ export function strCompare(a, b) {
         1 :
         -1;
 }
+
+export function isSameOriginUrl(url, base) {
+    if (!url || typeof url !== 'string') {
+        return false;
+    }
+
+    let baseHref = base;
+    if (!baseHref && typeof window !== 'undefined' && window.location) {
+        baseHref = window.location.href;
+    }
+    if (!baseHref) {
+        return false;
+    }
+
+    try {
+        let parsed = new URL(url, baseHref);
+        return parsed.origin === new URL(baseHref).origin;
+    } catch (err) {
+        return false;
+    }
+}
+
+export function isSafeSameOriginOpen(url) {
+    let info = getMediaInfo(url);
+    if (info.type !== 'image' && info.type !== 'audio' && info.type !== 'video') {
+        return false;
+    }
+
+    try {
+        let path = new URL(url, 'https://example.invalid/').pathname;
+        return !path.toLowerCase().endsWith('.svg');
+    } catch (err) {
+        return false;
+    }
+}
+
+export function downloadUrl(url) {
+    let absolute;
+    try {
+        absolute = new URL(url, window.location.href).href;
+    } catch (err) {
+        return Promise.resolve();
+    }
+
+    return fetch(absolute, { credentials: 'same-origin' }).then((response) => {
+        if (!response.ok) {
+            throw new Error('download failed');
+        }
+        return response.blob();
+    }).then((blob) => {
+        let objectUrl = URL.createObjectURL(blob);
+        let anchor = document.createElement('a');
+        let name = new URL(absolute).pathname.split('/').filter(Boolean).pop() || 'download';
+        anchor.href = objectUrl;
+        anchor.download = name;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(objectUrl);
+    }).catch(() => undefined);
+}

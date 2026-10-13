@@ -228,4 +228,23 @@ describe('Misc.js', () => {
         Misc.dedotObject(input);
         expect(input).toMatchObject(expected);
     });
+
+    const originBase = 'https://kiwi.example/client/';
+    test('detects same-origin urls', () => {
+        expect(Misc.isSameOriginUrl('https://kiwi.example/files/a.html', originBase)).toBe(true);
+        expect(Misc.isSameOriginUrl('/files/a.html', originBase)).toBe(true);
+        expect(Misc.isSameOriginUrl('https://other.example/a.html', originBase)).toBe(false);
+        expect(Misc.isSameOriginUrl('http://kiwi.example/a.html', originBase)).toBe(false);
+        expect(Misc.isSameOriginUrl('', originBase)).toBe(false);
+    });
+
+    test('allows same-origin media opens except svg and html', () => {
+        expect(Misc.isSafeSameOriginOpen('https://kiwi.example/a.png')).toBe(true);
+        expect(Misc.isSafeSameOriginOpen('https://kiwi.example/a.png?x=1')).toBe(true);
+        expect(Misc.isSafeSameOriginOpen('https://kiwi.example/a.mp3')).toBe(true);
+        expect(Misc.isSafeSameOriginOpen('https://kiwi.example/a.svg')).toBe(false);
+        expect(Misc.isSafeSameOriginOpen('https://kiwi.example/a.svg?x=1')).toBe(false);
+        expect(Misc.isSafeSameOriginOpen('https://kiwi.example/a.html')).toBe(false);
+        expect(Misc.isSafeSameOriginOpen('https://kiwi.example/page')).toBe(false);
+    });
 });

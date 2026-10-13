@@ -118,6 +118,7 @@
 
 import Vue from 'vue';
 import strftime from 'strftime';
+import * as Misc from '@/helpers/Misc';
 import Logger from '@/libs/Logger';
 import * as bufferTools from '@/libs/bufferTools';
 import RemoveBeforeUpdate from './utils/RemoveBeforeUpdate';
@@ -424,6 +425,29 @@ export default {
         onListClick(event) {
             this.toggleMessageInfo();
         },
+        guardSameOriginLink(event) {
+            let anchor = event.target && event.target.closest ?
+                event.target.closest('a[href]') :
+                null;
+            if (!anchor) {
+                return false;
+            }
+
+            let href = anchor.getAttribute('href');
+            if (!href || !Misc.isSameOriginUrl(href) || Misc.isSafeSameOriginOpen(href)) {
+                return false;
+            }
+
+            event.preventDefault();
+            Misc.downloadUrl(href);
+            return true;
+        },
+        onMessageAuxClick(event) {
+            if (event.button !== 1) {
+                return;
+            }
+            this.guardSameOriginLink(event);
+        },
         onMessageDblClick(event, message) {
             clearTimeout(this.messageClickTmr);
 
@@ -441,6 +465,10 @@ export default {
             this.$state.$emit('input.insertnick', nick);
         },
         onMessageClick(event, message, delay) {
+            if (this.guardSameOriginLink(event)) {
+                return;
+            }
+
             // Delaying the click for 200ms allows us to check for a second click. ie. double click
             // Quick hack as we only need double click for nicks, nothing else
             if (delay && event.target.getAttribute('data-nick')) {

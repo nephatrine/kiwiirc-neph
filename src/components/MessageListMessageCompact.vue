@@ -44,6 +44,7 @@
         :data-nick="(props.message.nick || '').toLowerCase()"
         class="kiwi-messagelist-message kiwi-messagelist-message--compact"
         @click="props.ml.onMessageClick($event, props.message, true)"
+        @auxclick="props.ml.onMessageAuxClick($event)"
         @dblclick="props.ml.onMessageDblClick($event, props.message)"
     >
         <div

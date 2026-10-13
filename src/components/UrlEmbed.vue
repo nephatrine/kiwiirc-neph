@@ -87,7 +87,7 @@
                 />
             </div>
         </template>
-        <template v-else-if="media.type === 'fediverse'">
+        <template v-else-if="media.type === 'fediverse' && !sameOriginFediverse">
             <div class="kiwi-url-embed-fediverse" :style="containerStyle">
                 <iframe
                     :src="`${media.url}/embed`"
@@ -161,7 +161,13 @@
         </template>
         <template v-else>
             <div class="kiwi-url-embed-fallback">
-                <a :href="url" target="_blank" rel="noopener noreferrer">
+                <a
+                    :href="url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    @click="onFallbackClick"
+                    @auxclick="onFallbackClick"
+                >
                     <i class="fa fa-external-link" aria-hidden="true" /> {{ url }}
                 </a>
             </div>
@@ -207,6 +213,9 @@ export default {
             const sanitized = Misc.sanitizeUrl(this.url);
             const info = Misc.getMediaInfo(sanitized);
             return info;
+        },
+        sameOriginFediverse() {
+            return Misc.isSameOriginUrl(`${this.media.url}/embed`);
         },
         mediaStyle() {
             if (!this.showPin) {
@@ -290,6 +299,16 @@ export default {
             this.$nextTick(() => {
                 this.updateEmbed();
             });
+        },
+        onFallbackClick(event) {
+            if (event.type === 'auxclick' && event.button !== 1) {
+                return;
+            }
+            if (!Misc.isSameOriginUrl(this.url) || Misc.isSafeSameOriginOpen(this.url)) {
+                return;
+            }
+            event.preventDefault();
+            Misc.downloadUrl(this.url);
         },
         openLightbox() {
             this.$state.ui.lightbox_url = this.media.url;

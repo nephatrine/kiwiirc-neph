@@ -14,6 +14,8 @@
 - **Robust media embedding**: High-performance native players for direct media
   and official rich previews for YouTube, Twitch, Streamable, Giphy, and more.
 - Clean, human-readable buffer content export for chat logs and debugging
+- Built-in file uploads via Litterbox or a server `FILEHOST`, with a per-user
+  service override
 - Extremely versatile via a
   [single JSON config file at runtime](https://github.com/kiwiirc/kiwiirc/wiki/02.-Configuration)
 - Themable and rich
@@ -83,7 +85,11 @@ slow, very large, and unsecure.*
 
 By default, the client will load the /static/config.json file on startup which
 contains the runtime configuration. When running in the development environment
-this can be found at [static/config.json](static/config.json)
+this can be found at [static/config.json](static/config.json). The browser
+fetches this file, so do not put secrets in it. File uploads are set under
+`fileupload`: `service` is `none` or `litterbox`, and `litterbox.retention` is
+`1h`, `12h`, `24h`, or `72h`. `filehost` uses the server ISUPPORT token and is
+not a URL in this file.
 
 ## Browser support
 

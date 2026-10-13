@@ -14,6 +14,7 @@
             @mouseup="updateValueProps();"
             @click="$emit('click', $event)"
             @paste="onPaste"
+            @dragover="onDragOver"
             @drop="onDrop"
             @focus="onFocus"
             @blur="$emit('blur', $event)"
@@ -81,6 +82,9 @@ export default Vue.component('irc-input', {
                 });
 
                 if (ignoreThisPaste) {
+                    if (clpData.files && clpData.files.length) {
+                        this.$emit('files', clpData.files);
+                    }
                     return;
                 }
 
@@ -91,7 +95,24 @@ export default Vue.component('irc-input', {
                 this.updateValueProps();
             }, 0);
         },
+        onDragOver(event) {
+            let types = event.dataTransfer && event.dataTransfer.types;
+            if (types && Array.prototype.indexOf.call(types, 'Files') !== -1) {
+                event.preventDefault();
+            }
+        },
         onDrop(event) {
+            let files = event.dataTransfer && event.dataTransfer.files;
+            if (files && files.length) {
+                event.preventDefault();
+                event.stopPropagation();
+                this.$emit('files', files);
+                return;
+            }
+            if (!event.dataTransfer) {
+                return;
+            }
+
             // Allow dragging of single emoji's from the message list
             const raw = event.dataTransfer.getData('text/html');
             if (!raw) {

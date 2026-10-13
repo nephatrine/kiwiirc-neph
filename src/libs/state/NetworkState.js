@@ -59,6 +59,7 @@ export default class NetworkState {
             password: '',
         };
         this.password = '';
+        this.sasl_account = '';
         this.away = '';
         this.enabled_caps = [];
         this.cap_values = {};

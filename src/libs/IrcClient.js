@@ -330,6 +330,8 @@ function clientMiddleware(state, network) {
     // eslint-disable-next-line
     let numConnects = 0;
     let isRegistered = false;
+    let saslSucceeded = false;
+    let pendingSaslAccount = '';
 
     return function middlewareFn(client, rawEvents, parsedEvents) {
         parsedEvents.use(parsedEventsHandler);
@@ -348,6 +350,9 @@ function clientMiddleware(state, network) {
             network.metadata_throttles = new Map();
             network.metadata_label_targets = new Map();
             network.connected_at = 0;
+            network.sasl_account = '';
+            saslSucceeded = false;
+            pendingSaslAccount = '';
             network.clearChannelListConnectTimer();
         });
 
@@ -488,6 +493,32 @@ function clientMiddleware(state, network) {
             }
         });
 
+        client.on('loggedin', (event) => {
+            if (isRegistered) {
+                return;
+            }
+            let account = event && event.account;
+            if (typeof account !== 'string' || !account || account === '*') {
+                return;
+            }
+            pendingSaslAccount = account;
+            if (saslSucceeded) {
+                network.sasl_account = pendingSaslAccount;
+            }
+        });
+
+        client.on('loggedout', () => {
+            network.sasl_account = '';
+            saslSucceeded = false;
+            pendingSaslAccount = '';
+        });
+
+        client.on('sasl failed', () => {
+            network.sasl_account = '';
+            saslSucceeded = false;
+            pendingSaslAccount = '';
+        });
+
         client.on('socket close', (err) => {
             if (network.state === 'connecting' || network.state === 'connected') {
                 // Ignore stale close events if we are already reconnecting or connected
@@ -496,6 +527,9 @@ function clientMiddleware(state, network) {
             isRegistered = false;
             network.state = 'disconnected';
             network.connected_at = 0;
+            network.sasl_account = '';
+            saslSucceeded = false;
+            pendingSaslAccount = '';
             network.clearChannelListConnectTimer();
 
             if (err) {
@@ -529,6 +563,13 @@ function clientMiddleware(state, network) {
         state.$emit('irc.raw.' + command, command, eventObj, network);
         if (eventObj.handled) {
             return;
+        }
+
+        if (command === '903' && !isRegistered) {
+            saslSucceeded = true;
+            if (pendingSaslAccount) {
+                network.sasl_account = pendingSaslAccount;
+            }
         }
 
         if (command === '002') {

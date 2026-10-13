@@ -154,6 +154,48 @@
                     </div>
 
                     <div class="kiwi-appsettings-block">
+                        <h3>{{ $t('settings_fileupload') }}</h3>
+                        <div class="kiwi-appsettings-section">
+                            <label class="kiwi-appsettings-messagelistDisplay">
+                                <span>{{ $t('settings_fileupload_service') }} </span>
+                                <select v-model="fileuploadServiceChoice">
+                                    <option value="">
+                                        {{ $t('settings_fileupload_default') }}
+                                    </option>
+                                    <option value="none">
+                                        {{ $t('settings_fileupload_none') }}
+                                    </option>
+                                    <option
+                                        v-for="service in fileuploadServices"
+                                        :key="service.id"
+                                        :value="service.id"
+                                    >
+                                        {{ service.label }}
+                                    </option>
+                                </select>
+                            </label>
+                            <label
+                                v-if="fileuploadRetentionOptions.length"
+                                class="kiwi-appsettings-messagelistDisplay"
+                            >
+                                <span>{{ $t('settings_fileupload_retention') }} </span>
+                                <select v-model="fileuploadRetentionChoice">
+                                    <option value="">
+                                        {{ $t('settings_fileupload_default') }}
+                                    </option>
+                                    <option
+                                        v-for="retention in fileuploadRetentionOptions"
+                                        :key="retention"
+                                        :value="retention"
+                                    >
+                                        {{ retention }}
+                                    </option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="kiwi-appsettings-block">
                         <h3>{{ $t('notifications') }}</h3>
                         <div class="kiwi-appsettings-section kiwi-appsettings-notifications">
                             <label class="kiwi-appsettings-setting-showjoinpart u-checkbox-wrapper">
@@ -263,6 +305,7 @@ import _ from 'lodash';
 import ThemeManager from '@/libs/ThemeManager';
 import GlobalApi from '@/libs/GlobalApi';
 import localesList from '@/res/localesList';
+import { effectiveService, filehostAvailable, listUploadServices } from '@/libs/fileupload';
 import SettingsAliases from './SettingsAliases';
 import SettingsAdvanced from './SettingsAdvanced';
 
@@ -396,6 +439,59 @@ export default {
             set(newVal) {
                 let l = this.messageLayouts;
                 this.$state.setting('buffers.messageLayout', l[newVal] || l.modern);
+            },
+        },
+        fileuploadServices() {
+            let network = this.$state.getActiveNetwork();
+            let saved = this.fileuploadServiceChoice;
+            return listUploadServices().filter((service) => {
+                if (service.id !== 'filehost') {
+                    return true;
+                }
+                return saved === 'filehost' || filehostAvailable(network);
+            });
+        },
+        fileuploadServiceChoice: {
+            get() {
+                let userVal = this.$state.getSetting('user_settings.fileupload.service');
+                return typeof userVal === 'undefined' ? '' : userVal;
+            },
+            set(newVal) {
+                if (!newVal) {
+                    this.$state.setSetting('user_settings.fileupload.service', null);
+                    return;
+                }
+                this.$state.setting('fileupload.service', newVal);
+            },
+        },
+        fileuploadRetentionOptions() {
+            let service = effectiveService(this.$state, this.$state.getActiveNetwork());
+            return (service && service.retentions) || [];
+        },
+        fileuploadRetentionChoice: {
+            get() {
+                let service = effectiveService(this.$state, this.$state.getActiveNetwork());
+                if (!service || !service.retentionSetting) {
+                    return '';
+                }
+                let userVal = this.$state.getSetting(
+                    'user_settings.' + service.retentionSetting,
+                );
+                return typeof userVal === 'undefined' ? '' : userVal;
+            },
+            set(newVal) {
+                let service = effectiveService(this.$state, this.$state.getActiveNetwork());
+                if (!service || !service.retentionSetting) {
+                    return;
+                }
+                if (!newVal) {
+                    this.$state.setSetting(
+                        'user_settings.' + service.retentionSetting,
+                        null,
+                    );
+                    return;
+                }
+                this.$state.setting(service.retentionSetting, newVal);
             },
         },
     },

@@ -140,9 +140,26 @@ KiwiIRC examines specific `RPL_ISUPPORT` tokens to adjust its behavior:
   like `{size}` are automatically resolved (standardized on 64px for caching).
   If no token is provided but the server is identified as Ergo (via `IRCD` token
   or numeric `002`), KiwiIRC automatically falls back to `/static/ergo.svg`.
+- **DRAFT/FILEHOST**: Preferred upload URI when `fileupload.service` is
+  `filehost`.
+- **SOJU.IM/FILEHOST**: Fallback upload URI when `draft/FILEHOST` is absent or
+  unusable.
 
 Note: All `RPL_ISUPPORT` keys are normalized to uppercase within the state
 singleton to ensure robust architectural lookups.
+
+## File Host Uploads
+
+When `fileupload.service` is `filehost`, KiwiIRC uploads to the ISUPPORT URI.
+`draft/FILEHOST` is preferred. `soju.im/FILEHOST` is used only if the draft
+token is absent or unusable. Empty or non-string tokens are ignored. Plain
+`http` is refused when the IRC connection is TLS.
+
+Uploads require a completed SASL login. The request is an HTTP `POST` of the
+file body with `Content-Type` and `Content-Disposition: attachment`, using HTTP
+Basic. KiwiIRC does not implement `OAUTHBEARER`, so Bearer auth is not used.
+Success is `201 Created` plus a `Location` header, resolved against the upload
+URL. Resumable uploads are not implemented.
 
 ## Operational Constraints
 

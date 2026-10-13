@@ -8,6 +8,8 @@
             'kiwi-controlinput--selfuser-open': selfuser_open,
         }"
         class="kiwi-controlinput kiwi-theme-bg"
+        @dragover="onUploadDragOver"
+        @drop="onUploadDrop"
     >
         <auto-complete
             v-if="autocomplete_open"
@@ -69,6 +71,7 @@
                         @click="showPlugins = false"
                         @focus="focusChanged"
                         @blur="focusChanged"
+                        @files="uploadFiles"
                     />
                 </div>
                 <div
@@ -140,6 +143,20 @@
                         >
                             <i class="fa fa-smile-o" aria-hidden="true" />
                         </div>
+                        <div
+                            v-if="shouldShowFileUpload"
+                            :title="$t('fileupload_button')"
+                            class="kiwi-controlinput-button"
+                            :class="{ 'kiwi-controlinput-button--busy': uploading }"
+                            @click.prevent="onUploadClick"
+                            @mousedown.prevent
+                        >
+                            <i
+                                :class="uploading ? 'fa-spinner fa-spin' : 'fa-upload'"
+                                class="fa"
+                                aria-hidden="true"
+                            />
+                        </div>
                         <component
                             :is="plugin.component"
                             v-for="plugin in pluginUiElements"
@@ -158,6 +175,15 @@
             </div>
         </div>
 
+        <input
+            v-if="shouldShowFileUpload"
+            ref="fileUpload"
+            type="file"
+            multiple
+            tabindex="-1"
+            class="kiwi-controlinput-fileupload"
+            @change="onUploadSelected"
+        >
         <div class="kiwi-controlinput-active-tool">
             <template v-if="active_tool === 'styling'">
                 <tool-text-style v-bind="active_tool_props" />
@@ -182,6 +208,7 @@ import * as settingTools from '@/libs/settingTools';
 
 import autocompleteCommands from '@/res/autocompleteCommands';
 import GlobalApi from '@/libs/GlobalApi';
+import { effectiveRetention, effectiveService } from '@/libs/fileupload';
 import AutoComplete from './AutoComplete';
 import ToolTextStyle from './inputtools/TextStyle';
 import ToolFormatting from './inputtools/Formatting';
@@ -221,6 +248,8 @@ export default {
             current_input_value: '',
             has_focus: false,
             keep_focus: false,
+            uploading: false,
+            uploadQueue: [],
         };
     },
     computed: {
@@ -252,11 +281,22 @@ export default {
         shouldShowColorPicker() {
             return this.$state.setting('showColorPicker');
         },
+        fileUploadNetwork() {
+            let buffer = this.buffer;
+            if (buffer && typeof buffer.getNetwork === 'function') {
+                return buffer.getNetwork();
+            }
+            return this.network;
+        },
+        shouldShowFileUpload() {
+            return !!effectiveService(this.$state, this.fileUploadNetwork);
+        },
         shouldShowTools() {
             if (
                 this.pluginUiElements.length ||
                 this.shouldShowEmojiPicker ||
-                this.shouldShowColorPicker
+                this.shouldShowColorPicker ||
+                this.shouldShowFileUpload
             ) {
                 return true;
             }
@@ -269,6 +309,9 @@ export default {
             }
             if (this.shouldShowColorPicker) {
                 toolCount += (this.isWideEnough ? 1 : 2);
+            }
+            if (this.shouldShowFileUpload) {
+                toolCount++;
             }
 
             if (toolCount <= 1) {
@@ -445,6 +488,91 @@ export default {
             this.$state.$emit('emojipicker.show', {
                 type: 'input',
                 ircinput: this.$refs.input,
+            });
+        },
+        onUploadClick() {
+            if (this.uploading || !this.$refs.fileUpload) {
+                return;
+            }
+            this.$refs.fileUpload.click();
+        },
+        onUploadSelected(event) {
+            let input = event.target;
+            this.uploadFiles(input.files);
+            input.value = '';
+        },
+        onUploadDragOver(event) {
+            if (!this.shouldShowFileUpload || !this.transferHasFiles(event.dataTransfer)) {
+                return;
+            }
+            event.preventDefault();
+        },
+        onUploadDrop(event) {
+            if (!this.shouldShowFileUpload || !this.transferHasFiles(event.dataTransfer)) {
+                return;
+            }
+            event.preventDefault();
+            this.uploadFiles(event.dataTransfer.files);
+        },
+        transferHasFiles(dataTransfer) {
+            let types = dataTransfer && dataTransfer.types;
+            return !!(types && Array.prototype.indexOf.call(types, 'Files') !== -1);
+        },
+        uploadFiles(fileList) {
+            let files = Array.from(fileList || []);
+            if (!files.length || !this.shouldShowFileUpload) {
+                return;
+            }
+            this.uploadQueue = this.uploadQueue.concat(files);
+            if (this.uploading) {
+                return;
+            }
+            this.drainUploadQueue();
+        },
+        drainUploadQueue() {
+            this.uploading = true;
+            let next = () => {
+                if (!this.uploadQueue.length) {
+                    this.uploading = false;
+                    return undefined;
+                }
+                let file = this.uploadQueue.shift();
+                return this.uploadOne(file).then(next);
+            };
+            return next();
+        },
+        async uploadOne(file) {
+            let network = this.fileUploadNetwork;
+            let service = effectiveService(this.$state, network);
+            let buffer = this.buffer;
+            let canSend = service && buffer && network && network.state === 'connected'
+                && network.ircClient
+                && (buffer.isChannel() || buffer.isQuery());
+            if (!canSend) {
+                this.showUploadError(file);
+                return;
+            }
+            try {
+                let url = await service.upload(file, {
+                    retention: effectiveRetention(this.$state, service),
+                    network,
+                });
+                buffer.say(url);
+            } catch (err) {
+                this.showUploadError(file);
+            }
+        },
+        showUploadError(file) {
+            if (!this.buffer) {
+                return;
+            }
+            this.$state.addMessage(this.buffer, {
+                time: Date.now(),
+                nick: '*',
+                message: this.$t('fileupload_failed', {
+                    name: file && file.name ? file.name : '',
+                }),
+                type: 'error',
             });
         },
         closeInputTool() {
@@ -1123,6 +1251,15 @@ export default {
     .kiwi-controlinput-active-tool {
         right: 0;
     }
+}
+
+.kiwi-controlinput-fileupload {
+    display: none;
+}
+
+.kiwi-controlinput-button--busy {
+    opacity: 0.45;
+    cursor: wait;
 }
 
 .kiwi-controlinput-button {

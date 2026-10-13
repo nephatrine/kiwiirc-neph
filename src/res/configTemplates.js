@@ -275,6 +275,12 @@ export const configTemplates = {
             message_nick: '%prefix%nick',
             general_error: '⚠ %text',
         },
+        fileupload: {
+            service: 'none',
+            litterbox: {
+                retention: '72h',
+            },
+        },
         presetNetworks: [],
     },
 

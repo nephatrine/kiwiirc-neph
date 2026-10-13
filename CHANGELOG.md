@@ -75,6 +75,15 @@ and this project adheres to
 - **Channel Prioritization**: Introduced high-visibility "Favorite" pinning to
   the top of the sidebar and "Silenced" de-prioritization (dimming and hidden
   unread counts) for improved buffer management.
+- **Built-in File Uploads**: Upload from the input bar, file picker, drag-drop,
+  or paste. `fileupload.service` is `none` (default) or `litterbox`.
+  `fileupload.litterbox.retention` is `1h`, `12h`, `24h`, or `72h` (default
+  `72h`). Users can override the service and retention even when the admin sets
+  `none`. Successful uploads post the bare URL; failures stay local. `filehost`
+  uses the same setting and is not a config URL: prefer `draft/FILEHOST`, else
+  `soju.im/FILEHOST`, and only after a completed SASL login. Requests use HTTP
+  Basic, refuse `http` on a TLS connection, and treat `201` plus `Location` as
+  success.
 
 ### Changed
 
@@ -88,6 +97,11 @@ and this project adheres to
   image-based emoticons with native Unicode rendering.
 - **Reconnection Logic**: Hardened connection handlers with capped delays and
   authoritative "join healing".
+- **Channel List Requests**: No `LIST` for 30 seconds after connect. Automatic
+  fetches wait 30 minutes; manual refresh and bare `/list` wait 5 minutes.
+  In-flight lists are not resent. Filtered `/list` still sends immediately
+  unless one is already in flight. The refresh button stays disabled during
+  those waits.
 
 ### Removed
 
@@ -107,3 +121,6 @@ and this project adheres to
   buttons to prevent accidental text cursor insertion.
 - **Spoiler Fidelity**: Hardened spoiler rendering to ensure content remains
   hidden regardless of theme adjustments.
+- **Same-Origin Links**: Same-origin document links, including `.svg`, download
+  instead of opening. Same-origin iframes are not rendered. Image, audio, and
+  video embeds and the lightbox are unchanged.

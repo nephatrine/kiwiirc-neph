@@ -1653,4 +1653,32 @@ msgstr "Description"
 msgid "metadata_too_long"
 msgstr "Value Too Long ({{current}} / {{max}} bytes)"
 
+#: Upload a file
+msgid "fileupload_button"
+msgstr "Upload File"
+
+#: Could not upload {{name}}
+msgid "fileupload_failed"
+msgstr "Could not upload {{name}}."
+
+#: File uploads
+msgid "settings_fileupload"
+msgstr "File Uploads"
+
+#: Upload service
+msgid "settings_fileupload_service"
+msgstr "Upload Service"
+
+#: Default
+msgid "settings_fileupload_default"
+msgstr "Default"
+
+#: None
+msgid "settings_fileupload_none"
+msgstr "None"
+
+#: Retention
+msgid "settings_fileupload_retention"
+msgstr "Retention"
+
 

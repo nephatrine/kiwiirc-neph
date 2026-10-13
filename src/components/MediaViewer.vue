@@ -19,7 +19,7 @@
         </div>
         <div class="kiwi-mediaviewer-content">
             <iframe
-                v-if="isIframe"
+                v-if="isIframe && !sameOriginFrame"
                 ref="iframe"
                 :src="url"
                 :sandbox="iframeSandboxOptions"
@@ -51,6 +51,7 @@
 'kiwi public';
 
 import _ from 'lodash';
+import * as Misc from '@/helpers/Misc';
 import UrlEmbed from './UrlEmbed.vue';
 
 export default {
@@ -64,6 +65,9 @@ export default {
         };
     },
     computed: {
+        sameOriginFrame() {
+            return Misc.isSameOriginUrl(this.url);
+        },
         iframeSandboxOptions() {
             // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe#attr-sandbox
             // Mostly all permissions other than allow-top-navigation so that embedded content
