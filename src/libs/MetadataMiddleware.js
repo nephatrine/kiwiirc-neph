@@ -80,8 +80,12 @@ export default function metadataMiddleware(network) {
 
         client.on('join', (event) => {
             if (event.nick === client.user.nick && network.hasCap('draft/metadata-2')) {
-                network.subMetadata(event.channel, ['description', 'display-name', 'avatar']);
-                network.getMetadata(event.channel, ['description', 'display-name', 'avatar']);
+                let keys = ['description', 'display-name', 'avatar'];
+                network.subMetadata(event.channel, keys);
+                let buffer = network.bufferByName(event.channel);
+                if (!buffer || !buffer.lastMetadataFetch) {
+                    network.getMetadata(event.channel, keys);
+                }
             }
         });
 

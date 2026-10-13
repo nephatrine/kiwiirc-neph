@@ -39,7 +39,7 @@
                         <i class="fa fa-cog" aria-hidden="true" />
                     </a>
                 </div>
-                <div class="kiwi-header-option">
+                <div v-if="!isMobile" class="kiwi-header-option">
                     <a :title="$t('export_buffer')" @click="exportBuffer()">
                         <i class="fa fa-download" aria-hidden="true" />
                     </a>
@@ -105,7 +105,7 @@
                 </div>
             </div>
             <div class="kiwi-header-center" />
-            <div class="kiwi-header-options">
+            <div v-if="!isMobile" class="kiwi-header-options">
                 <div class="kiwi-header-option">
                     <a :title="$t('export_buffer')" @click="exportBuffer()">
                         <i class="fa fa-download" aria-hidden="true" />
@@ -139,7 +139,7 @@
             </div>
             <div class="kiwi-header-center" />
             <div :key="buffer.id" class="kiwi-header-options">
-                <div class="kiwi-header-option">
+                <div v-if="!isMobile" class="kiwi-header-option">
                     <a :title="$t('export_buffer')" @click="exportBuffer()">
                         <i class="fa fa-download" aria-hidden="true" />
                     </a>
@@ -180,7 +180,7 @@
                 </div>
             </div>
             <div class="kiwi-header-center" />
-            <div class="kiwi-header-options">
+            <div v-if="!isMobile" class="kiwi-header-options">
                 <div class="kiwi-header-option">
                     <a :title="$t('export_buffer')" @click="exportBuffer()">
                         <i class="fa fa-download" aria-hidden="true" />
@@ -219,6 +219,9 @@ export default {
         };
     },
     computed: {
+        isMobile() {
+            return this.$state.ui.app_width <= 550;
+        },
         isJoined() {
             let buffer = this.buffer;
             return buffer.getNetwork().state === 'connected' && buffer.joined;

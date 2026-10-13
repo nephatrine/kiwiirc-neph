@@ -1337,6 +1337,10 @@ msgstr "Connected to {{network}}!"
 msgid "has_joined"
 msgstr "{{nick}} has joined"
 
+#: {{nick}} has reconnected
+msgid "has_reconnected"
+msgstr "{{nick}} has reconnected"
+
 #: {{nick}} kicked you from {{channel}}
 msgid "kicked_you_from"
 msgstr "{{nick}} kicked you from {{channel}}"

@@ -546,6 +546,9 @@ function clientMiddleware(state, network) {
                     return;
                 }
 
+                if (buffer.joined || Object.keys(buffer.users || {}).length > 0) {
+                    buffer.flags.reconnect_known = true;
+                }
                 buffer.joined = false;
                 buffer.clearUsers();
             });
@@ -691,12 +694,14 @@ function clientMiddleware(state, network) {
             }, 10000);
 
             let serverBuffer = network.serverBuffer();
-            state.addMessage(serverBuffer, {
-                time: eventTime,
-                server_time: serverTime,
-                nick: '',
-                message: TextFormatting.t('connected_to', { network: network.name }),
-            });
+            if (numConnects === 0) {
+                state.addMessage(serverBuffer, {
+                    time: eventTime,
+                    server_time: serverTime,
+                    nick: '',
+                    message: TextFormatting.t('connected_to', { network: network.name }),
+                });
+            }
 
             // Get some extra info about ourselves
             client.raw('WHO ' + event.nick);
@@ -1073,7 +1078,10 @@ function clientMiddleware(state, network) {
                     buffer.joined = true;
                     buffer.flags.channel_badkey = false;
                     network.ircClient.raw('MODE', event.channel);
-                    network.ircClient.who(event.channel);
+                    if (!(numConnects > 1 && buffer.flags.reconnect_known)) {
+                        network.ircClient.who(event.channel);
+                    }
+                    state.$delete(buffer.flags, 'reconnect_known');
                 }
             }
 
@@ -1083,10 +1091,13 @@ function clientMiddleware(state, network) {
                     TextFormatting.formatUserFull(event) :
                     TextFormatting.formatUser(event);
 
+                let joinKey = (event.nick === client.user.nick && numConnects > 1)
+                    ? 'has_reconnected'
+                    : 'has_joined';
                 let messageBody = TextFormatting.formatAndT(
                     'channel_join',
                     null,
-                    'has_joined',
+                    joinKey,
                     { nick: nick }
                 );
 
@@ -2038,6 +2049,7 @@ function clientMiddleware(state, network) {
                 }
             }
             let buffer = state.getOrAddBufferByName(networkid, targetName);
+            let previousTopic = buffer.topic || '';
             if (!isHistory) {
                 buffer.topic = event.topic || '';
             }
@@ -2059,8 +2071,11 @@ function clientMiddleware(state, network) {
                     { nick: event.nick, topic: event.topic || '' },
                 );
             } else if ((event.topic || '').trim()) {
-                typeExtra = 'topic_join';
-                messageBody = TextFormatting.formatText('channel_topic', event.topic);
+                let sameTopic = !isHistory && previousTopic === (event.topic || '');
+                if (!sameTopic) {
+                    typeExtra = 'topic_join';
+                    messageBody = TextFormatting.formatText('channel_topic', event.topic);
+                }
             }
 
             if (messageBody) {
