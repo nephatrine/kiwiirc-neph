@@ -964,10 +964,18 @@ inputCommands.set = function inputCommandSet(event, command, line, context) {
 inputCommands.list = function inputCommandList(event, command, line, context) {
     event.handled = true;
     const { network } = context;
+    if (!network) {
+        return;
+    }
 
-    if (!network.channel_list.length && network.channel_list_state !== 'updating') {
-        network.channel_list_state = 'updating';
-        network.ircClient.raw('LIST ' + line);
+    if (line) {
+        const listInFlight = ['requested', 'updating'].includes(network.channel_list_state);
+        if (!listInFlight && network.channelListConnectRemaining() === 0) {
+            network.channel_list_state = 'requested';
+            network.ircClient.raw('LIST ' + line);
+        }
+    } else {
+        network.maybeUpdateChannelList(true);
     }
 
     network.showServerBuffer('channels');

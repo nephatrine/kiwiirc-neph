@@ -23,6 +23,8 @@ export default class NetworkState {
         this.hidden = false;
         this.channel_list = [];
         this.channel_list_state = '';
+        this.channel_list_last_updated = 0;
+        this.connected_at = 0;
         // The IRCd type as mentioned in the 002 numeric
         this.ircd = '';
         this.connection = {
@@ -82,6 +84,9 @@ export default class NetworkState {
 
         // Map of msgid -> Buffer object for rerouted messages
         def(this, 'reroute_map', new Map(), false);
+        def(this, 'channel_list_connect_timer', null, true);
+        def(this, 'channel_list_connect_force', false, true);
+        def(this, 'channel_list_connect_pending', false, true);
 
         this.metadata_timeout_active = false;
 
@@ -160,8 +165,56 @@ export default class NetworkState {
         return this.settings[name];
     }
 
-    maybeUpdateChannelList() {
+    channelListConnectRemaining(now = Date.now()) {
+        const delay = 30 * 1000;
+        if (!this.connected_at) {
+            return delay;
+        }
+        return Math.max(0, delay - (now - this.connected_at));
+    }
+
+    clearChannelListConnectTimer() {
+        clearTimeout(this.channel_list_connect_timer);
+        this.channel_list_connect_timer = null;
+        this.channel_list_connect_force = false;
+        this.channel_list_connect_pending = false;
+    }
+
+    scheduleChannelListAfterConnect(force = false) {
+        if (force) {
+            this.channel_list_connect_force = true;
+        }
+        if (!this.connected_at) {
+            this.channel_list_connect_pending = true;
+            return;
+        }
+        if (this.channel_list_connect_timer) {
+            return;
+        }
+
+        this.channel_list_connect_timer = setTimeout(() => {
+            this.channel_list_connect_timer = null;
+            const scheduledForce = this.channel_list_connect_force;
+            this.channel_list_connect_force = false;
+            this.maybeUpdateChannelList(scheduledForce);
+        }, this.channelListConnectRemaining());
+    }
+
+    maybeUpdateChannelList(force = false) {
         if (['requested', 'updating'].includes(this.channel_list_state)) {
+            return;
+        }
+
+        if (this.channelListConnectRemaining() > 0) {
+            this.scheduleChannelListAfterConnect(force);
+            return;
+        }
+
+        const now = Date.now();
+        const limit = force ? 5 : 30;
+        const cooldown = limit * 60 * 1000;
+
+        if (now - this.channel_list_last_updated < cooldown) {
             return;
         }
 

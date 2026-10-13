@@ -347,11 +347,19 @@ function clientMiddleware(state, network) {
             network.active_metadata_subs = Object.create(null);
             network.metadata_throttles = new Map();
             network.metadata_label_targets = new Map();
+            network.connected_at = 0;
+            network.clearChannelListConnectTimer();
         });
 
         client.on('connected', () => {
             network.state_error = '';
             network.state = 'connected';
+            network.connected_at = Date.now();
+            if (network.channel_list_connect_pending) {
+                const pendingForce = network.channel_list_connect_force;
+                network.channel_list_connect_pending = false;
+                network.scheduleChannelListAfterConnect(pendingForce);
+            }
             network.enabled_caps = client.network.cap.enabled.map((c) => c.toLowerCase());
 
             let currentUser = network.currentUser();
@@ -487,6 +495,8 @@ function clientMiddleware(state, network) {
             }
             isRegistered = false;
             network.state = 'disconnected';
+            network.connected_at = 0;
+            network.clearChannelListConnectTimer();
 
             if (err) {
                 network.state_error = (typeof err === 'string') ? err : 'err_unknown';
@@ -1446,6 +1456,7 @@ function clientMiddleware(state, network) {
         if (effectiveCommand === 'CHANNEL LIST END') {
             network.channel_list = network.channel_list_cache || [];
             network.channel_list_state = 'updated';
+            network.channel_list_last_updated = Date.now();
             delete network.channel_list_cache;
         }
 

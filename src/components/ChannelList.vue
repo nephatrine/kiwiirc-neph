@@ -6,10 +6,11 @@
                     <input v-model="search" :placeholder="$t('do_search')" class="u-input">
                     <a
                         :class="{
-                            'u-button-primary': !isLoading,
-                            'u-button-secondary': isLoading,
+                            'u-button-primary': canRefresh && !isLoading,
+                            'u-button-secondary': isLoading || !canRefresh,
+                            'u-button-disabled': !canRefresh && !isLoading,
                         }"
-                        :title="$t('refresh')"
+                        :title="refreshTitle"
                         class="u-button kiwi-channellist-refresh"
                         @click="maybeUpdateList"
                     >
@@ -79,6 +80,7 @@ export default {
             page_size: 200,
             search: '',
             last_updated: 0,
+            now: Date.now(),
         };
     },
     computed: {
@@ -86,7 +88,26 @@ export default {
             return this.listState === 'updated' && this.filteredList.length === 0;
         },
         isLoading() {
-            return this.listState === 'updating';
+            return this.listState === 'requested' || this.listState === 'updating';
+        },
+        canRefresh() {
+            if (!this.network || this.network.channelListConnectRemaining(this.now) > 0) {
+                return false;
+            }
+            const cooldown = 5 * 60 * 1000;
+            return this.now - this.network.channel_list_last_updated >= cooldown;
+        },
+        refreshTitle() {
+            if (this.isLoading) {
+                return this.$t('refresh');
+            }
+            if (!this.network || this.network.channelListConnectRemaining(this.now) > 0) {
+                return this.$t('channel_list_connect_wait');
+            }
+            if (!this.canRefresh) {
+                return this.$t('channel_list_cooldown');
+            }
+            return this.$t('refresh');
         },
         listState() {
             return this.network.channel_list_state;
@@ -140,8 +161,41 @@ export default {
         search() {
             this.page = 0;
         },
+        'network.channel_list_last_updated': {
+            immediate: true,
+            handler() {
+                this.scheduleRefreshEnable();
+            },
+        },
+        'network.connected_at': {
+            immediate: true,
+            handler() {
+                this.scheduleRefreshEnable();
+            },
+        },
+    },
+    beforeDestroy() {
+        clearTimeout(this.refreshTimer);
     },
     methods: {
+        scheduleRefreshEnable() {
+            clearTimeout(this.refreshTimer);
+            if (!this.network) {
+                return;
+            }
+            this.now = Date.now();
+            const connectRemaining = this.network.connected_at
+                ? this.network.channelListConnectRemaining(this.now)
+                : 0;
+            const sinceList = this.now - this.network.channel_list_last_updated;
+            const cooldownRemaining = (5 * 60 * 1000) - sinceList;
+            const remaining = Math.max(connectRemaining, cooldownRemaining);
+            if (remaining > 0) {
+                this.refreshTimer = setTimeout(() => {
+                    this.scheduleRefreshEnable();
+                }, remaining);
+            }
+        },
         nextPage() {
             if (this.page < this.maxPages) {
                 this.page++;
@@ -153,7 +207,10 @@ export default {
             }
         },
         maybeUpdateList() {
-            this.network.maybeUpdateChannelList();
+            if (!this.network || !this.canRefresh || this.isLoading) {
+                return;
+            }
+            this.network.maybeUpdateChannelList(true);
         },
         formatAndTrimTopic(rawTopic) {
             let showModes = this.$state.setting('showChanlistModes');
@@ -230,6 +287,12 @@ export default {
 .kiwi-channellist-nav .u-form .u-button-primary i,
 .kiwi-channellist-nav .u-form .u-button-secondary i {
     margin-left: -2px;
+}
+
+.kiwi-channellist-nav .u-form .u-button.u-button-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: var(--brand-midtone);
 }
 
 .kiwi-channellist-pagination {

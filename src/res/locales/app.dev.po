@@ -563,6 +563,14 @@ msgstr "Click the refresh button to update the channel list"
 msgid "channel_list_nonefound"
 msgstr "No channels found, try again later"
 
+#: Please wait 5 minutes between refreshes
+msgid "channel_list_cooldown"
+msgstr "Please wait 5 minutes between refreshes"
+
+#: Please wait 30 seconds after connecting
+msgid "channel_list_connect_wait"
+msgstr "Please wait 30 seconds after connecting"
+
 
 
 #: Container $t('container_')
