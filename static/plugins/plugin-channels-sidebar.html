@@ -1,0 +1,133 @@
+<template id="channels-sidebar-button">
+    <div v-show="!listBlocked" :class="{ 'kiwi-header-option--active': isActive }">
+        <a :title="$t('channels')" @click="buttonClicked">
+            <i class="fa fa-list" aria-hidden="true"></i>
+        </a>
+    </div>
+</template>
+
+<script>
+kiwi.plugin('channels-sidebar', function (kiwi, log) {
+    var chanList = kiwi.require('components/ChannelList');
+
+    var Button = kiwi.Vue.extend({
+        template: '#channels-sidebar-button',
+        props: ['sidebarState', 'network'],
+        data: function data() {
+            return {
+                now: Date.now(),
+                waitTimer: null,
+            };
+        },
+        computed: {
+            isActive: function isActive() {
+                var active = this.sidebarState.activeComponent;
+                return active && (active === chanList || active.options === chanList);
+            },
+            listBlocked: function listBlocked() {
+                var network = this.network;
+                if (!network || !network.channelListConnectRemaining) {
+                    return true;
+                }
+                return network.channelListConnectRemaining(this.now) > 0;
+            },
+        },
+        watch: {
+            network: {
+                immediate: true,
+                handler: function handler() {
+                    this.scheduleListShow();
+                },
+            },
+            'network.connected_at': {
+                immediate: true,
+                handler: function handler() {
+                    this.scheduleListShow();
+                },
+            },
+        },
+        beforeDestroy: function beforeDestroy() {
+            clearTimeout(this.waitTimer);
+        },
+        methods: {
+            scheduleListShow: function scheduleListShow() {
+                var self = this;
+                clearTimeout(this.waitTimer);
+                this.waitTimer = null;
+                this.now = Date.now();
+                var network = this.network;
+                if (!network || !network.connected_at || !network.channelListConnectRemaining) {
+                    return;
+                }
+                var remaining = network.channelListConnectRemaining(this.now);
+                if (remaining > 0) {
+                    this.waitTimer = setTimeout(function () {
+                        self.scheduleListShow();
+                    }, remaining);
+                }
+            },
+            buttonClicked: function buttonClicked() {
+                if (this.isActive) {
+                    this.sidebarState.close();
+                    return;
+                }
+                var network = this.network || this.$state.getActiveNetwork();
+                if (!network) {
+                    return;
+                }
+                network.maybeUpdateChannelList();
+                kiwi.showInSidebar(chanList, { network: network });
+            },
+        },
+    });
+
+    kiwi.addUi('header_channel', Button);
+});
+</script>
+
+<style>
+.kiwi-sidebar .kiwi-channellist {
+    padding-bottom: 0;
+    height: 100%;
+}
+
+.kiwi-sidebar .kiwi-channellist-content-container {
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.kiwi-sidebar .kiwi-channellist-padding-top {
+    padding-top: 100px;
+}
+
+.kiwi-sidebar .kiwi-channellist-nav .u-form .u-input {
+    width: 100%;
+}
+
+/* Table Styling */
+.kiwi-sidebar .kiwi-channellist-table {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.kiwi-sidebar .kiwi-channellist-grid {
+    grid-template-columns: 66px auto min-content;
+}
+
+.kiwi-sidebar .kiwi-channellist-topic {
+    grid-column: 1 / span 3;
+    grid-row: 2;
+    word-break: break-word;
+}
+
+.kiwi-sidebar .kiwi-channellist-join {
+    grid-column: 3;
+}
+
+.kiwi-sidebar .kiwi-channellist-nav:last-of-type {
+    display: none;
+}
+</style>
