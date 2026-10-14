@@ -281,6 +281,17 @@ export const configTemplates = {
                 retention: '72h',
             },
         },
+        radio: {
+            url: '',
+            volume: 0.4,
+            starred: [],
+            active: '',
+            showWave: true,
+            autoPlay: false,
+            forceVolume: false,
+            reloadOnOpen: false,
+            forceShowClose: false,
+        },
         presetNetworks: [],
     },
 

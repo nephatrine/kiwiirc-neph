@@ -1,0 +1,17 @@
+[
+    {
+        "name": "Example",
+        "image": "https://example.com/logo.png",
+        "source": "https://example.com/stream",
+        "description": "An example station",
+        "channels": "#radio",
+        "nowPlaying": "https://example.com/status-json.xsl"
+    },
+    {
+        "name": "Example (no track titles)",
+        "image": "https://example.com/logo2.png",
+        "source": "https://example.com/stream2",
+        "description": "A station that does not publish track titles",
+        "nowPlaying": false
+    }
+]

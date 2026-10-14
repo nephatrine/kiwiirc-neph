@@ -1643,7 +1643,7 @@ msgstr "Channel metadata may not persist if the channel is not registered and al
 
 #: No description set
 msgid "no_description_set"
-msgstr "No description set"
+msgstr "No description set."
 
 #: Set status message...
 msgid "no_status_set"
@@ -1672,6 +1672,66 @@ msgstr "Upload Avatar"
 #: Selected file is not an image
 msgid "fileupload_not_image"
 msgstr "Only image files can be used as an avatar."
+
+#: Play the radio
+msgid "radio_play"
+msgstr "Play"
+
+#: Pause the radio
+msgid "radio_pause"
+msgstr "Pause"
+
+#: Previous station
+msgid "radio_prev"
+msgstr "Previous Station"
+
+#: Next station
+msgid "radio_next"
+msgstr "Next Station"
+
+#: Radio stations
+msgid "radio_stations"
+msgstr "Stations"
+
+#: Mute the radio
+msgid "radio_mute"
+msgstr "Mute"
+
+#: Unmute the radio
+msgid "radio_unmute"
+msgstr "Unmute"
+
+#: Star this station
+msgid "radio_star"
+msgstr "Star"
+
+#: Unstar this station
+msgid "radio_unstar"
+msgstr "Unstar"
+
+#: Volume
+msgid "radio_volume"
+msgstr "Volume"
+
+#: Close the station list
+msgid "radio_close"
+msgstr "Close"
+
+#: Loading stations
+msgid "radio_loading"
+msgstr "Loading stations..."
+
+#: Could not load stations
+msgid "radio_load_failed"
+msgstr "Could not load stations."
+
+#: No stations
+msgid "radio_none"
+msgstr "No Stations"
+
+#: This station could not be played
+msgid "radio_error"
+msgstr "This station could not be played."
 
 #: File uploads
 msgid "settings_fileupload"

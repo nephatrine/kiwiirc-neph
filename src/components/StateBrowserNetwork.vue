@@ -944,6 +944,18 @@ export default {
         width: 50px;
     }
 
+    .kiwi-statebrowser-network-option,
+    .kiwi-statebrowser-channels-option {
+        width: 44px;
+        min-height: 44px;
+        line-height: 44px;
+    }
+
+    .kiwi-statebrowser-channels-header {
+        min-height: 44px;
+        align-items: center;
+    }
+
     .kiwi-statebrowser-channel-leave {
         opacity: 1;
         line-height: 40px;

@@ -1432,3 +1432,48 @@ msgstr "None"
 #: Retention
 msgid "settings_fileupload_retention"
 msgstr "Retention"
+
+msgid "radio_play"
+msgstr "Play"
+
+msgid "radio_pause"
+msgstr "Pause"
+
+msgid "radio_prev"
+msgstr "Previous station"
+
+msgid "radio_next"
+msgstr "Next station"
+
+msgid "radio_stations"
+msgstr "Stations"
+
+msgid "radio_mute"
+msgstr "Mute"
+
+msgid "radio_unmute"
+msgstr "Unmute"
+
+msgid "radio_star"
+msgstr "Star"
+
+msgid "radio_unstar"
+msgstr "Unstar"
+
+msgid "radio_volume"
+msgstr "Volume"
+
+msgid "radio_close"
+msgstr "Close"
+
+msgid "radio_loading"
+msgstr "Loading stations..."
+
+msgid "radio_load_failed"
+msgstr "Could not load stations."
+
+msgid "radio_none"
+msgstr "No stations"
+
+msgid "radio_error"
+msgstr "This station could not be played."

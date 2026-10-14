@@ -25,6 +25,7 @@
         />
 
         <div class="kiwi-statebrowser-tools">
+            <radio-controls />
             <component
                 :is="plugin.component"
                 v-for="plugin in pluginUiElements"
@@ -68,10 +69,12 @@ import StateBrowserNetwork from './StateBrowserNetwork';
 import StateBrowserUsermenu from './StateBrowserUsermenu';
 import AppSettings from './AppSettings';
 import BufferSettings from './BufferSettings';
+import RadioControls from './RadioControls';
 
 export default {
     components: {
         BufferSettings,
+        RadioControls,
         StateBrowserNetwork,
         StateBrowserUsermenu,
     },
