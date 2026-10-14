@@ -55,6 +55,24 @@ and this project adheres to
   policies.
 - **Branding**: Added `NETWORK` and `draft/ICON` support, with an Ergo icon
   fallback, plus channel avatars in headers and info panels.
+- **Radio**: Added a built-in station player in the sidebar, inspired by the
+  external kiwi radio plugin, with a station list, starred stations,
+  click-to-play, volume control, a theme-colored waveform, and lock-screen
+  integration. While a station plays, the current track is polled from the
+  host's Icecast status feed and shown under the station name. Stations can
+  override this with a `nowPlaying` URL or disable it with `nowPlaying: false`.
+  Silent streams are reloaded automatically and marked as failed after repeated
+  stalls. Player and channel-option buttons use larger touch targets on mobile.
+- **Bridging and relays**: Bot messages prefixed with `<Name>` are attributed to
+  the bridged user. The prefix is stripped, the bridged name gets its own nick
+  color, and replies and message grouping follow the bridged identity. IRC
+  formatting inside the brackets is stripped, the bot's channel mode prefix is
+  hidden on bridged names, and a `+avatar` client-only tag supplies the avatar.
+  `draft/relaymsg` is requested: relayed users get a limited profile panel with
+  block/ignore actions and a link to the relaying bot instead of query and whois
+  actions, and no server metadata is requested for them. Bots advertising
+  `RELAYMETA` are queried over CTCP, with rate limiting and session caching, for
+  relayed users' display names and avatars.
 - **Diagnostics**: Added an anonymized state and log dump for troubleshooting.
 
 ### Changed

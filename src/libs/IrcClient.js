@@ -14,6 +14,7 @@ import metadataMiddleware from './MetadataMiddleware';
 import chathistoryMiddleware from './ChathistoryMiddleware';
 import * as BatchHandlers from './BatchHandlers';
 import * as ServerConnection from './ServerConnection';
+import * as RelayMeta from './RelayMeta';
 
 const DESIRED_CAPS = [
     'echo-message',
@@ -603,6 +604,14 @@ function clientMiddleware(state, network) {
     }
 
     function parsedEventsHandler(command, event, client, next) {
+        function relayMetaDeps() {
+            return {
+                raw: network,
+                userByNick: (nick) => state.getUser(networkid, nick),
+                ctcpRequest: (t, type, ...p) => client.ctcpRequest(t, type, ...p),
+            };
+        }
+
         // Trigger this event through the state object first. If it's been handled
         // somewhere else then we ignore it.
         let ircEventObj = { handled: false };
@@ -825,6 +834,12 @@ function clientMiddleware(state, network) {
                 }
                 if (event.tags && typeof event.tags['draft/relaymsg'] !== 'undefined') {
                     update.relayed_by = event.tags['draft/relaymsg'] || '';
+                    RelayMeta.noteRelay(
+                        relayMetaDeps(),
+                        networkid,
+                        event.tags['draft/relaymsg'] || '',
+                        event.nick
+                    );
                 }
                 if (Object.keys(update).length > 0) {
                     state.addUser(networkid, { nick: event.nick, ...update });
@@ -1041,6 +1056,7 @@ function clientMiddleware(state, network) {
         }
 
         if (effectiveCommand === 'JOIN') {
+            RelayMeta.noteBotOnline(relayMetaDeps(), networkid, event.nick);
             let targetName = event.channel;
             if (isHistory) {
                 if (event.batch && event.batch.params[0]) {
@@ -2115,23 +2131,30 @@ function clientMiddleware(state, network) {
         }
 
         if (effectiveCommand === 'CTCP RESPONSE' || effectiveCommand === 'CTCP REQUEST') {
-            let buffer = network.serverBuffer();
-            let textFormatId = effectiveCommand === 'CTCP RESPONSE' ?
-                'ctcp_response' :
-                'ctcp_request';
-            let messageBody = TextFormatting.formatText(textFormatId, {
-                nick: event.nick,
-                message: event.message,
-                type: event.type,
-            });
+            let ctcpConsumed = effectiveCommand === 'CTCP RESPONSE' &&
+                RelayMeta.handleCtcp(relayMetaDeps(), networkid, event);
+            if (!ctcpConsumed && effectiveCommand === 'CTCP REQUEST') {
+                ctcpConsumed = RelayMeta.isOwnMachineCtcp(client.user.nick, event);
+            }
+            if (!ctcpConsumed) {
+                let buffer = network.serverBuffer();
+                let textFormatId = effectiveCommand === 'CTCP RESPONSE' ?
+                    'ctcp_response' :
+                    'ctcp_request';
+                let messageBody = TextFormatting.formatText(textFormatId, {
+                    nick: event.nick,
+                    message: event.message,
+                    type: event.type,
+                });
 
-            state.addMessage(buffer, {
-                time: eventTime,
-                server_time: serverTime,
-                nick: '',
-                message: messageBody,
-                type: 'error',
-            });
+                state.addMessage(buffer, {
+                    time: eventTime,
+                    server_time: serverTime,
+                    nick: '',
+                    message: messageBody,
+                    type: 'error',
+                });
+            }
 
             if (effectiveCommand === 'CTCP REQUEST' && event.type === 'VERSION') {
                 let target = event.from_server ?

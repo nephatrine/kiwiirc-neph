@@ -101,6 +101,32 @@ The first `CHATHISTORY` request waits until the buffer is ready:
 Reactions and redactions are accepted when the sender is in either the buffer
 where the message is shown or the buffer it was sent to.
 
+## Relay Metadata
+
+Relayed users created by `draft/relaymsg` are not real IRC users, so the
+`METADATA` command cannot describe them. A relay bot may instead advertise a
+`RELAYMETA` CTCP command, answered over `PRIVMSG` / `NOTICE` like this:
+
+- Clients check support with `PRIVMSG <bot> :\001CLIENTINFO\001`. A response
+  listing `RELAYMETA` means the bot speaks this dialect.
+- Requests look like `PRIVMSG <bot> :\001RELAYMETA GET <target> [key ...]\001`,
+  where `<target>` is the relayed nick and each key is a metadata name such as
+  `avatar` or `display-name`. When keys are omitted, the bot answers with every
+  public key it holds for that nick.
+- The bot answers with one or more
+  `NOTICE <client> :\001RELAYMETA DATA <target> <key>=<value> ...\001` lines.
+  Pairs are separated by spaces; the value runs to the next space, so a value
+  containing a space is not representable. Values use IRCv3 message-tag escaping
+  (`\\` for backslash, `\s` for space, `\:` for semicolon, `\r` and `\n` for
+  line breaks). A requested key with no value is returned bare, as `<key>=` with
+  nothing after the sign.
+- Unknown targets fail with
+  `NOTICE <client> :\001RELAYMETA ERR <target> <code> [message]\001`.
+
+There is no subscription or polling. A client asks once per nick and keeps the
+answer for the session. Unanswered requests may be retried; a bot that stays
+silent is treated as having no data.
+
 ## ISUPPORT Tokens
 
 Keys are stored in uppercase.

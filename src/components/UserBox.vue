@@ -23,14 +23,14 @@
                     class="kiwi-userbox-truenick"
                 >{{ user.nick }} (irc)</span>
                 <span v-if="realname" class="kiwi-userbox-realname" v-html="formattedRealname" />
-                <span class="kiwi-userbox-usermask">{{ user.username }}@{{ user.host }}</span>
+                <span v-if="user.username || user.host" class="kiwi-userbox-usermask">{{ user.username }}@{{ user.host }}</span>
                 <span v-if="user.is_bot" :title="$t('bot')" class="kiwi-userbox-bot">🤖</span>
             </div>
         </div>
 
         <div v-if="user.relayed_by" class="kiwi-userbox-relayedby">
             <span>{{ $t('user_relayed_by') }}</span>
-            <a class="kiwi-userbox-relayedby-bot" @click="openRelayerBox">{{ user.relayed_by }}</a>
+            <a class="kiwi-userbox-relayedby-bot u-link" @click="openRelayerBox">{{ user.relayed_by }}</a>
         </div>
 
         <template v-if="pluginUiInfoElements.length">
@@ -584,6 +584,9 @@ export default {
     },
     methods: {
         maybeFetchMetadata() {
+            if (this.user.relayed_by) {
+                return;
+            }
             const now = Date.now();
             const cooldown = 30 * 60 * 1000;
             const isOld = now - (this.user.lastMetadataFetch || 0) > cooldown;
@@ -849,6 +852,13 @@ export default {
 
 .kiwi-userbox-status {
     margin-bottom: 0.5em;
+    font-size: 0.9em;
+}
+
+.kiwi-userbox-relayedby {
+    display: flex;
+    gap: 5px;
+    padding: 0 1.5em 0.5em 1.5em;
     font-size: 0.9em;
 }
 
