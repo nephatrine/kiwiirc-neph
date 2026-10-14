@@ -84,16 +84,9 @@ slow, very large, and insecure.*
 
 #### Configuration
 
-By default, the client loads
-[/static/config.json](https://github.com/kiwiirc/kiwiirc/wiki/02.-Configuration)
-on startup. In development that file is
-[static/config.json](static/config.json). The browser fetches it, so do not put
-secrets in it.
-
-File uploads are set under `fileupload`. `service` is `none` (default),
-`litterbox`, or `filehost`. `litterbox.retention` is `1h`, `12h`, `24h`, or
-`72h` (default `72h`). Users can override the service and retention in settings.
-`filehost` uses the server ISUPPORT token and is not a URL in this file.
+The client loads [static/config.json](static/config.json) on startup. The
+browser fetches it, so do not put secrets in it. Options, defaults, and the
+keys an admin must set are in [CONFIGURATION.md](CONFIGURATION.md).
 
 ## Browser support
 
