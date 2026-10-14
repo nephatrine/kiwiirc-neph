@@ -683,6 +683,10 @@ msgstr "Encoding"
 msgid "settings_show_raw"
 msgstr "Show Raw"
 
+#: Raw buffer scrollback size
+msgid "settings_raw_scrollback"
+msgstr "Raw Scrollback Size"
+
 #: Direct websocket
 msgid "settings_use_websocket"
 msgstr "Direct Websocket"
@@ -1660,6 +1664,10 @@ msgstr "Description"
 #: Metadata too long
 msgid "metadata_too_long"
 msgstr "Value Too Long ({{current}} / {{max}} bytes)"
+
+#: Metadata key too long
+msgid "metadata_key_too_long"
+msgstr "Key Too Long (over {{max}} bytes)"
 
 #: Upload a file
 msgid "fileupload_button"

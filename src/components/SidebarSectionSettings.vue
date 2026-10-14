@@ -237,7 +237,7 @@ export default {
             return this.buffer.isUserAnOp(this.buffer.getNetwork().nick);
         },
         hasMetadata() {
-            return this.buffer.getNetwork().hasCap('draft/metadata-2');
+            return this.buffer.getNetwork().metadataCap();
         },
         topic: {
             get() {

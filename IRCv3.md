@@ -42,6 +42,11 @@ KiwiIRC requests the following capabilities during connection and again on
   proactive fetches. Social colors are adjusted to at least 4.5:1 contrast
   against the theme background. An IRC away message takes precedence over the
   social `status` key.
+- **draft/metadata-3**: Preferred over `draft/metadata-2` when a server
+  advertises both; only one metadata capability is ever requested. Channel joins
+  subscribe without an explicit `GET` (the server guarantees metadata or a
+  `774`), `max-key-bytes` is enforced locally (default 64 bytes), and `775` rate
+  limits are honored the same way as `774`.
 
 SASL is negotiated when an account password is set. It is not in the
 always-requested list above. KiwiIRC prefers `SCRAM-SHA-256` over `PLAIN`.

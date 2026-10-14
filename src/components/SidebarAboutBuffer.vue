@@ -184,7 +184,7 @@ export default {
             return this.buffer.isUserAnOp(this.network.nick);
         },
         hasMetadata() {
-            return this.network && this.network.hasCap('draft/metadata-2');
+            return this.network && this.network.metadataCap();
         },
         invitableUsers() {
             const wantedBuffer = (userBuffer) => userBuffer.buffer.name === this.buffer.name;

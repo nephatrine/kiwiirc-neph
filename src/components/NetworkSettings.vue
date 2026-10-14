@@ -140,6 +140,18 @@
 
                     <label>
                         <span class="kiwi-appsettings-showraw-label">
+                            {{ $t('settings_raw_scrollback') }}
+                        </span>
+                        <input
+                            v-model.number="settingRawScrollback"
+                            type="number"
+                            min="50"
+                            class="u-input"
+                        >
+                    </label>
+
+                    <label>
+                        <span class="kiwi-appsettings-showraw-label">
                             {{ $t('settings_use_websocket') }}
                         </span>
                         <input v-model="network.connection.direct" :disabled="restricted" type="checkbox">
@@ -231,6 +243,18 @@ export default {
             },
             set(val) {
                 return this.network.setting('show_raw', val);
+            },
+        },
+        settingRawScrollback: {
+            get() {
+                return this.network.setting('raw_scrollback_size') || 500;
+            },
+            set(val) {
+                let size = parseInt(val, 10);
+                if (Number.isNaN(size) || size < 50) {
+                    size = 50;
+                }
+                return this.network.setting('raw_scrollback_size', size);
             },
         },
         directWs: {

@@ -103,7 +103,7 @@ export default {
             return this.network && this.network.hasCap('away-notify');
         },
         hasMetadata() {
-            return this.network && this.network.hasCap('draft/metadata-2');
+            return this.network && this.network.metadataCap();
         },
         statusMessage: {
             get() {

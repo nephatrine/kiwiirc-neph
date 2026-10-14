@@ -31,9 +31,10 @@ and this project adheres to
   `/setname` updates, and a "Remember me" toggle that can purge saved state.
   `draft/metadata-2` shows display names, pronouns, descriptions, homepages,
   status, and contrast-adjusted color. Away text takes precedence over social
-  status. Includes a fallback avatar template and a warning when metadata will
-  not persist. Ignored users stay hidden in history, and self-highlights are
-  suppressed.
+  status. When a server advertises `draft/metadata-3` it is preferred, with
+  channel joins subscribing rather than fetching outright. Includes a fallback
+  avatar template and a warning when metadata will not persist. Ignored users
+  stay hidden in history, and self-highlights are suppressed.
 - **Media**: Added image, audio, and video embeds, including Discord and Shopify
   URLs. Iframe previews cover YouTube, Twitch, Streamable, RedGifs, and Giphy.
   Imgur single images are shown as images, not iframes. Links are parsed when

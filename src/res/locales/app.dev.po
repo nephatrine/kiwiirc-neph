@@ -701,6 +701,10 @@ msgstr "Encoding"
 msgid "settings_show_raw"
 msgstr "Show Raw"
 
+#: Raw buffer scrollback size
+msgid "settings_raw_scrollback"
+msgstr "Raw Scrollback Size"
+
 #: Direct websocket
 msgid "settings_use_websocket"
 msgstr "Direct websocket"
@@ -979,6 +983,10 @@ msgstr "Is a bot"
 #: Relayed by a bridge bot (bot nick follows as a link)
 msgid "user_relayed_by"
 msgstr "Relayed by"
+
+#: Key name too long for metadata
+msgid "metadata_key_too_long"
+msgstr "Key Too Long (over {{max}} bytes)"
 
 #: Is available for help
 msgid "user_help"

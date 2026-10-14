@@ -210,7 +210,7 @@
         </div>
 
         <div class="kiwi-userbox-actions">
-            <a v-if="isSelf && !isEditingProfile && network.hasCap('draft/metadata-2')" class="kiwi-userbox-action" @click="startEditProfile">
+            <a v-if="isSelf && !isEditingProfile && network.metadataCap()" class="kiwi-userbox-action" @click="startEditProfile">
                 <i class="fa fa-pencil" aria-hidden="true" />
                 {{ $t('edit_profile') }}
             </a>
@@ -592,7 +592,7 @@ export default {
             const isOld = now - (this.user.lastMetadataFetch || 0) > cooldown;
             const isService = this.network.isService(this.user.nick);
 
-            if (isOld && !isService && this.network.hasCap('draft/metadata-2')) {
+            if (isOld && !isService && this.network.metadataCap()) {
                 this.network.getMetadata(this.user.nick, [
                     'avatar',
                     'pronouns',

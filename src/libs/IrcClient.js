@@ -34,7 +34,6 @@ const DESIRED_CAPS = [
     'cap-notify',
     'multi-prefix',
     'userhost-in-names',
-    'draft/metadata-2',
     'server-time',
     'extended-isupport',
     'draft/message-redaction',
@@ -303,7 +302,18 @@ export function handleStandardReply(command, event, network, state) {
         let errTarget = args[0] || '';
 
         // Standard metadata failures: <target> <key>
-        if (['KEY_INVALID', 'KEY_NO_PERMISSION', 'KEY_NOT_SET', 'VALUE_INVALID', 'TOO_MANY_SUBS'].includes(codeName)) {
+        // Includes the draft/metadata-3 renames (INVALID_KEY,
+        // INVALID_VALUE) alongside the draft/metadata-2 names.
+        if ([
+            'KEY_INVALID',
+            'KEY_NO_PERMISSION',
+            'KEY_NOT_SET',
+            'VALUE_INVALID',
+            'TOO_MANY_SUBS',
+            'INVALID_KEY',
+            'INVALID_VALUE',
+            'LIMIT_REACHED',
+        ].includes(codeName)) {
             if (args.length >= 2) {
                 key = args[1];
             }
@@ -335,6 +345,7 @@ function clientMiddleware(state, network) {
     let isRegistered = false;
     let saslSucceeded = false;
     let pendingSaslAccount = '';
+    let advertisedLsCaps = new Set();
 
     return function middlewareFn(client, rawEvents, parsedEvents) {
         parsedEvents.use(parsedEventsHandler);
@@ -348,6 +359,8 @@ function clientMiddleware(state, network) {
             client.sasl_scram = null;
             client.sasl_buffer = '';
             network.cap_values = {};
+            network.enabled_caps = [];
+            advertisedLsCaps = new Set();
             network.metadata_timeout_active = false;
             network.active_metadata_subs = Object.create(null);
             network.metadata_throttles = new Map();
@@ -413,6 +426,14 @@ function clientMiddleware(state, network) {
 
         client.on('cap ls', (event) => {
             Object.assign(network.cap_values, event.capabilities);
+
+            // Accumulate advertised caps across multi-line LS responses.
+            // The request itself waits for the final line (see rawEventsHandler):
+            // metadata-2 could be on line one and metadata-3 on line two.
+            Object.keys(event.capabilities || {}).forEach((capName) => {
+                advertisedLsCaps.add(capName.toLowerCase());
+            });
+
             if (client.options.sasl_mechanism !== 'AUTO' || !event.capabilities.sasl) {
                 return;
             }
@@ -450,6 +471,19 @@ function clientMiddleware(state, network) {
                     requested.push(name);
                 }
             });
+
+            // Metadata caps are negotiated by preference, never both.
+            // Only request one if none is enabled yet.
+            if (!network.metadataCap()) {
+                const advertised = Object.keys(event.capabilities).map((c) => c.toLowerCase());
+                const preferred = ['draft/metadata-3', 'draft/metadata-2'].find(
+                    (cap) => advertised.includes(cap)
+                );
+                if (preferred) {
+                    client.requestCap(preferred);
+                    requested.push(preferred);
+                }
+            }
 
             if (requested.length > 0) {
                 let serverBuffer = network.serverBuffer();
@@ -559,6 +593,66 @@ function clientMiddleware(state, network) {
     };
 
     function rawEventsHandler(command, event, rawLine, client, next) {
+        // Fold the preferred metadata cap into the framework's batched CAP REQ
+        // before irc-framework processes each CAP LS line. Raw middleware runs
+        // before command dispatch, but irc-framework intersects each LS line
+        // with its own command-handler copy of request_extra_caps (synced only
+        // once at connect time) and accumulates the match into
+        // network.cap.requested, sending one REQ on the final line. Waiting for
+        // the final line is too late when the metadata caps were advertised on
+        // an earlier line, and mutating only client.request_extra_caps never
+        // reaches the negotiation at all. So parse every LS line here (* and
+        // final), track the preferred cap seen so far, and keep exactly one
+        // metadata cap in both extra-caps lists. A separate REQ here would
+        // produce a second ACK, and irc-framework treats an ACK without
+        // `sasl` while SASL credentials exist as a fatal capability_missing
+        // failure that drops the connection. Requesting more than one
+        // metadata cap at a time is forbidden, so this cannot go through
+        // DESIRED_CAPS.
+        if (
+            command === 'CAP' &&
+            event &&
+            event.params &&
+            event.params[1] === 'LS' &&
+            !network.metadataCap()
+        ) {
+            const capList = event.params[event.params.length - 1] || '';
+            capList.split(' ').forEach((entry) => {
+                const name = entry.split('=')[0].toLowerCase();
+                if (name) {
+                    advertisedLsCaps.add(name);
+                }
+            });
+            const preferred = ['draft/metadata-3', 'draft/metadata-2'].find((cap) => (
+                advertisedLsCaps.has(cap)
+            ));
+            if (preferred) {
+                const loser = preferred === 'draft/metadata-3' ?
+                    'draft/metadata-2' :
+                    'draft/metadata-3';
+                client.request_extra_caps = client.request_extra_caps || [];
+                if (!client.request_extra_caps.includes(preferred)) {
+                    client.request_extra_caps = client.request_extra_caps.filter(
+                        (cap) => cap !== 'draft/metadata-2' && cap !== 'draft/metadata-3'
+                    );
+                    client.request_extra_caps.push(preferred);
+                }
+                if (client.command_handler && client.command_handler.request_extra_caps) {
+                    client.command_handler.request_extra_caps = client
+                        .command_handler.request_extra_caps.filter((cap) => cap !== loser);
+                    if (!client.command_handler.request_extra_caps.includes(preferred)) {
+                        client.command_handler.request_extra_caps.push(preferred);
+                    }
+                }
+                if (client.network && client.network.cap && client.network.cap.requested) {
+                    const idx = client.network.cap.requested.indexOf(loser);
+                    if (idx !== -1) {
+                        client.network.cap.requested.splice(idx, 1);
+                    }
+                }
+            }
+        }
+
         // Allow plugins to override raw IRC events
         let eventObj = { ...event, raw: rawLine, handled: false };
         state.$emit('irc.raw', command, eventObj, network);
@@ -748,7 +842,7 @@ function clientMiddleware(state, network) {
             const verb = getEffectiveCommand(command, event);
             if ([
                 'FAIL', 'WARN', 'NOTE', 'ACK', 'MARKREAD', 'REDACT',
-                'METADATA', '760', '761', '766', '770', '771', '772', '774',
+                'METADATA', '760', '761', '766', '770', '771', '772', '774', '775',
                 'CHATHISTORY', 'TAGMSG',
             ].includes(verb)) {
                 next();

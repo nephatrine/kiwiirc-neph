@@ -21,9 +21,30 @@ function alertUnknownVisibility(network, target, key, visibility, visCache) {
 export default function metadataMiddleware(network) {
     const visibilityCache = new Set();
 
+    const initialSyncKeys = [
+        'avatar',
+        'pronouns',
+        'display-name',
+        'description',
+        'homepage',
+        'status',
+        'color',
+    ];
+
+    const initialSync = () => {
+        // Subscribe to self metadata changes
+        network.subMetadata('*', initialSyncKeys);
+        // Initial fetch
+        network.getMetadata('*', initialSyncKeys);
+    };
+
     return function middlewareFn(client, rawEvents, parsedEvents) {
         const updateLimits = () => {
-            const capValue = network.capValue('draft/metadata-2');
+            const cap = network.metadataCap();
+            if (!cap) {
+                return;
+            }
+            const capValue = network.capValue(cap);
             if (!capValue) {
                 return;
             }
@@ -40,6 +61,8 @@ export default function metadataMiddleware(network) {
                     network.metadata_limits.maxSubs = numVal;
                 } else if (key === 'max-keys') {
                     network.metadata_limits.maxKeys = numVal;
+                } else if (key === 'max-key-bytes') {
+                    network.metadata_limits.maxKeyBytes = numVal;
                 } else if (key === 'max-value-bytes') {
                     network.metadata_limits.maxValueBytes = numVal;
                 }
@@ -52,39 +75,35 @@ export default function metadataMiddleware(network) {
 
         client.on('connected', () => {
             visibilityCache.clear();
-            if (network.hasCap('draft/metadata-2')) {
+            if (network.metadataCap()) {
                 updateLimits();
+                initialSync();
+                return;
+            }
 
-                // Subscribe to self metadata changes
-                network.subMetadata('*', [
-                    'avatar',
-                    'pronouns',
-                    'display-name',
-                    'description',
-                    'homepage',
-                    'status',
-                    'color',
-                ]);
-                // Initial fetch
-                network.getMetadata('*', [
-                    'avatar',
-                    'pronouns',
-                    'display-name',
-                    'description',
-                    'homepage',
-                    'status',
-                    'color',
-                ]);
+            // Request the preferred metadata cap explicitly. This cannot go
+            // through the blind DESIRED_CAPS path: the spec forbids
+            // requesting more than one metadata cap at a time.
+            const advertised = Object.keys(network.cap_values || {}).map((c) => (
+                c.toLowerCase()
+            ));
+            const preferred = ['draft/metadata-3', 'draft/metadata-2'].find((cap) => (
+                advertised.includes(cap)
+            ));
+            if (preferred) {
+                client.raw('CAP', 'REQ', preferred);
             }
         });
 
         client.on('join', (event) => {
-            if (event.nick === client.user.nick && network.hasCap('draft/metadata-2')) {
+            if (event.nick === client.user.nick && network.metadataCap()) {
                 let keys = ['description', 'display-name', 'avatar'];
                 network.subMetadata(event.channel, keys);
-                let buffer = network.bufferByName(event.channel);
-                if (!buffer || !buffer.lastMetadataFetch) {
-                    network.getMetadata(event.channel, keys);
+                if (network.metadataCap() === 'draft/metadata-2') {
+                    let buffer = network.bufferByName(event.channel);
+                    if (!buffer || !buffer.lastMetadataFetch) {
+                        network.getMetadata(event.channel, keys);
+                    }
                 }
             }
         });
@@ -160,17 +179,13 @@ export default function metadataMiddleware(network) {
                 const hasClientNick = event.params.length >= 2;
                 const target = hasClientNick ? event.params[1] : event.params[0];
                 const retryVal = hasClientNick ? event.params[2] : event.params[1];
-                const retryAfter = parseInt(retryVal, 10) || 10;
-
-                const normalizedTarget = target === '*' ? network.nick : target;
-                network.metadata_throttles.set(normalizedTarget, Date.now() + (retryAfter * 1000));
-
-                setTimeout(() => {
-                    if (network.state === 'connected') {
-                        network.metadata_throttles.delete(normalizedTarget);
-                        network.syncMetadata(target);
-                    }
-                }, retryAfter * 1000);
+                queueMetadataSync(network, target, retryVal);
+            } else if (effectiveCmd === '775' || effectiveCmd === 'RPL_METADATARATELIMIT') {
+                // 775: <client> <RetryAfter> <target> <command> [<params> ...]
+                // The retry delay comes before the target here, unlike 774.
+                const retryVal = event.params.length >= 3 ? event.params[1] : '';
+                const target = event.params.length >= 3 ? event.params[2] : event.params[0];
+                queueMetadataSync(network, target, retryVal);
             } else if (effectiveCmd === 'METADATA') {
                 // Live metadata notification: METADATA <target> <key> <visibility> :<value>
                 let target = event.params[0];
@@ -210,7 +225,7 @@ export default function metadataMiddleware(network) {
 
         // Helper to set metadata
         network.setMetadata = (targetArg, keyArg, valueArg) => {
-            if (!network.hasCap('draft/metadata-2')) {
+            if (!network.metadataCap()) {
                 return;
             }
 
@@ -247,12 +262,27 @@ export default function metadataMiddleware(network) {
                 return;
             }
 
+            const keyBytes = encoder.encode(key).length;
+            if (keyBytes > (network.metadata_limits.maxKeyBytes || 64)) {
+                const error = TextFormatting.t('metadata_key_too_long', {
+                    max: network.metadata_limits.maxKeyBytes || 64,
+                });
+                const buffer = network.serverBuffer();
+                network.appState.addMessage(buffer, {
+                    time: Date.now(),
+                    nick: '*',
+                    message: error,
+                    type: 'error',
+                });
+                return;
+            }
+
             dispatchLabeledCommand(target, 'SET', [key, value]);
         };
 
         // Helper to get metadata
         network.getMetadata = (targetArg, keys) => {
-            if (!network.hasCap('draft/metadata-2')) {
+            if (!network.metadataCap()) {
                 return;
             }
 
@@ -271,7 +301,7 @@ export default function metadataMiddleware(network) {
 
         // Helper to subscribe to metadata
         network.subMetadata = (targetArg, keys) => {
-            if (!network.hasCap('draft/metadata-2')) {
+            if (!network.metadataCap()) {
                 return;
             }
 
@@ -302,7 +332,7 @@ export default function metadataMiddleware(network) {
 
         // Helper to unsubscribe from metadata
         network.unsubMetadata = (targetArg, keys) => {
-            if (!network.hasCap('draft/metadata-2')) {
+            if (!network.metadataCap()) {
                 return;
             }
 
@@ -330,7 +360,7 @@ export default function metadataMiddleware(network) {
 
         // Helper to sync metadata
         network.syncMetadata = (targetArg) => {
-            if (!network.hasCap('draft/metadata-2')) {
+            if (!network.metadataCap()) {
                 return;
             }
 
@@ -343,6 +373,22 @@ export default function metadataMiddleware(network) {
             dispatchLabeledCommand(targetArg, 'SYNC', []);
         };
     };
+}
+
+function queueMetadataSync(network, target, retryVal) {
+    // 774 makes RetryAfter mandatory, 775 always carries it, but older
+    // draft/metadata-2 servers may omit it. Fall back to 10 seconds.
+    const retryAfter = parseInt(retryVal, 10) || 10;
+
+    const normalizedTarget = target === '*' ? network.nick : target;
+    network.metadata_throttles.set(normalizedTarget, Date.now() + (retryAfter * 1000));
+
+    setTimeout(() => {
+        if (network.state === 'connected') {
+            network.metadata_throttles.delete(normalizedTarget);
+            network.syncMetadata(target);
+        }
+    }, retryAfter * 1000);
 }
 
 function updateMetadataState(network, target, key, value, event, isAuth) {

@@ -51,6 +51,7 @@ export default class NetworkState {
         this.metadata_limits = {
             maxSubs: 32,
             maxKeys: 32,
+            maxKeyBytes: 64,
             maxValueBytes: 4096,
         };
         // SASL password
@@ -318,6 +319,16 @@ export default class NetworkState {
 
     capValue(name) {
         return this.cap_values[name.toLowerCase()] || '';
+    }
+
+    metadataCap() {
+        if (this.hasCap('draft/metadata-3')) {
+            return 'draft/metadata-3';
+        }
+        if (this.hasCap('draft/metadata-2')) {
+            return 'draft/metadata-2';
+        }
+        return '';
     }
 
     /**

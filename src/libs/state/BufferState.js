@@ -424,7 +424,9 @@ export default class BufferState {
 
         // Special default for the *raw buffer scrollback size
         if (name === 'scrollback_size' && this.isRaw()) {
-            return 500;
+            let network = this.getNetwork();
+            let rawSize = network ? network.setting('raw_scrollback_size') : 0;
+            return rawSize || 500;
         }
 
         return this.state.setting('buffers.' + name);

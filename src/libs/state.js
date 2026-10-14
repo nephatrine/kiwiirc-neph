@@ -462,7 +462,7 @@ function createNewState() {
                     const network = buffer.getNetwork();
                     const now = Date.now();
                     const cooldown = 30 * 60 * 1000;
-                    const hasCap = network && network.hasCap('draft/metadata-2');
+                    const hasCap = network && network.metadataCap();
                     const isOld = now - (buffer.lastMetadataFetch || 0) > cooldown;
                     if (hasCap && isOld) {
                         if (buffer.isChannel() && buffer.joined) {
