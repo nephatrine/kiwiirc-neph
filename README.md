@@ -85,8 +85,8 @@ slow, very large, and insecure.*
 #### Configuration
 
 The client loads [static/config.json](static/config.json) on startup. The
-browser fetches it, so do not put secrets in it. Options, defaults, and the
-keys an admin must set are in [CONFIGURATION.md](CONFIGURATION.md).
+browser fetches it, so do not put secrets in it. Options, defaults, and the keys
+an admin must set are in [CONFIGURATION.md](CONFIGURATION.md).
 
 ## Browser support
 

@@ -28,6 +28,11 @@
             </div>
         </div>
 
+        <div v-if="user.relayed_by" class="kiwi-userbox-relayedby">
+            <span>{{ $t('user_relayed_by') }}</span>
+            <a class="kiwi-userbox-relayedby-bot" @click="openRelayerBox">{{ user.relayed_by }}</a>
+        </div>
+
         <template v-if="pluginUiInfoElements.length">
             <component
                 :is="plugin.component"
@@ -209,11 +214,19 @@
                 <i class="fa fa-pencil" aria-hidden="true" />
                 {{ $t('edit_profile') }}
             </a>
-            <a v-if="!isSelf && !buffer.isQuery()" class="kiwi-userbox-action" @click="openQuery">
+            <a
+                v-if="!isSelf && !buffer.isQuery() && !user.relayed_by"
+                class="kiwi-userbox-action"
+                @click="openQuery"
+            >
                 <i class="fa fa-comment-o" aria-hidden="true" />
                 {{ $t('send_a_message') }}
             </a>
-            <a v-if="!whoisRequested" class="kiwi-userbox-action" @click="updateWhoisData">
+            <a
+                v-if="!whoisRequested && !user.relayed_by"
+                class="kiwi-userbox-action"
+                @click="updateWhoisData"
+            >
                 <i class="fa fa-question-circle" aria-hidden="true" />
                 {{ $t('more_information') }}
             </a>
@@ -243,7 +256,7 @@
         </form>
 
         <div
-            v-if="whoisRequested"
+            v-if="whoisRequested && !user.relayed_by"
             :class="[whoisLoading ? 'kiwi-userbox-whois--loading' : '']"
             class="kiwi-userbox-whois"
         >
@@ -306,7 +319,10 @@
             </template>
         </div>
 
-        <div v-if="buffer.isChannel() && areWeAnOp && !isSelf" class="kiwi-userbox-opactions">
+        <div
+            v-if="buffer.isChannel() && areWeAnOp && !isSelf && !user.relayed_by"
+            class="kiwi-userbox-opactions"
+        >
             <form class="u-form" @submit.prevent="">
                 <label v-if="isUserOnBuffer">
                     {{ $t('user_access') }} <select v-model="userMode">
@@ -356,7 +372,7 @@
             </form>
         </div>
         <div
-            v-if="buffer.isQuery() && invitableBuffers.length > 0"
+            v-if="buffer.isQuery() && invitableBuffers.length > 0 && !user.relayed_by"
             class="kiwi-userbox-query-invite kiwi-userbox-actions u-form"
         >
             <select v-model="inviteChan" class="u-input">
@@ -590,6 +606,14 @@ export default {
             this.$state.setActiveBuffer(this.network.id, buffer.name);
             if (this.$state.ui.is_narrow) {
                 this.$state.$emit('userbox.hide');
+            }
+        },
+        openRelayerBox() {
+            let bot = this.$state.getUser(this.buffer.networkid, this.user.relayed_by);
+            if (bot) {
+                this.$state.$emit('userbox.show', bot, {
+                    buffer: this.buffer,
+                });
             }
         },
         onChannelsClick(event) {

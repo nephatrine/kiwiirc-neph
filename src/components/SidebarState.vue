@@ -70,7 +70,7 @@ export default Vue.extend({
             }
 
             if (section === 'user' && this.sidebarUser) {
-                if (buffer.hasNick(this.sidebarUser.nick)) {
+                if (buffer.hasNick(this.sidebarUser.nick) || this.sidebarUser.relayed_by) {
                     return 'user';
                 }
                 // This was going to show a user that is not even present in the current channel

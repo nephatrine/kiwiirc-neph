@@ -976,6 +976,10 @@ msgstr "Real name: {{realname}}"
 msgid "user_bot"
 msgstr "Is a bot"
 
+#: Relayed by a bridge bot (bot nick follows as a link)
+msgid "user_relayed_by"
+msgstr "Relayed by"
+
 #: Is available for help
 msgid "user_help"
 msgstr "Is available for help"

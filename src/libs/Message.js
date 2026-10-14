@@ -2,6 +2,7 @@
 
 import Vue from 'vue';
 import parseMessage from '@/libs/MessageParser';
+import { stripStyles, sanitizeUrl } from '@/helpers/Misc';
 import toHtml from '@/libs/renderers/Html';
 import GlobalApi from '@/libs/GlobalApi';
 import getState from './state';
@@ -57,6 +58,25 @@ export default class Message {
         this.bodyTemplateProps = message.bodyTemplateProps || {};
         this.isHighlight = false;
         this.is_bot = !!(message.tags && typeof message.tags.bot !== 'undefined');
+        this.bridged_nick = '';
+        if (this.is_bot && typeof this.message === 'string') {
+            let bridged = /^<([^<>\s][^<>]{0,63})>\s+/.exec(this.message);
+            if (bridged) {
+                let cleanNick = stripStyles(bridged[1]).trim();
+                if (cleanNick) {
+                    this.bridged_nick = cleanNick;
+                    this.message = this.message.slice(bridged[0].length);
+                }
+            }
+        }
+        this.bridged_avatar = '';
+        let avatarTag = message.tags && message.tags['+avatar'];
+        if (typeof avatarTag === 'string' && avatarTag) {
+            let cleanAvatar = sanitizeUrl(avatarTag);
+            if (cleanAvatar) {
+                this.bridged_avatar = cleanAvatar;
+            }
+        }
         this.is_history = !!(message.tags && (
             typeof message.tags['draft/chathistory-context'] !== 'undefined' ||
             typeof message.tags['kiwi-history'] !== 'undefined'
@@ -88,6 +108,10 @@ export default class Message {
         const tzOffset = (new Date(newTime)).getTimezoneOffset() * 60000;
         // 68400000 equals one day in milliseconds
         this.day_num = Math.floor((newTime - tzOffset) / 86400000);
+    }
+
+    condenseKey() {
+        return (this.nick || '') + '\n' + (this.bridged_nick || '');
     }
 
     render() {

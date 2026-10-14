@@ -59,7 +59,7 @@
             <div v-if="props.message.reply" class="kiwi-messagelist-reply-preview" @click="props.m().scrollToReply(props.message.reply)">
                 <i class="fa fa-reply" aria-hidden="true" />
                 <span v-if="props.m().getReplyMessage(props.message.reply)" class="kiwi-messagelist-reply-preview-nick">
-                    {{ props.m().getReplyMessage(props.message.reply).nick }}:
+                    {{ props.ml.displayNickFor(props.m().getReplyMessage(props.message.reply)) }}:
                 </span>
                 <span v-if="props.m().getReplyMessage(props.message.reply)" class="kiwi-messagelist-reply-preview-message">
                     {{ props.m().getReplyMessageText(props.message.reply) }}
@@ -75,13 +75,15 @@
                     class="kiwi-messagelist-nick-rerouted"
                 >⤮</span><a
                     v-if="props.message.nick"
-                    :style="{ color: props.ml.userColour(props.message.user) }"
+                    :style="{ color: props.ml.userColourFor(props.message) }"
                     :title="props.message.user
                         ? props.message.user.displayTooltip()
                         : props.message.nick"
                     :class="[
                         'kiwi-messagelist-nick',
-                        props.message.user && props.m().userMode(props.message.user)
+                        !props.message.bridged_nick
+                            && props.message.user
+                            && props.m().userMode(props.message.user)
                             ? `kiwi-messagelist-nick--mode-${props.m().userMode(props.message.user)}`
                             : '',
                     ]"
@@ -89,12 +91,12 @@
                     @mouseover="props.ml.hover_nick = props.message.nick.toLowerCase();"
                     @mouseout="props.ml.hover_nick = '';"
                 >
-                    <span class="kiwi-messagelist-nick-prefix">{{
+                    <span v-if="!props.message.bridged_nick" class="kiwi-messagelist-nick-prefix">{{
                         props.message.user
                             ? props.m().userModePrefix(props.message.user)
                             : ''
                     }}</span>{{
-                        props.message.user ? props.message.user.displayName() : props.message.nick
+                        props.ml.displayNickFor(props.message)
                     }}
                 </a>
                 <div
@@ -235,7 +237,7 @@ const methods = {
         let prevMessage = ml.filteredMessages[idx - 1];
 
         return !!prevMessage &&
-            prevMessage.nick === message.nick &&
+            prevMessage.condenseKey() === message.condenseKey() &&
             message.time - prevMessage.time < 60000 &&
             prevMessage.type !== 'traffic' &&
             message.type !== 'traffic' &&

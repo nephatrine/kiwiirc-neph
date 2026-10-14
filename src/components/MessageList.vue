@@ -119,6 +119,7 @@
 import Vue from 'vue';
 import strftime from 'strftime';
 import * as Misc from '@/helpers/Misc';
+import { createNickColour } from '@/helpers/TextFormatting';
 import Logger from '@/libs/Logger';
 import * as bufferTools from '@/libs/bufferTools';
 import RemoveBeforeUpdate from './utils/RemoveBeforeUpdate';
@@ -414,6 +415,21 @@ export default {
             }
             return '';
         },
+        displayNickFor(message) {
+            if (message.bridged_nick) {
+                return message.bridged_nick;
+            }
+            return message.user ? message.user.displayName() : message.nick;
+        },
+        userColourFor(message) {
+            if (message.bridged_nick) {
+                if (this.bufferSetting('colour_nicknames_in_messages')) {
+                    return createNickColour(message.bridged_nick);
+                }
+                return '';
+            }
+            return this.userColour(message.user);
+        },
         openUserBox(nick) {
             let user = this.$state.getUser(this.buffer.networkid, nick);
             if (user) {
@@ -535,7 +551,7 @@ export default {
         },
         onReply(message) {
             this.buffer.replying_to = message;
-            this.$state.$emit('input.reply', message.nick);
+            this.$state.$emit('input.reply', message.bridged_nick || message.nick);
         },
         onScroll() {
             this.checkScrollingState();

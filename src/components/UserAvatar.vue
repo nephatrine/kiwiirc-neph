@@ -56,6 +56,7 @@
 import { computed } from 'vue';
 
 import getState from '@/libs/state';
+import { createNickColour } from '@/helpers/TextFormatting';
 import { getAvatarTransform } from './UserAvatarCommon';
 
 </script>
@@ -109,6 +110,17 @@ const getSizeObj = (size) => ({
     },
 });
 
+const getOverrideObj = () => ({
+    url: props.message.bridged_avatar,
+    vbind: {
+        'href': props.message.bridged_avatar,
+        'xlink:href': props.message.bridged_avatar,
+    },
+    setFailed: () => {
+        props.message.bridged_avatar = '';
+    },
+});
+
 const shouldShowStatus = () => {
     if (!props.network || !props.user) {
         return false;
@@ -152,9 +164,12 @@ const avatar = computed(() => {
         initialsLength = 2;
     }
 
-    const nick = props.message?.nick || props.user?.nick || 'User';
+    const bridgedNick = props.message?.bridged_nick || '';
+    const nick = bridgedNick || props.message?.nick || props.user?.nick || 'User';
     const initials = nick.substring(0, initialsLength).toUpperCase();
-    const hasImage = !!(props.user && (props.user.avatar.small || props.user.avatar.large));
+    const overrideUrl = props.message?.bridged_avatar || '';
+    const hasImage = !!overrideUrl ||
+        !!(props.user && (props.user.avatar.small || props.user.avatar.large));
 
     const showBackground = !hasImage || state.setting('avatars.show_image_background');
     const backgroundStyle = {};
@@ -167,9 +182,23 @@ const avatar = computed(() => {
         sizeKey: {},
     };
 
-    if (props.user) {
+    if (bridgedNick) {
+        backgroundStyle.fill = createNickColour(bridgedNick);
+    } else if (props.user) {
         backgroundStyle.fill = props.user.getColour();
     } else {
+        return avatars;
+    }
+
+    if (overrideUrl) {
+        avatars.small = getOverrideObj();
+        avatars.sizeKey.small = 'small';
+        avatars.large = getOverrideObj();
+        avatars.sizeKey.large = 'large';
+        return avatars;
+    }
+
+    if (!props.user) {
         return avatars;
     }
 

@@ -149,7 +149,7 @@ export default {
         },
         onReply() {
             this.buffer.replying_to = this.message;
-            this.$state.$emit('input.reply', this.message.nick);
+            this.$state.$emit('input.reply', this.message.bridged_nick || this.message.nick);
             this.$emit('close');
         },
         openQuery() {

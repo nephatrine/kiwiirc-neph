@@ -38,6 +38,7 @@ const DESIRED_CAPS = [
     'extended-isupport',
     'draft/message-redaction',
     'draft/read-marker',
+    'draft/relaymsg',
 ];
 
 export function create(state, network) {
@@ -821,6 +822,9 @@ function clientMiddleware(state, network) {
                 }
                 if (event.tags && typeof event.tags.bot !== 'undefined') {
                     update.is_bot = true;
+                }
+                if (event.tags && typeof event.tags['draft/relaymsg'] !== 'undefined') {
+                    update.relayed_by = event.tags['draft/relaymsg'] || '';
                 }
                 if (Object.keys(update).length > 0) {
                     state.addUser(networkid, { nick: event.nick, ...update });
