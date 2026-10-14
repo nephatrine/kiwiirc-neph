@@ -40,6 +40,7 @@ const DESIRED_CAPS = [
     'draft/message-redaction',
     'draft/read-marker',
     'draft/relaymsg',
+    'standard-replies',
 ];
 
 export function create(state, network) {
@@ -251,7 +252,7 @@ function getEffectiveCommand(command, event) {
     return (typeof rawVerb === 'string') ? rawVerb.toUpperCase() : '';
 }
 
-function handleStandardReply(command, event, network, state) {
+export function handleStandardReply(command, event, network, state) {
     const type = getEffectiveCommand(command, event);
     const failedCmd = (event.params[0] || '').toUpperCase();
     const errorCode = event.params[1] || '';
@@ -308,7 +309,7 @@ function handleStandardReply(command, event, network, state) {
             }
         }
 
-        if (codeName === 'TARGET_INVALID' && errTarget) {
+        if (codeName === 'INVALID_TARGET' && errTarget) {
             finalMessage = description || `${type} ${failedCmd} ${errTarget} (${codeName})`;
         } else if (key && errTarget) {
             finalMessage = description || `${type} ${failedCmd} ${errTarget} ${key} (${codeName})`;

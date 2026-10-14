@@ -12,6 +12,11 @@ describe('CapNotify', () => {
         const client = network.ircClient;
     });
 
+    it('should request the standard-replies capability', () => {
+        const client = network.ircClient;
+        expect(client.request_extra_caps).toContain('standard-replies');
+    });
+
     it('should update enabled_caps on cap ack', () => {
         const client = network.ircClient;
         client.network.cap.enabled = ['cap1', 'cap2'];

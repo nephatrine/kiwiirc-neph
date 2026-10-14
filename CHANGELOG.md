@@ -25,7 +25,8 @@ and this project adheres to
   `echo-message` and `labeled-response` confirm outgoing messages. Also requests
   `extended-isupport`, `multi-prefix`, and `userhost-in-names`. `FAIL`, `WARN`,
   and `NOTE` are routed to the relevant buffer. The `standard-replies`
-  capability is not requested.
+  capability is requested, and replies for unimplemented commands are shown
+  generically.
 - **Identity**: Added SASL login, preferring `SCRAM-SHA-256` over `PLAIN`, live
   `/setname` updates, and a "Remember me" toggle that can purge saved state.
   `draft/metadata-2` shows display names, pronouns, descriptions, homepages,

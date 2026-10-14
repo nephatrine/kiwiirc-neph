@@ -191,4 +191,6 @@ desync the reaction state from the message log.
 
 `FAIL`, `WARN`, and `NOTE` are routed to the relevant channel or query from the
 command arguments or the active label. They are not dumped on the server tab.
-KiwiIRC does not request the `standard-replies` capability.
+KiwiIRC requests the `standard-replies` capability. Replies for commands it does
+not implement are shown generically, so arbitrary codes need no per-code
+handling.
