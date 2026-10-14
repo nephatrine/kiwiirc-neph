@@ -1,4 +1,5 @@
 import state from '@/libs/state';
+import ThemeManager from '@/libs/ThemeManager';
 
 describe('HighlightSuppression', () => {
     let s;
@@ -7,6 +8,12 @@ describe('HighlightSuppression', () => {
 
     beforeEach(() => {
         s = state.create();
+        if (!document.querySelector('.kiwi-wrap')) {
+            let wrap = document.createElement('div');
+            wrap.className = 'kiwi-wrap';
+            document.body.appendChild(wrap);
+        }
+        ThemeManager.instance(s);
         network = s.addNetwork('TestNetwork', 'TestNick', {
             server: 'irc.example.net',
             port: 6667,

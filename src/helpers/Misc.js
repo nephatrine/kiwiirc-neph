@@ -271,8 +271,9 @@ export function mentionsNick(input, nick) {
     let punc = '\\s,.!:;+()\\[\\]?¿\\/<>@-';
     let escapedNick = _.escapeRegExp(nick);
     let stylesStrippedInput = stripStyles(input);
+    let withoutUrls = stylesStrippedInput.replace(new RegExp(urlRegex.source, 'gi'), ' ');
     let r = new RegExp(`(^|[${punc}])${escapedNick}([${punc}]|$)`, 'i');
-    return r.test(stylesStrippedInput);
+    return r.test(withoutUrls);
 }
 
 /**

@@ -13,6 +13,10 @@ describe('Misc.js', () => {
         ['hello, foo?', 'foo', true], // punctuation test
         ['foo: hello', 'foo', true], // another
         ['hello (foo)', 'foo', true], // another
+        ['https://domain.com/foo/blah.png', 'foo', false], // nick only in a url
+        ['check https://domain.com/foo/blah.png out', 'foo', false], // url in a sentence
+        ['www.domain.com/foo/bar', 'foo', false], // www url without protocol
+        ['https://domain.com/foo/x.png hey foo', 'foo', true], // real mention beside a url
     ];
     test.each(nicksTests)('should find mentions of nickname in text [%#]', (line, nick, result) => {
         let doesMention = Misc.mentionsNick(line, nick);
