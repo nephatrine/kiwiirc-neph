@@ -21,8 +21,12 @@ kiwi.plugin('channels-sidebar', function (kiwi, log) {
         },
         computed: {
             isActive: function isActive() {
-                var active = this.sidebarState.activeComponent;
-                return active && (active === chanList || active.options === chanList);
+                var sidebarState = this.sidebarState;
+                if (sidebarState && typeof sidebarState.isComponentOpen === 'function') {
+                    return sidebarState.isComponentOpen('channels-sidebar');
+                }
+                var active = sidebarState && sidebarState.activeComponent;
+                return !!(active && (active === chanList || active.options === chanList));
             },
             listBlocked: function listBlocked() {
                 var network = this.network;
@@ -76,7 +80,11 @@ kiwi.plugin('channels-sidebar', function (kiwi, log) {
                     return;
                 }
                 network.maybeUpdateChannelList();
-                kiwi.showInSidebar(chanList, { network: network });
+                if (typeof kiwi.toggleInSidebar === 'function') {
+                    kiwi.toggleInSidebar('channels-sidebar', chanList, { network: network });
+                } else {
+                    kiwi.showInSidebar(chanList, { network: network });
+                }
             },
         },
     });

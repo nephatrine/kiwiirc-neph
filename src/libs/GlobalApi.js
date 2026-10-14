@@ -265,10 +265,25 @@ export default class GlobalApi extends EventEmitter {
      * Show a Vue.js component in the sidebar
      * @param {Object} component The vue.js component object to render
      * @param {Object} props Optional properties for the vue.js component
+     * @param {String} id Optional stable identifier for the component (eg. the
+     *                    plugin name) so plugins can recognise their own
+     *                    sidebar content for toggling
      */
-    showInSidebar(component, props) {
+    showInSidebar(component, props, id) {
         const plugin = Misc.makePluginObject(0, component, { props });
-        this.state.$emit('sidebar.component', plugin.component, plugin.props);
+        this.state.$emit('sidebar.component', plugin.component, plugin.props, id || null);
+    }
+
+    /**
+     * Toggle a Vue.js component in the sidebar. Closes the sidebar when the
+     * component with this id is already shown, otherwise shows it.
+     * @param {String} id Stable identifier for the component (eg. the plugin name)
+     * @param {Object} component The vue.js component object to render
+     * @param {Object} props Optional properties for the vue.js component
+     */
+    toggleInSidebar(id, component, props) {
+        const plugin = Misc.makePluginObject(0, component, { props });
+        this.state.$emit('sidebar.component.toggle', id, plugin.component, plugin.props);
     }
 
     /**

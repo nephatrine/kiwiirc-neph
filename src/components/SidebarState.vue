@@ -12,6 +12,9 @@ export default Vue.extend({
             sidebarUser: null,
             activeComponent: null,
             activeComponentProps: null,
+            // Stable identifier for the plugin currently shown in the sidebar.
+            // Lets sidebar plugins recognise their own component for toggling.
+            activeComponentId: null,
         };
     },
     computed: {
@@ -23,12 +26,15 @@ export default Vue.extend({
         },
     },
     created() {
-        this.listen(this.$state, 'sidebar.component', (component, props) => {
-            this.resetSidebarState();
-            this.sidebarOpen = !!component;
-            this.activeComponent = component;
-            this.activeComponentProps = props || {};
-            this.sidebarSection = component ? 'component' : '';
+        this.listen(this.$state, 'sidebar.component', (component, props, id) => {
+            this.showComponent(component, props, id);
+        });
+        this.listen(this.$state, 'sidebar.component.toggle', (id, component, props) => {
+            if (this.isComponentOpen(id)) {
+                this.close();
+            } else {
+                this.showComponent(component, props, id);
+            }
         });
 
         // Allow forcing the sidebar open at startup
@@ -94,9 +100,21 @@ export default Vue.extend({
             this.sidebarUser = null;
             this.activeComponent = null;
             this.activeComponentProps = null;
+            this.activeComponentId = null;
         },
         close() {
             this.resetSidebarState();
+        },
+        showComponent(component, props, id) {
+            this.resetSidebarState();
+            this.sidebarOpen = !!component;
+            this.activeComponent = component;
+            this.activeComponentProps = props || {};
+            this.activeComponentId = component ? (id || null) : null;
+            this.sidebarSection = component ? 'component' : '';
+        },
+        isComponentOpen(id) {
+            return this.sidebarOpen && this.activeComponentId === id;
         },
         showUser(user) {
             this.resetSidebarState();
