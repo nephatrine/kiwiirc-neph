@@ -19,9 +19,33 @@ msgstr ""
 msgid "start_button"
 msgstr "Start"
 
+#: Anonymous
+msgid "anonymous_tab"
+msgstr "Anonymous"
+
+#: Account
+msgid "account_tab"
+msgstr "Account"
+
+#: Register
+msgid "register_tab"
+msgstr "Register"
+
+#: Advanced
+msgid "advanced"
+msgstr "Advanced"
+
+#: Registration timed out waiting for the server. Check your connection and try again.
+msgid "registration_timeout"
+msgstr "Registration timed out waiting for the server. Check your connection and try again."
+
 #: Welcome to Kiwi IRC!
 msgid "start_greeting"
 msgstr "Welcome to Kiwi IRC!"
+
+#: Welcome to {{network}}
+msgid "welcome_to_network"
+msgstr "Welcome to {{network}}!"
 
 #: Close
 msgid "close"
@@ -78,6 +102,14 @@ msgstr "Password"
 #: SASL account name
 msgid "account_name"
 msgstr "Account Name"
+
+#: Account
+msgid "account"
+msgstr "Account"
+
+#: Without an account, features like user metadata, read markers, and personal message history may not be retained beyond this session.
+msgid "anonymous_warning"
+msgstr "Without an account, server-tracked features like last-read markers and personal message chathistory might not be retained beyond the active session."
 
 #: Server Password
 msgid "server_password"
@@ -202,6 +234,70 @@ msgstr "Message User"
 #: More information
 msgid "more_information"
 msgstr "Show Details"
+
+#: Register Account
+msgid "register_account"
+msgstr "Register Account"
+
+#: Registering as
+msgid "register_as"
+msgstr "Registering as"
+
+#: Account name
+msgid "register_account_name"
+msgstr "Account name"
+
+#: Email address (optional)
+msgid "register_account_email_optional"
+msgstr "Email (Optional)"
+
+#: Email address (required)
+msgid "register_account_email_required"
+msgstr "Email (Required)"
+
+#: Password
+msgid "register_account_password"
+msgstr "Password"
+
+#: Password must be between {min} and {max} characters.
+msgid "register_password_length"
+msgstr "Password must be between {min} and {max} characters."
+
+#: Password must be at least {min} characters.
+msgid "register_password_min"
+msgstr "Password must be at least {min} characters."
+
+#: Password must be at most {max} characters.
+msgid "register_password_max"
+msgstr "Password must be at most {max} characters."
+
+#: Register
+msgid "register_submit"
+msgstr "Register"
+
+#: A verification code is required to complete registration. Enter it below.
+msgid "register_verify_prompt"
+msgstr "A verification code is required to complete registration. Enter it below."
+
+#: Verification code
+msgid "register_verify_code"
+msgstr "Verification Code"
+
+#: Verify
+msgid "verify_submit"
+msgstr "Verify"
+
+#: Account {account} registered and logged in.
+msgid "account_registered"
+msgstr "Account {account} registered and logged in."
+
+#: Account {account} verified and logged in.
+msgid "account_verified"
+msgstr "Account {account} verified and logged in."
+
+#: This server requires an account to connect. Enter your account details on the login page and try again.
+msgid "account_required"
+msgstr "This server requires an account to connect. Enter your account details on the login page and try again."
 
 #: Ignore user
 msgid "ignore_user"
@@ -606,6 +702,10 @@ msgstr "Are you sure you want to log out?"
 #: Remember me on this computer
 msgid "remember_settings"
 msgstr "Remember Me"
+
+#: Remember password on this computer
+msgid "remember_password"
+msgstr "Remember Password"
 
 #: Send a message...
 msgid "input_placeholder"
@@ -1607,7 +1707,7 @@ msgstr "Public Profile"
 
 #: Public Profile Warning
 msgid "public_profile_warning"
-msgstr "Changes made here are public to the network."
+msgstr "Changes made here are public to the network. Depending on IRC server, user metadata may not persist while you are offline."
 
 #: Anonymous Profile Warning
 msgid "anonymous_profile_warning"

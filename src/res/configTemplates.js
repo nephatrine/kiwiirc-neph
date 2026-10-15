@@ -152,6 +152,11 @@ export const configTemplates = {
             state_key: 'kiwi-state',
             remember_buffers: true,
             nick_format: '',
+            // Probe the IRC server (CAP LS / ISUPPORT) before rendering the
+            // login form so SASL and account fields match server support.
+            // Single-network deployments only; costs one extra connection
+            // per page load and never blocks the login button.
+            probeServerCaps: false,
         },
         skipHiddenMessages: false,
         autoReconnect: false,

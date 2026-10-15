@@ -67,6 +67,73 @@
                 >{{ user.metadata.homepage }}</a>
             </div>
 
+            <div v-if="isSelf && isRegistering" class="kiwi-userbox-register u-form">
+                <h3>{{ $t('register_account') }}</h3>
+                <div v-if="network.registration.error" class="kiwi-userbox-register-error">
+                    {{ network.registration.error }}
+                </div>
+                <template v-if="network.registration.awaitingVerify">
+                    <p>{{ $t('register_verify_prompt') }}</p>
+                    <label>
+                        <span>{{ $t('register_verify_code') }}</span>
+                        <input v-model="registerForm.code" type="text" class="u-input" autocomplete="off">
+                    </label>
+                    <div class="kiwi-userbox-register-actions">
+                        <button
+                            type="button"
+                            class="u-button u-button-primary"
+                            :disabled="!registerForm.code.trim()"
+                            @click="submitVerify"
+                        >
+                            {{ $t('verify_submit') }}
+                        </button>
+                        <button type="button" class="u-button u-button-secondary" @click="cancelRegistration">
+                            {{ $t('cancel') }}
+                        </button>
+                    </div>
+                </template>
+                <template v-else>
+                    <label v-if="registrationInfo && registrationInfo.customAccountName">
+                        <span>{{ $t('register_account_name') }}</span>
+                        <input v-model="registerForm.account" type="text" class="u-input" autocomplete="username">
+                    </label>
+                    <div v-else class="kiwi-userbox-register-as">
+                        {{ $t('register_as') }}: {{ network.nick }}
+                    </div>
+                    <label>
+                        <span v-if="registrationInfo && registrationInfo.emailRequired">{{ $t('register_account_email_required') }}</span>
+                        <span v-else>{{ $t('register_account_email_optional') }}</span>
+                        <input
+                            v-model="registerForm.email"
+                            type="email"
+                            class="u-input"
+                            autocomplete="email"
+                            :required="registrationInfo && registrationInfo.emailRequired"
+                        >
+                    </label>
+                    <label>
+                        <span>{{ $t('register_account_password') }}</span>
+                        <input v-model="registerForm.password" type="password" class="u-input" autocomplete="new-password">
+                    </label>
+                    <div v-if="registerPasswordHint" class="kiwi-userbox-register-hint">
+                        {{ registerPasswordHint }}
+                    </div>
+                    <div class="kiwi-userbox-register-actions">
+                        <button
+                            type="button"
+                            class="u-button u-button-primary"
+                            :disabled="!registerValid"
+                            @click="submitRegistration"
+                        >
+                            {{ $t('register_submit') }}
+                        </button>
+                        <button type="button" class="u-button u-button-secondary" @click="cancelRegistration">
+                            {{ $t('cancel') }}
+                        </button>
+                    </div>
+                </template>
+            </div>
+
             <div v-if="isSelf && isEditingProfile" class="kiwi-userbox-editprofile u-form">
                 <h3>{{ $t('public_profile') }}</h3>
                 <p class="kiwi-userbox-editprofile-warning">
@@ -210,6 +277,10 @@
         </div>
 
         <div class="kiwi-userbox-actions">
+            <a v-if="showRegisterButton" class="kiwi-userbox-action" @click="startRegistration">
+                <i class="fa fa-user-plus" aria-hidden="true" />
+                {{ $t('register_account') }}
+            </a>
             <a v-if="isSelf && !isEditingProfile && network.metadataCap()" class="kiwi-userbox-action" @click="startEditProfile">
                 <i class="fa fa-pencil" aria-hidden="true" />
                 {{ $t('edit_profile') }}
@@ -417,6 +488,13 @@ export default {
             isEditingProfile: false,
             avatarUploading: false,
             avatarUploadId: 0,
+            isRegistering: false,
+            registerForm: {
+                account: '',
+                email: '',
+                password: '',
+                code: '',
+            },
             editProfile: {
                 displayName: '',
                 pronouns: '',
@@ -569,14 +647,82 @@ export default {
             }
             return service;
         },
+        registrationInfo() {
+            if (!this.network) {
+                return null;
+            }
+            return this.network.accountRegistration();
+        },
+        showRegisterButton() {
+            return this.isSelf &&
+                !this.isRegistering &&
+                !this.isEditingProfile &&
+                this.network.state === 'connected' &&
+                !this.network.sasl_account &&
+                !this.network.registration.pending &&
+                !!this.registrationInfo;
+        },
+        registerPasswordHint() {
+            const info = this.registrationInfo;
+            if (!info) {
+                return '';
+            }
+            if (info.minPasswordLength && info.maxPasswordLength) {
+                return this.$t('register_password_length', {
+                    min: info.minPasswordLength,
+                    max: info.maxPasswordLength,
+                });
+            }
+            if (info.minPasswordLength) {
+                return this.$t('register_password_min', {
+                    min: info.minPasswordLength,
+                });
+            }
+            if (info.maxPasswordLength) {
+                return this.$t('register_password_max', {
+                    max: info.maxPasswordLength,
+                });
+            }
+            return '';
+        },
+        registerValid() {
+            const info = this.registrationInfo;
+            if (!info) {
+                return false;
+            }
+            if (info.customAccountName && !this.registerForm.account.trim()) {
+                return false;
+            }
+            if (info.emailRequired && !this.registerForm.email.trim()) {
+                return false;
+            }
+            const length = this.getByteLength(this.registerForm.password);
+            if (length === 0) {
+                return false;
+            }
+            if (info.minPasswordLength && length < info.minPasswordLength) {
+                return false;
+            }
+            if (info.maxPasswordLength && length > info.maxPasswordLength) {
+                return false;
+            }
+            return true;
+        },
     },
     watch: {
         user() {
             // Reset the whois view since the user is now different
             this.whoisRequested = false;
             this.whoisLoading = false;
+            this.isRegistering = false;
 
             this.maybeFetchMetadata();
+        },
+        'network.registration.pending'(isPending) {
+            // The form closes itself once the server accepts the registration
+            if (!isPending && !this.network.registration.error) {
+                this.isRegistering = false;
+            }
         },
     },
     mounted() {
@@ -639,6 +785,36 @@ export default {
                 return;
             }
             this.network.ircClient.invite(this.inviteChan, this.user.nick);
+        },
+        startRegistration() {
+            this.registerForm.account = this.network.nick;
+            this.registerForm.email = '';
+            this.registerForm.password = '';
+            this.registerForm.code = '';
+            this.isRegistering = true;
+        },
+        cancelRegistration() {
+            this.isRegistering = false;
+        },
+        submitRegistration() {
+            if (!this.registerValid) {
+                return;
+            }
+            const info = this.registrationInfo;
+            const account = info.customAccountName ?
+                this.registerForm.account.trim() :
+                '*';
+            const email = this.registerForm.email.trim() || '*';
+            this.network.registerAccount(account, email, this.registerForm.password);
+            this.registerForm.password = '';
+        },
+        submitVerify() {
+            const code = this.registerForm.code.trim();
+            if (!code) {
+                return;
+            }
+            this.network.verifyAccount(code);
+            this.registerForm.code = '';
         },
         startEditProfile() {
             this.avatarUploadId += 1;
@@ -1002,6 +1178,55 @@ export default {
 }
 
 .kiwi-userbox-editprofile-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.kiwi-userbox-register {
+    border-top: 1px solid rgba(128, 128, 128, 0.2);
+    padding-top: 1em;
+    margin-top: 1em;
+    text-align: left;
+
+    h3 {
+        margin: 0 0 0.5em 0;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 1em;
+
+        span {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 0.3em;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+        }
+    }
+}
+
+.kiwi-userbox-register-as {
+    margin-bottom: 1em;
+}
+
+.kiwi-userbox-register-error {
+    color: var(--brand-error);
+    font-size: 0.9em;
+    margin-bottom: 1em;
+}
+
+.kiwi-userbox-register-hint {
+    font-size: 0.8em;
+    opacity: 0.8;
+    margin-bottom: 1em;
+}
+
+.kiwi-userbox-register-actions {
     display: flex;
     gap: 10px;
     justify-content: flex-end;

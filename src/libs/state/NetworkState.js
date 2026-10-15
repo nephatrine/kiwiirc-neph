@@ -2,6 +2,7 @@
 
 import Vue from 'vue';
 import * as Misc from '@/helpers/Misc';
+import { parseAccountRegistrationCap } from '@/libs/accountRegistration';
 import { def } from './common';
 import * as IrcClient from '../IrcClient';
 
@@ -65,6 +66,14 @@ export default class NetworkState {
         this.enabled_caps = [];
         this.cap_values = {};
         this.isupport = {};
+        // Account registration (draft/account-registration) flow state.
+        // Never stores the password here: enumerable fields can be persisted.
+        this.registration = {
+            pending: false,
+            awaitingVerify: false,
+            account: '',
+            error: '',
+        };
 
         Vue.observable(this);
 
@@ -329,6 +338,15 @@ export default class NetworkState {
             return 'draft/metadata-2';
         }
         return '';
+    }
+
+    // Parsed draft/account-registration capability tokens. Returns null when
+    // the capability is not enabled.
+    accountRegistration() {
+        if (!this.hasCap('draft/account-registration')) {
+            return null;
+        }
+        return parseAccountRegistrationCap(this.capValue('draft/account-registration'));
     }
 
     /**

@@ -36,6 +36,15 @@ KiwiIRC requests the following capabilities during connection and again on
 - **extended-join**: Includes account and realname on join.
 - **chghost**: Updates a user's hostname without a rejoin.
 - **setname**: Updates the user's realname (gecos) at runtime.
+- **draft/account-registration**: Registers an account with `REGISTER` (plus
+  `VERIFY` when the server asks for a code) instead of NickServ commands.
+  Connected users without a SASL account get a Register Account action in their
+  own profile. When the server advertises `before-connect` and the login page
+  probe sees it, a Register tab appears next to Login: the attempt is armed
+  before connect, `CAP END` is held open with a `kiwi-register-wait` token while
+  `REGISTER` runs (5s backstop), and a `FAIL` aborts back to the form with the
+  server's message. Successful registrations authenticate like SASL logins and
+  persist under Remember Me.
 - **draft/metadata-2**: Syncs public user and channel metadata (`display-name`,
   `pronouns`, `description`, `homepage`, `status`, `color`). KiwiIRC respects
   `max-subs`, `max-keys`, and `max-value-bytes`, and waits 30 minutes between
@@ -56,8 +65,13 @@ always-requested list above. KiwiIRC prefers `SCRAM-SHA-256` over `PLAIN`.
 - **cap-notify**: Reacts to capability changes after registration.
 - **multi-prefix**: Shows every user prefix in member lists, such as `~@`.
 - **userhost-in-names**: Includes full hostmasks in `NAMES` replies.
-- **extended-isupport**: Receives `RPL_ISUPPORT` during capability negotiation,
-  before registration finishes.
+- **draft/extended-isupport**: Receives `RPL_ISUPPORT` during capability
+  negotiation, before registration finishes. The name is draft-prefixed: servers
+  never advertise the unprefixed form, so requesting it literally would NAK.
+  When the server ACKs it for a login without credentials, KiwiIRC holds
+  `CAP END` until the first `005` batch arrives (1s debounce, 5s absolute cap),
+  then checks `draft/ACCOUNTREQUIRED` below. Logins with credentials ask for
+  `ISUPPORT` too, but without holding negotiation open.
 
 ## Client Tags
 
@@ -145,6 +159,10 @@ Keys are stored in uppercase.
 - **CLIENTTAGDENY**: Blocks outgoing client tags the server rejects.
 - **UTF8ONLY**: Forces `utf8` and blocks non-ASCII outgoing actions, including
   emoji reactions, on networks that cannot carry them.
+- **draft/ACCOUNTREQUIRED**: The connection cannot register without SASL
+  authentication. When seen pre-registration on a credential-less login, KiwiIRC
+  aborts the connect with an `account_required` error instead of wasting a
+  registration round-trip, so the login page can collect credentials first.
 - **NETWORK**: Shows the network name in the server view.
 - **DRAFT/ICON**: Network icon URL. `{size}` is replaced with `64`. If the token
   is missing and the server is Ergo (`IRCD` or numeric `002`), KiwiIRC uses

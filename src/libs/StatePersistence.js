@@ -11,6 +11,9 @@ export default class StatePersistence {
         this.logger = logger;
         this.isPersisting = false;
         this.includeBuffers = true;
+        // Set by the startup screen from the Remember Password checkbox.
+        // Other startups leave the default, preserving past behaviour.
+        this.includePasswords = true;
         this.watcher = null;
 
         this.state.persistence = this;
@@ -45,13 +48,7 @@ export default class StatePersistence {
         }
 
         // Throttle saving the state into storage so we don't thrash the disk
-        let debouncedSaveState = _.debounce(() => {
-            if (this.logger) {
-                this.logger('State updated, setting localStorage');
-            }
-
-            this.storage.set(this.storageKey, this.state.exportState(this.includeBuffers));
-        }, 1000);
+        let debouncedSaveState = _.debounce(() => this.saveStateNow(), 1000);
 
         this.state.$watch('networks', debouncedSaveState, { deep: true });
         this.state.$watch('user_settings', debouncedSaveState, { deep: true });
@@ -82,6 +79,21 @@ export default class StatePersistence {
         }, debouncedSaveState);
 
         this.isPersisting = true;
+    }
+
+    saveStateNow() {
+        if (!this.storageKey) {
+            return Promise.resolve();
+        }
+
+        if (this.logger) {
+            this.logger('State updated, setting localStorage');
+        }
+
+        return Promise.resolve(this.storage.set(
+            this.storageKey,
+            this.state.exportState(this.includeBuffers, this.includePasswords)
+        ));
     }
 
     async forgetState() {

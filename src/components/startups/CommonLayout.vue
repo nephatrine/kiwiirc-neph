@@ -33,6 +33,10 @@ export default {
             type: Boolean,
             default: true,
         },
+        rememberPasswords: {
+            type: Boolean,
+            default: true,
+        },
     },
     data() {
         return {
@@ -71,6 +75,7 @@ export default {
             let startApp = (event) => {
                 this.$el.removeEventListener('transitionend', startApp);
                 if (this.rememberSettings) {
+                    this.$state.persistence.includePasswords = this.rememberPasswords;
                     this.$state.persistence.watchStateForChanges();
                 } else {
                     this.$state.persistence.forgetState();
@@ -114,7 +119,7 @@ export default {
 
 /** Right side */
 .kiwi-startup-common-section-info {
-    color: #fff;
+    color: var(--brand-default-fg);
     display: flex;
     flex: 1;
     align-items: center;
@@ -122,9 +127,10 @@ export default {
 }
 
 .kiwi-startup-common-section-info-content {
-    background: rgb(255, 255, 255, 0.74);
+    background: var(--brand-default-bg);
+    background: color-mix(in srgb, var(--brand-default-bg) 74%, transparent);
     margin: 2em;
-    color: #1b1b1b;
+    color: var(--brand-default-fg);
     font-size: 1.5em;
     padding: 2em;
     border-radius: 5px;
@@ -191,11 +197,11 @@ export default {
 .kiwi-startup-common-section-info {
     background-size: cover;
     background-position: bottom;
-    border-left: 5px solid #42b992;
+    border-left: 5px solid var(--brand-primary);
 }
 
 .kiwi-startup-common--no-bg .kiwi-startup-common-section-info {
-    background-color: rgb(51, 51, 51);
+    background-color: var(--brand-default-fg);
 }
 
 /* stylint-enable */
@@ -214,7 +220,7 @@ export default {
     }
 
     .kiwi-startup-common--no-bg .kiwi-startup-common-section-info {
-        border-top: 5px solid #42b992;
+        border-top: 5px solid var(--brand-primary);
     }
 }
 

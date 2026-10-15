@@ -113,7 +113,7 @@ function createNewState() {
         data: stateObj,
         methods: {
             // Export enough state so that it can be imported in future to resume
-            exportState(includeBuffers) {
+            exportState(includeBuffers, includePasswords = true) {
                 let toExport = {};
 
                 if (includeBuffers) {
@@ -127,7 +127,12 @@ function createNewState() {
                                 port: network.connection.port,
                                 tls: network.connection.tls,
                                 path: network.connection.path,
-                                password: network.connection.password,
+                                // Passwords only leave the session when the user
+                                // opted into Remember Password; everything else
+                                // about the account still persists.
+                                password: includePasswords ?
+                                    network.connection.password :
+                                    '',
                                 direct: network.connection.direct,
                                 encoding: network.connection.encoding,
                                 bncnetid: network.connection.bncnetid,
@@ -137,7 +142,9 @@ function createNewState() {
                             settings: _.cloneDeep(network.settings),
                             username: network.username,
                             gecos: network.gecos,
-                            password: network.password,
+                            password: includePasswords ?
+                                network.password :
+                                '',
                             hidden: network.hidden,
                             is_bnc: network.is_bnc,
                             buffers: [],
@@ -1323,10 +1330,20 @@ function createNewState() {
                 // It is cleared by the startup screen.
                 window.sessionStorage.setItem('kiwi-logout', '1');
 
+                // Flush the latest state before reloading. The watcher saves on a
+                // 1-second debounce, so without this a fast logout would reload
+                // before pending changes (e.g. blanked passwords) reach storage.
+                // Guarded by isPersisting so opted-out sessions never write.
+                let persist = this.persistence && this.persistence.isPersisting ?
+                    this.persistence.saveStateNow() :
+                    Promise.resolve();
+
                 // Small delay to let the quit commands send
-                setTimeout(() => {
-                    window.location.reload();
-                }, 300);
+                persist.finally(() => {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 300);
+                });
             },
         },
     });

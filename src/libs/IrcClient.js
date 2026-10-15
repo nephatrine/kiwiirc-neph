@@ -9,6 +9,7 @@ import reactionMiddleware from './ReactionMiddleware';
 import redactionMiddleware from './RedactionMiddleware';
 import readMarkerMiddleware from './ReadMarkerMiddleware';
 import saslMiddleware from './SaslMiddleware';
+import registrationMiddleware from './RegistrationMiddleware';
 import batchMiddleware from './BatchMiddleware';
 import metadataMiddleware from './MetadataMiddleware';
 import chathistoryMiddleware from './ChathistoryMiddleware';
@@ -35,11 +36,12 @@ const DESIRED_CAPS = [
     'multi-prefix',
     'userhost-in-names',
     'server-time',
-    'extended-isupport',
+    'draft/extended-isupport',
     'draft/message-redaction',
     'draft/read-marker',
     'draft/relaymsg',
     'standard-replies',
+    'draft/account-registration',
 ];
 
 export function create(state, network) {
@@ -65,6 +67,7 @@ export function create(state, network) {
     ircClient.use(readMarkerMiddleware(network));
     ircClient.use(metadataMiddleware(network));
     ircClient.use(saslMiddleware(network));
+    ircClient.use(registrationMiddleware(network));
     ircClient.use(batchMiddleware(network));
     ircClient.use(clientMiddleware(state, network));
 
@@ -347,6 +350,90 @@ function clientMiddleware(state, network) {
     let pendingSaslAccount = '';
     let advertisedLsCaps = new Set();
 
+    // Gate token planted in the framework's cap.requested list to hold CAP
+    // negotiation open while we fetch ISUPPORT for draft/extended-isupport.
+    // It never goes on the wire: the framework only removes entries the
+    // server ACKs or NAKs, and no server will ever mention this name.
+    const ISUPPORT_GATE_CAP = 'kiwi-isupport-wait';
+    let isupportGate = null;
+    // Tracks whether ISUPPORT was already requested for this connect
+    // attempt, so repeated ACKs (gated or gateless) only ask once.
+    let isupportSent = false;
+
+    function clearIsupportGate() {
+        if (!isupportGate) {
+            return;
+        }
+        clearTimeout(isupportGate.timer);
+        clearTimeout(isupportGate.debounce);
+        isupportGate = null;
+    }
+
+    function scrubIsupportGate(client) {
+        clearIsupportGate();
+        isupportSent = false;
+        const cap = client && client.network && client.network.cap;
+        if (cap && cap.requested) {
+            const idx = cap.requested.indexOf(ISUPPORT_GATE_CAP);
+            if (idx !== -1) {
+                cap.requested.splice(idx, 1);
+            }
+        }
+    }
+
+    function abortForAccountRequired(gateClient) {
+        network.state = 'disconnected';
+        network.state_error = 'account_required';
+        state.addMessage(network.serverBuffer(), {
+            time: Date.now(),
+            nick: '*',
+            message: TextFormatting.t('account_required'),
+            type: 'error',
+        });
+        // The live client object is rebuilt from settings on every manual
+        // connect, so disabling auto-reconnect here only aborts this attempt.
+        if (gateClient.options) {
+            gateClient.options.auto_reconnect = false;
+        }
+        if (gateClient.connection) {
+            gateClient.connection.end();
+        }
+    }
+
+    function releaseIsupportGate() {
+        if (!isupportGate) {
+            return;
+        }
+        const gateClient = isupportGate.client;
+        const cap = gateClient && gateClient.network && gateClient.network.cap;
+        clearIsupportGate();
+        if (cap && cap.requested) {
+            const idx = cap.requested.indexOf(ISUPPORT_GATE_CAP);
+            if (idx !== -1) {
+                cap.requested.splice(idx, 1);
+            }
+        }
+        // End negotiation ourselves only if the framework has not already
+        // done so (e.g. a NAK of the cap lets its own handler write CAP END).
+        // A pre-connect registration holds its own gate: ending here would
+        // cut negotiation before the REGISTER reply arrives.
+        const registerPending = network.registration &&
+            network.registration.pending &&
+            network.state === 'connecting';
+        if (cap && cap.negotiating && !registerPending) {
+            gateClient.raw('CAP', 'END');
+            cap.negotiating = false;
+        }
+        if (
+            !registerPending &&
+            !network.password &&
+            !network.sasl_account &&
+            typeof network.isupport['DRAFT/ACCOUNTREQUIRED'] !== 'undefined'
+        ) {
+            abortForAccountRequired(gateClient);
+        }
+    }
+
     return function middlewareFn(client, rawEvents, parsedEvents) {
         parsedEvents.use(parsedEventsHandler);
         rawEvents.use(rawEventsHandler);
@@ -369,6 +456,7 @@ function clientMiddleware(state, network) {
             network.sasl_account = '';
             saslSucceeded = false;
             pendingSaslAccount = '';
+            scrubIsupportGate(client);
             network.clearChannelListConnectTimer();
         });
 
@@ -397,6 +485,15 @@ function clientMiddleware(state, network) {
                 options[key.toUpperCase()] = event.options[key];
             });
             network.isupport = options;
+
+            // Draft/extended-isupport replies may arrive as several 005
+            // lines (batched 005s are re-emitted together at batch end, but
+            // unbatched servers send them back-to-back). Debounce so every
+            // line lands before negotiation resumes.
+            if (isupportGate && !isRegistered) {
+                clearTimeout(isupportGate.debounce);
+                isupportGate.debounce = setTimeout(() => releaseIsupportGate(), 1000);
+            }
 
             // Default BOT token to 'B' if present but empty
             if (typeof network.isupport.BOT !== 'undefined' && !network.isupport.BOT) {
@@ -554,6 +651,15 @@ function clientMiddleware(state, network) {
             network.sasl_account = '';
             saslSucceeded = false;
             pendingSaslAccount = '';
+            if (client.connection.options.sasl_disconnect_on_fail &&
+                network.state === 'connecting') {
+                // The framework ends the connection on SASL failure, but
+                // the socket-close handler bails as stale while we still
+                // look connecting — leaving the login form spinning
+                // forever. Mark us disconnected now so close runs its full
+                // cleanup and last_error reaches the form for a retry.
+                network.state = 'disconnected';
+            }
         });
 
         client.on('socket close', (err) => {
@@ -567,6 +673,7 @@ function clientMiddleware(state, network) {
             network.sasl_account = '';
             saslSucceeded = false;
             pendingSaslAccount = '';
+            scrubIsupportGate(client);
             network.clearChannelListConnectTimer();
 
             if (err) {
@@ -649,6 +756,52 @@ function clientMiddleware(state, network) {
                     if (idx !== -1) {
                         client.network.cap.requested.splice(idx, 1);
                     }
+                }
+            }
+        }
+
+        // Fetch ISUPPORT early when draft/extended-isupport is available.
+        // Raw middleware runs before irc-framework processes each line, so a
+        // gate token planted in cap.requested makes the framework's own ACK
+        // handler see outstanding caps and skip its automatic CAP END. The
+        // gate only ever engages without SASL credentials: with credentials
+        // the framework owns CAP END timing through its AUTHENTICATE/900/903
+        // paths, and touching requested there risks the capability_missing
+        // disconnects seen previously. EXTERNAL is excluded for the same
+        // reason, since the framework authenticates without a password.
+        // Credentialled connections still ask for ISUPPORT, just without
+        // holding negotiation open: the 005s merge whenever they arrive.
+        if (
+            command === 'CAP' &&
+            event &&
+            event.params &&
+            !isRegistered &&
+            network.state === 'connecting' &&
+            client.network &&
+            client.network.cap &&
+            client.network.cap.negotiating
+        ) {
+            const subcommand = (event.params[1] || '').toUpperCase();
+            // A NAK of the cap needs no handling: the gate never engaged,
+            // so the framework's own NAK handler ends negotiation itself.
+            if (subcommand === 'ACK' && !isupportSent) {
+                const listed = event.params.slice(2).join(' ').split(' ').map((entry) => (
+                    entry.split('=')[0].toLowerCase()
+                ));
+                if (listed.includes('draft/extended-isupport')) {
+                    isupportSent = true;
+                    if (
+                        !isupportGate &&
+                        !network.password &&
+                        client.options &&
+                        client.options.sasl_mechanism !== 'EXTERNAL'
+                    ) {
+                        client.network.cap.requested.push(ISUPPORT_GATE_CAP);
+                        isupportGate = { client, timer: 0, debounce: 0 };
+                        // Absolute backstop: never hold negotiation past this.
+                        isupportGate.timer = setTimeout(() => releaseIsupportGate(), 5000);
+                    }
+                    client.raw('ISUPPORT');
                 }
             }
         }
@@ -2329,6 +2482,20 @@ function clientMiddleware(state, network) {
                 null,
                 'login_failed'
             );
+
+            // The 904 trailing detail (eg. 'challenge proof invalid')
+            // rides on event.message; surface it title-cased alongside
+            // the generic message so typos are diagnosable.
+            const saslDetail = (event && typeof event.message === 'string') ?
+                event.message.trim() :
+                '';
+            if (saslDetail) {
+                const titleCasedDetail = saslDetail
+                    .split(/\s+/)
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
+                failMessage += ` (${titleCasedDetail})`;
+            }
 
             let buffers = [network.serverBuffer()];
             let activeBuffer = state.getActiveBuffer();

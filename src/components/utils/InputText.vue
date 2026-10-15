@@ -11,7 +11,7 @@
                     :placeholder="placeholder"
                     :type="plainTextEnabled ? 'text' : 'password'"
                     :class="{ 'u-form-input-plaintext': showPlainText }"
-                    autocomplete="off"
+                    :autocomplete="autocomplete || 'off'"
                     autocorrect="off"
                     autocapitalize="off"
                     spellcheck="false"
@@ -56,7 +56,7 @@
                 v-model="currentValue"
                 :disabled="disabled"
                 :placeholder="placeholder"
-                autocomplete="off"
+                :autocomplete="autocomplete || 'off'"
                 autocorrect="off"
                 autocapitalize="off"
                 spellcheck="false"
@@ -78,7 +78,8 @@
 import Vue from 'vue';
 
 export default Vue.component('input-text', {
-    props: ['value', 'label', 'type', 'showPlainText', 'disabled', 'placeholder'],
+    props: ['value', 'label', 'type', 'showPlainText', 'disabled', 'placeholder',
+        'autocomplete'],
     data: function data() {
         return {
             plainTextEnabled: false,
@@ -106,6 +107,12 @@ export default Vue.component('input-text', {
     methods: {
         updateValue(newValue) {
             this.$emit('input', newValue);
+        },
+        focus() {
+            const input = this.$el.querySelector('input, textarea');
+            if (input) {
+                input.focus();
+            }
         },
     },
 });

@@ -35,6 +35,12 @@ and this project adheres to
   channel joins subscribing rather than fetching outright. Includes a fallback
   avatar template and a warning when metadata will not persist. Ignored users
   stay hidden in history, and self-highlights are suppressed.
+  `draft/account-registration` adds a Register Account action to the own profile
+  for connected guests, plus a Register tab on the login page when the probe
+  sees `before-connect`, with an inline `VERIFY` step. Successful registrations
+  log in immediately and, with "Remember me" checked, persist for future SASL
+  logins. The form adapts to the probed tokens (`custom-account-name`,
+  `email-required`, password lengths).
 - **Media**: Added image, audio, and video embeds, including Discord and Shopify
   URLs. Iframe previews cover YouTube, Twitch, Streamable, RedGifs, and Giphy.
   Imgur single images are shown as images, not iframes. Links are parsed when
