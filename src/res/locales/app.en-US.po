@@ -1709,10 +1709,6 @@ msgstr "Public Profile"
 msgid "public_profile_warning"
 msgstr "Changes made here are public to the network. Depending on IRC server, user metadata may not persist while you are offline."
 
-#: Anonymous Profile Warning
-msgid "anonymous_profile_warning"
-msgstr "Changes made here are public to the network. User metadata may not persist beyond this session unless you register your nickname."
-
 #: Display Name
 msgid "display_name"
 msgstr "Display Name"

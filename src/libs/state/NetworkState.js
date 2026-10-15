@@ -55,6 +55,12 @@ export default class NetworkState {
             maxKeyBytes: 64,
             maxValueBytes: 4096,
         };
+        // Self profile metadata the user explicitly SET (Edit Profile),
+        // re-sent after reconnects since servers may not persist metadata.
+        // Plain {} to stay reactive. Owner scopes it to one identity so a
+        // different account never inherits another identity's profile.
+        this.saved_profile_metadata = {};
+        this.saved_profile_owner = '';
         // SASL password
         this.account = {
             account: '',

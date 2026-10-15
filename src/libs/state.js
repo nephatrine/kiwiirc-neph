@@ -147,6 +147,12 @@ function createNewState() {
                                 '',
                             hidden: network.hidden,
                             is_bnc: network.is_bnc,
+                            // Self profile metadata (Edit Profile SETs),
+                            // re-sent after reconnects. Public by design.
+                            saved_profile_metadata: _.cloneDeep(
+                                network.saved_profile_metadata || {}
+                            ),
+                            saved_profile_owner: network.saved_profile_owner || '',
                             buffers: [],
                         };
 
@@ -231,6 +237,8 @@ function createNewState() {
                         network.password = importNetwork.password;
                         network.hidden = importNetwork.hidden;
                         network.is_bnc = importNetwork.is_bnc;
+                        network.saved_profile_metadata = importNetwork.saved_profile_metadata || {};
+                        network.saved_profile_owner = importNetwork.saved_profile_owner || '';
 
                         this.networks.push(network);
 

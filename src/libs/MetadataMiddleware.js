@@ -39,6 +39,65 @@ export default function metadataMiddleware(network) {
     };
 
     return function middlewareFn(client, rawEvents, parsedEvents) {
+        // Self-profile restore: re-SEND remembered SETs once the initial
+        // GET returns, blank-keys only. All per-attempt state resets on
+        // every new connection attempt (see 'connecting' below).
+        let profileRestoreDone = false;
+        let profileRestoreTimer = null;
+        const profileGetLabels = new Set();
+
+        const isSelfTarget = (target) => !!target && !!network.nick &&
+            target.toLowerCase() === network.nick.toLowerCase();
+
+        // Adopt a server-provided self value into the remembered profile so
+        // a value set elsewhere (or surviving server-side) is never clobbered
+        // by a stale remembered one on the next reconnect.
+        const adoptSelfMetadata = (target, key) => {
+            if (!isSelfTarget(target)) {
+                return;
+            }
+            const current = network.metadata[key];
+            if (typeof current !== 'undefined' && current !== '') {
+                network.appState.$set(network.saved_profile_metadata, key, current);
+            }
+        };
+
+        // Re-send remembered self SETs for keys that are currently blank.
+        // Runs once per connection attempt, after the initial GET resolves.
+        const restoreSelfProfile = () => {
+            if (profileRestoreDone || !network.metadataCap()) {
+                return;
+            }
+            profileRestoreDone = true;
+            if (profileRestoreTimer) {
+                clearTimeout(profileRestoreTimer);
+                profileRestoreTimer = null;
+            }
+            Object.keys(network.saved_profile_metadata).forEach((key) => {
+                const remembered = network.saved_profile_metadata[key];
+                const current = network.metadata[key];
+                if (remembered && !current) {
+                    network.setMetadata('*', key, remembered);
+                }
+            });
+        };
+
+        client.on('connecting', () => {
+            // A different identity never inherits another one's profile.
+            // Anonymous attempts (no account) share the blank owner.
+            const owner = (network.connection && network.connection.account) || '';
+            if (network.saved_profile_owner !== owner) {
+                network.saved_profile_owner = owner;
+                network.saved_profile_metadata = {};
+            }
+            profileRestoreDone = false;
+            profileGetLabels.clear();
+            if (profileRestoreTimer) {
+                clearTimeout(profileRestoreTimer);
+                profileRestoreTimer = null;
+            }
+        });
+
         const updateLimits = () => {
             const cap = network.metadataCap();
             if (!cap) {
@@ -78,6 +137,13 @@ export default function metadataMiddleware(network) {
             if (network.metadataCap()) {
                 updateLimits();
                 initialSync();
+                // Backstop for servers without labeled-response (no labeled
+                // GET ACK to key off). The labeled-ACK path runs first and
+                // cancels this; blank-only guard keeps a premature run safe.
+                if (profileRestoreTimer) {
+                    clearTimeout(profileRestoreTimer);
+                }
+                profileRestoreTimer = setTimeout(() => restoreSelfProfile(), 3000);
                 return;
             }
 
@@ -118,6 +184,16 @@ export default function metadataMiddleware(network) {
             const isKv = effectiveCmd === '760' || effectiveCmd === '761'
                 || effectiveCmd === 'RPL_KEYVALUE' || effectiveCmd === 'RPL_WHOISKEYVALUE';
 
+            if (effectiveCmd === 'ACK') {
+                // Labeled ACK to our initial self GET: the GET replies are in
+                // and current values are known, so restore blank keys now.
+                const ackLabel = event.tags && event.tags.label;
+                if (ackLabel && profileGetLabels.has(ackLabel)) {
+                    profileGetLabels.delete(ackLabel);
+                    restoreSelfProfile();
+                }
+            }
+
             if (isKv) {
                 // 760/761: <client> <target> <key> <visibility> :<value>
                 const hasClientNick = event.params.length >= 5;
@@ -137,6 +213,7 @@ export default function metadataMiddleware(network) {
                         visibilityCache
                     );
                     updateMetadataState(network, normalizedTarget, key, value, event, true);
+                    adoptSelfMetadata(normalizedTarget, key);
                 }
             } else if (effectiveCmd === '770' || effectiveCmd === 'RPL_METADATASUBOK') {
                 // 770: <client> <Key1> [<Key2> ...]
@@ -216,6 +293,12 @@ export default function metadataMiddleware(network) {
             if (hasLabels) {
                 const label = Misc.generateLabel();
                 network.metadata_label_targets.set(label, target);
+                // Track our own initial-fetch GETs: their labeled ACK marks
+                // the moment current values are known and blank keys can be
+                // restored from the remembered profile.
+                if (subcommand === 'GET' && (targetArg === '*' || isSelfTarget(target))) {
+                    profileGetLabels.add(label);
+                }
                 setTimeout(() => network.metadata_label_targets.delete(label), 60000);
                 m.tags.label = label;
             }
@@ -278,6 +361,14 @@ export default function metadataMiddleware(network) {
             }
 
             dispatchLabeledCommand(target, 'SET', [key, value]);
+
+            // Remember self SETs so they can be re-sent after reconnects;
+            // servers may not persist metadata. Recorded here, after the
+            // length/throttle validation above, so failed SETs are skipped.
+            // An emptied field is remembered too, so it stays empty.
+            if (target === '*' || isSelfTarget(target)) {
+                network.appState.$set(network.saved_profile_metadata, key, value);
+            }
         };
 
         // Helper to get metadata

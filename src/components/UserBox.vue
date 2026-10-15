@@ -138,7 +138,7 @@
                 <h3>{{ $t('public_profile') }}</h3>
                 <p class="kiwi-userbox-editprofile-warning">
                     <i class="fa fa-exclamation-triangle" aria-hidden="true" />
-                    {{ user.account ? $t('public_profile_warning') : $t('anonymous_profile_warning') }}
+                    {{ $t('public_profile_warning') }}
                 </p>
                 <label :class="{ 'kiwi-userbox-editprofile--invalid': editProfileErrors.displayName }">
                     <span>{{ $t('display_name') }}</span>
