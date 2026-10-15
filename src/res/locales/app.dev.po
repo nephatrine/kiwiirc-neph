@@ -1589,3 +1589,23 @@ msgstr "No stations"
 
 msgid "radio_error"
 msgstr "This station could not be played."
+
+#: Preferred Persistence
+msgid "settings_persistence"
+msgstr "Preferred Persistence"
+
+#: Keep As-Is
+msgid "settings_persistence_keep"
+msgstr "Keep As-Is"
+
+#: Server Default
+msgid "settings_persistence_default"
+msgstr "Server Default"
+
+#: Persistence Enabled
+msgid "settings_persistence_enabled"
+msgstr "Enabled"
+
+#: Persistence Disabled
+msgid "settings_persistence_disabled"
+msgstr "Disabled"

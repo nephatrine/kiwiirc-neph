@@ -71,6 +71,10 @@ export default class NetworkState {
         this.away = '';
         this.enabled_caps = [];
         this.cap_values = {};
+        // Server persistence state (draft/persistence). Assume non-persistent
+        // until the server reports otherwise via PERSISTENCE STATUS.
+        // Plain {} to stay reactive.
+        this.persistence_status = { client: '', effective: 'OFF' };
         this.isupport = {};
         // Account registration (draft/account-registration) flow state.
         // Never stores the password here: enumerable fields can be persisted.
@@ -104,6 +108,11 @@ export default class NetworkState {
         def(this, 'channel_list_connect_timer', null, true);
         def(this, 'channel_list_connect_force', false, true);
         def(this, 'channel_list_connect_pending', false, true);
+        // Parked channel-join releaser for the draft/persistence
+        // hold-until-known, plus its backstop timer. Non-enumerable:
+        // a function handle and a timer must not be reactive/persisted.
+        def(this, 'pending_channel_joins', null, true);
+        def(this, 'pending_channel_joins_timer', null, true);
 
         this.metadata_timeout_active = false;
 
@@ -334,6 +343,18 @@ export default class NetworkState {
 
     capValue(name) {
         return this.cap_values[name.toLowerCase()] || '';
+    }
+
+    persistenceCap() {
+        return this.hasCap('draft/persistence') ?
+            'draft/persistence' :
+            '';
+    }
+
+    // Whether the Preferred Persistence setting applies to this network:
+    // only when logged in with an account and the cap was negotiated.
+    persistencePreferenceAvailable() {
+        return !!this.sasl_account && this.hasCap('draft/persistence');
     }
 
     metadataCap() {

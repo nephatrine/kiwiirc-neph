@@ -63,6 +63,18 @@
                                 <span>{{ $t('settings_auto_reconnect') }} </span>
                                 <input v-model="settingAutoReconnect" type="checkbox">
                             </label>
+                            <label v-if="persistencePreferenceAvailable" class="kiwi-appsettings-persistence">
+                                <span>{{ $t('settings_persistence') }} </span>
+                                <select
+                                    v-model="settingPersistencePreference"
+                                    @change="applyPersistencePreference"
+                                >
+                                    <option value="keep">{{ $t('settings_persistence_keep') }}</option>
+                                    <option value="default">{{ $t('settings_persistence_default') }}</option>
+                                    <option value="on">{{ $t('settings_persistence_enabled') }}</option>
+                                    <option value="off">{{ $t('settings_persistence_disabled') }}</option>
+                                </select>
+                            </label>
                             <div
                                 v-if="canRegisterProtocolHandler"
                                 style="margin-top: 10px; text-align: center;"
@@ -350,6 +362,10 @@ export default {
             let activeNetwork = this.$state.getActiveNetwork();
             return activeNetwork && activeNetwork.hasCap('message-tags');
         },
+        persistencePreferenceAvailable() {
+            let activeNetwork = this.$state.getActiveNetwork();
+            return activeNetwork && activeNetwork.persistencePreferenceAvailable();
+        },
         redactionsSupported() {
             let activeNetwork = this.$state.getActiveNetwork();
             return activeNetwork && activeNetwork.hasCap('draft/message-redaction');
@@ -379,6 +395,7 @@ export default {
         },
         settingShowAutoComplete: bindSetting('showAutocomplete'),
         settingAutoReconnect: bindSetting('autoReconnect'),
+        settingPersistencePreference: bindSetting('persistencePreference'),
         settingUseMonospace: bindSetting('useMonospace'),
         settingHighlights: bindSetting('highlights'),
         settingBufferColourNicknames: bindSetting('buffers.colour_nicknames_in_messages'),
@@ -505,6 +522,15 @@ export default {
     methods: {
         closeSettings() {
             this.$state.$emit('active.component');
+        },
+        applyPersistencePreference() {
+            // Push a dropdown change to the server immediately against the
+            // last reported STATUS instead of waiting for the next one
+            // (servers only send STATUS on change or at connect).
+            let activeNetwork = this.$state.getActiveNetwork();
+            if (activeNetwork && activeNetwork.setPersistencePreference) {
+                activeNetwork.setPersistencePreference();
+            }
         },
         refreshTheme() {
             ThemeManager.instance().reload();

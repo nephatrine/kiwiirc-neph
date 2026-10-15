@@ -28,19 +28,27 @@ and this project adheres to
   capability is requested, and replies for unimplemented commands are shown
   generically.
 - **Identity**: Added SASL login, preferring `SCRAM-SHA-256` over `PLAIN`, live
-  `/setname` updates, and a "Remember me" toggle that can purge saved state.
-  `draft/metadata-2` shows display names, pronouns, descriptions, homepages,
-  status, and contrast-adjusted color. Away text takes precedence over social
-  status. When a server advertises `draft/metadata-3` it is preferred, with
-  channel joins subscribing rather than fetching outright. Includes a fallback
-  avatar template and a warning when metadata will not persist. Ignored users
-  stay hidden in history, and self-highlights are suppressed.
-  `draft/account-registration` adds a Register Account action to the own profile
-  for connected guests, plus a Register tab on the login page when the probe
-  sees `before-connect`, with an inline `VERIFY` step. Successful registrations
-  log in immediately and, with "Remember me" checked, persist for future SASL
-  logins. The form adapts to the probed tokens (`custom-account-name`,
-  `email-required`, password lengths).
+  `/setname` updates, a "Remember me" toggle that can purge saved state, and a
+  separate "Remember password" toggle beneath it. The login page now offers
+  Anonymous, Account, and Register tabs driven by a pre-login server probe: the
+  account block hides when SASL is unoffered, account fields become mandatory on
+  `DRAFT/ACCOUNTREQUIRED`, and the greeting uses `NETWORK` and `draft/ICON`
+  branding. `draft/metadata-2` shows display names, pronouns, descriptions,
+  homepages, status, and contrast-adjusted color. Away text takes precedence
+  over social status. When a server advertises `draft/metadata-3` it is
+  preferred, with channel joins subscribing rather than fetching outright.
+  Profile edits are remembered per account and re-sent after reconnecting when
+  the server comes back blank. Includes a fallback avatar template and a warning
+  that profile edits are public. Ignored users stay hidden in history, and
+  self-highlights are suppressed. `draft/persistence` adds a Preferred
+  Persistence setting (Keep As-Is by default) for account logins, syncing the
+  client preference with the server, and suppresses our own channel rejoins
+  while the server reports us persistent. `draft/account-registration` adds a
+  Register Account action to the own profile for connected guests, plus a
+  Register tab on the login page when the probe sees `before-connect`, with an
+  inline `VERIFY` step. Successful registrations log in immediately and, with
+  "Remember me" checked, persist for future SASL logins. The form adapts to the
+  probed tokens (`custom-account-name`, `email-required`, password lengths).
 - **Media**: Added image, audio, and video embeds, including Discord and Shopify
   URLs. Iframe previews cover YouTube, Twitch, Streamable, RedGifs, and Giphy.
   Imgur single images are shown as images, not iframes. Links are parsed when
@@ -94,7 +102,8 @@ and this project adheres to
 - **Performance**: Reduced reactivity in message state and replaced image
   emoticons with Unicode emoji.
 - **Reconnection**: Capped reconnect delays and heals channel joins after
-  reconnect.
+  reconnect, waiting for persistence status first and skipping our own rejoins
+  while the server reports us persistent via `draft/persistence`.
 - **Channel list requests**: Deferred `LIST` for 30 seconds after connect. After
   a completed list, automatic fetches wait 30 minutes. Manual refresh and bare
   `/list` wait 5 minutes. In-flight lists are not resent. Filtered `/list` is
@@ -121,3 +130,5 @@ and this project adheres to
 - **Same-origin links**: Same-origin document links, including `.svg`, now
   download instead of opening. Same-origin iframes are not rendered. Image,
   audio, and video embeds and the lightbox are unchanged.
+- **Login**: Failed SASL logins show the server's reason and return to the login
+  form instead of spinning forever.

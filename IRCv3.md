@@ -72,6 +72,18 @@ always-requested list above. KiwiIRC prefers `SCRAM-SHA-256` over `PLAIN`.
   `CAP END` until the first `005` batch arrives (1s debounce, 5s absolute cap),
   then checks `draft/ACCOUNTREQUIRED` below. Logins with credentials ask for
   `ISUPPORT` too, but without holding negotiation open.
+- **draft/persistence**: Reports server-side client persistence with
+  `PERSISTENCE STATUS <client-setting> <effective>` (in the registration burst
+  and whenever it changes). KiwiIRC assumes non-persistent until told otherwise.
+  A Preferred Persistence setting (Keep As-Is by default, otherwise Server
+  Default / Enabled / Disabled, shown only for account logins on servers with
+  the cap) sends `PERSISTENCE SET DEFAULT|ON|OFF` when it disagrees with the
+  reported client setting, and treats the next `STATUS` as the actual truth.
+  When the cap is negotiated for an account login, our post-001 channel joins
+  are held until the first STATUS arrives (5s backstop assumes non-persistent):
+  effectively ON suppresses our rejoins since the server kept us joined, while
+  OFF runs them normally. Guests and networks without the cap always join
+  immediately.
 
 ## Client Tags
 

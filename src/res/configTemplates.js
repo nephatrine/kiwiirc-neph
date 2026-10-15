@@ -160,6 +160,10 @@ export const configTemplates = {
         },
         skipHiddenMessages: false,
         autoReconnect: false,
+        // Preferred server-side persistence (draft/persistence): 'keep'
+        // leaves the server setting alone, 'default' follows the server
+        // default, 'on'/'off' request persistence enabled/disabled.
+        persistencePreference: 'keep',
         autoReconnectMaxWait: 30000,
         autoReconnectMaxRetries: 10,
         disconnectOnSaslFail: true,

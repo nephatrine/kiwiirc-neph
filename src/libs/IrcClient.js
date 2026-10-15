@@ -12,6 +12,7 @@ import saslMiddleware from './SaslMiddleware';
 import registrationMiddleware from './RegistrationMiddleware';
 import batchMiddleware from './BatchMiddleware';
 import metadataMiddleware from './MetadataMiddleware';
+import persistenceMiddleware from './PersistenceMiddleware';
 import chathistoryMiddleware from './ChathistoryMiddleware';
 import * as BatchHandlers from './BatchHandlers';
 import * as ServerConnection from './ServerConnection';
@@ -42,6 +43,7 @@ const DESIRED_CAPS = [
     'draft/relaymsg',
     'standard-replies',
     'draft/account-registration',
+    'draft/persistence',
 ];
 
 export function create(state, network) {
@@ -66,6 +68,7 @@ export function create(state, network) {
     ircClient.use(redactionMiddleware(network));
     ircClient.use(readMarkerMiddleware(network));
     ircClient.use(metadataMiddleware(network));
+    ircClient.use(persistenceMiddleware(network));
     ircClient.use(saslMiddleware(network));
     ircClient.use(registrationMiddleware(network));
     ircClient.use(batchMiddleware(network));
@@ -975,12 +978,42 @@ function clientMiddleware(state, network) {
 
             // Join our channels
             // If under bouncer mode, the bouncer will send the channels were joined to instead.
-            if (!network.connection.bncnetid) {
-                network.buffers.forEach((buffer) => {
-                    if (buffer.isChannel() && buffer.enabled) {
-                        client.join(buffer.name, buffer.key);
+            // When the server supports draft/persistence and we authenticated,
+            // a PERSISTENCE STATUS may still arrive after 001, so hold the joins
+            // until the status is known (or a backstop fires). Guests never get
+            // a STATUS, so they always join immediately, as do networks without
+            // the cap. Special buffers (*raw, *help, ...) are not channels and
+            // are restored by the normal buffer path either way.
+            const joinEnabledChannels = () => {
+                if (!network.connection.bncnetid) {
+                    network.buffers.forEach((buffer) => {
+                        if (buffer.isChannel() && buffer.enabled) {
+                            client.join(buffer.name, buffer.key);
+                        }
+                    });
+                }
+            };
+            const persistenceHold = network.hasCap('draft/persistence') &&
+                !!network.sasl_account;
+            if (persistenceHold && network.persistence_status.effective === 'ON') {
+                // An early STATUS already reported effectively ON: the
+                // server kept us joined, so suppress our rejoins outright.
+            } else if (persistenceHold) {
+                network.pending_channel_joins = joinEnabledChannels;
+                network.pending_channel_joins_timer = setTimeout(() => {
+                    network.pending_channel_joins = null;
+                    network.pending_channel_joins_timer = null;
+                    // Backstop: assume non-persistent, but re-check in case
+                    // a STATUS arrived without running the releaser. Skipped
+                    // entirely if we disconnected while waiting.
+                    if (network.state === 'connected' &&
+                        network.persistence_status.effective !== 'ON'
+                    ) {
+                        joinEnabledChannels();
                     }
-                });
+                }, 5000);
+            } else {
+                joinEnabledChannels();
             }
 
             numConnects++;
@@ -996,7 +1029,7 @@ function clientMiddleware(state, network) {
             if ([
                 'FAIL', 'WARN', 'NOTE', 'ACK', 'MARKREAD', 'REDACT',
                 'METADATA', '760', '761', '766', '770', '771', '772', '774', '775',
-                'CHATHISTORY', 'TAGMSG',
+                'CHATHISTORY', 'TAGMSG', 'PERSISTENCE',
             ].includes(verb)) {
                 next();
                 return;
