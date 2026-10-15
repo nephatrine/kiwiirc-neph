@@ -23,7 +23,7 @@
             :toggle="false"
             class="kiwi-nicklist-awaystatus"
         />
-        <span class="kiwi-nicklist-user-prefix">{{ userModePrefix }}</span>
+        <span :style="{ color: userColour }" class="kiwi-nicklist-user-prefix">{{ userModePrefix }}</span>
         <span
             :title="user.displayTooltip()"
             :style="{ color: userColour }"

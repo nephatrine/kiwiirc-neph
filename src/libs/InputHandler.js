@@ -230,7 +230,11 @@ function handleMessage(type, event, command, line, context) {
         let hasEcho = network.hasCap('echo-message');
         let hasLabel = network.hasCap('labeled-response');
 
-        if (hasLabel) {
+        // Special buffers (*raw etc.) get no server-side confirmation: an
+        // unlabeled error numeric (e.g. 401) never resolves a pending label,
+        // leaving the echo pending until the 60s confirm-timeout error fires.
+        const isSpecialBuffer = buffer.isSpecial();
+        if (hasLabel && !isSpecialBuffer) {
             tags.label = Misc.generateLabel();
         }
 
@@ -240,7 +244,7 @@ function handleMessage(type, event, command, line, context) {
             message: messageBody,
             type: type,
             tags: _.clone(tags),
-            is_pending: hasEcho || hasLabel,
+            is_pending: (hasEcho || hasLabel) && !isSpecialBuffer,
             is_rerouted: !!tags['+channel-context'],
         };
 

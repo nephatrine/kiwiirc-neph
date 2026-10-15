@@ -1094,6 +1094,12 @@ div.kiwi-messagelist-item.kiwi-messagelist-item--selected .kiwi-messagelist-mess
     font-family: var(--kiwi-font-mono);
 }
 
+.kiwi-messagelist-message-motd .kiwi-messagelist-body {
+    min-width: 0;
+    overflow-x: auto;
+    white-space: pre;
+}
+
 .kiwi-messagelist-message.kiwi-messagelist-message--hover,
 .kiwi-messagelist-message.kiwi-messagelist-message--highlight,
 .kiwi-messagelist-message.kiwi-messagelist-message-traffic--hover {

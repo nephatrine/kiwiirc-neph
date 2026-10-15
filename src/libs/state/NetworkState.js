@@ -270,7 +270,7 @@ export default class NetworkState {
         const commonServices = [
             'nickserv', 'chanserv', 'memoserv', 'hostserv',
             'operserv', 'botserv', 'rootserv', 'helpserv',
-            'statserv',
+            'statserv', 'histserv',
         ];
 
         const lowerNick = nick.toLowerCase();
