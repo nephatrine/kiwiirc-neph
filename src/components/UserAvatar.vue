@@ -56,7 +56,7 @@
 import { computed } from 'vue';
 
 import getState from '@/libs/state';
-import { createNickColour } from '@/helpers/TextFormatting';
+import * as TextFormatting from '@/helpers/TextFormatting';
 import { getAvatarTransform } from './UserAvatarCommon';
 
 </script>
@@ -183,7 +183,7 @@ const avatar = computed(() => {
     };
 
     if (bridgedNick) {
-        backgroundStyle.fill = createNickColour(bridgedNick);
+        backgroundStyle.fill = TextFormatting.createNickColour(bridgedNick);
     } else if (props.user) {
         backgroundStyle.fill = props.user.getColour();
     } else {
@@ -226,7 +226,7 @@ const toggleAway = () => {
         return;
     }
     const isAway = props.user.isAway();
-    props.network.ircClient.raw('AWAY', isAway ? '' : 'Currently away');
+    props.network.ircClient.raw('AWAY', isAway ? '' : TextFormatting.t('default_away_message'));
 };
 </script>
 

@@ -16,6 +16,7 @@
 'kiwi public';
 
 import getState from '@/libs/state';
+import * as TextFormatting from '@/helpers/TextFormatting';
 
 const methods = {
     props: {},
@@ -23,7 +24,7 @@ const methods = {
         // let props = this.props;
         if (props.isUserSelf) {
             let val = props.user.isAway();
-            props.network.ircClient.raw('AWAY', val ? '' : 'Currently away');
+            props.network.ircClient.raw('AWAY', val ? '' : TextFormatting.t('default_away_message'));
         }
     },
     isUserSelf(props) {

@@ -1882,3 +1882,7 @@ msgstr "Enabled"
 #: Persistence Disabled
 msgid "settings_persistence_disabled"
 msgstr "Disabled"
+
+#: Default Away Message
+msgid "default_away_message"
+msgstr "Currently Away"

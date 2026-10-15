@@ -96,7 +96,9 @@ export default {
                 return this.user.away;
             },
             set(val) {
-                this.network.ircClient.raw('AWAY', val ? 'Currently away' : '');
+                const statusMsg = (this.user.metadata && this.user.metadata.status) || '';
+                const awayMsg = statusMsg || this.$t('default_away_message');
+                this.network.ircClient.raw('AWAY', val ? awayMsg : '');
             },
         },
         networkSupportsAway() {
