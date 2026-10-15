@@ -133,6 +133,29 @@
                 />
             </div>
         </template>
+        <template v-else-if="media.type === 'spotify'">
+            <div class="kiwi-url-embed-spotify" :class="`kiwi-url-embed-spotify--${media.id.split('/')[0]}`" :style="containerStyle">
+                <iframe
+                    :src="`https://open.spotify.com/embed/${media.id}`"
+                    frameborder="0"
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    allowfullscreen
+                    loading="lazy"
+                    @load="onLoad"
+                />
+            </div>
+        </template>
+        <template v-else-if="media.type === 'soundcloud'">
+            <div class="kiwi-url-embed-soundcloud" :style="containerStyle">
+                <iframe
+                    :src="soundcloudEmbedUrl"
+                    frameborder="0"
+                    allow="autoplay"
+                    loading="lazy"
+                    @load="onLoad"
+                />
+            </div>
+        </template>
         <template v-else-if="media.type === 'steam'">
             <div class="kiwi-url-embed-steam">
                 <iframe
@@ -225,6 +248,10 @@ export default {
             // Inline container has auto height, so we need a concrete limit
             return { maxHeight: (this.settings.maxHeight || 400) + 'px' };
         },
+        soundcloudEmbedUrl() {
+            const pageUrl = 'https://soundcloud.com/' + this.media.id;
+            return 'https://w.soundcloud.com/player/?url=' + encodeURIComponent(pageUrl) + '&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true';
+        },
         containerStyle() {
             const styles = {};
             const type = this.media.type;
@@ -246,8 +273,10 @@ export default {
                 if (this.showPin) {
                     styles.maxWidth = '250px';
                 }
-            } else if (['youtube', 'twitch-clip', 'twitch-channel', 'giphy', 'streamable', 'redgifs', 'fediverse'].includes(type)) {
+            } else if (['youtube', 'twitch-clip', 'twitch-channel', 'giphy', 'streamable', 'redgifs', 'fediverse', 'soundcloud'].includes(type)) {
                 styles.aspectRatio = '16 / 9';
+            } else if (type === 'spotify') {
+                delete styles.height;
             }
 
             return styles;
@@ -289,8 +318,8 @@ export default {
                 this.$el.style.maxHeight = (this.settings.maxHeight || 400) + 'px';
                 this.$emit('setMaxHeight', (this.settings.maxHeight || 400) + 'px');
             } else {
-                this.$emit('setMaxHeight', '54%');
-                this.$emit('setHeight', '54%');
+                this.$emit('setMaxHeight', '45%');
+                this.$emit('setHeight', 'auto');
             }
         },
         onError() {
@@ -477,6 +506,17 @@ export default {
     margin: 0 auto;
 }
 
+.kiwi-url-embed-spotify {
+    position: relative;
+    width: 100%;
+    height: 352px;
+    color-scheme: light;
+}
+
+.kiwi-url-embed-spotify--track {
+    height: 152px;
+}
+
 .kiwi-url-embed-youtube iframe,
 .kiwi-url-embed-youtube-shorts iframe,
 .kiwi-url-embed-twitch iframe,
@@ -484,6 +524,8 @@ export default {
 .kiwi-url-embed-giphy iframe,
 .kiwi-url-embed-streamable iframe,
 .kiwi-url-embed-redgifs iframe,
+.kiwi-url-embed-spotify iframe,
+.kiwi-url-embed-soundcloud iframe,
 .kiwi-url-embed-steam iframe {
     position: absolute;
     top: 0;

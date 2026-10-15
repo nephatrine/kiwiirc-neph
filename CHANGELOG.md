@@ -50,10 +50,10 @@ and this project adheres to
   "Remember me" checked, persist for future SASL logins. The form adapts to the
   probed tokens (`custom-account-name`, `email-required`, password lengths).
 - **Media**: Added image, audio, and video embeds, including Discord and Shopify
-  URLs. Iframe previews cover YouTube, Twitch, Streamable, RedGifs, and Giphy.
-  Imgur single images are shown as images, not iframes. Links are parsed when
-  the message arrives. The pinned viewer keeps sidebar alignment, and images
-  open in a lightbox.
+  URLs. Iframe previews cover YouTube, Twitch, Streamable, SoundCloud, Spotify,
+  RedGifs, and Giphy. Imgur single images are shown as images, not iframes.
+  Links are parsed when the message arrives. The pinned viewer keeps sidebar
+  alignment, and images open in a lightbox.
 - **Buffers**: Added favorite pinning and mute, which dims a buffer and hides
   its unread count. Mentions use a short scale pulse. Buffers can be exported as
   plain text. Desktop notifications can be toggled separately from synthesized

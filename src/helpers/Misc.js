@@ -237,6 +237,33 @@ export function getMediaInfo(url) {
         }
     }
 
+    // Spotify
+    const spotifyMatch = url.match(/open\.spotify\.com\/(?:intl-[a-z-]+\/)?(track|album|playlist|episode|show|artist)\/([a-z0-9]{22})/i);
+    if (spotifyMatch) {
+        info.type = 'spotify';
+        info.id = spotifyMatch[1].toLowerCase() + '/' + spotifyMatch[2];
+        return info;
+    }
+
+    // SoundCloud
+    const soundcloudMatch = url.match(/(?:www\.)?soundcloud\.com\/([a-z0-9_-]+)\/([a-z0-9_-]+)(?:\/([a-z0-9_-]+))?/i);
+    if (soundcloudMatch) {
+        const owner = soundcloudMatch[1];
+        const second = soundcloudMatch[2].toLowerCase();
+        const third = soundcloudMatch[3];
+        const excluded = ['likes', 'tracks', 'playlists', 'albums', 'followers', 'following', 'stations', 'search'];
+        if (second === 'sets' && third) {
+            info.type = 'soundcloud';
+            info.id = owner + '/sets/' + third;
+            return info;
+        }
+        if (!excluded.includes(second) && !third) {
+            info.type = 'soundcloud';
+            info.id = owner + '/' + soundcloudMatch[2];
+            return info;
+        }
+    }
+
     return info;
 }
 

@@ -114,6 +114,43 @@ describe('Media Detection', () => {
         expect(Misc.getMediaInfo('https://imgur.com/about').type).toBe('');
     });
 
+    it('should detect Spotify', () => {
+        const sp1 = Misc.getMediaInfo('https://open.spotify.com/track/6rqhFgbbKwnb9MLmUQDw0G?si=abc123');
+        expect(sp1.type).toBe('spotify');
+        expect(sp1.id).toBe('track/6rqhFgbbKwnb9MLmUQDw0G');
+
+        const sp2 = Misc.getMediaInfo('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
+        expect(sp2.type).toBe('spotify');
+        expect(sp2.id).toBe('playlist/37i9dQZF1DXcBWIGoYBM5M');
+
+        const sp3 = Misc.getMediaInfo('https://open.spotify.com/intl-de/album/599xhK1ZXXm3ovMQLY9YaU');
+        expect(sp3.type).toBe('spotify');
+        expect(sp3.id).toBe('album/599xhK1ZXXm3ovMQLY9YaU');
+
+        const sp4 = Misc.getMediaInfo('https://open.spotify.com/episode/5XtQJkCq3PqK4nF8vL2mNp');
+        expect(sp4.type).toBe('spotify');
+        expect(sp4.id).toBe('episode/5XtQJkCq3PqK4nF8vL2mNp');
+
+        // Non-item pages and short links stay plain links
+        expect(Misc.getMediaInfo('https://open.spotify.com/search/results?query=foo').type).toBe('');
+        expect(Misc.getMediaInfo('https://spotify.link/abcXYZ').type).toBe('');
+    });
+
+    it('should detect SoundCloud', () => {
+        const sc1 = Misc.getMediaInfo('https://soundcloud.com/lofi-girl/lofi-hip-hop-radio-beats-to-relaxstudy-to');
+        expect(sc1.type).toBe('soundcloud');
+        expect(sc1.id).toBe('lofi-girl/lofi-hip-hop-radio-beats-to-relaxstudy-to');
+
+        const sc2 = Misc.getMediaInfo('https://soundcloud.com/artist/sets/album-name?si=abc');
+        expect(sc2.type).toBe('soundcloud');
+        expect(sc2.id).toBe('artist/sets/album-name');
+
+        // Profiles, profile tabs, and short links stay plain links
+        expect(Misc.getMediaInfo('https://soundcloud.com/artist-name').type).toBe('');
+        expect(Misc.getMediaInfo('https://soundcloud.com/artist-name/likes').type).toBe('');
+        expect(Misc.getMediaInfo('https://on.soundcloud.com/abcXYZ123').type).toBe('');
+    });
+
     it('should return empty for unknown URLs', () => {
         expect(Misc.getMediaInfo('https://example.com/page.html').type).toBe('');
         expect(Misc.getMediaInfo('https://example.com/').type).toBe('');

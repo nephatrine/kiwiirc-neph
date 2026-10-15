@@ -111,7 +111,8 @@ export default {
     },
     methods: {
         updateEmbed(shouldEmit) {
-            this.setMaxHeight('');
+            this.setHeight('auto');
+            this.setMaxHeight('45%');
 
             if (this.isIframe || this.component) {
                 this.setHeight((this.isIframe) ? '40%' : 'auto');
