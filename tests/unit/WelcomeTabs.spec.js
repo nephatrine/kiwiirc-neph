@@ -143,9 +143,9 @@ describe('Welcome account tabs', () => {
         expect(comp.activeTab).toBe('register');
     });
 
-    it('defaults the account override from the account, stripping a #suffix', async() => {
+    it('defaults the account override from the account, stripping a @suffix', async() => {
         comp.accountNick = '';
-        comp.account = 'USER#TAG';
+        comp.account = 'USER@TAG';
         await comp.$nextTick();
         expect(comp.accountNick).toBe('USER');
         // The Anonymous tab's own nick is untouched by account typing
@@ -162,7 +162,7 @@ describe('Welcome account tabs', () => {
     it('never clobbers an override the user took over', async() => {
         comp.accountNick = 'Custom';
         comp.accountNickTouched = true;
-        comp.account = 'USER#TAG';
+        comp.account = 'USER@TAG';
         await comp.$nextTick();
         expect(comp.accountNick).toBe('Custom');
     });
@@ -230,10 +230,10 @@ describe('Welcome account tabs', () => {
         comp.showAdvanced = true;
         comp.accountNickTouched = true;
         comp.accountNick = '';
-        comp.account = 'USER#TAG';
+        comp.account = 'ankle@phone';
         await comp.$nextTick();
-        expect(comp.accountNickSuggestion).toBe('USER');
-        expect(inputByLabel('nick').placeholder).toBe('USER');
+        expect(comp.accountNickSuggestion).toBe('ankle');
+        expect(inputByLabel('nick').placeholder).toBe('ankle');
     });
 
     it('lets an empty override fall back to the account name', () => {
@@ -505,7 +505,7 @@ describe('Welcome account tabs', () => {
         comp.nick = '';
         comp.registerAccount = 'SomeAccount';
         await comp.$nextTick();
-        // No #suffix strip here: without custom-account-name the
+        // No @suffix strip here: without custom-account-name the
         // account IS the nick.
         expect(comp.effectiveNick).toBe('SomeAccount');
     });

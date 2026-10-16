@@ -458,6 +458,9 @@ function clientMiddleware(state, network) {
             network.metadata_throttles = new Map();
             network.metadata_label_targets = new Map();
             network.connected_at = 0;
+            // A fresh attempt is not registered yet. Without this reset a
+            // stale flag drops the 900, and sasl_account is never restored.
+            isRegistered = false;
             network.sasl_account = '';
             saslSucceeded = false;
             pendingSaslAccount = '';

@@ -513,7 +513,7 @@ export default {
             return '';
         },
         // The nick the Account tab will use when its nick field is left
-        // empty: the account name with any trailing #suffix stripped.
+        // empty: the account name with any trailing @suffix stripped.
         // Shown as the field placeholder and accepted by validation, so a
         // configured default nick (or none at all) never forces the user
         // to type a nick by hand.
@@ -897,9 +897,9 @@ export default {
             return this.registerNick || (this.registerAccount || '').trim() || this.nick;
         },
         // An account name doubles as a nick suggestion: strip a trailing
-        // `#suffix` (eg. USER#TAG becomes USER) for the nickname default.
+        // `@suffix` (eg. ankle@phone becomes ankle) for the nickname default.
         stripAccountSuffix(name) {
-            const idx = (name || '').indexOf('#');
+            const idx = (name || '').indexOf('@');
             return idx === -1 ?
                 name :
                 name.substr(0, idx);
