@@ -13,6 +13,7 @@ import registrationMiddleware from './RegistrationMiddleware';
 import batchMiddleware from './BatchMiddleware';
 import metadataMiddleware from './MetadataMiddleware';
 import persistenceMiddleware from './PersistenceMiddleware';
+import webpushMiddleware from './WebpushMiddleware';
 import chathistoryMiddleware from './ChathistoryMiddleware';
 import * as BatchHandlers from './BatchHandlers';
 import * as ServerConnection from './ServerConnection';
@@ -69,6 +70,7 @@ export function create(state, network) {
     ircClient.use(readMarkerMiddleware(network));
     ircClient.use(metadataMiddleware(network));
     ircClient.use(persistenceMiddleware(network));
+    ircClient.use(webpushMiddleware(network));
     ircClient.use(saslMiddleware(network));
     ircClient.use(registrationMiddleware(network));
     ircClient.use(batchMiddleware(network));
@@ -585,6 +587,21 @@ function clientMiddleware(state, network) {
                 }
             }
 
+            // Webpush caps are negotiated by preference, never both.
+            // Only request one if none is enabled yet.
+            if (!network.webpushCap()) {
+                const advertisedWebpush = Object.keys(event.capabilities).map((c) => (
+                    c.toLowerCase()
+                ));
+                const preferredWebpush = ['draft/webpush', 'soju.im/webpush'].find(
+                    (cap) => advertisedWebpush.includes(cap)
+                );
+                if (preferredWebpush) {
+                    client.requestCap(preferredWebpush);
+                    requested.push(preferredWebpush);
+                }
+            }
+
             if (requested.length > 0) {
                 let serverBuffer = network.serverBuffer();
                 state.addMessage(serverBuffer, {
@@ -758,6 +775,47 @@ function clientMiddleware(state, network) {
                     const idx = client.network.cap.requested.indexOf(loser);
                     if (idx !== -1) {
                         client.network.cap.requested.splice(idx, 1);
+                    }
+                }
+            }
+        }
+
+        // Fold the preferred webpush cap into the framework's batched CAP REQ
+        // the same way as metadata above: Ergo advertises `draft/webpush`
+        // while soju uses `soju.im/webpush`. Negotiate both names but request
+        // only one, preferring the draft name -- never both in one REQ.
+        if (
+            command === 'CAP' &&
+            event &&
+            event.params &&
+            event.params[1] === 'LS' &&
+            !network.webpushCap()
+        ) {
+            const preferredWebpush = ['draft/webpush', 'soju.im/webpush'].find((cap) => (
+                advertisedLsCaps.has(cap)
+            ));
+            if (preferredWebpush) {
+                const loserWebpush = preferredWebpush === 'draft/webpush' ?
+                    'soju.im/webpush' :
+                    'draft/webpush';
+                client.request_extra_caps = client.request_extra_caps || [];
+                if (!client.request_extra_caps.includes(preferredWebpush)) {
+                    client.request_extra_caps = client.request_extra_caps.filter(
+                        (cap) => cap !== 'draft/webpush' && cap !== 'soju.im/webpush'
+                    );
+                    client.request_extra_caps.push(preferredWebpush);
+                }
+                if (client.command_handler && client.command_handler.request_extra_caps) {
+                    client.command_handler.request_extra_caps = client
+                        .command_handler.request_extra_caps.filter((cap) => cap !== loserWebpush);
+                    if (!client.command_handler.request_extra_caps.includes(preferredWebpush)) {
+                        client.command_handler.request_extra_caps.push(preferredWebpush);
+                    }
+                }
+                if (client.network && client.network.cap && client.network.cap.requested) {
+                    const webpushIdx = client.network.cap.requested.indexOf(loserWebpush);
+                    if (webpushIdx !== -1) {
+                        client.network.cap.requested.splice(webpushIdx, 1);
                     }
                 }
             }
@@ -1029,7 +1087,7 @@ function clientMiddleware(state, network) {
             if ([
                 'FAIL', 'WARN', 'NOTE', 'ACK', 'MARKREAD', 'REDACT',
                 'METADATA', '760', '761', '766', '770', '771', '772', '774', '775',
-                'CHATHISTORY', 'TAGMSG', 'PERSISTENCE',
+                'CHATHISTORY', 'TAGMSG', 'PERSISTENCE', 'WEBPUSH',
             ].includes(verb)) {
                 next();
                 return;

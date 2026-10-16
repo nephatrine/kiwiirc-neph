@@ -1883,6 +1883,14 @@ msgstr "Enabled"
 msgid "settings_persistence_disabled"
 msgstr "Disabled"
 
+#: Push Notifications
+msgid "settings_webpush"
+msgstr "Push Notifications"
+
+#: Push Notifications Permission Denied
+msgid "webpush_permission_denied"
+msgstr "Browser notifications are blocked for this site. Allow them in your browser settings, then try again."
+
 #: Default Away Message
 msgid "default_away_message"
 msgstr "Currently Away"

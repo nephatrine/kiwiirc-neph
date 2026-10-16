@@ -84,6 +84,16 @@ always-requested list above. KiwiIRC prefers `SCRAM-SHA-256` over `PLAIN`.
   effectively ON suppresses our rejoins since the server kept us joined, while
   OFF runs them normally. Guests and networks without the cap always join
   immediately.
+- **draft/webpush** (or **soju.im/webpush**): Browser push notifications.
+  KiwiIRC negotiates exactly one of the two names, preferring the draft form,
+  and never both in one request. Push Notifications is an opt-in checkbox
+  (default off), shown only for account logins on servers that negotiate a cap
+  and send a VAPID key. When enabled, the browser subscribes via its vendor push
+  service and KiwiIRC sends WEBPUSH REGISTER with the endpoint and keys,
+  renewing daily; toggling off sends WEBPUSH UNREGISTER. Server FAILs only clear
+  the local registered flag (the message itself still surfaces) and never
+  trigger a retry loop. A dependency-free worker in static/sw.js turns each
+  pushed IRC line into a system notification.
 
 ## Client Tags
 

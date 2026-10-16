@@ -164,6 +164,10 @@ export const configTemplates = {
         // leaves the server setting alone, 'default' follows the server
         // default, 'on'/'off' request persistence enabled/disabled.
         persistencePreference: 'keep',
+        // Browser push notifications (draft/webpush): opt-in per user.
+        // The settings checkbox only appears for account logins on
+        // servers that negotiate the cap and send a VAPID key.
+        webpushEnabled: false,
         autoReconnectMaxWait: 30000,
         autoReconnectMaxRetries: 10,
         disconnectOnSaslFail: true,

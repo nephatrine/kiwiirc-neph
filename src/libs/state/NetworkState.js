@@ -75,6 +75,10 @@ export default class NetworkState {
         // until the server reports otherwise via PERSISTENCE STATUS.
         // Plain {} to stay reactive.
         this.persistence_status = { client: '', effective: 'OFF' };
+        // Web push registration state (draft/webpush). Runtime-only, never
+        // persisted: subscriptions live in the browser, not in saved state.
+        this.webpush_registered = false;
+        this.webpush_endpoint = '';
         this.isupport = {};
         // Account registration (draft/account-registration) flow state.
         // Never stores the password here: enumerable fields can be persisted.
@@ -365,6 +369,24 @@ export default class NetworkState {
             return 'draft/metadata-2';
         }
         return '';
+    }
+
+    // Negotiated webpush capability, preferring the draft name over soju's
+    // vendor name. Exactly one is ever requested (see IrcClient fold).
+    webpushCap() {
+        if (this.hasCap('draft/webpush')) {
+            return 'draft/webpush';
+        }
+        if (this.hasCap('soju.im/webpush')) {
+            return 'soju.im/webpush';
+        }
+        return '';
+    }
+
+    // Whether push notifications apply to this network: only when logged in
+    // with an account, the cap was negotiated, and the server sent a VAPID key.
+    webpushAvailable() {
+        return !!this.webpushCap() && !!this.sasl_account && !!this.supports('VAPID');
     }
 
     // Parsed draft/account-registration capability tokens. Returns null when

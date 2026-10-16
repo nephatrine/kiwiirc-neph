@@ -75,6 +75,10 @@
                                     <option value="off">{{ $t('settings_persistence_disabled') }}</option>
                                 </select>
                             </label>
+                            <label v-if="webpushAvailable" class="kiwi-appsettings-webpush">
+                                <span>{{ $t('settings_webpush') }} </span>
+                                <input v-model="settingWebpushEnabled" type="checkbox" @change="applyWebpushEnabled">
+                            </label>
                             <div
                                 v-if="canRegisterProtocolHandler"
                                 style="margin-top: 10px; text-align: center;"
@@ -366,6 +370,10 @@ export default {
             let activeNetwork = this.$state.getActiveNetwork();
             return activeNetwork && activeNetwork.persistencePreferenceAvailable();
         },
+        webpushAvailable() {
+            let activeNetwork = this.$state.getActiveNetwork();
+            return activeNetwork && activeNetwork.webpushAvailable();
+        },
         redactionsSupported() {
             let activeNetwork = this.$state.getActiveNetwork();
             return activeNetwork && activeNetwork.hasCap('draft/message-redaction');
@@ -396,6 +404,7 @@ export default {
         settingShowAutoComplete: bindSetting('showAutocomplete'),
         settingAutoReconnect: bindSetting('autoReconnect'),
         settingPersistencePreference: bindSetting('persistencePreference'),
+        settingWebpushEnabled: bindSetting('webpushEnabled'),
         settingUseMonospace: bindSetting('useMonospace'),
         settingHighlights: bindSetting('highlights'),
         settingBufferColourNicknames: bindSetting('buffers.colour_nicknames_in_messages'),
@@ -530,6 +539,14 @@ export default {
             let activeNetwork = this.$state.getActiveNetwork();
             if (activeNetwork && activeNetwork.setPersistencePreference) {
                 activeNetwork.setPersistencePreference();
+            }
+        },
+        applyWebpushEnabled() {
+            // (Un)subscribe immediately on toggle instead of waiting for
+            // the next connect.
+            let activeNetwork = this.$state.getActiveNetwork();
+            if (activeNetwork && activeNetwork.setWebpushEnabled) {
+                activeNetwork.setWebpushEnabled();
             }
         },
         refreshTheme() {
