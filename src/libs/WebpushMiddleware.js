@@ -173,6 +173,34 @@ export default function webpushMiddleware(network, deps = {}) {
                     network.webpush_registered = false;
                     clearRenewTimer();
                 }
+            } else if (verb === 'PERSISTENCE' &&
+                (event.params[0] || '').toUpperCase() === 'STATUS'
+            ) {
+                // The server tells us this session is not persistent, so a
+                // webpush opt-in is meaningless: drop any registration and
+                // switch the setting off so it cannot silently re-arm.
+                // STATUS only arrives when the persistence cap is up.
+                const statusTail = event.params.slice(-2).map((p) => (
+                    (p || '').toUpperCase()
+                ));
+                if (statusTail.length === 2 &&
+                    ['ON', 'OFF', 'DEFAULT'].includes(statusTail[0]) &&
+                    ['ON', 'OFF'].includes(statusTail[1]) &&
+                    statusTail[1] !== 'ON'
+                ) {
+                    if (network.webpush_registered && network.webpush_endpoint) {
+                        client.raw('WEBPUSH', 'UNREGISTER', network.webpush_endpoint);
+                    }
+                    network.webpush_registered = false;
+                    network.webpush_endpoint = '';
+                    clearRenewTimer();
+                    try {
+                        network.appState.setting('webpushEnabled', false);
+                    } catch (err) {
+                        // No setting store; the cleared flag above is what
+                        // actually stops re-registration.
+                    }
+                }
             } else if (verb === 'FAIL' && (event.params[0] || '').toUpperCase() === 'WEBPUSH') {
                 // The failure itself surfaces via the normal FAIL path below;
                 // just stop claiming to be registered. No retry loop.

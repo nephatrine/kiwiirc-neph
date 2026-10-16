@@ -384,9 +384,17 @@ export default class NetworkState {
     }
 
     // Whether push notifications apply to this network: only when logged in
-    // with an account, the cap was negotiated, and the server sent a VAPID key.
+    // with an account, the cap was negotiated, the server sent a VAPID key,
+    // and the connection is persistent. Networks without the persistence
+    // cap (eg. soju) skip the persistence check: they never report STATUS.
     webpushAvailable() {
-        return !!this.webpushCap() && !!this.sasl_account && !!this.supports('VAPID');
+        // Push extends desktop notifications; never offer it alone.
+        return !!this.webpushCap() &&
+            !!this.sasl_account &&
+            !!this.supports('VAPID') &&
+            (!this.hasCap('draft/persistence') ||
+                this.persistence_status.effective === 'ON') &&
+            !!this.appState.setting('buffers.show_notifications');
     }
 
     // Parsed draft/account-registration capability tokens. Returns null when

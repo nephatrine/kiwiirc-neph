@@ -75,10 +75,6 @@
                                     <option value="off">{{ $t('settings_persistence_disabled') }}</option>
                                 </select>
                             </label>
-                            <label v-if="webpushAvailable" class="kiwi-appsettings-webpush">
-                                <span>{{ $t('settings_webpush') }} </span>
-                                <input v-model="settingWebpushEnabled" type="checkbox" @change="applyWebpushEnabled">
-                            </label>
                             <div
                                 v-if="canRegisterProtocolHandler"
                                 style="margin-top: 10px; text-align: center;"
@@ -224,7 +220,17 @@
                             </label>
                             <label class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_show_notifications') }} </span>
-                                <input v-model="settingBufferShowNotifications" type="checkbox">
+                                <input
+                                    v-model="settingBufferShowNotifications"
+                                    type="checkbox"
+                                    :disabled="desktopNotificationsLocked"
+                                    :title="desktopNotificationsLocked ? $t('settings_desktop_notifications_locked') : ''"
+                                    @change="applyDesktopNotifications"
+                                >
+                            </label>
+                            <label v-if="webpushAvailable" class="u-checkbox-wrapper kiwi-appsettings-webpush">
+                                <span>{{ $t('settings_webpush') }} </span>
+                                <input v-model="settingWebpushEnabled" type="checkbox" @change="applyWebpushEnabled">
                             </label>
                             <label class="kiwi-appsettings-full">
                                 <span>{{ $t('settings_highlight') }} </span>
@@ -373,6 +379,12 @@ export default {
         webpushAvailable() {
             let activeNetwork = this.$state.getActiveNetwork();
             return activeNetwork && activeNetwork.webpushAvailable();
+        },
+        desktopNotificationsLocked() {
+            // The desktop toggle stays locked while push is active:
+            // pushes without desktop notifications would skip
+            // every mention received with the app open.
+            return !!this.settingWebpushEnabled && !!this.webpushAvailable;
         },
         redactionsSupported() {
             let activeNetwork = this.$state.getActiveNetwork();
@@ -539,6 +551,17 @@ export default {
             let activeNetwork = this.$state.getActiveNetwork();
             if (activeNetwork && activeNetwork.setPersistencePreference) {
                 activeNetwork.setPersistencePreference();
+            }
+        },
+        applyDesktopNotifications() {
+            // Turning desktop notifications off must also turn push
+            // off, reusing the normal unsubscribe flow.
+            if (!this.settingBufferShowNotifications && this.settingWebpushEnabled) {
+                this.settingWebpushEnabled = false;
+                let activeNetwork = this.$state.getActiveNetwork();
+                if (activeNetwork && activeNetwork.setWebpushEnabled) {
+                    activeNetwork.setWebpushEnabled();
+                }
             }
         },
         applyWebpushEnabled() {

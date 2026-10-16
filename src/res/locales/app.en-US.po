@@ -1883,9 +1883,13 @@ msgstr "Enabled"
 msgid "settings_persistence_disabled"
 msgstr "Disabled"
 
-#: Push Notifications
+#: Enable Push Notifications
 msgid "settings_webpush"
-msgstr "Push Notifications"
+msgstr "Enable Push Notifications"
+
+#: Desktop Notifications Locked
+msgid "settings_desktop_notifications_locked"
+msgstr "Desktop notifications are required while push notifications are enabled."
 
 #: Push Notifications Permission Denied
 msgid "webpush_permission_denied"
