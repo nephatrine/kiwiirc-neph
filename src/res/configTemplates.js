@@ -198,11 +198,11 @@ export const configTemplates = {
 /q /query $1+
 /w /whois $1+
 /raw /quote $1+
-/connect /server $1+
 /disconnect /quit $1+
 /cycle $channel? /lines /part $channel | /join $channel
 /active /back $1+
 /umode /mode $nick $1+
+/t /topic $channel $1+
 
 # Op related aliases
 /op /quote mode $channel +o $1+
@@ -215,6 +215,12 @@ export const configTemplates = {
 /bans /mode $channel +b
 /ban /quote mode $channel +b $1+
 /unban /quote mode $channel -b $1+
+
+# Services aliases
+/ns /msg NickServ $1+
+/cs /msg ChanServ $1+
+/hs /msg HostServ $1+
+/ms /msg MemoServ $1+
 
 # Misc aliases
 /slap /me slaps $1 around a bit with a large trout

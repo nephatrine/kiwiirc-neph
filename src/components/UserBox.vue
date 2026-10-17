@@ -133,6 +133,9 @@
                     </div>
                 </template>
             </div>
+            <div v-if="showServicesFallbackBlurb" class="kiwi-userbox-services-blurb">
+                {{ $t('nickserv_self_blurb') }}
+            </div>
 
             <div v-if="isSelf && isEditingProfile" class="kiwi-userbox-editprofile u-form">
                 <h3>{{ $t('public_profile') }}</h3>
@@ -326,6 +329,83 @@
             </label>
         </form>
 
+        <div v-if="showServicesCheatsheet" class="kiwi-userbox-services">
+            <h3>{{ $t('nickserv_handy_commands') }}</h3>
+            <div v-if="showServicesCardBlurb" class="kiwi-userbox-services-blurb">
+                {{ $t('nickserv_card_register_blurb') }}
+            </div>
+            <dl class="kiwi-userbox-service-list kiwi-userbox-service-row">
+                <dt>{{ $t('nickserv_register') }}</dt>
+                <dd>/ns REGISTER &lt;password&gt; [email]</dd>
+                <dt>{{ $t('nickserv_passwd') }}</dt>
+                <dd>/ns PASSWD &lt;current&gt; &lt;new&gt; &lt;new&gt;</dd>
+                <dt>{{ $t('nickserv_unregister') }}</dt>
+                <dd>/ns UNREGISTER &lt;account&gt; [code]</dd>
+            </dl>
+            <h3>{{ $t('nickserv_cheatsheet_title') }}</h3>
+            <p class="kiwi-userbox-services-hint" v-html="$t('nickserv_cheatsheet_hint')" />
+            <dl class="kiwi-userbox-service-list">
+                <div
+                    v-for="setting in nickservSettings"
+                    :key="setting.name"
+                    class="kiwi-userbox-service-row"
+                >
+                    <dt>{{ setting.name }}</dt>
+                    <dd>{{ settingValuesLabel(setting) }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <div v-if="showChanServicesCheatsheet" class="kiwi-userbox-services">
+            <h3>{{ $t('nickserv_handy_commands') }}</h3>
+            <dl class="kiwi-userbox-service-list kiwi-userbox-service-row">
+                <dt>{{ $t('chanserv_howtoban') }}</dt>
+                <dd>/cs HOWTOBAN &lt;#channel&gt; &lt;nick&gt;</dd>
+                <dt>{{ $t('chanserv_amode') }}</dt>
+                <dd>/cs AMODE &lt;#channel&gt; [mode change] [account]</dd>
+                <dt>{{ $t('chanserv_register') }}</dt>
+                <dd>/cs REGISTER &lt;#channel&gt;</dd>
+                <dt>{{ $t('chanserv_transfer') }}</dt>
+                <dd>/cs TRANSFER [accept] &lt;#channel&gt; user [code]</dd>
+                <dt>{{ $t('chanserv_unregister') }}</dt>
+                <dd>/cs UNREGISTER &lt;#channel&gt; [code]</dd>
+            </dl>
+            <h3>{{ $t('chanserv_cheatsheet_title') }}</h3>
+            <p class="kiwi-userbox-services-hint" v-html="$t('chanserv_cheatsheet_hint')" />
+            <dl class="kiwi-userbox-service-list">
+                <div
+                    v-for="setting in chanservSettings"
+                    :key="setting.name"
+                    class="kiwi-userbox-service-row"
+                >
+                    <dt>{{ setting.name }}</dt>
+                    <dd>{{ settingValuesLabel(setting) }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <div v-if="showHostServicesCheatsheet" class="kiwi-userbox-services">
+            <h3>{{ $t('nickserv_handy_commands') }}</h3>
+            <dl class="kiwi-userbox-service-list kiwi-userbox-service-row">
+                <dt>{{ $t('hostserv_on') }}</dt>
+                <dd>/hs ON</dd>
+                <dt>{{ $t('hostserv_off') }}</dt>
+                <dd>/hs OFF</dd>
+                <dt>{{ $t('hostserv_status') }}</dt>
+                <dd>/hs STATUS [user]</dd>
+            </dl>
+        </div>
+
+        <div v-if="showHistServicesCheatsheet" class="kiwi-userbox-services">
+            <h3>{{ $t('nickserv_handy_commands') }}</h3>
+            <dl class="kiwi-userbox-service-list kiwi-userbox-service-row">
+                <dt>{{ $t('histserv_play') }}</dt>
+                <dd>/msg HistServ PLAY &lt;target&gt; [limit]</dd>
+                <dt>{{ $t('histserv_delete') }}</dt>
+                <dd>/msg HistServ DELETE &lt;target&gt; &lt;msgid&gt;</dd>
+            </dl>
+        </div>
+
         <div
             v-if="whoisRequested && !user.relayed_by"
             :class="[whoisLoading ? 'kiwi-userbox-whois--loading' : '']"
@@ -470,6 +550,8 @@ import GlobalApi from '@/libs/GlobalApi';
 import toHtml from '@/libs/renderers/Html';
 import parseMessage from '@/libs/MessageParser';
 import { effectiveRetention, effectiveService } from '@/libs/fileupload';
+import { NICKSERV_SETTINGS } from '@/libs/ErgoServices';
+import { CHANSERV_SETTINGS } from '@/libs/ErgoChanServ';
 import UserAvatar from './UserAvatar';
 import AwayStatusIndicator from './AwayStatusIndicator';
 
@@ -708,6 +790,67 @@ export default {
             }
             return true;
         },
+        isErgoNetwork() {
+            return !!(this.network && typeof this.network.isErgo === 'function' && this.network.isErgo());
+        },
+        hasServicesAccount() {
+            return !!(this.network && this.network.sasl_account);
+        },
+        isNickServCard() {
+            return !this.isSelf &&
+                this.isErgoNetwork &&
+                !!this.user &&
+                typeof this.user.nick === 'string' &&
+                this.user.nick.toLowerCase() === 'nickserv';
+        },
+        showServicesCheatsheet() {
+            return this.isNickServCard;
+        },
+        showServicesCardBlurb() {
+            return this.isNickServCard && !this.hasServicesAccount && !!this.registrationInfo;
+        },
+        showServicesFallbackBlurb() {
+            return this.isSelf &&
+                this.isErgoNetwork &&
+                !this.hasServicesAccount &&
+                !this.registrationInfo;
+        },
+        nickservSettings() {
+            return NICKSERV_SETTINGS;
+        },
+        isChanServCard() {
+            return !this.isSelf &&
+                this.isErgoNetwork &&
+                !!this.user &&
+                typeof this.user.nick === 'string' &&
+                this.user.nick.toLowerCase() === 'chanserv';
+        },
+        showChanServicesCheatsheet() {
+            return this.isChanServCard;
+        },
+        chanservSettings() {
+            return CHANSERV_SETTINGS;
+        },
+        isHostServCard() {
+            return !this.isSelf &&
+                this.isErgoNetwork &&
+                !!this.user &&
+                typeof this.user.nick === 'string' &&
+                this.user.nick.toLowerCase() === 'hostserv';
+        },
+        showHostServicesCheatsheet() {
+            return this.isHostServCard;
+        },
+        isHistServCard() {
+            return !this.isSelf &&
+                this.isErgoNetwork &&
+                !!this.user &&
+                typeof this.user.nick === 'string' &&
+                this.user.nick.toLowerCase() === 'histserv';
+        },
+        showHistServicesCheatsheet() {
+            return this.isHistServCard;
+        },
     },
     watch: {
         user() {
@@ -748,6 +891,12 @@ export default {
                     'status',
                 ]);
             }
+        },
+        settingValuesLabel(setting) {
+            if (!setting.values || !setting.values.length) {
+                return '';
+            }
+            return setting.values.join(' / ');
         },
         openQuery() {
             this.sidebarState.showNicklist();
@@ -1371,6 +1520,58 @@ export default {
 .kiwi-userbox-ignoreuser span {
     /* This fixes a vertical align issue between the checkbox and span */
     float: right;
+}
+
+.kiwi-userbox-services {
+    border-top: 1px solid rgba(128, 128, 128, 0.2);
+    margin: 1em 1.5em;
+    padding-top: 1em;
+    text-align: left;
+}
+
+.kiwi-userbox-services h3 {
+    margin: 0 0 0.5em 0;
+}
+
+.kiwi-userbox-services-hint {
+    font-size: 0.9em;
+    opacity: 0.8;
+    margin: 0 0 1em 0;
+}
+
+.kiwi-userbox-services-blurb {
+    font-size: 0.9em;
+    opacity: 0.8;
+    font-style: italic;
+    margin: 0 1.5em 1em 1.5em;
+}
+
+.kiwi-userbox-services .kiwi-userbox-services-blurb {
+    margin: 0 0 1em 0;
+}
+
+.kiwi-userbox-service-list {
+    margin: 0;
+}
+
+.kiwi-userbox-service-row {
+    margin-bottom: 1em;
+}
+
+.kiwi-userbox-service-row dt {
+    font-size: 0.9em;
+    font-weight: bold;
+    margin-bottom: 0.2em;
+}
+
+.kiwi-userbox-service-row dd {
+    font-size: 0.9em;
+    opacity: 0.8;
+    margin: 0;
+}
+
+.kiwi-userbox-services h4 {
+    margin: 0 0 0.5em 0;
 }
 
 @media screen and (max-width: 769px) {

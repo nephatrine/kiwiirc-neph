@@ -462,6 +462,7 @@ function clientMiddleware(state, network) {
             // stale flag drops the 900, and sasl_account is never restored.
             isRegistered = false;
             network.sasl_account = '';
+            network.is_oper = false;
             saslSucceeded = false;
             pendingSaslAccount = '';
             scrubIsupportGate(client);
@@ -887,6 +888,10 @@ function clientMiddleware(state, network) {
             if (pendingSaslAccount) {
                 network.sasl_account = pendingSaslAccount;
             }
+        }
+
+        if (command === '381') {
+            network.is_oper = true;
         }
 
         if (command === '002') {
@@ -2244,6 +2249,13 @@ function clientMiddleware(state, network) {
                 });
             } else {
                 if (!isHistory && event.target === network.nick) {
+                    (event.modes || []).forEach((item) => {
+                        if (item && item.mode === '+o') {
+                            network.is_oper = true;
+                        } else if (item && item.mode === '-o') {
+                            network.is_oper = false;
+                        }
+                    });
                     let user = network.currentUser();
 
                     if (user && user.modes) {

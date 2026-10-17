@@ -1625,3 +1625,103 @@ msgstr "Browser notifications are blocked for this site. Allow them in your brow
 #: Default Away Message
 msgid "default_away_message"
 msgstr "Currently Away"
+
+#: Settings Cheatsheet
+msgid "nickserv_cheatsheet_title"
+msgstr "Settings Cheatsheet"
+
+#: These are account settings you can <code>GET</code> or <code>SET</code> using NickServ.
+msgid "nickserv_cheatsheet_hint"
+msgstr "These are account settings you can <code>GET</code> or <code>SET</code> using NickServ."
+
+#: You can find an account registration form on your own user profile page.
+msgid "nickserv_card_register_blurb"
+msgstr "You can find an account registration form on your own user profile page."
+
+#: You can message NickServ to register your account.
+msgid "nickserv_self_blurb"
+msgstr "You can message NickServ to register your account."
+
+#: Handy Commands
+msgid "nickserv_handy_commands"
+msgstr "Handy Commands"
+
+#: Account Registration
+msgid "nickserv_register"
+msgstr "Account Registration"
+
+#: Change Password
+msgid "nickserv_passwd"
+msgstr "Change Password"
+
+#: Account Deletion
+msgid "nickserv_unregister"
+msgstr "Account Deletion"
+
+#: Settings Cheatsheet
+msgid "chanserv_cheatsheet_title"
+msgstr "Settings Cheatsheet"
+
+#: These are channel settings you can <code>GET</code> or <code>SET</code> using ChanServ.
+msgid "chanserv_cheatsheet_hint"
+msgstr "These are channel settings you can <code>GET</code> or <code>SET</code> using ChanServ."
+
+#: Access Modes
+msgid "chanserv_amode"
+msgstr "Access Modes"
+
+#: How to Ban
+msgid "chanserv_howtoban"
+msgstr "How to Ban"
+
+#: Channel Registration
+msgid "chanserv_register"
+msgstr "Channel Registration"
+
+#: Channel Deletion
+msgid "chanserv_unregister"
+msgstr "Channel Deletion"
+
+#: Transfer Ownership
+msgid "chanserv_transfer"
+msgstr "Transfer Ownership"
+
+#: Channel Settings
+msgid "chanserv_settings_title"
+msgstr "Channel Settings"
+
+#: HostServ Cheatsheet
+msgid "hostserv_cheatsheet_title"
+msgstr "HostServ Cheatsheet"
+
+#: Here are useful things you can do with HostServ.
+msgid "hostserv_cheatsheet_hint"
+msgstr "Here are useful things you can do with HostServ."
+
+#: Enable VHost
+msgid "hostserv_on"
+msgstr "Enable VHost"
+
+#: Disable VHost
+msgid "hostserv_off"
+msgstr "Disable VHost"
+
+#: VHost Status
+msgid "hostserv_status"
+msgstr "VHost Status"
+
+#: HistServ Cheatsheet
+msgid "histserv_cheatsheet_title"
+msgstr "HistServ Cheatsheet"
+
+#: Here are useful things you can do with HistServ.
+msgid "histserv_cheatsheet_hint"
+msgstr "Here are useful things you can do with HistServ."
+
+#: Play Back History
+msgid "histserv_play"
+msgstr "Play Back History"
+
+#: Delete Message
+msgid "histserv_delete"
+msgstr "Delete Message"

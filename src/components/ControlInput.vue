@@ -32,6 +32,7 @@
             </transition>
         </div>
 
+        <div v-if="serviceArgGhost()" class="kiwi-controlinput-ns-hint">{{ serviceArgGhost() }}</div>
         <div class="kiwi-controlinput-inner">
             <typing-users-list :buffer="buffer" />
             <away-status-indicator
@@ -207,6 +208,46 @@ import * as Emoji from '@/helpers/Emoji';
 import * as settingTools from '@/libs/settingTools';
 
 import autocompleteCommands from '@/res/autocompleteCommands';
+import {
+    nickservSubcommands,
+    NICKSERV_SYNTAX,
+    NICKSERV_FLAGS,
+    nickservBadge,
+    isNickservSubcommandPosition,
+    parseNickservInput,
+    nickservArgSuggestions,
+    nickservSyntaxFor
+} from '@/libs/ErgoServices';
+import {
+    chanservSubcommands,
+    CHANSERV_SYNTAX,
+    chanservBadge,
+    isChanservSubcommandPosition,
+    parseChanservInput,
+    chanservArgSuggestions,
+    chanservSyntaxFor,
+    CHANSERV_FLAGS
+} from '@/libs/ErgoChanServ';
+import {
+    hostservSubcommands,
+    HOSTSERV_SYNTAX,
+    HOSTSERV_FLAGS,
+    hostservBadge,
+    isHostservSubcommandPosition,
+    parseHostservInput,
+    hostservArgSuggestions,
+    hostservSyntaxFor
+} from '@/libs/ErgoHostServ';
+import {
+    histservSubcommands,
+    HISTSERV_SYNTAX,
+    HISTSERV_FLAGS,
+    histservBadge,
+    isHistservSubcommandPosition,
+    parseHistservInput,
+    histservArgSuggestions,
+    histservSyntaxFor
+} from '@/libs/ErgoHistServ';
 import GlobalApi from '@/libs/GlobalApi';
 import { effectiveRetention, effectiveService } from '@/libs/fileupload';
 import AutoComplete from './AutoComplete';
@@ -696,11 +737,37 @@ export default {
                 let items = [];
                 if (inputText.indexOf('/set') === 0) {
                     items = this.buildAutoCompleteItems({ settings: true });
+                } else if (this.shouldCompleteNickserv(inputText)) {
+                    items = this.buildAutoCompleteItems({ nickserv: true });
+                } else if (this.shouldCompleteChanserv(inputText)) {
+                    items = this.buildAutoCompleteItems({ chanserv: true });
+                } else if (this.shouldCompleteHostserv(inputText)) {
+                    items = this.buildAutoCompleteItems({ hostserv: true });
+                } else if (this.shouldCompleteHistserv(inputText)) {
+                    items = this.buildAutoCompleteItems({ histserv: true });
                 } else {
-                    items = this.buildAutoCompleteItems({
-                        users: true,
-                        buffers: true,
-                    });
+                    let nsArgItems = this.nsArgContextItems(inputText);
+                    let csArgItems = this.csArgContextItems(inputText);
+                    let hsArgItems = this.hsArgContextItems(inputText);
+                    let histArgItems = this.histArgContextItems(inputText);
+                    if (nsArgItems.length > 0) {
+                        // Completing a NickServ argument, not the subcommand
+                        items = nsArgItems;
+                    } else if (csArgItems.length > 0) {
+                        // Completing a ChanServ argument, not the subcommand
+                        items = csArgItems;
+                    } else if (hsArgItems.length > 0) {
+                        // Completing a HostServ argument, not the subcommand
+                        items = hsArgItems;
+                    } else if (histArgItems.length > 0) {
+                        // Completing a HistServ argument, not the subcommand
+                        items = histArgItems;
+                    } else {
+                        items = this.buildAutoCompleteItems({
+                            users: true,
+                            buffers: true,
+                        });
+                    }
                 }
 
                 this.openAutoComplete(items);
@@ -741,10 +808,30 @@ export default {
             let currentWord = this.$refs.input.getCurrentWord();
             let currentToken = currentWord.word.substr(0, currentWord.position);
             let autocompleteTokens = this.$state.setting('autocompleteTokens');
+            let nsArgItems = this.nsArgContextItems(inputVal);
+            let csArgItems = this.csArgContextItems(inputVal);
+            let hsArgItems = this.hsArgContextItems(inputVal);
+            let histArgItems = this.histArgContextItems(inputVal);
 
             if (event.key === 'Escape' && this.autocomplete_open) {
                 this.autocomplete_open = false;
-            } else if (this.autocomplete_open && currentToken === '') {
+            } else if (
+                this.autocomplete_open &&
+                currentToken === '' &&
+                !this.shouldCompleteNickserv(inputVal) &&
+                !this.shouldCompleteChanserv(inputVal) &&
+                !this.shouldCompleteHostserv(inputVal) &&
+                !this.shouldCompleteHistserv(inputVal) &&
+                nsArgItems.length === 0 &&
+                csArgItems.length === 0 &&
+                hsArgItems.length === 0 &&
+                histArgItems.length === 0
+            ) {
+                // Empty token closes the list, unless a service completion
+                // still wants it open (subcommand or argument suggestions).
+                // Without this exemption, arrow-key navigation with an empty
+                // token (eg. '/ns GET ') closes the list on keyup and the
+                // next arrow falls through to message history instead.
                 this.autocomplete_open = false;
             } else if (this.autocomplete_open) {
                 // @ is a shortcut to open the nicklist autocomplete. It's not part
@@ -764,6 +851,38 @@ export default {
             } else if (currentToken === '#' && autocompleteTokens.includes('#')) {
                 // Just typed # so start the command auto completion
                 this.openAutoComplete(this.buildAutoCompleteItems({ buffers: true }));
+                this.autocomplete_filtering = true;
+            } else if (this.shouldCompleteNickserv(inputVal)) {
+                this.openAutoComplete(this.buildAutoCompleteItems({ nickserv: true }));
+                this.autocomplete_filtering = true;
+            } else if (this.shouldCompleteChanserv(inputVal)) {
+                this.openAutoComplete(this.buildAutoCompleteItems({ chanserv: true }));
+                this.autocomplete_filtering = true;
+            } else if (this.shouldCompleteHostserv(inputVal)) {
+                this.openAutoComplete(this.buildAutoCompleteItems({ hostserv: true }));
+                this.autocomplete_filtering = true;
+            } else if (this.shouldCompleteHistserv(inputVal)) {
+                this.openAutoComplete(this.buildAutoCompleteItems({ histserv: true }));
+                this.autocomplete_filtering = true;
+            } else if (nsArgItems.length > 0) {
+                // Completing a NickServ argument: suggest argument values
+                // instead of subcommand names
+                this.openAutoComplete(nsArgItems);
+                this.autocomplete_filtering = true;
+            } else if (csArgItems.length > 0) {
+                // Completing a ChanServ argument: suggest argument values
+                // instead of subcommand names
+                this.openAutoComplete(csArgItems);
+                this.autocomplete_filtering = true;
+            } else if (hsArgItems.length > 0) {
+                // Completing a HostServ argument: suggest argument values
+                // instead of subcommand names
+                this.openAutoComplete(hsArgItems);
+                this.autocomplete_filtering = true;
+            } else if (histArgItems.length > 0) {
+                // Completing a HistServ argument: suggest argument values
+                // instead of subcommand names
+                this.openAutoComplete(histArgItems);
                 this.autocomplete_filtering = true;
             } else if (
                 event.key === 'Tab'
@@ -884,6 +1003,268 @@ export default {
                 }
             }
         },
+        shouldCompleteNickserv(inputVal) {
+            if (!inputVal || !this.network || !this.network.isErgo) {
+                return false;
+            }
+            if (typeof this.network.isErgo !== 'function' || !this.network.isErgo()) {
+                return false;
+            }
+            // Subcommand suggestions only while typing the subcommand itself;
+            // once arguments start, completion gets out of the way.
+            return isNickservSubcommandPosition(inputVal);
+        },
+        shouldCompleteChanserv(inputVal) {
+            if (!inputVal || !this.network || !this.network.isErgo) {
+                return false;
+            }
+            if (typeof this.network.isErgo !== 'function' || !this.network.isErgo()) {
+                return false;
+            }
+            return isChanservSubcommandPosition(inputVal);
+        },
+        shouldCompleteHistserv(inputVal) {
+            if (!inputVal || !this.network || !this.network.isErgo) {
+                return false;
+            }
+            if (typeof this.network.isErgo !== 'function' || !this.network.isErgo()) {
+                return false;
+            }
+            return isHistservSubcommandPosition(inputVal);
+        },
+        shouldCompleteHostserv(inputVal) {
+            if (!inputVal || !this.network || !this.network.isErgo) {
+                return false;
+            }
+            if (typeof this.network.isErgo !== 'function' || !this.network.isErgo()) {
+                return false;
+            }
+            return isHostservSubcommandPosition(inputVal);
+        },
+        nsArgContextItems(inputVal) {
+            if (!this.network || typeof this.network.isErgo !== 'function' || !this.network.isErgo()) {
+                return [];
+            }
+            let parsed = parseNickservInput(inputVal);
+            if (!parsed) {
+                return [];
+            }
+            // Argument suggestions follow the same visibility rules as the
+            // top-level list: gated commands offer nothing when logged out
+            // or non-oper. The syntax ghost still shows as reference.
+            let firstFlags = NICKSERV_FLAGS[parsed.path[0]];
+            if (firstFlags) {
+                if (firstFlags.auth && !this.network.sasl_account) {
+                    return [];
+                }
+                if (firstFlags.capabs && !this.network.is_oper) {
+                    return [];
+                }
+            }
+            let ghost = nickservSyntaxFor(parsed.path);
+            let knownNicks = _.values(this.buffer.users).map((user) => user.nick);
+            let accounts = {};
+            _.values(this.network.users).forEach((user) => {
+                if (user.account) {
+                    accounts[user.account] = true;
+                }
+            });
+            let suggestions = nickservArgSuggestions(parsed, {
+                oper: !!this.network.is_oper,
+                selfNick: this.network.nick,
+                selfAccount: this.network.sasl_account,
+                knownNicks: knownNicks,
+                knownAccounts: Object.keys(accounts).sort(Misc.strCompare),
+            });
+            return suggestions.map((text) => ({
+                text: text,
+                description: ghost,
+                type: 'command',
+            }));
+        },
+        csArgContextItems(inputVal) {
+            if (!this.network || typeof this.network.isErgo !== 'function' || !this.network.isErgo()) {
+                return [];
+            }
+            let parsed = parseChanservInput(inputVal);
+            if (!parsed) {
+                return [];
+            }
+            // Argument suggestions follow the same visibility rules as the
+            // top-level list: gated commands offer nothing when logged out
+            // or non-oper. The syntax ghost still shows as reference.
+            let firstFlags = CHANSERV_FLAGS[parsed.path[0]];
+            if (firstFlags) {
+                if (firstFlags.auth && !this.network.sasl_account) {
+                    return [];
+                }
+                if (firstFlags.capabs && !this.network.is_oper) {
+                    return [];
+                }
+            }
+            let ghost = chanservSyntaxFor(parsed.path);
+            let selfNick = this.network.nick;
+            let channels = { ops: [], founder: [], known: [], notFounder: [] };
+            let channelUsers = {};
+            let channelAccounts = {};
+            let selfUser = this.$state.getUser(this.network.id, selfNick);
+            this.network.buffers.forEach((buffer) => {
+                if (!buffer.isChannel()) {
+                    return;
+                }
+                channels.known.push(buffer.name);
+                let userModes = [];
+                let info = selfUser && selfUser.buffers[buffer.id];
+                if (info && info.modes) {
+                    userModes = info.modes.map((mode) => String(mode).toLowerCase());
+                }
+                // Founder is approximated by the owner (+q) mode, the closest
+                // client-visible signal of channel ownership on Ergo.
+                if (buffer.isUserAnOp(selfNick)) {
+                    channels.ops.push(buffer.name);
+                }
+                if (userModes.indexOf('q') !== -1) {
+                    channels.founder.push(buffer.name);
+                } else {
+                    channels.notFounder.push(buffer.name);
+                }
+                let channelNicks = _.values(buffer.users).map((user) => user.nick);
+                channelUsers[buffer.name.toLowerCase()] = channelNicks;
+                let accounts = {};
+                _.values(buffer.users).forEach((user) => {
+                    if (user.account) {
+                        accounts[user.account] = true;
+                    }
+                });
+                let channelAccountNames = Object.keys(accounts).sort(Misc.strCompare);
+                channelAccounts[buffer.name.toLowerCase()] = channelAccountNames;
+            });
+            let suggestions = chanservArgSuggestions(parsed, {
+                channels: channels,
+                channelUsers: channelUsers,
+                channelAccounts: channelAccounts,
+            });
+            return suggestions.map((text) => ({
+                text: text,
+                description: ghost,
+                type: 'command',
+            }));
+        },
+        hsArgContextItems(inputVal) {
+            if (!this.network || typeof this.network.isErgo !== 'function' || !this.network.isErgo()) {
+                return [];
+            }
+            let parsed = parseHostservInput(inputVal);
+            if (!parsed) {
+                return [];
+            }
+            // Argument suggestions follow the same visibility rules as the
+            // top-level list: gated commands offer nothing when logged out
+            // or non-oper. The syntax ghost still shows as reference.
+            let firstFlags = HOSTSERV_FLAGS[parsed.path[0]];
+            if (firstFlags) {
+                if (firstFlags.auth && !this.network.sasl_account) {
+                    return [];
+                }
+                if (firstFlags.capabs && !this.network.is_oper) {
+                    return [];
+                }
+            }
+            let ghost = hostservSyntaxFor(parsed.path);
+            let accounts = {};
+            _.values(this.network.users).forEach((user) => {
+                if (user.account) {
+                    accounts[user.account] = true;
+                }
+            });
+            let suggestions = hostservArgSuggestions(parsed, {
+                oper: !!this.network.is_oper,
+                selfAccount: this.network.sasl_account,
+                knownAccounts: Object.keys(accounts).sort(Misc.strCompare),
+            });
+            return suggestions.map((text) => ({
+                text: text,
+                description: ghost,
+                type: 'command',
+            }));
+        },
+        histArgContextItems(inputVal) {
+            if (!this.network || typeof this.network.isErgo !== 'function' || !this.network.isErgo()) {
+                return [];
+            }
+            let parsed = parseHistservInput(inputVal);
+            if (!parsed) {
+                return [];
+            }
+            // Argument suggestions follow the same visibility rules as the
+            // top-level list: gated commands offer nothing when logged out
+            // or non-oper. The syntax ghost still shows as reference.
+            let firstFlags = HISTSERV_FLAGS[parsed.path[0]];
+            if (firstFlags) {
+                if (firstFlags.auth && !this.network.sasl_account) {
+                    return [];
+                }
+                if (firstFlags.capabs && !this.network.is_oper) {
+                    return [];
+                }
+            }
+            let ghost = histservSyntaxFor(parsed.path);
+            let accounts = {};
+            _.values(this.network.users).forEach((user) => {
+                if (user.account) {
+                    accounts[user.account] = true;
+                }
+            });
+            let targets = [];
+            this.network.buffers.forEach((buffer) => {
+                if (buffer.isChannel() || buffer.isQuery()) {
+                    targets.push(buffer.name);
+                }
+            });
+            let suggestions = histservArgSuggestions(parsed, {
+                knownAccounts: Object.keys(accounts).sort(Misc.strCompare),
+                knownTargets: targets,
+            });
+            return suggestions.map((text) => ({
+                text: text,
+                description: ghost,
+                type: 'command',
+            }));
+        },
+        serviceArgGhost() {
+            if (!this.network || typeof this.network.isErgo !== 'function' || !this.network.isErgo()) {
+                return '';
+            }
+            if (!this.$refs.input) {
+                return '';
+            }
+            // Read the reactive input mirror so the hint recomputes on every
+            // keystroke. The mirror holds raw HTML, where a trailing space
+            // becomes &nbsp; or vanishes, so parse the plain-text rendering
+            // instead (the same source the completion branches use).
+            let mirror = this.current_input_value;
+            if (typeof mirror !== 'string' || mirror.length === 0) {
+                return '';
+            }
+            let plainText = this.$refs.input.getRawText();
+            let parsed = parseNickservInput(plainText);
+            if (parsed) {
+                return nickservSyntaxFor(parsed.path);
+            }
+            parsed = parseChanservInput(plainText);
+            if (parsed) {
+                return chanservSyntaxFor(parsed.path);
+            }
+            parsed = parseHostservInput(plainText);
+            if (parsed) {
+                return hostservSyntaxFor(parsed.path);
+            }
+            parsed = parseHistservInput(plainText);
+            if (parsed) {
+                return histservSyntaxFor(parsed.path);
+            }
+            return '';
+        },
         buildAutoCompleteItems(_opts) {
             let opts = _opts || {};
             let list = [];
@@ -938,6 +1319,70 @@ export default {
                 });
 
                 list = list.concat(commandList);
+            }
+
+            if (opts.nickserv) {
+                let oper = !!(this.network && this.network.is_oper);
+                let authenticated = !!(this.network && this.network.sasl_account);
+                let cmds = nickservSubcommands({ oper: oper, authenticated: authenticated });
+                let nsList = cmds.map((cmd) => {
+                    let desc = NICKSERV_SYNTAX[cmd] || (cmd + ' ...');
+                    return {
+                        text: cmd,
+                        description: desc,
+                        type: 'command',
+                        badge: nickservBadge(cmd),
+                    };
+                });
+                list = list.concat(nsList);
+            }
+
+            if (opts.chanserv) {
+                let oper = !!(this.network && this.network.is_oper);
+                let authenticated = !!(this.network && this.network.sasl_account);
+                let cmds = chanservSubcommands({ oper: oper, authenticated: authenticated });
+                let csList = cmds.map((cmd) => {
+                    let desc = CHANSERV_SYNTAX[cmd] || (cmd + ' ...');
+                    return {
+                        text: cmd,
+                        description: desc,
+                        type: 'command',
+                        badge: chanservBadge(cmd),
+                    };
+                });
+                list = list.concat(csList);
+            }
+
+            if (opts.hostserv) {
+                let oper = !!(this.network && this.network.is_oper);
+                let authenticated = !!(this.network && this.network.sasl_account);
+                let cmds = hostservSubcommands({ oper: oper, authenticated: authenticated });
+                let hsList = cmds.map((cmd) => {
+                    let desc = HOSTSERV_SYNTAX[cmd] || (cmd + ' ...');
+                    return {
+                        text: cmd,
+                        description: desc,
+                        type: 'command',
+                        badge: hostservBadge(cmd),
+                    };
+                });
+                list = list.concat(hsList);
+            }
+
+            if (opts.histserv) {
+                let oper = !!(this.network && this.network.is_oper);
+                let authenticated = !!(this.network && this.network.sasl_account);
+                let cmds = histservSubcommands({ oper: oper, authenticated: authenticated });
+                let hisList = cmds.map((cmd) => {
+                    let desc = HISTSERV_SYNTAX[cmd] || (cmd + ' ...');
+                    return {
+                        text: cmd,
+                        description: desc,
+                        type: 'command',
+                        badge: histservBadge(cmd),
+                    };
+                });
+                list = list.concat(hisList);
             }
 
             if (opts.settings) {
@@ -1154,6 +1599,16 @@ export default {
             opacity: 1;
         }
     }
+}
+
+.kiwi-controlinput-ns-hint {
+    font-family: monospace;
+    font-size: 0.85em;
+    opacity: 0.7;
+    padding: 2px 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .kiwi-controlinput-active-tool {

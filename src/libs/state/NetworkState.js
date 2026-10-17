@@ -68,6 +68,7 @@ export default class NetworkState {
         };
         this.password = '';
         this.sasl_account = '';
+        this.is_oper = false;
         this.away = '';
         this.enabled_caps = [];
         this.cap_values = {};
@@ -347,6 +348,13 @@ export default class NetworkState {
 
     capValue(name) {
         return this.cap_values[name.toLowerCase()] || '';
+    }
+
+    // True when the server identifies as Ergo in 002 (network.ircd holds the
+    // 'running version X' text, eg. Ergo-2.14.0). Gates Ergo-specific UI such
+    // as the NickServ cheatsheet, whose commands come from an Ergo HELP dump.
+    isErgo() {
+        return /^ergo/i.test(this.ircd || '');
     }
 
     persistenceCap() {

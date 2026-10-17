@@ -7,11 +7,15 @@
                 'kiwi-autocomplete-item',
                 `kiwi-autocomplete-type--${item.type ? item.type : 'default'}`,
                 { 'kiwi-autocomplete-item--selected': item.idx === selected_idx },
+                item.badge ? `kiwi-autocomplete-item--badge-${item.badge.toLowerCase()}` : '',
             ]"
             @mousedown.prevent
             @click="handleClick(item)"
         >
-            <span class="kiwi-autocomplete-item-value">{{ item.text }}</span>
+            <span class="kiwi-autocomplete-item-value">{{ item.text }}<span
+                v-if="item.badge"
+                :class="['kiwi-autocomplete-badge', `kiwi-autocomplete-badge--${item.badge.toLowerCase()}`]"
+            >{{ item.badge }}</span></span>
             <span
                 v-if="item.type === 'command'"
                 class="u-link kiwi-autocomplete-item-details"
@@ -282,6 +286,35 @@ export default {
     .kiwi-autocomplete-item-details {
         margin-left: 8px;
     }
+}
+
+.kiwi-autocomplete-badge {
+    display: inline-block;
+    font-size: 0.7em;
+    font-weight: 700;
+    margin-left: 8px;
+    padding: 1px 6px;
+    border: 1px solid;
+    border-radius: 10px;
+    vertical-align: middle;
+}
+
+.kiwi-autocomplete-badge--server {
+    color: var(--brand-warning, #ff9800);
+    border-color: var(--brand-warning, #ff9800);
+}
+
+.kiwi-autocomplete-badge--chat {
+    color: var(--brand-notice, #2196f3);
+    border-color: var(--brand-notice, #2196f3);
+}
+
+.kiwi-autocomplete-item--badge-server {
+    box-shadow: inset 3px 0 0 var(--brand-warning, #ff9800);
+}
+
+.kiwi-autocomplete-item--badge-chat {
+    box-shadow: inset 3px 0 0 var(--brand-notice, #2196f3);
 }
 
 .kiwi-autocomplete-type--user {
