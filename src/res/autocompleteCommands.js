@@ -28,5 +28,5 @@ export default [
     { command: 'ignore', alias: [], description: 'locale_id_command_ignore' },
     { command: 'unignore', alias: [], description: 'locale_id_command_unignore' },
     { command: 'setname', alias: [], description: 'locale_id_command_setname' },
-    { command: 'dice', alias: [], description: 'locale_id_command_dice' },
+    { command: 'roll', alias: [], description: 'locale_id_command_roll' },
 ];

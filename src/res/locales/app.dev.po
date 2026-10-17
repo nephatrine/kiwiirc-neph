@@ -1364,6 +1364,30 @@ msgstr "Roll a Dice"
 msgid "dice_roll"
 msgstr "Rolls a {{sides}} sided dice and gets {{number}}"
 
+#: Roll dice
+msgid "command_roll"
+msgstr "Roll dice"
+
+#: Rolls {{expression}} and gets {{number}}
+msgid "dice_roll_result"
+msgstr "Rolls {{expression}} and gets {{number}}."
+
+#: Rolls {{expression}} and gets {{number}}, including the individual dice
+msgid "dice_roll_breakdown"
+msgstr "Rolls {{expression}} and gets {{number}} ({{dice}})."
+
+#: Dice that were dropped by a keep/drop modifier
+msgid "dice_dropped"
+msgstr "dropped {{dice}}"
+
+#: An invalid dice expression was given
+msgid "dice_invalid"
+msgstr "Invalid roll: {{expression}}"
+
+#: No dice expression was given
+msgid "dice_invalid_empty"
+msgstr "Invalid roll. Try something like 4d6k3 or 1d20+5."
+
 
 #: Notifications
 

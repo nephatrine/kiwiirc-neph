@@ -1315,6 +1315,30 @@ msgstr "Roll Dice"
 msgid "dice_roll"
 msgstr "Rolls a {{sides}} sided dice and gets {{number}}."
 
+#: Roll dice
+msgid "command_roll"
+msgstr "Roll Dice"
+
+#: Rolls {{expression}} and gets {{number}}
+msgid "dice_roll_result"
+msgstr "rolls {{expression}} and gets {{number}}."
+
+#: Rolls {{expression}} and gets {{number}}, including the individual dice
+msgid "dice_roll_breakdown"
+msgstr "rolls {{expression}} and gets {{number}} ({{dice}})."
+
+#: Dice that were dropped by a keep/drop modifier
+msgid "dice_dropped"
+msgstr "drop {{dice}}"
+
+#: An invalid dice expression was given
+msgid "dice_invalid"
+msgstr "Invalid Roll: {{expression}}"
+
+#: No dice expression was given
+msgid "dice_invalid_empty"
+msgstr "Invalid Roll. Try something like 4d6k3 or 1d20+5."
+
 #: The server only supports UTF-8. Your connection encoding has been automatically switched.
 msgid "encoding_forced_utf8"
 msgstr "The server only supports UTF-8. Your connection encoding has been automatically switched."

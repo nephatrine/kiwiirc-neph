@@ -4,6 +4,7 @@ import _ from 'lodash';
 
 import * as TextFormatting from '@/helpers/TextFormatting';
 import * as Misc from '@/helpers/Misc';
+import { rollDice, formatRoll } from '@/helpers/Dice';
 import AliasRewriter from './AliasRewriter';
 
 // Map of commandName=commandHandlerFn
@@ -271,25 +272,34 @@ inputCommands.action = function inputCommandMsg(event, command, line, context) {
 inputCommands.notice = function inputCommandMsg(event, command, line, context) {
     handleMessage.call(this, 'notice', event, command, line, context);
 };
-inputCommands.dice = function inputCommandDice(event, command, line, context) {
-    // /dice 100
+inputCommands.roll = function inputCommandRoll(event, command, line, context) {
+    // /roll 4d6k3, /roll 1d20+5, /roll 2d6 + 1d8 + 3
 
     event.handled = true;
     const { network, buffer } = context;
 
-    let sides = line.replace(/\D/g, '');
-    sides = parseInt(sides || '0', 10);
-    if (sides <= 0) {
-        sides = 6;
-    }
-    let rndNumber = Math.floor(Math.random() * sides) + 1;
+    const expression = line.trim();
+    const result = rollDice(expression);
 
-    let msg = TextFormatting.t('dice_roll', {
-        sides: TextFormatting.formatNumber(sides),
-        number: TextFormatting.formatNumber(rndNumber),
-    });
+    if (!result.ok) {
+        let errorMsg = TextFormatting.t('dice_invalid', { expression });
+        if (!expression) {
+            errorMsg = TextFormatting.t('dice_invalid_empty');
+        }
+
+        this.state.addMessage(buffer, {
+            time: Date.now(),
+            nick: network.nick,
+            message: errorMsg,
+            type: 'error',
+        });
+        return;
+    }
+
+    const msg = formatRoll(result, TextFormatting.t, TextFormatting.formatNumber);
     network.ircClient.action(buffer.name, msg);
     this.state.addMessage(buffer, {
+        time: Date.now(),
         nick: network.nick,
         message: msg,
         type: 'action',
