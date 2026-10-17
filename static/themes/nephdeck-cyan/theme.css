@@ -1,0 +1,18 @@
+/*
+ * NephNET Cyberdeck — cyan phosphor
+ *
+ * Imports the shared cyberdeck styling and overrides only the phosphor
+ * palette. This override comes after the @import so it wins the cascade.
+ */
+@import '../nephdeck-amber/common.css';
+
+:root,
+.kiwi-wrap {
+    --cd-accent: #06b6d4;
+    --cd-accent-glow: #38bdf8;
+    --cd-accent-deep: #0e7490;
+    --cd-glow-rgb: 6 182 212;
+
+    --cd-screen-text: #7dd3fc;
+    --cd-screen-dim: #5f8598;
+}

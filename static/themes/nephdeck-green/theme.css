@@ -1,0 +1,18 @@
+/*
+ * NephNET Cyberdeck — matrix green phosphor
+ *
+ * Imports the shared cyberdeck styling and overrides only the phosphor
+ * palette. This override comes after the @import so it wins the cascade.
+ */
+@import '../nephdeck-amber/common.css';
+
+:root,
+.kiwi-wrap {
+    --cd-accent: #22c55e;
+    --cd-accent-glow: #4ade80;
+    --cd-accent-deep: #15803d;
+    --cd-glow-rgb: 34 197 94;
+
+    --cd-screen-text: #86efac;
+    --cd-screen-dim: #6b8f78;
+}

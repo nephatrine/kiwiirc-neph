@@ -1,0 +1,2117 @@
+/*
+ * NephNET Cyberdeck — standalone KiwiIRC theme
+ *
+ * This theme deliberately does NOT @import '../common/base.css'. It ships its
+ * own complete set of component styling so it can present the cyberdeck /
+ * field-terminal look from scratch.
+ *
+ * The three registered themes (amber / green / cyan) all import this file and
+ * then override the --cd-* phosphor variables below. Because the @import sits
+ * at the very top of each theme.css, those later overrides win the cascade.
+ *
+ * The `body.nephnet-deck-active` class (added by the companion plugin) enables
+ * the hardware chrome and reserves space for the top/bottom bars and side rails.
+ * Without the plugin the theme degrades to a plain dark skin with no extra chrome.
+ */
+
+/* ==================================================================== *
+ * Phosphor palette + kiwi brand variables (amber defaults)
+ * ==================================================================== */
+:root,
+.kiwi-wrap {
+    /* Cyberdeck palette */
+    --cd-accent: #ff5f00;
+    --cd-accent-glow: #ffa040;
+    --cd-accent-deep: #9a3412;
+    --cd-glow-rgb: 255 95 0;
+
+    --cd-bezel: #0b0d10;
+    --cd-chassis: #12151a;
+    --cd-panel: #171b22;
+    --cd-panel-2: #1d222b;
+    --cd-rim: #242a34;
+    --cd-steel: #323a48;
+    --cd-metal: #475366;
+
+    --cd-screen-bg: #07090c;
+    --cd-screen-panel: #0c0f14;
+    --cd-screen-line: #1a2029;
+    --cd-screen-text: #ffb27a;
+    --cd-screen-dim: #9a7a63;
+
+    /* Map onto kiwi's brand + component variables */
+    --brand-primary: var(--cd-accent);
+    --brand-primary-hover: var(--cd-accent-glow);
+    --brand-midtone: #1b2028;
+    --brand-darktone: var(--cd-metal);
+    --brand-default-bg: #0a0c10;
+    --brand-default-fg: #c9d1db;
+    --brand-notice: #f6c358;
+    --brand-warning: var(--cd-accent-glow);
+    --brand-error: #e5484d;
+    --brand-online: #37d67a;
+
+    /* Input elements */
+    --brand-input-border: #3a4453;
+    --brand-input-fg: #e2e8f0;
+    --brand-input-bg: #0d1015;
+
+    --comp-workspace-before-bg: var(--cd-accent);
+    --comp-bg-kiwi-workspace--disconnected-after-bg: var(--brand-error);
+    --comp-header-bg: #0d1117;
+    --comp-header-name-fg: var(--cd-accent);
+    --comp-header-option-active-fg: #0a0c10;
+    --comp-header-option-active-bg: var(--cd-accent);
+    --comp-statebrowser-fg: #c9d1db;
+    --comp-statebrowser-bg: #0d1117;
+    --comp-statebrowser-bg-networkname: #1b2028;
+    --comp-statebrowser-channel-active-bg: rgb(var(--cd-glow-rgb) / 0.14);
+    --comp-statebrowser-channel-active-fg: #ffffff;
+    --comp-usermenu-open-bg: #05070a;
+    --comp-statebrowser-network-border: #2a323d;
+    --comp-sidebar-bg: #0d1117;
+    --comp-sidebar-fg: #c9d1db;
+    --comp-scroller-bg: #161b22;
+    --comp-scroller-fg: #3a4453;
+    --comp-aboutbuffer-bg: rgb(255 255 255 / 2%);
+    --comp-aboutbuffer-header-bg: var(--cd-accent);
+    --brand-link-normal: var(--cd-accent);
+    --brand-link--hover: var(--cd-accent-glow);
+    --brand-shadow: rgb(0 0 0 / 50%);
+    --brand-selected: rgb(var(--cd-glow-rgb) / 30%);
+    --comp-border: #2a323d;
+
+    /* Fonts + nick colour tuning */
+    --kiwi-font: 'Chivo Mono', 'Share Tech Mono', 'DejaVu Sans Mono', monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
+    --kiwi-font-mono: 'Share Tech Mono', 'Chivo Mono', 'DejaVu Sans Mono', monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
+    --kiwi-nickcolour-saturation: 70;
+    --kiwi-nickcolour-lightness: 62;
+    --kiwi-supports-monospace: 1;
+
+    /* Deterministic base text colour. common/base.css normally provides this
+     * via `.kiwi-wrap { color: var(--brand-default-fg) }`, but this standalone
+     * theme does not import it. Without this, inherited text (message bodies,
+     * the control input via `input { color: inherit }`, etc.) falls back to the
+     * browser default until ThemeManager.refreshMode() sets color-scheme. */
+    color-scheme: dark;
+    color: var(--brand-default-fg);
+    background-color: var(--cd-chassis);
+}
+
+.kiwi-wrap select option {
+    background-color: var(--cd-panel);
+    color: var(--brand-default-fg);
+}
+
+/* ==================================================================== *
+ * Global / shared
+ * ==================================================================== */
+.kiwi-theme-bg {
+    background-color: var(--brand-default-bg);
+}
+
+.u-tabbed-content {
+    background-color: var(--brand-default-bg);
+}
+
+.u-tabbed-view-tabs {
+    background: var(--brand-midtone);
+    border-bottom: 3px solid var(--brand-midtone);
+}
+
+.u-tabbed-view-tabs .u-tabbed-view-tab {
+    border-bottom-color: var(--brand-midtone);
+    background: var(--brand-default-bg);
+}
+
+.u-tabbed-view-tabs .u-tabbed-view-tab:hover,
+.u-tabbed-view-tabs .u-tabbed-view-tab.u-tabbed-view-tab--active {
+    border-bottom-color: var(--brand-primary);
+}
+
+.u-link {
+    color: var(--brand-primary);
+}
+
+.u-input-text {
+    background: var(--brand-default-bg);
+}
+
+.u-form label {
+    color: var(--brand-default-fg);
+}
+
+.u-form .u-input,
+.u-form textarea,
+.u-form input[type='text'],
+.u-form input[type='password'],
+.u-form input[type='email'] {
+    outline: none;
+    border: 1px solid var(--brand-input-border);
+    color: var(--brand-input-fg);
+    background-color: var(--brand-input-bg);
+    transition: border-color 0.1s, box-shadow 0.1s;
+}
+
+.u-form .u-input:focus,
+.u-form textarea:focus,
+.u-form input[type='text']:focus,
+.u-form input[type='password']:focus,
+.u-form input[type='email']:focus,
+.u-input-text input:focus {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 6px rgb(var(--cd-glow-rgb) / 45%);
+}
+
+.u-form label input[type='text'],
+.u-form label input[type='password'],
+.u-form label input[type='email'],
+.u-form textarea {
+    border-color: var(--brand-primary);
+}
+
+::-webkit-input-placeholder,
+::-moz-placeholder,
+::placeholder {
+    color: var(--brand-input-fg);
+    opacity: 0.55;
+}
+
+.u-input,
+.u-form .u-input,
+.u-form textarea {
+    color: var(--brand-input-fg);
+}
+
+.u-form input[type='checkbox'],
+.u-form input[type='radio'] {
+    border-color: var(--brand-input-border);
+    background: var(--brand-default-bg);
+}
+
+.u-form input[type='checkbox']:checked,
+.u-form input[type='radio']:checked {
+    background: var(--brand-primary);
+    box-shadow: 0 0 5px rgb(var(--cd-glow-rgb) / 55%);
+}
+
+.u-button-primary {
+    background-color: var(--brand-primary);
+    color: var(--cd-bezel);
+}
+
+.u-button-primary:hover {
+    background-color: var(--brand-primary-hover);
+}
+
+.u-button-secondary {
+    background: rgb(255 255 255 / 8%);
+    color: var(--brand-default-fg);
+    transition: background-color 0.2s;
+}
+
+.u-button-secondary:hover {
+    background: rgb(255 255 255 / 14%);
+}
+
+.u-button-warning {
+    background-color: var(--brand-error);
+    color: #fff;
+}
+
+/* ==================================================================== *
+ * Welcome / startup screens
+ * ==================================================================== */
+/* The startup component renders inside .kiwi-wrap, so the deck frame is
+ * already visible. Keep the connection + info columns and give them the
+ * cyberdeck treatment rather than restyling the app shell. */
+body.nephnet-deck-active .kiwi-startup-common {
+    box-sizing: border-box;
+    padding: 34px 12px 30px;
+    background: var(--cd-chassis);
+}
+
+/* Left column: the connection console */
+body.nephnet-deck-active .kiwi-startup-common-section-connection .kiwi-welcome-simple-form {
+    width: 100%;
+    max-width: 420px;
+    padding: 28px 26px;
+    background: var(--cd-panel);
+    border: 1px solid var(--cd-rim);
+    border-radius: 4px;
+    box-shadow:
+        inset 0 0 0 1px rgb(0 0 0 / 70%),
+        inset 0 0 24px rgb(0 0 0 / 45%),
+        0 0 22px rgb(0 0 0 / 55%);
+}
+
+body.nephnet-deck-active .kiwi-welcome-simple-form h2 {
+    margin-bottom: 26px;
+    font-size: 1.5em;
+    color: var(--cd-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-shadow: 0 0 10px rgb(var(--cd-glow-rgb) / 45%);
+}
+
+body.nephnet-deck-active .kiwi-welcome-simple-form .u-input,
+body.nephnet-deck-active .kiwi-welcome-simple-form textarea {
+    background: var(--cd-screen-bg);
+    border: 1px solid var(--brand-input-border);
+    border-radius: 3px;
+    color: var(--brand-input-fg);
+}
+
+body.nephnet-deck-active .kiwi-welcome-simple-form .u-input:focus,
+body.nephnet-deck-active .kiwi-welcome-simple-form textarea:focus {
+    border-color: var(--cd-accent);
+    box-shadow: 0 0 8px rgb(var(--cd-glow-rgb) / 40%), inset 0 0 8px rgb(var(--cd-glow-rgb) / 10%);
+}
+
+body.nephnet-deck-active .kiwi-welcome-simple-form .u-submit {
+    background: linear-gradient(180deg, var(--cd-accent-glow), var(--cd-accent));
+    border: 1px solid var(--cd-accent-deep);
+    border-radius: 4px;
+    color: #12151a;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow:
+        inset 0 1px 1px rgb(255 255 255 / 35%),
+        inset 0 -2px 4px rgb(0 0 0 / 40%),
+        0 0 12px rgb(var(--cd-glow-rgb) / 35%);
+}
+
+body.nephnet-deck-active .kiwi-welcome-simple-form .u-submit:hover {
+    box-shadow:
+        inset 0 1px 1px rgb(255 255 255 / 45%),
+        0 0 18px rgb(var(--cd-glow-rgb) / 60%);
+}
+
+body.nephnet-deck-active .kiwi-welcome-tab {
+    background: #1b2028;
+    border: 1px solid var(--cd-steel);
+    border-radius: 4px;
+    color: var(--brand-default-fg);
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+body.nephnet-deck-active .kiwi-welcome-tab--active {
+    border-color: var(--cd-accent);
+    color: #fff;
+    text-shadow: 0 0 8px rgb(var(--cd-glow-rgb) / 70%);
+    box-shadow: 0 0 10px rgb(var(--cd-glow-rgb) / 40%);
+}
+
+/* Right column: keep the configured infoBackground + infoContent; add a rim
+ * and an inset scrim so text stays readable over the image. */
+body.nephnet-deck-active .kiwi-startup-common-section-info {
+    border-left: 5px solid var(--cd-accent);
+    box-shadow: inset 0 0 90px rgb(0 0 0 / 65%);
+}
+
+body.nephnet-deck-active .kiwi-startup-common-section-info-content {
+    background: rgb(7 9 12 / 74%);
+    border: 1px solid var(--cd-rim);
+    border-radius: 4px;
+    box-shadow: inset 0 0 24px rgb(0 0 0 / 50%);
+    color: var(--brand-default-fg);
+}
+
+/* With no background image the base rule paints this panel with the (light)
+ * foreground colour; keep it dark instead so it can never be light-on-light. */
+body.nephnet-deck-active .kiwi-startup-common--no-bg .kiwi-startup-common-section-info {
+    background-color: var(--cd-panel);
+}
+
+.kiwi-customserver-form {
+    background-color: var(--brand-default-bg);
+}
+
+.kiwi-welcome-simple-error,
+.kiwi-customserver-error,
+.kiwi-welcome-znc-error {
+    border: 1px dashed var(--brand-error);
+}
+
+body.nephnet-deck-active .kiwi-welcome-simple-error {
+    background: rgb(255 60 60 / 8%);
+    box-shadow: 0 0 12px rgb(255 60 60 / 22%);
+}
+
+.kiwi-welcome-simple .help,
+.kiwi-welcome-simple .help a {
+    color: var(--brand-default-fg);
+}
+
+.kiwi-welcome-simple .help a:hover {
+    color: var(--brand-primary-hover);
+}
+
+.kiwi-welcome-invalid-nick.u-input-text input.u-input {
+    border-color: var(--brand-error);
+}
+
+.kiwi-customserver {
+    background-color: var(--brand-default-bg);
+}
+
+.kiwi-customserver-nick--invalid input.u-input {
+    border-color: var(--brand-error);
+}
+
+/* ==================================================================== *
+ * Container header
+ * ==================================================================== */
+.kiwi-header {
+    background: var(--comp-header-bg);
+    border-bottom-color: var(--comp-border);
+}
+
+.kiwi-header-name-container {
+    color: var(--comp-header-name-fg);
+}
+
+.kiwi-header-name {
+    background-color: transparent;
+    color: var(--cd-accent);
+    font-family: 'Orbitron', var(--kiwi-font);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.kiwi-header-topic:hover {
+    background-color: rgb(var(--cd-glow-rgb) / 8%);
+}
+
+.kiwi-header-option a:hover,
+.kiwi-header-option--active,
+.kiwi-header-option--active:hover a {
+    background-color: var(--comp-header-option-active-bg);
+    color: var(--comp-header-option-active-fg);
+    opacity: 1;
+}
+
+.kiwi-header-option--active,
+.kiwi-header-option-active a {
+    opacity: 1;
+}
+
+.kiwi-header-join-channel-button {
+    background-color: var(--brand-primary);
+    color: var(--cd-bezel);
+}
+
+.kiwi-header .kiwi-header-notjoined .u-link {
+    background-color: var(--brand-primary);
+    color: var(--cd-bezel);
+}
+
+.kiwi-header .kiwi-header-notjoined .u-link:hover {
+    background-color: var(--brand-primary-hover);
+}
+
+.kiwi-header-server-connection .u-button {
+    background: var(--brand-primary);
+    color: var(--cd-bezel);
+}
+
+.kiwi-header-buffersettings {
+    border-top: 1px solid var(--brand-midtone);
+}
+
+.kiwi-header-topic > div {
+    color: var(--brand-default-fg);
+}
+
+.kiwi-header {
+    box-shadow: 0 2px 8px rgb(var(--cd-glow-rgb) / 18%);
+}
+
+/* ==================================================================== *
+ * Control input (terminal prompt)
+ * ==================================================================== */
+.kiwi-controlinput {
+    background: var(--brand-default-bg);
+    border-top-color: var(--comp-border);
+}
+
+.kiwi-controlinput-button {
+    background-color: transparent;
+    border: 2px solid transparent;
+}
+
+.kiwi-controlinput-button:hover,
+.kiwi-controlinput-tools,
+.kiwi-controlinput-tools-container,
+.kiwi-controlinput-send {
+    color: var(--brand-default-fg);
+    background-color: var(--brand-midtone);
+}
+
+.kiwi-controlinput-active-tool {
+    background: transparent;
+}
+
+.kiwi-controlinput-command-warn {
+    border-color: var(--comp-border);
+    background-color: var(--brand-default-bg);
+}
+
+.kiwi-controlinput-command-warn .fa-exclamation-triangle {
+    color: var(--brand-error);
+}
+
+.kiwi-controlinput-selfuser {
+    background: var(--brand-default-bg);
+    border-color: var(--comp-border);
+}
+
+.kiwi-controlinput--selfuser-open .kiwi-controlinput-selfuser {
+    border-color: var(--comp-border);
+}
+
+/* The prompt glyph + focus glow */
+.kiwi-controlinput .kiwi-controlinput-input-wrap {
+    border: 1px solid var(--brand-input-border);
+    border-radius: 3px;
+    background: var(--cd-screen-bg);
+    transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.kiwi-controlinput .kiwi-controlinput-input {
+    color: var(--brand-input-fg);
+    padding: 0 8px;
+    box-sizing: border-box;
+}
+
+.kiwi-controlinput .kiwi-controlinput-input::placeholder {
+    color: var(--brand-input-fg);
+    opacity: 0.5;
+}
+
+.kiwi-controlinput .kiwi-controlinput-input-wrap:focus-within {
+    border-color: var(--cd-accent);
+    box-shadow: 0 0 8px rgb(var(--cd-glow-rgb) / 40%), inset 0 0 8px rgb(var(--cd-glow-rgb) / 10%);
+}
+
+/* ==================================================================== *
+ * Auto complete
+ * ==================================================================== */
+.kiwi-autocomplete {
+    box-shadow: 0 6px 22px rgb(0 0 0 / 70%), 0 0 0 1px var(--comp-border);
+    border: 1px solid var(--comp-border);
+    background: var(--cd-panel);
+}
+
+.kiwi-autocomplete-item {
+    border-bottom: 1px solid var(--brand-midtone);
+}
+
+.kiwi-autocomplete-item--selected {
+    background: var(--brand-primary);
+    color: var(--cd-bezel);
+}
+
+.kiwi-autocomplete-item--selected .u-link {
+    color: var(--cd-bezel);
+}
+
+/* ==================================================================== *
+ * Statebrowser
+ * ==================================================================== */
+.kiwi-statebrowser {
+    background: var(--comp-statebrowser-bg);
+    color: var(--comp-statebrowser-fg);
+    border-right: 1px solid var(--cd-rim);
+}
+
+.kiwi-statebrowser-usermenu--open {
+    background-color: var(--comp-usermenu-open-bg);
+}
+
+.kiwi-statebrowser-usermenu-body .u-link {
+    color: var(--brand-error);
+}
+
+.kiwi-statebrowser-usermenu-close {
+    background-color: var(--brand-error);
+}
+
+.kiwi-statebrowser-usermenu-close:hover {
+    opacity: 1;
+}
+
+.kiwi-statebrowser-divider {
+    background: rgb(255 255 255 / 10%);
+}
+
+.kiwi-statebrowser-newchannel-inputwrap {
+    color: var(--brand-default-bg);
+}
+
+.kiwi-statebrowser-newchannel-inputwrap input[type='text'] {
+    color: var(--brand-default-fg);
+    background: var(--cd-screen-bg);
+}
+
+.kiwi-statebrowser-newchannel-inputwrap--focus {
+    opacity: 1;
+    background-color: var(--brand-default-bg);
+}
+
+.kiwi-statebrowser-newchannel-autocomplete.kiwi-autocomplete {
+    border-bottom: 1px solid var(--comp-statebrowser-network-border);
+}
+
+.kiwi-statebrowser-newchannel-autocomplete .kiwi-autocomplete-item {
+    color: var(--comp-statebrowser-fg);
+}
+
+.kiwi-statebrowser-newchannel-autocomplete .kiwi-autocomplete-item--selected {
+    background-color: var(--brand-primary);
+    color: var(--cd-bezel);
+}
+
+.kiwi-statebrowser-channelfilter {
+    transition: all 0.3s;
+    border-bottom: 1px solid var(--cd-rim);
+    color: var(--brand-default-bg);
+}
+
+.kiwi-statebrowser-channelfilter::after {
+    color: var(--comp-statebrowser-fg);
+}
+
+.kiwi-statebrowser-channelfilter input {
+    background-color: var(--cd-screen-bg);
+    color: var(--brand-default-fg);
+    outline: none;
+}
+
+.kiwi-statebrowser-channelfilter p {
+    color: var(--brand-primary);
+    font-size: 0.9em;
+    margin: 10px 0;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.kiwi-statebrowser-channelfilter p:hover {
+    color: var(--brand-primary-hover);
+}
+
+.kiwi-statebrowser-newnetwork {
+    border-top-color: var(--comp-statebrowser-network-border);
+}
+
+.kiwi-statebrowser-newnetwork a {
+    color: var(--brand-default-fg);
+}
+
+.kiwi-statebrowser-newnetwork a:hover {
+    background: var(--brand-primary);
+    opacity: 1;
+    color: var(--cd-bezel);
+}
+
+.kiwi-statebrowser-network .kiwi-statebrowser-network-header {
+    background-color: var(--comp-statebrowser-bg-networkname);
+}
+
+.kiwi-statebrowser-network .kiwi-statebrowser-network-header a {
+    color: var(--comp-statebrowser-fg);
+}
+
+/* Active network */
+.kiwi-statebrowser-network.kiwi-statebrowser-network--active .kiwi-statebrowser-network-header {
+    border-left: 3px solid var(--brand-primary);
+    box-shadow: inset 3px 0 8px rgb(var(--cd-glow-rgb) / 25%);
+}
+
+/* Channels as tactile hardware buttons */
+.kiwi-statebrowser-channels .kiwi-statebrowser-channel {
+    border-bottom: 1px solid var(--cd-rim);
+    color: var(--comp-statebrowser-fg);
+    transition: background-color 0.1s, box-shadow 0.1s;
+}
+
+.kiwi-statebrowser-channel .kiwi-statebrowser-channel-name {
+    color: var(--comp-statebrowser-fg);
+}
+
+.kiwi-statebrowser-channel:hover {
+    background: rgb(255 255 255 / 4%);
+}
+
+.kiwi-statebrowser-channel-active {
+    border-left-color: var(--brand-primary);
+    background: var(--comp-statebrowser-channel-active-bg);
+    box-shadow: inset 0 0 10px rgb(var(--cd-glow-rgb) / 18%);
+}
+
+.kiwi-statebrowser-channel-active .kiwi-statebrowser-channel-name {
+    color: var(--comp-statebrowser-channel-active-fg);
+    text-shadow: 0 0 8px rgb(var(--cd-glow-rgb) / 55%);
+}
+
+.kiwi-statebrowser-channel--favorite .kiwi-statebrowser-channel-name {
+    color: var(--brand-primary);
+}
+
+.kiwi-statebrowser-channel--muted {
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.kiwi-statebrowser-channel--muted:hover {
+    opacity: 1;
+}
+
+.kiwi-network-name-option-chanfilter.active {
+    background: var(--brand-primary);
+}
+
+.kiwi-statebrowser-channel-settings:hover {
+    background-color: var(--brand-primary);
+}
+
+.kiwi-statebrowser-channel-leave:hover {
+    background: var(--brand-error);
+}
+
+.kiwi-statebrowser-newchannel a {
+    border: 1px solid var(--cd-metal);
+}
+
+.kiwi-statebrowser-newchannel a:hover {
+    background: var(--brand-primary);
+    opacity: 1;
+    color: var(--cd-bezel);
+}
+
+.kiwi-statebrowser-switcher a:first-of-type {
+    background: rgb(255 255 255 / 10%);
+}
+
+.kiwi-statebrowser-switcher a:hover {
+    background: rgb(255 255 255 / 6%);
+}
+
+.kiwi-statebrowser-options {
+    background: var(--brand-midtone);
+}
+
+.kiwi-statebrowser-channel-notjoined .kiwi-statebrowser-channel-name {
+    color: var(--brand-error);
+}
+
+.kiwi-statebrowser-channel-popup {
+    background: var(--cd-panel);
+    border: 3px solid var(--brand-midtone);
+    border-left: none;
+}
+
+.kiwi-statebrowser-network-header {
+    background: rgb(255 255 255 / 6%);
+}
+
+.kiwi-statebrowser-network-status {
+    background: rgb(255 255 255 / 5%);
+}
+
+.kiwi-statebrowser-network-name::before {
+    content: '\f233';
+    font-family: fontAwesome, Helvetica, Arial, Verdana, Tahoma, sans-serif;
+    margin-right: 2px;
+    font-weight: 100;
+    text-decoration: none;
+}
+
+.kiwi-statebrowser-network-name--hasicon::before {
+    content: none;
+    margin-right: 0;
+}
+
+.kiwi-statebrowser-channel[data-name^="*"]::before {
+    content: '\f006';
+}
+
+.kiwi-statebrowser-channel[data-name="#help"]::before {
+    content: '\f059';
+}
+
+.kiwi-statebrowser-channel::before {
+    font-family: fontAwesome, Helvetica, Arial, Verdana, Tahoma, sans-serif;
+    margin-right: 8px;
+    font-weight: 100;
+}
+
+.kiwi-statebrowser-channel-label {
+    background: var(--brand-primary);
+    color: var(--cd-bezel);
+    box-shadow: 0 0 8px rgb(var(--cd-glow-rgb) / 55%);
+}
+
+.kiwi-statebrowser-channel-label--highlight {
+    background: var(--brand-error);
+    animation: kiwi-label-pulse 2s infinite;
+}
+
+.kiwi-statebrowser-channel-label--error {
+    background: var(--brand-error);
+    animation: kiwi-label-urgent 0.8s infinite;
+}
+
+@keyframes kiwi-label-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+@keyframes kiwi-label-urgent {
+    0% { transform: scale(1) translateX(0); }
+    20% { transform: scale(1.1) translateX(-2px); }
+    40% { transform: scale(1.1) translateX(2px); }
+    60% { transform: scale(1.1) translateX(-2px); }
+    80% { transform: scale(1.1) translateX(2px); }
+    100% { transform: scale(1) translateX(0); }
+}
+
+.kiwi-statebrowser-usermenu-avatar:hover .kiwi-avatar-background,
+.kiwi-statebrowser-usermenu--open .kiwi-avatar-background {
+    fill: var(--brand-primary);
+}
+
+.kiwi-statebrowser-usermenu .kiwi-awaystatusindicator {
+    border-color: var(--comp-statebrowser-bg);
+}
+
+.kiwi-statebrowser-network .kiwi-statebrowser-network-header a.kiwi-statebrowser-network-toggle:hover {
+    background-color: var(--brand-error);
+    border-top-color: var(--brand-error);
+}
+
+.kiwi-statebrowser-appsettings:hover {
+    background-color: rgb(255 255 255 / 8%);
+    opacity: 1;
+}
+
+.kiwi-statebrowser-scrollarea h4 {
+    border-top: 1px solid var(--cd-rim);
+}
+
+.kiwi-statebrowser-prompt-close {
+    background-color: rgb(255 255 255 / 8%);
+}
+
+/* ==================================================================== *
+ * Sidebar / nicklist / userbox
+ * ==================================================================== */
+.kiwi-sidebar {
+    background-color: var(--comp-sidebar-bg);
+    color: var(--comp-sidebar-fg);
+    border-left: 1px solid var(--cd-rim);
+}
+
+.kiwi-sidebar-options {
+    background-color: var(--brand-primary);
+    color: var(--cd-bezel);
+}
+
+.kiwi-sidebar-pin {
+    border-right: 1px solid var(--brand-default-bg);
+    background: var(--brand-primary);
+}
+
+.kiwi-sidebar-pin:hover {
+    background: var(--brand-primary-hover);
+}
+
+.kiwi-sidebar-options .kiwi-sidebar-close:hover {
+    background: var(--brand-error);
+    color: #fff;
+}
+
+.kiwi-container--sidebar-open .kiwi-sidebar {
+    border-color: var(--comp-border);
+}
+
+.kiwi-aboutbuffer {
+    background: var(--comp-aboutbuffer-bg);
+}
+
+.kiwi-aboutbuffer h3 {
+    background: var(--brand-default-bg);
+}
+
+.kiwi-aboutbuffer h4 {
+    background-color: var(--comp-aboutbuffer-header-bg);
+    color: var(--cd-bezel);
+}
+
+.kiwi-nicklist-filter {
+    border-bottom-color: var(--brand-midtone);
+}
+
+.kiwi-nicklist-users {
+    scrollbar-color: var(--comp-scroller-fg) var(--comp-scroller-bg);
+}
+
+.kiwi-nicklist-users::-webkit-scrollbar-thumb {
+    background-color: var(--comp-scroller-fg);
+}
+
+.kiwi-nicklist-users::-webkit-scrollbar-track {
+    background-color: var(--comp-scroller-bg);
+}
+
+.kiwi-nicklist-user:hover {
+    border-left-color: var(--brand-primary);
+}
+
+.kiwi-nicklist-user-typing {
+    fill: var(--brand-default-fg);
+}
+
+.kiwi-nicklist-user-message {
+    fill: var(--brand-default-fg);
+}
+
+.kiwi-nicklist-user-message:hover {
+    fill: var(--brand-primary);
+}
+
+.kiwi-userbox .main-title,
+.kiwi-userbox .kiwi-userbox-basicinfo {
+    border-bottom: 1px solid var(--brand-midtone);
+}
+
+.kiwi-userbox .main-title {
+    color: var(--cd-accent);
+    font-family: 'Orbitron', var(--kiwi-font);
+}
+
+.kiwi-userbox .kiwi-userbox-actions .kiwi-userbox-action {
+    border: 1px solid var(--brand-default-fg);
+    color: var(--brand-default-fg);
+}
+
+.kiwi-userbox .kiwi-userbox-actions .kiwi-userbox-action:hover {
+    background-color: var(--brand-default-fg);
+    color: var(--brand-default-bg);
+}
+
+.kiwi-userbox-opactions {
+    border-top: 1px solid var(--brand-midtone);
+}
+
+.kiwi-userbox-opactions label select {
+    border: 1px solid rgb(0 0 0 / 20%);
+}
+
+.kiwi-userbox-opaction-kick,
+.kiwi-userbox-opaction-ban,
+.kiwi-userbox-opaction-kickban {
+    color: var(--cd-bezel);
+}
+
+.kiwi-userbox-opaction-kick,
+.kiwi-userbox-opaction-kick:hover {
+    background-color: var(--brand-notice);
+}
+
+.kiwi-userbox-opaction-ban,
+.kiwi-userbox-opaction-ban:hover {
+    background-color: var(--brand-warning);
+}
+
+.kiwi-userbox-opaction-kickban,
+.kiwi-userbox-opaction-kickban:hover {
+    background-color: var(--brand-error);
+}
+
+.kiwi-userbox-whois {
+    border: 1px solid var(--brand-midtone);
+}
+
+/* ==================================================================== *
+ * Sidebar / settings
+ * ==================================================================== */
+.kiwi-sidebar-settings-disabled {
+    background-color: rgb(127 127 127 / 10%);
+}
+
+.kiwi-channelsettings-disabled {
+    color: #fff;
+    background-color: rgb(127 127 127 / 50%);
+}
+
+.kiwi-sidebar-settings-access-table > div {
+    border-bottom-color: var(--comp-border);
+}
+
+.kiwi-sidebar-settings-access-actions:hover {
+    background-color: var(--brand-error);
+    color: #fff;
+}
+
+/* ==================================================================== *
+ * Container / workspace
+ * ==================================================================== */
+.kiwi-workspace {
+    background: var(--brand-default-bg);
+}
+
+.kiwi-workspace::before {
+    background: var(--brand-primary);
+}
+
+.kiwi-workspace::after {
+    background: var(--brand-error);
+}
+
+.kiwi-container-toggledraw-statebrowser,
+.kiwi-container-toggledraw-sidebar {
+    background: var(--brand-default-bg);
+}
+
+.kiwi-container-toggledraw-statebrowser {
+    border-right: 1px solid var(--brand-midtone);
+}
+
+.kiwi-container-toggledraw-sidebar {
+    border-left: 1px solid var(--brand-midtone);
+}
+
+.kiwi-container-toggledraw-sidebar--disabled {
+    color: #b8babd;
+}
+
+.kiwi-container-toggledraw-statebrowser-messagecount {
+    background-color: var(--brand-primary);
+    color: var(--cd-bezel);
+}
+
+.kiwi-container-toggledraw-statebrowser-messagecount::after {
+    border: 0.6em solid transparent;
+    border-right-color: var(--brand-primary);
+}
+
+.kiwi-container-toggledraw-statebrowser-messagecount--highlight {
+    background-color: var(--brand-error);
+    color: #fff;
+}
+
+.kiwi-container-toggledraw-statebrowser-messagecount--highlight::after {
+    border-right-color: var(--brand-error);
+}
+
+.kiwi-wrap--statebrowser-drawopen .kiwi-container-toggledraw-statebrowser-messagecount {
+    background-color: var(--brand-primary);
+}
+
+.kiwi-wrap--statebrowser-drawopen .kiwi-container-toggledraw-statebrowser-messagecount::after {
+    border: 0.6em solid transparent;
+    border-left-color: var(--brand-primary);
+}
+
+.kiwi-container-empty .u-button {
+    background-color: var(--brand-primary);
+    color: var(--cd-bezel);
+}
+
+/* ==================================================================== *
+ * Application settings
+ * ==================================================================== */
+.kiwi-appsettings {
+    background: var(--brand-default-bg);
+}
+
+.kiwi-appsettings-block {
+    border: 1px solid var(--comp-border);
+}
+
+.kiwi-appsettings-block h3 {
+    background: var(--brand-primary);
+    color: var(--cd-bezel);
+    font-family: 'Orbitron', var(--kiwi-font);
+}
+
+.kiwi-appsettings-close {
+    background-color: var(--brand-primary);
+    color: var(--cd-bezel);
+}
+
+.kiwi-appsettings-close:hover {
+    background: var(--brand-error);
+}
+
+/* ==================================================================== *
+ * Network settings
+ * ==================================================================== */
+.kiwi-networksettings .kiwi-title {
+    background: var(--brand-primary);
+    color: var(--cd-bezel);
+    border-top: 1px solid var(--brand-primary);
+}
+
+.kiwi-network-nicknamelabel {
+    color: rgb(160 160 160);
+}
+
+.kiwi-networksettings .u-form {
+    border-color: var(--brand-midtone);
+    background: var(--brand-default-bg);
+}
+
+.kiwi-networksettings .kiwi-title span {
+    color: var(--brand-primary);
+    background: var(--brand-default-bg);
+}
+
+.kiwi-networksettings-advanced h3:hover {
+    color: var(--brand-primary);
+}
+
+.kiwi-serverselector-connection-tls i {
+    color: var(--brand-primary);
+}
+
+.kiwi-serverselector-connection-tls i.fa-unlock {
+    color: var(--brand-error);
+}
+
+.kiwi-networksettings-error {
+    border-color: var(--brand-error);
+}
+
+.kiwi-networksettings .kiwi-networksettings-server-types .kiwi-network-type-button {
+    border-color: var(--brand-primary);
+    color: var(--brand-primary);
+}
+
+.kiwi-networksettings .kiwi-networksettings-server-types .kiwi-network-type-button:hover,
+.kiwi-networksettings .kiwi-networksettings-server-types .kiwi-network-type-button.kiwi-networksettings-server-type-active {
+    background: var(--brand-primary);
+    color: var(--cd-bezel);
+}
+
+.kiwi-networksettings .u-form span {
+    color: var(--brand-default-fg);
+}
+
+.u-button.kiwi-channellist-refresh.u-button-secondary {
+    background: var(--brand-primary);
+    color: var(--cd-bezel);
+}
+
+/* ==================================================================== *
+ * Channel list
+ * ==================================================================== */
+.kiwi-channellist-grid {
+    border-bottom: 1px solid var(--brand-midtone);
+}
+
+.kiwi-channellist-grid:nth-child(even) {
+    background: rgb(255 255 255 / 3%);
+}
+
+.kiwi-channellist-grid:first-of-type {
+    border-top: 1px solid var(--brand-midtone);
+}
+
+.kiwi-channellist-topic a {
+    color: var(--brand-primary);
+}
+
+/* ==================================================================== *
+ * Message list
+ * ==================================================================== */
+.kiwi-messagelist {
+    scrollbar-color: var(--comp-scroller-fg) transparent;
+}
+
+.kiwi-messagelist::-webkit-scrollbar-thumb {
+    background-color: var(--comp-scroller-fg);
+}
+
+.kiwi-messagelist-seperator {
+    color: var(--cd-screen-dim);
+    background: var(--brand-default-bg);
+    font-size: 0.9em;
+}
+
+.kiwi-messagelist-seperator > span {
+    background: var(--brand-default-bg);
+}
+
+.kiwi-messagelist-message--info-open,
+.kiwi-messagelist-message--authorrepeat.kiwi-messagelist-message--info-open {
+    background: var(--brand-midtone);
+}
+
+.kiwi-messagelist-message-action .kiwi-messagelist-body {
+    color: var(--brand-primary);
+}
+
+.kiwi-messagelist-message--highlight {
+    background-color: var(--brand-midtone);
+}
+
+.kiwi-messagelist-message-notice {
+    background: rgb(var(--cd-glow-rgb) / 8%);
+    color: var(--cd-screen-text);
+}
+
+.kiwi-messagelist-nick {
+    color: var(--brand-default-fg);
+}
+
+.kiwi-messagelist-message.kiwi-messagelist-message--unread {
+    border-left: 5px solid var(--brand-primary);
+}
+
+.kiwi-messagelist-message--hover {
+    border-left-color: var(--brand-primary);
+}
+
+.kiwi-messagelist-message--compact .kiwi-messagelist-message-privmsg:hover,
+.kiwi-messagelist-message--compact .kiwi-messagelist-message-action:hover,
+.kiwi-messagelist-message--compact .kiwi-messagelist-message-notice:hover {
+    background: var(--brand-primary-hover);
+}
+
+.kiwi-container--sidebar-drawn .kiwi-messagelist::after {
+    background-color: var(--brand-default-fg);
+}
+
+.kiwi-messagelist-message--text .kiwi-messagelist-time,
+.kiwi-messagelist-message--compact .kiwi-messagelist-time {
+    color: var(--cd-screen-dim);
+}
+
+/* Traffic messages */
+.kiwi-messagelist-message-traffic-join,
+.kiwi-messagelist-message-traffic-join_self {
+    color: var(--brand-primary);
+}
+
+.kiwi-messagelist-message-traffic-quit,
+.kiwi-messagelist-message-traffic-quit_self,
+.kiwi-messagelist-message-traffic-part,
+.kiwi-messagelist-message-traffic-part_self,
+.kiwi-messagelist-message-traffic-kick,
+.kiwi-messagelist-message-traffic-kick_self {
+    color: var(--brand-error);
+}
+
+.kiwi-messagelist-message-traffic-quit .kiwi-nick::before,
+.kiwi-messagelist-message-traffic-quit_self .kiwi-nick::before,
+.kiwi-messagelist-message-traffic-part .kiwi-nick::before,
+.kiwi-messagelist-message-traffic-part_self .kiwi-nick::before {
+    color: var(--brand-error);
+}
+
+/* Modern layout */
+.kiwi-avatar-initials {
+    fill: var(--brand-default-bg);
+}
+
+.kiwi-avatar-background {
+    fill: var(--brand-darktone);
+}
+
+.kiwi-messagelist .kiwi-messagelist-body a,
+.kiwi-channellist-table-topic a,
+.kiwi-aboutbuffer a {
+    color: var(--brand-link-normal);
+}
+
+.kiwi-messagelist .kiwi-messagelist-body a:hover,
+.kiwi-channellist-table-topic a:hover,
+.kiwi-aboutbuffer a:hover {
+    color: var(--brand-link--hover);
+}
+
+.kiwi-messagelist-message--modern {
+    border-top-color: var(--brand-midtone);
+}
+
+.kiwi-messagelist-message-error,
+.kiwi-messagelist-message.kiwi-messagelist-message-error.kiwi-messagelist-message--highlight {
+    background: var(--brand-error);
+    color: #fff;
+}
+
+/* Topic messages */
+.kiwi-messagelist-message.kiwi-messagelist-message-topic {
+    border-top: 1px solid var(--brand-primary);
+    border-bottom: 1px solid var(--brand-primary);
+    color: var(--brand-default-fg);
+    background: var(--brand-default-bg);
+}
+
+.kiwi-messagelist-message--modern.kiwi-messagelist-message--authorrepeat.kiwi-messagelist-message-topic {
+    border-top: 2px solid var(--brand-primary);
+}
+
+.kiwi-messagelist-message--modern.kiwi-messagelist-message-topic,
+.kiwi-messagelist-message--modern.kiwi-mesagelist-message-topic.kiwi-messagelist-message--highlight {
+    border: 2px solid var(--brand-primary);
+}
+
+.kiwi-messagelist-message--modern.kiwi-messagelist-message-topic.kiwi-messagelist-message--unread {
+    border-left: 2px solid var(--brand-primary);
+}
+
+.kiwi-messagelist-message-whois {
+    background: var(--brand-midtone);
+}
+
+.kiwi-messagelist-message-motd {
+    color: var(--brand-default-fg);
+}
+
+.kiwi-messagelist-message--info-open .u-link {
+    color: #fff;
+}
+
+/* ==================================================================== *
+ * Message info
+ * ==================================================================== */
+.kiwi-messagelist-message--info-open {
+    background-color: var(--brand-midtone);
+}
+
+.kiwi-messageinfo-urls {
+    border-top-color: var(--brand-midtone);
+    border-bottom-color: var(--brand-midtone);
+}
+
+.kiwi-messageinfo-actions .u-link {
+    border-color: var(--brand-default-fg);
+    background-color: var(--brand-primary);
+    color: var(--cd-bezel);
+}
+
+.kiwi-messageinfo-actions .kiwi-messageinfo-kick-user {
+    background: var(--brand-warning);
+    color: var(--cd-bezel);
+}
+
+.kiwi-messageinfo-actions .kiwi-messageinfo-redact {
+    background: var(--brand-warning);
+    color: var(--cd-bezel);
+}
+
+.kiwi-messageinfo-actions .kiwi-messageinfo-ban-user {
+    background: var(--brand-error);
+    color: #fff;
+}
+
+/* ==================================================================== *
+ * Not connected
+ * ==================================================================== */
+.kiwi-warning-block {
+    color: #fff;
+    background-color: var(--brand-error);
+}
+
+.kiwi-warning-block.connecting {
+    background-color: var(--brand-primary);
+    color: var(--cd-bezel);
+}
+
+.kiwi-notconnected-button {
+    border-color: var(--brand-default-fg);
+    color: var(--brand-default-fg);
+}
+
+.kiwi-notconnected-button:hover {
+    background-color: var(--brand-default-fg);
+    color: var(--brand-default-bg);
+}
+
+.kiwi-notconnected-button-settings:hover {
+    background-color: transparent;
+    color: var(--brand-default-fg);
+}
+
+/* ==================================================================== *
+ * Aliases / advanced settings
+ * ==================================================================== */
+.kiwi-settings-aliases-input {
+    border-color: var(--brand-midtone);
+}
+
+.kiwi-settings-aliases-help em {
+    color: var(--brand-primary);
+}
+
+.kiwi-settings-advanced .u-form input,
+.kiwi-settings-advanced .u-form input[type='checkbox'] {
+    border-color: var(--brand-darktone);
+}
+
+.kiwi-settings-advanced-notice {
+    color: #fff;
+    background: var(--brand-error);
+}
+
+.kiwi-settings-advanced-table > div:nth-child(6n+1),
+.kiwi-settings-advanced-table > div:nth-child(6n+2),
+.kiwi-settings-advanced-table > div:nth-child(6n+3) {
+    background-color: var(--brand-shadow);
+}
+
+.kiwi-network-name-options {
+    background-color: var(--cd-panel);
+}
+
+.kiwi-network-name-option:hover,
+.kiwi-network-name-option.active {
+    background-color: var(--brand-primary);
+    color: var(--cd-bezel);
+}
+
+.kiwi-network-name-option {
+    color: var(--brand-default-fg);
+}
+
+/* ==================================================================== *
+ * Shared bits
+ * ==================================================================== */
+.kiwi-close-icon,
+.kiwi-close-icon:hover {
+    background: var(--brand-error);
+}
+
+.kiwi-awaystatusindicator,
+.kiwi-avatar-status {
+    background-color: var(--brand-online);
+    fill: var(--brand-online);
+}
+
+.kiwi-awaystatusindicator.kiwi-awaystatusindicator--away,
+.kiwi-avatar-status--away {
+    background-color: var(--brand-warning);
+    fill: var(--brand-warning);
+}
+
+.kiwi-awaystatusindicator.kiwi-awaystatusindicator--offline,
+.kiwi-avatar-status--offline {
+    background-color: var(--brand-error);
+    fill: var(--brand-error);
+}
+
+.kiwi-bufferkey input[type='password'] {
+    color: var(--brand-default-fg);
+    background-color: var(--cd-screen-bg);
+}
+
+.kiwi-bufferkey-button {
+    border-color: var(--brand-default-bg);
+}
+
+.kiwi-messagelist-body--redacted {
+    cursor: pointer;
+    font-style: italic;
+    user-select: none;
+}
+
+.kiwi-messagelist-body--redacted-revealed {
+    opacity: 0.8;
+    text-decoration: line-through;
+}
+
+.kiwi-formatting-reverse {
+    background: rgb(var(--cd-glow-rgb) / 14%);
+    color: #fff;
+    font-weight: 600;
+    padding: 0.12em 0.4em;
+    margin: 0 0.1em;
+    border-radius: 3px;
+    outline: 1px solid rgb(var(--cd-glow-rgb) / 55%);
+    box-shadow: inset 0 0 10px rgb(var(--cd-glow-rgb) / 18%);
+    text-shadow: 0 0 8px rgb(var(--cd-glow-rgb) / 35%);
+}
+
+/* ==================================================================== *
+ * IRC text colours (tuned for the dark phosphor screen)
+ * ==================================================================== */
+.irc-fg-colour-white { color: #fff; }
+.irc-fg-colour-black { color: #555; }
+.irc-fg-colour-blue { color: #59b4ff; }
+.irc-fg-colour-green { color: #37d67a; }
+.irc-fg-colour-light-red { color: #ff5959; }
+.irc-fg-colour-brown { color: #d08b52; }
+.irc-fg-colour-purple { color: #c48cff; }
+.irc-fg-colour-orange { color: #ff9f47; }
+.irc-fg-colour-yellow { color: #ffe066; }
+.irc-fg-colour-light-green { color: #7dffb0; }
+.irc-fg-colour-cyan { color: #38d0d0; }
+.irc-fg-colour-light-cyan { color: #7defff; }
+.irc-fg-colour-light-blue { color: #8cc8ff; }
+.irc-fg-colour-pink { color: #ff8ce0; }
+.irc-fg-colour-grey { color: #a6a6a6; }
+.irc-fg-colour-light-grey { color: #e2e2e2; }
+
+.irc-bg-colour-white { background-color: #fff; }
+.irc-bg-colour-black { background-color: #000; }
+.irc-bg-colour-blue { background-color: #00f; }
+.irc-bg-colour-green { background-color: #009300; }
+.irc-bg-colour-light-red { background-color: #ff5959; }
+.irc-bg-colour-brown { background-color: #743a00; }
+.irc-bg-colour-purple { background-color: #a500ff; }
+.irc-bg-colour-orange { background-color: #ff8c00; }
+.irc-bg-colour-yellow { background-color: #ff0; }
+.irc-bg-colour-light-green { background-color: #6fff6f; }
+.irc-bg-colour-cyan { background-color: #0cc; }
+.irc-bg-colour-light-cyan { background-color: #6dffff; }
+.irc-bg-colour-light-blue { background-color: #59b4ff; }
+.irc-bg-colour-pink { background-color: #f0f; }
+.irc-bg-colour-grey { background-color: #a6a6a6; }
+.irc-bg-colour-light-grey { background-color: #e2e2e2; }
+
+/* ==================================================================== *
+ * Cyberdeck hardware chrome (rendered by the companion plugin)
+ * Only active while `body.nephnet-deck-active` is present.
+ *
+ * The state class lives on <body> (not `.kiwi-wrap`) because Vue owns the
+ * class attribute of `.kiwi-wrap` and would wipe an externally-added class
+ * on any re-render. The chrome itself is appended to <body> too.
+ * ==================================================================== */
+body.nephnet-deck-active .kiwi-wrap {
+    position: relative;
+    background-color: var(--cd-chassis);
+    background-image:
+        radial-gradient(rgb(255 255 255 / 3%) 1px, transparent 1px),
+        linear-gradient(180deg, #181d24 0%, #12151a 100%);
+    background-size: 8px 8px, 100% 100%;
+}
+
+.nephnet-chrome {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    font-family: var(--kiwi-font);
+}
+
+.nephnet-chrome[hidden] {
+    display: none;
+}
+
+/* ---- Top hardware bar ---- */
+.nephnet-topbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 26px;
+    box-sizing: border-box;
+    background: linear-gradient(180deg, #1a1f27 0%, #101319 100%);
+    border-bottom: 2px solid var(--cd-rim);
+    box-shadow: inset 0 1px 1px rgb(255 255 255 / 8%), 0 4px 14px rgb(0 0 0 / 70%);
+    color: var(--cd-metal);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.nephnet-topbar-left,
+.nephnet-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.nephnet-plate {
+    white-space: nowrap;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: rgb(0 0 0 / 45%);
+    border: 1px solid var(--cd-rim);
+    color: #8b94a3;
+}
+
+.nephnet-plate b {
+    color: var(--cd-accent);
+}
+
+.nephnet-brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 12px;
+    border-radius: 5px;
+    background: rgb(0 0 0 / 65%);
+    border: 1px solid var(--cd-rim);
+    box-shadow: inset 0 0 10px rgb(var(--cd-glow-rgb) / 18%);
+}
+
+.nephnet-brand-mark {
+    display: block;
+    width: 18px;
+    height: 16px;
+    object-fit: contain;
+    color: var(--cd-accent);
+}
+
+.nephnet-brand-name {
+    font-family: 'Orbitron', var(--kiwi-font);
+    font-weight: 900;
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    color: #fff;
+    text-transform: none;
+}
+
+.nephnet-brand-name span {
+    color: var(--cd-accent);
+}
+
+.nephnet-readout {
+    white-space: nowrap;
+    color: #7c8694;
+}
+
+.nephnet-readout em {
+    font-style: normal;
+    color: var(--brand-online);
+}
+
+.nephnet-readout--signal em {
+    display: inline-block;
+    min-width: 30px;
+    text-align: left;
+    font-variant-numeric: tabular-nums;
+}
+
+.nephnet-readout--signal.nephnet-signal--good em {
+    color: #34d17a;
+}
+
+.nephnet-readout--signal.nephnet-signal--warn em {
+    color: #f2b134;
+}
+
+.nephnet-readout--signal.nephnet-signal--bad em {
+    color: #ff5555;
+}
+
+.nephnet-clock {
+    color: #cfd6df;
+    background: rgb(0 0 0 / 45%);
+    border: 1px solid var(--cd-rim);
+    border-radius: 3px;
+    padding: 1px 7px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---- Bottom hardware bar / nav bus ---- */
+.nephnet-bottombar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 26px;
+    box-sizing: border-box;
+    background: linear-gradient(180deg, #101319 0%, #1a1f27 100%);
+    border-top: 2px solid var(--cd-rim);
+    box-shadow: inset 0 -1px 1px rgb(255 255 255 / 6%), 0 -4px 14px rgb(0 0 0 / 70%);
+    color: #7c8694;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.nephnet-bottombar-label,
+.nephnet-bottombar-right {
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.nephnet-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: auto;
+    overflow: hidden;
+}
+
+.nephnet-controls-spacer {
+    flex: 0 0 auto;
+    width: 14px;
+}
+
+.nephnet-controls-spacer--wide {
+    width: 22px;
+}
+
+.nephnet-btn {
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--brand-default-fg);
+    background: #1b2028;
+    border: 1px solid var(--cd-steel);
+    border-radius: 4px;
+    padding: 2px 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.07s ease-out;
+    box-shadow:
+        0 2px 0 #0d1015,
+        inset 0 1px 1px rgb(255 255 255 / 12%),
+        inset 0 -2px 3px rgb(0 0 0 / 55%);
+}
+
+.nephnet-btn:hover {
+    color: #fff;
+    border-color: var(--cd-accent);
+}
+
+.nephnet-btn:active {
+    transform: translateY(2px);
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 80%);
+}
+
+.nephnet-btn--active {
+    color: #fff;
+    border-color: var(--cd-accent);
+    text-shadow: 0 0 8px rgb(var(--cd-glow-rgb) / 80%);
+    box-shadow:
+        0 0 10px rgb(var(--cd-glow-rgb) / 45%),
+        inset 0 1px 2px rgb(0 0 0 / 70%);
+}
+
+/* ---- Phosphor selectors: textless glowing colour keys ---- */
+.nephnet-btn--phosphor {
+    width: 24px;
+    height: 14px;
+    padding: 0;
+    border-radius: 5px;
+    border: 1px solid rgb(0 0 0 / 75%);
+    background: var(--phosphor, #888);
+    box-shadow:
+        inset 0 1px 1px rgb(255 255 255 / 40%),
+        inset 0 -2px 3px rgb(0 0 0 / 45%),
+        0 1px 0 #0d1015,
+        0 0 5px var(--phosphor-glow, transparent);
+}
+
+.nephnet-btn--phosphor[data-palette='amber'] {
+    --phosphor: #ff7a1a;
+    --phosphor-glow: rgb(255 95 0 / 70%);
+}
+
+.nephnet-btn--phosphor[data-palette='green'] {
+    --phosphor: #34d17a;
+    --phosphor-glow: rgb(34 197 94 / 70%);
+}
+
+.nephnet-btn--phosphor[data-palette='cyan'] {
+    --phosphor: #22c3dd;
+    --phosphor-glow: rgb(6 182 212 / 70%);
+}
+
+.nephnet-btn--phosphor:hover {
+    border-color: rgb(0 0 0 / 75%);
+    box-shadow:
+        inset 0 1px 1px rgb(255 255 255 / 55%),
+        inset 0 -2px 3px rgb(0 0 0 / 40%),
+        0 1px 0 #0d1015,
+        0 0 10px var(--phosphor-glow, transparent);
+}
+
+.nephnet-btn--phosphor.nephnet-btn--active {
+    border-color: #fff;
+    box-shadow:
+        inset 0 1px 1px rgb(255 255 255 / 70%),
+        0 0 12px var(--phosphor-glow, transparent),
+        0 0 3px var(--phosphor, transparent);
+}
+
+/* ---- Icon effect buttons (CRT / audio) ---- */
+.nephnet-btn--icon {
+    width: 22px;
+    height: 18px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    line-height: 1;
+}
+
+.nephnet-btn--icon i {
+    pointer-events: none;
+}
+
+/* ---- Power button: larger, circular, accent coloured ---- */
+.nephnet-btn--power {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+    border-radius: 50%;
+    color: var(--cd-accent);
+    border-color: var(--cd-accent);
+    box-shadow:
+        0 2px 0 #0d1015,
+        inset 0 1px 1px rgb(255 255 255 / 18%),
+        inset 0 -2px 4px rgb(0 0 0 / 55%),
+        0 0 6px rgb(var(--cd-glow-rgb) / 35%);
+}
+
+.nephnet-btn--power i {
+    pointer-events: none;
+}
+
+.nephnet-btn--power:hover {
+    color: var(--cd-accent);
+    border-color: var(--cd-accent);
+    box-shadow:
+        0 2px 0 #0d1015,
+        inset 0 1px 1px rgb(255 255 255 / 25%),
+        0 0 12px rgb(var(--cd-glow-rgb) / 65%);
+}
+
+/* ---- Rivets ---- */
+.nephnet-rivet {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, var(--cd-metal), #12151b);
+    box-shadow: inset 0 1px 1px rgb(255 255 255 / 30%), 0 2px 3px rgb(0 0 0 / 80%);
+    z-index: 41;
+}
+
+.nephnet-rivet::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(42deg);
+    width: 7px;
+    height: 2px;
+    background: #090b0e;
+}
+
+.nephnet-rivet--tl { top: 6px; left: 6px; }
+.nephnet-rivet--tr { top: 6px; right: 6px; }
+.nephnet-rivet--bl { bottom: 6px; left: 6px; }
+.nephnet-rivet--br { bottom: 6px; right: 6px; }
+
+/* ---- Side rails + inner bezel (framed PDA look) ---- */
+.nephnet-rail {
+    position: absolute;
+    top: 34px;
+    bottom: 30px;
+    width: 12px;
+    background: linear-gradient(90deg, #0e1116 0%, #1b2028 45%, #0d1015 100%);
+    border-left: 1px solid rgb(255 255 255 / 4%);
+    border-right: 1px solid rgb(0 0 0 / 60%);
+    box-shadow: inset 0 0 8px rgb(0 0 0 / 70%);
+}
+
+.nephnet-rail--left { left: 0; }
+.nephnet-rail--right { right: 0; }
+
+/* Divider spine between the state browser and the screen */
+.nephnet-spine {
+    position: absolute;
+    top: 34px;
+    bottom: 30px;
+    left: 232px;
+    width: 14px;
+    display: none;
+    background: linear-gradient(90deg, #0e1116 0%, #1b2028 46%, #0d1015 100%);
+    border-left: 1px solid rgb(255 255 255 / 5%);
+    border-right: 1px solid rgb(0 0 0 / 65%);
+    box-shadow: inset 0 0 10px rgb(0 0 0 / 70%), 0 0 8px rgb(0 0 0 / 45%);
+}
+
+/* Only show the spine when a state browser actually exists (the welcome /
+ * login screen has none, so it must not float over that layout). */
+body.nephnet-deck-statebrowser .nephnet-spine {
+    display: block;
+}
+
+.nephnet-spine::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 8%;
+    bottom: 8%;
+    transform: translateX(-50%);
+    width: 2px;
+    border-radius: 1px;
+    background: linear-gradient(180deg, transparent, var(--cd-accent), transparent);
+    opacity: 0.5;
+}
+
+/* Vertical grip/vents down the middle of each rail */
+.nephnet-rail::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 4px;
+    height: 42%;
+    border-radius: 2px;
+    background: repeating-linear-gradient(
+        180deg,
+        var(--cd-steel) 0,
+        var(--cd-steel) 4px,
+        transparent 4px,
+        transparent 9px
+    );
+    opacity: 0.65;
+}
+
+/* Status LED near the top of each rail */
+.nephnet-rail::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 14%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cd-accent);
+    box-shadow: 0 0 8px rgb(var(--cd-glow-rgb) / 80%);
+}
+
+/* Inner rim that frames the screen area */
+.nephnet-bezel {
+    position: absolute;
+    top: 34px;
+    left: 12px;
+    right: 12px;
+    bottom: 30px;
+    border: 1px solid var(--cd-rim);
+    border-radius: 3px;
+    box-shadow:
+        inset 0 0 0 1px rgb(0 0 0 / 70%),
+        0 0 0 1px rgb(255 255 255 / 3%);
+    pointer-events: none;
+}
+
+/* ---- CRT scanlines + vignette ---- */
+.nephnet-scanlines,
+.nephnet-vignette {
+    position: absolute;
+    top: 34px;
+    left: 12px;
+    right: 12px;
+    bottom: 30px;
+    pointer-events: none;
+    z-index: 45;
+}
+
+.nephnet-scanlines {
+    background:
+        linear-gradient(rgb(0 0 0 / 0%) 50%, rgb(0 0 0 / 30%) 50%),
+        linear-gradient(90deg, rgb(255 0 0 / 3%), rgb(0 255 0 / 1%), rgb(0 0 255 / 3%));
+    background-size: 100% 3px, 6px 100%;
+    opacity: 0.6;
+}
+
+.nephnet-vignette {
+    background: radial-gradient(circle at 50% 50%, transparent 62%, rgb(0 0 0 / 55%) 100%);
+    box-shadow: inset 0 0 60px rgb(0 0 0 / 80%), inset 0 0 12px rgb(var(--cd-glow-rgb) / 12%);
+}
+
+body.nephnet-deck-crt-off .nephnet-scanlines {
+    display: none;
+}
+
+/* CRT flicker (disabled for reduced motion) */
+@keyframes nephnet-flicker {
+    0% { opacity: 0.55; }
+    50% { opacity: 0.65; }
+    80% { opacity: 0.5; }
+    100% { opacity: 0.6; }
+}
+
+body.nephnet-deck-crt-on .nephnet-scanlines {
+    animation: nephnet-flicker 0.18s infinite alternate;
+}
+
+/* GLITCH burst + power cycle animations */
+@keyframes nephnet-glitch {
+    0% { filter: none; }
+    20% { filter: invert(0.9) hue-rotate(180deg) blur(1px); }
+    100% { filter: none; }
+}
+
+body.nephnet-deck-glitch .kiwi-workspace,
+body.nephnet-deck-glitch .kiwi-statebrowser {
+    animation: nephnet-glitch 0.14s linear;
+}
+
+@keyframes nephnet-power-off {
+    0% { transform: scale(1, 1); opacity: 1; filter: brightness(1.5); }
+    40% { transform: scale(1, 0.01); opacity: 1; filter: brightness(2); }
+    100% { transform: scale(1, 0.01); opacity: 0; filter: brightness(0); }
+}
+
+@keyframes nephnet-power-on {
+    0% { transform: scale(1, 0.01); opacity: 0; filter: brightness(2); }
+    60% { transform: scale(1, 1); opacity: 1; filter: brightness(1.3); }
+    100% { transform: scale(1, 1); opacity: 1; filter: none; }
+}
+
+body.nephnet-deck-power-off .kiwi-workspace {
+    animation: nephnet-power-off 0.3s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+body.nephnet-deck-power-on .kiwi-workspace {
+    animation: nephnet-power-on 0.32s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+/* Powered-off standby: the screen stays collapsed and unlit until switched
+ * back on. The chassis, bars and state browser remain visible but dimmed. */
+body.nephnet-deck-powered-off .kiwi-workspace {
+    transform: scale(1, 0.01);
+    opacity: 0;
+    filter: brightness(0);
+}
+
+body.nephnet-deck-powered-off .nephnet-topbar,
+body.nephnet-deck-powered-off .kiwi-statebrowser,
+body.nephnet-deck-powered-off .nephnet-bottombar-label,
+body.nephnet-deck-powered-off .nephnet-bottombar-right,
+body.nephnet-deck-powered-off .nephnet-controls > *:not(.nephnet-btn--power) {
+    opacity: 0.4;
+    transition: opacity 0.3s ease;
+}
+
+/* The PWR key stays lit as the standby indicator */
+@keyframes nephnet-standby {
+    0%,
+    100% {
+        box-shadow:
+            0 2px 0 #0d1015,
+            inset 0 1px 1px rgb(255 255 255 / 22%),
+            0 0 6px rgb(var(--cd-glow-rgb) / 45%);
+    }
+
+    50% {
+        box-shadow:
+            0 2px 0 #0d1015,
+            inset 0 1px 1px rgb(255 255 255 / 22%),
+            0 0 15px rgb(var(--cd-glow-rgb) / 85%);
+    }
+}
+
+body.nephnet-deck-powered-off .nephnet-btn--power {
+    animation: nephnet-standby 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.nephnet-deck-crt-on .nephnet-scanlines,
+    body.nephnet-deck-glitch .kiwi-workspace,
+    body.nephnet-deck-glitch .kiwi-statebrowser,
+    body.nephnet-deck-power-off .kiwi-workspace,
+    body.nephnet-deck-power-on .kiwi-workspace,
+    body.nephnet-deck-powered-off .nephnet-btn--power {
+        animation: none;
+    }
+
+    body.nephnet-deck-powered-off .nephnet-topbar,
+    body.nephnet-deck-powered-off .kiwi-statebrowser,
+    body.nephnet-deck-powered-off .nephnet-bottombar-label,
+    body.nephnet-deck-powered-off .nephnet-bottombar-right,
+    body.nephnet-deck-powered-off .nephnet-controls > *:not(.nephnet-btn--power) {
+        transition: none;
+    }
+}
+
+/* ==================================================================== *
+ * Space reservation for the chrome (theme + plugin active only)
+ * ==================================================================== */
+body.nephnet-deck-active .kiwi-workspace {
+    top: 38px;
+    height: calc(100% - 68px);
+    margin-left: 246px;
+    margin-right: 12px;
+}
+
+body.nephnet-deck-active .kiwi-statebrowser {
+    top: 34px;
+    bottom: 30px;
+    left: 12px;
+}
+
+/* Keep the drawer behaviour working with the reserved bars + side rails */
+
+@media screen and (max-width: 769px) {
+    /* The sidebar is a drawer here, so the spine never applies. */
+    body.nephnet-deck-statebrowser .nephnet-spine {
+        display: none;
+    }
+
+    /* Slim the chrome down on narrow screens: hide the brand cluster in the
+     * top bar, the chassis label on the right of the nav bus, and the PWR key
+     * (the power state persists), leaving the CRT + audio toggles and the
+     * status readouts. */
+    body.nephnet-deck-active .nephnet-bottombar-right,
+    body.nephnet-deck-active .nephnet-topbar-left,
+    body.nephnet-deck-active .nephnet-btn--power {
+        display: none;
+    }
+
+    body.nephnet-deck-active .kiwi-statebrowser {
+        left: -220px;
+    }
+
+    body.nephnet-deck-active .kiwi-wrap--statebrowser-drawopen .kiwi-statebrowser {
+        left: 12px;
+    }
+
+    /* The sidebar is a drawer now, so inset the content by the rail width on
+     * both sides (12px) instead of reserving the sidebar+spine gutter. */
+    body.nephnet-deck-active .kiwi-workspace {
+        left: 0;
+        margin-left: 12px;
+        margin-right: 12px;
+    }
+
+    body.nephnet-deck-active .kiwi-wrap--statebrowser-drawopen .kiwi-workspace {
+        left: 75%;
+    }
+}
+
+@media screen and (max-width: 440px) {
+    body.nephnet-deck-active .nephnet-topbar-right .nephnet-readout,
+    body.nephnet-deck-active .nephnet-bottombar-label {
+        display: none;
+    }
+}

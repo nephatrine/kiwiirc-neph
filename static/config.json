@@ -3,7 +3,7 @@
     "startupScreen": "welcome",
     "kiwiServer": "https://example.com/webirc/kiwiirc/",
     "restricted": false,
-    "theme": "Dark",
+    "theme": "Kiwi Dark",
     "startupOptions": {
         "server": "",
         "port": 6667,
@@ -12,7 +12,6 @@
         "channel": "",
         "nick": "kiwi_?"
     },
-    "plugins": [],
     "fileupload": {
         "service": "none",
         "litterbox": {

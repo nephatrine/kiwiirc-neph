@@ -1,0 +1,729 @@
+<!--
+    NephNET Cyberdeck — companion plugin
+    ------------------------------------
+    Adds the physical "cyberdeck" chrome around the KiwiIRC application when a
+    NephNET Cyberdeck theme is active: top hardware bar, bottom nav-bus control
+    strip, corner rivets, CRT scanlines/vignette, and the phosphor/CRT/power/
+    audio controls.
+
+    It also drives the interaction layer: a synthesized click earcon on
+    button-like controls (buffers, sidebar tabs, the station manager) and
+    contextual glitch bursts on highlights, link (connect/disconnect) changes
+    and palette switches.
+
+    The plugin is completely inert for every other theme: it only builds the
+    chrome while a NephNET Cyberdeck theme is selected and removes it again
+    when switching away.
+
+    Loaded via the `plugins` array in config.json.
+-->
+<script>
+kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
+    'use strict';
+
+    var THEME_PREFIX = 'nephdeck';
+    var PALETTES = {
+        amber: 'NephDeck Amber',
+        green: 'NephDeck Green',
+        cyan: 'NephDeck Cyan',
+    };
+
+    var rootWrap = null;
+    var chromeRoot = null;
+    var clockTimer = null;
+    var signalTimer = null;
+    var crtOn = true;
+    var poweredOn = true;
+    var audioMuted = true;
+    var audioCtx = null;
+    var booted = false;
+    var active = false;
+    var lastUiTick = 0;
+    var lastGlitch = 0;
+
+    /* ---- Web Audio: synthesized mechanical clicks + beeps (no files) ---- */
+    function initAudio() {
+        try {
+            if (!audioCtx) {
+                var Ctx = window.AudioContext || window.webkitAudioContext;
+                if (!Ctx) {
+                    return;
+                }
+                audioCtx = new Ctx();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        } catch (err) {
+            audioCtx = null;
+        }
+    }
+
+    function playClick(tone, duration) {
+        if (audioMuted || !audioCtx) {
+            return;
+        }
+        try {
+            var now = audioCtx.currentTime;
+            var osc = audioCtx.createOscillator();
+            var gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(tone || 320, now);
+            osc.frequency.exponentialRampToValueAtTime(80, now + (duration || 0.04));
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + (duration || 0.04));
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(now + (duration || 0.04));
+        } catch (err) { /* ignore */ }
+    }
+
+    function playBeep(freq, length) {
+        if (audioMuted || !audioCtx) {
+            return;
+        }
+        try {
+            var now = audioCtx.currentTime;
+            var osc = audioCtx.createOscillator();
+            var gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq || 880, now);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + (length || 0.08));
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(now + (length || 0.08));
+        } catch (err) { /* ignore */ }
+    }
+
+    /* A lighter, higher tick for general UI interactions (buffers, sidebar
+     * tabs, buttons) so they read differently from the punchier control strip */
+    function playUiTick() {
+        if (audioMuted || !audioCtx) {
+            return;
+        }
+        try {
+            var now = audioCtx.currentTime;
+            var osc = audioCtx.createOscillator();
+            var gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(1000, now);
+            osc.frequency.exponentialRampToValueAtTime(420, now + 0.038);
+            gain.gain.setValueAtTime(0.16, now);
+            gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.04);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(now + 0.042);
+        } catch (err) { /* ignore */ }
+    }
+
+    /* Short noise buffer for hiss / degauss textures (built on demand) */
+    function noiseBuffer(seconds) {
+        var length = Math.max(1, Math.floor(audioCtx.sampleRate * seconds));
+        var buffer = audioCtx.createBuffer(1, length, audioCtx.sampleRate);
+        var data = buffer.getChannelData(0);
+        for (var i = 0; i < length; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+        return buffer;
+    }
+
+    /* CRT energise: relay thunk, rising coil whine, faint hiss */
+    function playPowerUp() {
+        if (audioMuted || !audioCtx) {
+            return;
+        }
+        try {
+            var now = audioCtx.currentTime;
+
+            var thunk = audioCtx.createOscillator();
+            var thunkGain = audioCtx.createGain();
+            thunk.type = 'sine';
+            thunk.frequency.setValueAtTime(120, now);
+            thunk.frequency.exponentialRampToValueAtTime(38, now + 0.12);
+            thunkGain.gain.setValueAtTime(0.22, now);
+            thunkGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+            thunk.connect(thunkGain);
+            thunkGain.connect(audioCtx.destination);
+            thunk.start(now);
+            thunk.stop(now + 0.18);
+
+            var whineAt = now + 0.05;
+            var whine = audioCtx.createOscillator();
+            var whineGain = audioCtx.createGain();
+            whine.type = 'sawtooth';
+            whine.frequency.setValueAtTime(1200, whineAt);
+            whine.frequency.exponentialRampToValueAtTime(13000, whineAt + 0.5);
+            whineGain.gain.setValueAtTime(0.0001, whineAt);
+            whineGain.gain.exponentialRampToValueAtTime(0.035, whineAt + 0.25);
+            whineGain.gain.exponentialRampToValueAtTime(0.004, whineAt + 0.55);
+            whine.connect(whineGain);
+            whineGain.connect(audioCtx.destination);
+            whine.start(whineAt);
+            whine.stop(whineAt + 0.6);
+
+            var hiss = audioCtx.createBufferSource();
+            var hissFilter = audioCtx.createBiquadFilter();
+            var hissGain = audioCtx.createGain();
+            hiss.buffer = noiseBuffer(0.5);
+            hissFilter.type = 'highpass';
+            hissFilter.frequency.setValueAtTime(2000, whineAt);
+            hissGain.gain.setValueAtTime(0.0001, whineAt);
+            hissGain.gain.exponentialRampToValueAtTime(0.03, whineAt + 0.1);
+            hissGain.gain.exponentialRampToValueAtTime(0.001, whineAt + 0.5);
+            hiss.connect(hissFilter);
+            hissFilter.connect(hissGain);
+            hissGain.connect(audioCtx.destination);
+            hiss.start(whineAt);
+            hiss.stop(whineAt + 0.5);
+        } catch (err) { /* ignore */ }
+    }
+
+    /* CRT power-down: descending coil whine closing on a soft thud */
+    function playPowerDown() {
+        if (audioMuted || !audioCtx) {
+            return;
+        }
+        try {
+            var now = audioCtx.currentTime;
+
+            var whine = audioCtx.createOscillator();
+            var whineGain = audioCtx.createGain();
+            whine.type = 'sawtooth';
+            whine.frequency.setValueAtTime(9000, now);
+            whine.frequency.exponentialRampToValueAtTime(1200, now + 0.42);
+            whineGain.gain.setValueAtTime(0.035, now);
+            whineGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+            whine.connect(whineGain);
+            whineGain.connect(audioCtx.destination);
+            whine.start(now);
+            whine.stop(now + 0.47);
+
+            var thudAt = now + 0.34;
+            var thud = audioCtx.createOscillator();
+            var thudGain = audioCtx.createGain();
+            thud.type = 'sine';
+            thud.frequency.setValueAtTime(150, thudAt);
+            thud.frequency.exponentialRampToValueAtTime(45, thudAt + 0.14);
+            thudGain.gain.setValueAtTime(0.001, thudAt);
+            thudGain.gain.exponentialRampToValueAtTime(0.2, thudAt + 0.01);
+            thudGain.gain.exponentialRampToValueAtTime(0.001, thudAt + 0.18);
+            thud.connect(thudGain);
+            thudGain.connect(audioCtx.destination);
+            thud.start(thudAt);
+            thud.stop(thudAt + 0.2);
+        } catch (err) { /* ignore */ }
+    }
+
+    /* ---- Theme detection ---- */
+    function currentThemeName() {
+        try {
+            if (!kiwi.themes || typeof kiwi.themes.currentTheme !== 'function') {
+                return '';
+            }
+            var theme = kiwi.themes.currentTheme();
+            return theme && theme.name ? theme.name.toLowerCase() : '';
+        } catch (err) {
+            return '';
+        }
+    }
+
+    function isCyberdeck() {
+        return currentThemeName().indexOf(THEME_PREFIX) === 0;
+    }
+
+    /* ---- Contextual glitch bursts ---- *
+     * The glitch is no longer a manual button: it fires as "signal
+     * interference" on highlights, link (connect/disconnect) changes and
+     * phosphor/palette switches. Throttled so bursts never chatter. */
+    function glitch() {
+        if (!active || !poweredOn || !crtOn || !document.body) {
+            return;
+        }
+        var now = Date.now();
+        if (now - lastGlitch < 1200) {
+            return;
+        }
+        lastGlitch = now;
+        document.body.classList.add('nephnet-deck-glitch');
+        window.setTimeout(function () {
+            document.body.classList.remove('nephnet-deck-glitch');
+        }, 150);
+    }
+
+    function onHighlightMessage(event) {
+        if (event && event.message && event.message.isHighlight) {
+            glitch();
+        }
+    }
+
+    function onLinkChange() {
+        glitch();
+        updateSignal();
+    }
+
+    /* ---- Delegated UI click earcon ---- *
+     * A single document-level listener (capture phase) ticks whenever a
+     * button-like element is activated, so buffers, sidebar tabs and the
+     * station manager all sound consistent without per-component wiring. */
+    var UI_TICK_SELECTOR = 'button, a, [role="button"], ' +
+        '.kiwi-statebrowser-channel, .kiwi-statebrowser-network-header, ' +
+        '.kiwi-statebrowser-tool, .kiwi-statebrowser-newchannel, ' +
+        '.kiwi-statebrowser-usermenu, .kiwi-statebrowser-appsettings, ' +
+        '.kiwi-statebrowser-newnetwork, .kiwi-statebrowser-logout, ' +
+        '.u-tabbed-view-tab, .kiwi-sidebar-close, ' +
+        '.kiwi-radio-browser-station, .kiwi-radio-browser-close';
+
+    var UI_TICK_SKIP = 'input, textarea, select, [contenteditable="true"], .kiwi-controlinput-input';
+
+    function onDocumentClick(event) {
+        if (audioMuted) {
+            return;
+        }
+        var target = event.target;
+        if (!target || typeof target.closest !== 'function') {
+            return;
+        }
+        // The control strip plays its own, punchier sounds
+        if (target.closest('.nephnet-chrome')) {
+            return;
+        }
+        // No tick when focusing or typing into a text field
+        if (target.closest(UI_TICK_SKIP)) {
+            return;
+        }
+        if (!target.closest(UI_TICK_SELECTOR)) {
+            return;
+        }
+        var now = Date.now();
+        if (now - lastUiTick < 40) {
+            return;
+        }
+        lastUiTick = now;
+        initAudio();
+        playUiTick();
+    }
+
+    function makeEl(tag, className, html) {
+        var el = document.createElement(tag);
+        if (className) {
+            el.className = className;
+        }
+        if (typeof html === 'string') {
+            el.innerHTML = html;
+        }
+        return el;
+    }
+
+    function makeIconButton(iconClass, handler) {
+        var btn = makeEl('button', 'nephnet-btn nephnet-btn--icon', '');
+        btn.type = 'button';
+        var icon = makeEl('i', 'fa ' + iconClass);
+        icon.setAttribute('aria-hidden', 'true');
+        btn.appendChild(icon);
+        btn.addEventListener('click', handler);
+        return btn;
+    }
+
+    /* ---- Chrome construction ---- */
+    function buildChrome() {
+        if (chromeRoot) {
+            return;
+        }
+
+        chromeRoot = makeEl('div', 'nephnet-chrome');
+        chromeRoot.hidden = true;
+
+        var brandMark = '<img class="nephnet-brand-mark" src="static/nephnet.svg" alt="" aria-hidden="true">';
+
+        var topbar = makeEl('div', 'nephnet-topbar');
+        topbar.innerHTML =
+            '<div class="nephnet-topbar-left">' +
+                '<span class="nephnet-plate">MK-IV // FIELD RIG <b>REV.3</b></span>' +
+            '</div>' +
+            '<div class="nephnet-brand">' + brandMark +
+                '<span class="nephnet-brand-name">Neph<span>NET</span></span>' +
+            '</div>' +
+            '<div class="nephnet-topbar-right">' +
+                '<span class="nephnet-readout">BUS <b>NEPH-64B</b></span>' +
+                '<span class="nephnet-readout nephnet-readout--signal">SIG ' +
+                    '<em class="nephnet-signal-value">--.-%</em></span>' +
+                '<span class="nephnet-clock">--:--:--</span>' +
+            '</div>';
+
+        var controls = makeEl('div', 'nephnet-controls');
+
+        var paletteButtons = {};
+        Object.keys(PALETTES).forEach(function (key) {
+            var btn = makeEl('button', 'nephnet-btn nephnet-btn--phosphor', '');
+            btn.type = 'button';
+            btn.setAttribute('data-palette', key);
+            btn.setAttribute('title', key.toUpperCase() + ' phosphor');
+            btn.setAttribute('aria-label', key.toUpperCase() + ' phosphor palette');
+            btn.addEventListener('click', function () {
+                initAudio();
+                playBeep(750, 0.04);
+                if (kiwi.themes && typeof kiwi.themes.setTheme === 'function') {
+                    kiwi.themes.setTheme(PALETTES[key]);
+                }
+                updateControls();
+                glitch();
+            });
+            paletteButtons[key] = btn;
+            controls.appendChild(btn);
+        });
+
+        controls.appendChild(makeEl('span', 'nephnet-controls-spacer', ''));
+
+        var crtBtn = makeIconButton('fa-desktop', function () {
+            initAudio();
+            playClick(300, 0.03);
+            crtOn = !crtOn;
+            applyCrt();
+        });
+        crtBtn.setAttribute('title', 'CRT effect');
+        crtBtn.setAttribute('aria-label', 'Toggle CRT effect');
+
+        var audioBtn = makeIconButton('fa-volume-off', function () {
+            audioMuted = !audioMuted;
+            initAudio();
+            updateAudioButton();
+            if (!audioMuted) {
+                playBeep(1200, 0.05);
+            }
+        });
+        audioBtn.setAttribute('title', 'Audio');
+        audioBtn.setAttribute('aria-label', 'Toggle audio');
+
+        controls.appendChild(crtBtn);
+        controls.appendChild(audioBtn);
+
+        controls.appendChild(makeEl('span', 'nephnet-controls-spacer nephnet-controls-spacer--wide', ''));
+
+        var powerBtn = makeIconButton('fa-power-off', function () {
+            initAudio();
+            togglePower();
+        });
+        powerBtn.classList.add('nephnet-btn--power');
+        powerBtn.setAttribute('title', 'Power');
+        powerBtn.setAttribute('aria-label', 'Toggle power');
+        controls.appendChild(powerBtn);
+
+        function updateAudioButton() {
+            var icon = audioBtn.querySelector('i');
+            if (icon) {
+                icon.className = 'fa ' + (audioMuted ? 'fa-volume-off' : 'fa-volume-up');
+            }
+            audioBtn.classList.toggle('nephnet-btn--active', !audioMuted);
+        }
+
+        updateAudioButton();
+
+        var bottombar = makeEl('div', 'nephnet-bottombar');
+        bottombar.appendChild(makeEl('span', 'nephnet-bottombar-label', 'TACTILE NAV BUS // CYBERDECK'));
+        bottombar.appendChild(controls);
+        bottombar.appendChild(makeEl('span', 'nephnet-bottombar-right', 'CHASSIS: NEPHNET-IND-4'));
+
+        chromeRoot.appendChild(topbar);
+        chromeRoot.appendChild(bottombar);
+
+        ['tl', 'tr', 'bl', 'br'].forEach(function (pos) {
+            chromeRoot.appendChild(makeEl('span', 'nephnet-rivet nephnet-rivet--' + pos));
+        });
+
+        chromeRoot.appendChild(makeEl('span', 'nephnet-rail nephnet-rail--left'));
+        chromeRoot.appendChild(makeEl('span', 'nephnet-rail nephnet-rail--right'));
+        chromeRoot.appendChild(makeEl('span', 'nephnet-spine'));
+        chromeRoot.appendChild(makeEl('div', 'nephnet-bezel'));
+
+        chromeRoot.appendChild(makeEl('div', 'nephnet-scanlines'));
+        chromeRoot.appendChild(makeEl('div', 'nephnet-vignette'));
+
+        /* Appended to <body> (not the Vue-owned `.kiwi-wrap`) so Vue's patcher
+         * cannot remove the chrome or overwrite the state class. */
+        document.body.appendChild(chromeRoot);
+
+        chromeRoot._paletteButtons = paletteButtons;
+        chromeRoot._crtBtn = crtBtn;
+        chromeRoot._audioBtn = audioBtn;
+        chromeRoot._powerBtn = powerBtn;
+
+        applyCrt();
+        applyPower();
+        updateControls();
+
+        clockTimer = window.setInterval(updateClock, 1000);
+        updateClock();
+        startSignal();
+    }
+
+    function updateClock() {
+        if (!chromeRoot) {
+            return;
+        }
+        var clock = chromeRoot.querySelector('.nephnet-clock');
+        if (!clock) {
+            return;
+        }
+        var now = new Date();
+        var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+        clock.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+    }
+
+    /* ---- Live SIG readout ---- *
+     * Green + high while linked, amber while connecting, and a low red
+     * "signal dropped" readout when offline. Small random jitter at random
+     * intervals keeps it feeling live. */
+    function signalState() {
+        var network = null;
+        try {
+            if (kiwi.state && typeof kiwi.state.getActiveNetwork === 'function') {
+                network = kiwi.state.getActiveNetwork();
+            }
+        } catch (err) {
+            network = null;
+        }
+        if (network && network.state === 'connected') {
+            return 'good';
+        }
+        if (network && network.state === 'connecting') {
+            return 'warn';
+        }
+        return 'bad';
+    }
+
+    function updateSignal() {
+        if (!chromeRoot) {
+            return;
+        }
+        var readout = chromeRoot.querySelector('.nephnet-readout--signal');
+        var value = chromeRoot.querySelector('.nephnet-signal-value');
+        if (!readout || !value) {
+            return;
+        }
+        var state = signalState();
+        var percent;
+        if (state === 'good') {
+            percent = 91 + Math.random() * 7;
+        } else if (state === 'warn') {
+            percent = 45 + Math.random() * 20;
+        } else {
+            percent = 2 + Math.random() * 6;
+        }
+        value.textContent = percent.toFixed(1) + '%';
+        readout.classList.remove('nephnet-signal--good', 'nephnet-signal--warn', 'nephnet-signal--bad');
+        readout.classList.add('nephnet-signal--' + state);
+    }
+
+    function scheduleSignal() {
+        signalTimer = window.setTimeout(function () {
+            updateSignal();
+            scheduleSignal();
+        }, 2000 + Math.random() * 4000);
+    }
+
+    function startSignal() {
+        if (signalTimer) {
+            return;
+        }
+        updateSignal();
+        scheduleSignal();
+    }
+
+    function onSignalRefresh() {
+        updateSignal();
+    }
+
+    function applyCrt() {
+        if (!document.body) {
+            return;
+        }
+        document.body.classList.toggle('nephnet-deck-crt-on', crtOn);
+        document.body.classList.toggle('nephnet-deck-crt-off', !crtOn);
+        if (chromeRoot && chromeRoot._crtBtn) {
+            chromeRoot._crtBtn.classList.toggle('nephnet-btn--active', crtOn);
+        }
+    }
+
+    function applyPower() {
+        if (!document.body) {
+            return;
+        }
+        document.body.classList.toggle('nephnet-deck-powered-off', !poweredOn);
+        if (chromeRoot && chromeRoot._powerBtn) {
+            chromeRoot._powerBtn.classList.toggle('nephnet-btn--active', poweredOn);
+        }
+    }
+
+    /* Power is a real toggle: the screen collapses into an unlit standby and
+     * stays that way until switched back on. The shell stays visible. */
+    function togglePower() {
+        if (!document.body) {
+            return;
+        }
+        if (poweredOn) {
+            playPowerDown();
+            poweredOn = false;
+            document.body.classList.remove('nephnet-deck-power-on');
+            document.body.classList.add('nephnet-deck-power-off');
+            applyPower();
+            window.setTimeout(function () {
+                document.body.classList.remove('nephnet-deck-power-off');
+            }, 320);
+        } else {
+            poweredOn = true;
+            document.body.classList.remove('nephnet-deck-powered-off');
+            document.body.classList.remove('nephnet-deck-power-off');
+            document.body.classList.add('nephnet-deck-power-on');
+            applyPower();
+            playPowerUp();
+            window.setTimeout(function () {
+                document.body.classList.remove('nephnet-deck-power-on');
+            }, 340);
+        }
+    }
+
+    function updateControls() {
+        if (!chromeRoot) {
+            return;
+        }
+        var activeTheme = currentThemeName();
+        var buttons = chromeRoot._paletteButtons || {};
+        Object.keys(buttons).forEach(function (key) {
+            var activePalette = PALETTES[key].toLowerCase() === activeTheme;
+            buttons[key].classList.toggle('nephnet-btn--active', activePalette);
+        });
+    }
+
+    /* ---- Activation / deactivation ---- */
+    function addInteractionListeners() {
+        document.addEventListener('click', onDocumentClick, true);
+        kiwi.on('message.new', onHighlightMessage);
+        kiwi.on('network.connecting', onLinkChange);
+        kiwi.on('irc.raw.ERROR', onLinkChange);
+        kiwi.on('network.removed', onLinkChange);
+        kiwi.on('irc.raw.001', onSignalRefresh);
+    }
+
+    function removeInteractionListeners() {
+        document.removeEventListener('click', onDocumentClick, true);
+        kiwi.off('message.new', onHighlightMessage);
+        kiwi.off('network.connecting', onLinkChange);
+        kiwi.off('irc.raw.ERROR', onLinkChange);
+        kiwi.off('network.removed', onLinkChange);
+        kiwi.off('irc.raw.001', onSignalRefresh);
+    }
+
+    /* The sidebar spine is only part of the shell when a state browser is
+     * actually present. On the welcome/login screen there is none, so flag
+     * its absence and let CSS hide the spine. */
+    function syncStateBrowserPresence() {
+        if (!document.body) {
+            return;
+        }
+        document.body.classList.toggle(
+            'nephnet-deck-statebrowser',
+            !!document.querySelector('.kiwi-statebrowser')
+        );
+    }
+
+    function activate() {
+        buildChrome();
+        document.body.classList.add('nephnet-deck-active');
+        syncStateBrowserPresence();
+        chromeRoot.hidden = false;
+        applyCrt();
+        applyPower();
+        updateControls();
+        if (!active) {
+            active = true;
+            addInteractionListeners();
+        }
+    }
+
+    function deactivate() {
+        if (active) {
+            active = false;
+            removeInteractionListeners();
+        }
+        poweredOn = true;
+        if (document.body) {
+            document.body.classList.remove(
+                'nephnet-deck-active',
+                'nephnet-deck-statebrowser',
+                'nephnet-deck-crt-on',
+                'nephnet-deck-crt-off',
+                'nephnet-deck-glitch',
+                'nephnet-deck-power-off',
+                'nephnet-deck-power-on',
+                'nephnet-deck-powered-off'
+            );
+        }
+        if (chromeRoot) {
+            chromeRoot.hidden = true;
+        }
+    }
+
+    function syncTheme() {
+        if (!rootWrap || !document.body.contains(rootWrap)) {
+            // The app was re-rendered; reacquire the wrap element
+            rootWrap = document.querySelector('.kiwi-wrap');
+            if (rootWrap) {
+                observeWrap();
+            }
+        }
+        if (!rootWrap) {
+            return;
+        }
+        if (isCyberdeck()) {
+            activate();
+        } else {
+            deactivate();
+        }
+    }
+
+    var observer = null;
+    function observeWrap() {
+        if (!rootWrap || !window.MutationObserver) {
+            return;
+        }
+        if (observer) {
+            observer.disconnect();
+        }
+        observer = new MutationObserver(syncTheme);
+        observer.observe(rootWrap, {
+            attributes: true,
+            attributeFilter: ['data-theme'],
+            childList: true,
+        });
+    }
+
+    function boot() {
+        if (booted) {
+            return;
+        }
+        rootWrap = document.querySelector('.kiwi-wrap');
+        if (!rootWrap) {
+            window.setTimeout(boot, 60);
+            return;
+        }
+        booted = true;
+        observeWrap();
+        kiwi.on('theme.change', syncTheme);
+        syncTheme();
+    }
+
+    boot();
+});
+</script>
+
+<style>
+/*
+ * The cyberdeck chrome styling lives in the theme stylesheets
+ * (static/themes/nephnet-cyberdeck/common.css) so it is only present while a
+ * NephNET Cyberdeck theme is loaded. Nothing global is defined here.
+ */
+</style>

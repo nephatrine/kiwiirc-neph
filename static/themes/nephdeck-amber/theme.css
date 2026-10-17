@@ -1,0 +1,7 @@
+/*
+ * NephNET Cyberdeck — amber phosphor (default palette)
+ *
+ * The full styling lives in common.css, which also defines the amber --cd-*
+ * defaults. See nephnet-cyberdeck-green / -cyan for the other palettes.
+ */
+@import './common.css';

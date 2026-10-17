@@ -191,14 +191,77 @@ export default class ThemeManager {
         this.setTheme(theme.name);
     }
 
-    themeVar(varName) {
-        if (!this.varsElement) {
+    /* An explicit light/dark value from the theme config, if it has one */
+    static declaredMode(theme) {
+        if (!theme || typeof theme.mode !== 'string') {
+            return null;
+        }
+
+        const mode = theme.mode.toLowerCase();
+        return (mode === 'dark' || mode === 'light') ? mode : null;
+    }
+
+    /* Derive light/dark from a colour using a simple luminance formula */
+    static modeFromColour(colour) {
+        if (!colour || typeof colour !== 'string') {
+            return null;
+        }
+
+        const value = colour.trim().toLowerCase();
+        let r;
+        let g;
+        let b;
+
+        const rgb = value.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([0-9.]+)\s*)?\)/);
+        if (rgb) {
+            if (rgb[4] !== undefined && parseFloat(rgb[4]) === 0) {
+                // Fully transparent, nothing to measure
+                return null;
+            }
+
+            r = parseInt(rgb[1], 10);
+            g = parseInt(rgb[2], 10);
+            b = parseInt(rgb[3], 10);
+        } else {
+            const hex = value.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/);
+            if (!hex) {
+                return null;
+            }
+
+            let digits = hex[1];
+            if (digits.length === 3) {
+                digits = digits.split('').map((c) => c + c).join('');
+            }
+
+            r = parseInt(digits.slice(0, 2), 16);
+            g = parseInt(digits.slice(2, 4), 16);
+            b = parseInt(digits.slice(4, 6), 16);
+        }
+
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        return luminance < 0.5 ? 'dark' : 'light';
+    }
+
+    ensureVarsElement() {
+        if (!this.varsElement || !document.body.contains(this.varsElement)) {
             this.varsElement = document.querySelector('.kiwi-wrap');
         }
 
-        const styles = window.getComputedStyle(this.varsElement);
-        const value = styles.getPropertyValue('--kiwi-' + varName);
+        return this.varsElement;
+    }
+
+    cssVar(varName) {
+        const el = this.ensureVarsElement();
+        if (!el) {
+            return '';
+        }
+
+        const value = window.getComputedStyle(el).getPropertyValue(varName);
         return (value || '').trim();
+    }
+
+    themeVar(varName) {
+        return this.cssVar('--kiwi-' + varName);
     }
 
     themeMode() {
@@ -206,7 +269,19 @@ export default class ThemeManager {
     }
 
     guessMode(theme) {
-        if (!theme || !theme.name) {
+        if (!theme) {
+            return;
+        }
+
+        // 1. An explicit mode in the theme config always wins
+        const declared = ThemeManager.declaredMode(theme);
+        if (declared) {
+            this.setMode(declared);
+            return;
+        }
+
+        // 2. Otherwise guess from the theme name
+        if (!theme.name) {
             return;
         }
 
@@ -228,31 +303,24 @@ export default class ThemeManager {
     }
 
     refreshMode() {
-        if (!this.varsElement) {
-            this.varsElement = document.querySelector('.kiwi-wrap');
-        }
-
-        if (!this.varsElement) {
+        // 1. An explicit mode in the theme config is authoritative
+        const declared = ThemeManager.declaredMode(this.activeTheme);
+        if (declared) {
+            this.setMode(declared);
             return;
         }
 
-        const styles = window.getComputedStyle(this.varsElement);
-        const bg = styles.getPropertyValue('background-color');
-
-        // Parse rgb(a) or hex
-        const match = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-        if (match) {
-            const r = parseInt(match[1], 10);
-            const g = parseInt(match[2], 10);
-            const b = parseInt(match[3], 10);
-
-            // Simple luminance formula
-            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-            this.setMode(luminance < 0.5 ? 'dark' : 'light');
+        // 2. Otherwise measure the theme background now the CSS is live.
+        //    The theme background lives on --brand-default-bg rather than
+        //    the (transparent) .kiwi-wrap background-color.
+        const colour = this.cssVar('--brand-default-bg') || this.cssVar('background-color');
+        const measured = ThemeManager.modeFromColour(colour);
+        if (measured) {
+            this.setMode(measured);
             return;
         }
 
-        // Fallback if no color detected (should be rare once CSS is loaded)
+        // 3. Fall back to guessing from the theme name
         if (this.activeTheme) {
             this.guessMode(this.activeTheme);
         }
