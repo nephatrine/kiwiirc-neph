@@ -1,6 +1,5 @@
 'kiwi public';
 
-import xhr from 'xhr';
 import _ from 'lodash';
 import JSON5 from 'json5';
 import Logger from './Logger';
@@ -19,16 +18,12 @@ export default class ConfigLoader {
     }
 
     loadFromUrl(configUrl) {
-        return new Promise((resolve, reject) => {
-            xhr({ url: configUrl }, (err, response) => {
-                if (err) {
-                    reject();
-                    return;
-                }
-
+        return fetch(configUrl)
+            .then((response) => response.text())
+            .then((body) => {
                 let configObj = null;
                 try {
-                    configObj = JSON5.parse(response.body);
+                    configObj = JSON5.parse(body);
                 } catch (parseErr) {
                     log.error('Config ' + parseErr.message);
                     let errMsg = 'Config file error: ' + parseErr.message.replace('JSON5: ', '');
@@ -37,14 +32,12 @@ export default class ConfigLoader {
                     errMsg = errMsg.replace(/at (\d+):(\d+)/g, (m, m1, m2) => {
                         return `line ${m1}, position ${m2}`;
                     });
-                    reject(errMsg);
-                    return;
+                    throw errMsg;
                 }
 
                 this.setConfig(configObj);
-                resolve(this.config);
+                return this.config;
             });
-        });
     }
 
     loadFromObj(configObj) {

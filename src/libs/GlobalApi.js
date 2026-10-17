@@ -6,7 +6,6 @@ import EventEmitter from 'eventemitter3';
 import Vue from 'vue';
 import JSON5 from 'json5';
 import _ from 'lodash';
-import { compareVersions } from 'compare-versions';
 import * as Misc from '@/helpers/Misc';
 import Logger from './Logger';
 
@@ -65,7 +64,7 @@ export default class GlobalApi extends EventEmitter {
     }
 
     versionMatches(v) {
-        return compareVersions(this.version, v) >= 0;
+        return Misc.compareVersions(this.version, v) >= 0;
     }
 
     /**

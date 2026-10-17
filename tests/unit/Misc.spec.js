@@ -511,4 +511,32 @@ describe('Misc.js helpers', () => {
             expect(Misc.extractURL('nothing here')).toBe('');
         });
     });
+
+    describe('compareVersions', () => {
+        test('orders plain release versions', () => {
+            expect(Misc.compareVersions('2.0.0', '1.5.0')).toBe(1);
+            expect(Misc.compareVersions('1.5.0', '2.0.0')).toBe(-1);
+            expect(Misc.compareVersions('2.0.0', '2.0.0')).toBe(0);
+        });
+
+        test('handles differing segment counts and a leading v', () => {
+            expect(Misc.compareVersions('2.1', '2.0.9')).toBe(1);
+            expect(Misc.compareVersions('v2.0.0', '2.0.0')).toBe(0);
+        });
+
+        test('ranks a prerelease below its release', () => {
+            expect(Misc.compareVersions('2.0.0-rc.1', '2.0.0')).toBe(-1);
+            expect(Misc.compareVersions('2.0.0', '2.0.0-rc.1')).toBe(1);
+        });
+
+        test('applies semver prerelease ordering', () => {
+            expect(Misc.compareVersions('1.0.0-alpha', '1.0.0-alpha.1')).toBe(-1);
+            expect(Misc.compareVersions('1.0.0-1', '1.0.0-alpha')).toBe(-1);
+            expect(Misc.compareVersions('1.0.0-beta', '1.0.0-alpha')).toBe(1);
+        });
+
+        test('ignores build metadata', () => {
+            expect(Misc.compareVersions('1.2.3+build.5', '1.2.3+build.9')).toBe(0);
+        });
+    });
 });

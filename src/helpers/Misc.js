@@ -4,12 +4,10 @@
 
 import _ from 'lodash';
 import Vue from 'vue';
-import strftime from 'strftime';
 import PluginWrapper from '@/components/utils/PluginWrapper';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import { urlRegex } from './TextFormatting';
 
-const strftimeUTC = strftime.timezone('+0');
 const styleStripRegexp = new RegExp(
     // Decimal Colours
     /(\x03(\u200B|[0-9]{1,2})(\u200B|,[0-9]{1,2})?|\x03)|/.source +
@@ -620,7 +618,75 @@ export function replaceObjectProps(target, source) {
  */
 export function dateIso(date) {
     let d = date || new Date();
-    return strftimeUTC('%Y-%m-%dT%H:%M:%S.%LZ', d);
+    return d.toISOString();
+}
+
+/**
+ * Compare two semver version strings, following semver precedence rules.
+ * Numeric dot-separated segments are compared first, then prerelease ordering
+ * (a version with a prerelease ranks below the same release version, numeric
+ * prerelease identifiers rank below alphanumeric ones).
+ * @param {String} a The first version to compare
+ * @param {String} b The second version to compare
+ * @returns {Number} 1 if a is greater than b, -1 if a is less than b, 0 if equal
+ */
+export function compareVersions(a, b) {
+    let parse = (version) => {
+        let parts = String(version).trim().replace(/^v/, '').split('+')[0].split('-');
+        let release = parts.shift().split('.').map((n) => parseInt(n, 10) || 0);
+        let prerelease = parts.length ? parts.join('-').split('.') : null;
+        return { release, prerelease };
+    };
+
+    let va = parse(a);
+    let vb = parse(b);
+
+    let len = Math.max(va.release.length, vb.release.length);
+    for (let i = 0; i < len; i++) {
+        let na = va.release[i] || 0;
+        let nb = vb.release[i] || 0;
+        if (na !== nb) {
+            return na > nb ? 1 : -1;
+        }
+    }
+
+    if (!va.prerelease && !vb.prerelease) {
+        return 0;
+    }
+    if (!va.prerelease) {
+        return 1;
+    }
+    if (!vb.prerelease) {
+        return -1;
+    }
+
+    let preLen = Math.max(va.prerelease.length, vb.prerelease.length);
+    for (let i = 0; i < preLen; i++) {
+        let pa = va.prerelease[i];
+        let pb = vb.prerelease[i];
+        if (pa === undefined) {
+            return -1;
+        }
+        if (pb === undefined) {
+            return 1;
+        }
+        if (pa === pb) {
+            continue;
+        }
+
+        let numericA = /^\d+$/.test(pa);
+        let numericB = /^\d+$/.test(pb);
+        if (numericA && numericB) {
+            return parseInt(pa, 10) > parseInt(pb, 10) ? 1 : -1;
+        }
+        if (numericA !== numericB) {
+            // Numeric identifiers always have lower precedence than alphanumeric ones
+            return numericA ? -1 : 1;
+        }
+        return pa > pb ? 1 : -1;
+    }
+
+    return 0;
 }
 
 /**

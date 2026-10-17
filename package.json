@@ -25,8 +25,6 @@
     "@babel/runtime": "^8.0.5",
     "@panter/vue-i18next": "^0.15.2",
     "buffer": "^6.0.3",
-    "compare-versions": "^6.1.1",
-    "event-emitter": "^0.3.5",
     "font-awesome": "^4.7.0",
     "htmlparser2": "^10.1.0",
     "i18next": "^25.10.10",
@@ -40,8 +38,7 @@
     "strftime": "^0.10.3",
     "tinycon": "^0.6.8",
     "vue": "^2.7.16",
-    "vue-virtual-scroller": "^1.1.2",
-    "xhr": "^2.6.0"
+    "vue-virtual-scroller": "^1.1.2"
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",
