@@ -47,13 +47,14 @@ function driveRawLine(client, command, params) {
 describe('Welcome register startup', () => {
     let s;
     let comp;
+    let vm;
 
     beforeEach(() => {
         s = state.create();
         s.settings.startupOptions = {};
         Vue.prototype.$state = s;
 
-        const vm = new Vue({
+        vm = new Vue({
             el: document.createElement('div'),
             render: (h) => h(Welcome),
         });
@@ -73,6 +74,7 @@ describe('Welcome register startup', () => {
     });
 
     afterEach(() => {
+        vm.$destroy();
         delete Vue.prototype.$state;
     });
 

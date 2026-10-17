@@ -9,6 +9,14 @@ const log = Logger.namespace('ThemeManager');
 
 let createdInstance = null;
 
+// A theme/font <link> may have been detached from <head> by other code before
+// we try to clean it up, so only remove it when it still has a parent.
+function removeHeadNode(el) {
+    if (el && el.parentNode) {
+        el.parentNode.removeChild(el);
+    }
+}
+
 export default class ThemeManager {
     constructor(state, argTheme) {
         this.state = state;
@@ -78,7 +86,7 @@ export default class ThemeManager {
         if (this.loadingElement) {
             // There is already a loading theme
             // remove it as we are about to load another
-            document.head.removeChild(this.loadingElement);
+            removeHeadNode(this.loadingElement);
             this.loadingElement = null;
         }
 
@@ -95,7 +103,7 @@ export default class ThemeManager {
 
         // Handle Google Fonts if the theme specifies them
         if (this.currentFontElement) {
-            document.head.removeChild(this.currentFontElement);
+            removeHeadNode(this.currentFontElement);
             this.currentFontElement = null;
         }
 
@@ -117,7 +125,7 @@ export default class ThemeManager {
 
             if (this.currentElement && this.currentElement !== this.loadingElement) {
                 // Remove the old theme from the DOM
-                document.head.removeChild(this.currentElement);
+                removeHeadNode(this.currentElement);
             }
 
             // Move our loaded element into current position
@@ -140,7 +148,7 @@ export default class ThemeManager {
         themeElement.onerror = () => {
             // New theme failed to load, remove its loading element
             if (this.loadingElement) {
-                document.head.removeChild(this.loadingElement);
+                removeHeadNode(this.loadingElement);
                 this.loadingElement = null;
             }
 

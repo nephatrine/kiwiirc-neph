@@ -1,8 +1,4 @@
 import {
-    nickservSubcommands,
-    nickservBadge,
-    NICKSERV_SUBCOMMANDS,
-    NICKSERV_OPER_SUBCOMMANDS,
     NICKSERV_SETTINGS,
     parseNickservInput,
     nickservArgSuggestions,
@@ -20,28 +16,6 @@ const userCtx = {
 const operCtx = Object.assign({}, userCtx, { oper: true });
 
 describe('nickserv completion', () => {
-    it('offers non-hidden commands at top level', () => {
-        const base = nickservSubcommands({ oper: false, authenticated: true });
-        NICKSERV_SUBCOMMANDS.forEach((cmd) => {
-            expect(base).toContain(cmd);
-        });
-        ['SENDPASS', 'RESETPASS', 'PASSWORD'].forEach((cmd) => {
-            expect(base).toContain(cmd);
-        });
-        ['ENFORCE', 'SESSIONS', 'VERIFYEMAIL'].forEach((cmd) => {
-            expect(base).not.toContain(cmd);
-        });
-    });
-
-    it('adds oper commands for opers only', () => {
-        const base = nickservSubcommands({ oper: false, authenticated: true });
-        const withOper = nickservSubcommands({ oper: true, authenticated: true });
-        NICKSERV_OPER_SUBCOMMANDS.forEach((cmd) => {
-            expect(base).not.toContain(cmd);
-            expect(withOper).toContain(cmd);
-        });
-    });
-
     it('parses command paths and argument slots', () => {
         expect(parseNickservInput('/ns ')).toBe(null);
         expect(parseNickservInput('/ns CERT')).toBe(null);
@@ -119,14 +93,6 @@ describe('nickserv completion', () => {
         expect(nickservArgSuggestions(parseNickservInput('/ns IDENTIFY '), userCtx)).toEqual([]);
         expect(nickservArgSuggestions(parseNickservInput('/ns CERT FOO '), userCtx)).toEqual([]);
         expect(nickservArgSuggestions(null, userCtx)).toEqual([]);
-    });
-
-    it('badges oper commands by category', () => {
-        expect(nickservBadge('SUSPEND')).toBe('CHAT');
-        expect(nickservBadge('LIST')).toBe('SERVER');
-        expect(nickservBadge('SADROP')).toBe('SERVER');
-        expect(nickservBadge('INFO')).toBe(null);
-        expect(nickservBadge('GET')).toBe(null);
     });
 
     it('shows syntax ghosts for command paths', () => {

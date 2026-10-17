@@ -118,3 +118,218 @@ describe('ThemeManager mode detection', () => {
         expect(manager.themeMode()).toBe('dark');
     });
 });
+
+describe('ThemeManager theme loading', () => {
+    function makeState(theme) {
+        return {
+            themes: [theme],
+            setting: () => undefined,
+            getSetting: (key) => (key === 'settings.themes' ? [theme] : undefined),
+            $emit: jest.fn(),
+        };
+    }
+
+    function makeLoaded(theme) {
+        const state = makeState(theme);
+        return { manager: new ThemeManager(state, theme.name), state };
+    }
+
+    function lastLink() {
+        const links = document.head.querySelectorAll('link[rel="stylesheet"]');
+        return links[links.length - 1];
+    }
+
+    beforeEach(() => {
+        jest.spyOn(window.console, 'error').mockImplementation(() => {});
+        document.head.innerHTML = '';
+        document.body.innerHTML = '<div class="kiwi-wrap"></div>';
+        document.documentElement.style.colorScheme = '';
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('builds a theme.css url and preserves the query string', () => {
+        expect(ThemeManager.themeUrl({ url: 'static/themes/dark' })).toBe('static/themes/dark/theme.css');
+        expect(ThemeManager.themeUrl({ url: 'static/themes/dark/' })).toBe('static/themes/dark/theme.css');
+        expect(ThemeManager.themeUrl({ url: 'static/themes/dark?cb=1' })).toBe('static/themes/dark/theme.css?cb=1');
+    });
+
+    it('finds themes by name case-insensitively', () => {
+        const theme = makeTheme('Neutral');
+        const { manager } = makeLoaded(theme);
+
+        expect(manager.findTheme('nEuTrAl')).toBe(theme);
+        expect(manager.findTheme('missing')).toBeUndefined();
+        expect(manager.findTheme('')).toBeNull();
+    });
+
+    it('injects a google fonts link when the theme asks for one', () => {
+        makeLoaded(Object.assign(makeTheme('Fonty'), { google_fonts: ['Open Sans'] }));
+
+        const link = document.head.querySelector('link[href*="fonts.googleapis.com"]');
+        expect(link).not.toBeNull();
+        expect(link.href).toContain('family=Open+Sans');
+    });
+
+    it('activates a loaded theme and emits theme.change on the next one', () => {
+        const { manager, state } = makeLoaded({ name: 'Neutral', url: 'static/themes/first' });
+
+        lastLink().onload();
+        expect(manager.activeTheme.name).toBe('Neutral');
+
+        manager.setTheme({ name: 'Second', url: 'static/themes/second' });
+        lastLink().onload();
+
+        expect(manager.activeTheme.name).toBe('Second');
+        expect(manager.previousTheme.name).toBe('Neutral');
+        expect(state.$emit).toHaveBeenCalledWith(
+            'theme.change',
+            expect.objectContaining({ name: 'Second' }),
+            expect.objectContaining({ name: 'Neutral' })
+        );
+    });
+
+    it('emits theme.failed when a stylesheet errors', () => {
+        const { manager, state } = makeLoaded({ name: 'Neutral', url: 'static/themes/first' });
+        lastLink().onload();
+
+        manager.setTheme({ name: 'Broken', url: 'static/themes/broken' });
+        lastLink().onerror();
+
+        expect(state.$emit).toHaveBeenCalledWith(
+            'theme.failed',
+            expect.objectContaining({ name: 'Broken' }),
+            expect.objectContaining({ name: 'Neutral' })
+        );
+    });
+
+    it('retries custom themes by appending /theme.css', () => {
+        const custom = { name: 'custom', url: 'static/themes/mine' };
+        const { manager } = makeLoaded(custom);
+        lastLink().onload();
+
+        manager.setTheme({ name: 'custom', url: 'static/themes/mine2' });
+        lastLink().onerror();
+
+        expect(manager.findTheme('custom').url).toBe('static/themes/mine2/theme.css');
+    });
+
+    it('keeps and caches the css vars element', () => {
+        const { manager } = makeLoaded({ name: 'Neutral', url: 'static/themes/first' });
+        const wrap = document.querySelector('.kiwi-wrap');
+
+        expect(manager.ensureVarsElement()).toBe(wrap);
+        expect(manager.ensureVarsElement()).toBe(wrap);
+
+        // A stale cached node is re-queried once it leaves the document
+        document.body.innerHTML = '<div class="kiwi-wrap fresh"></div>';
+        expect(manager.ensureVarsElement()).toBe(document.querySelector('.kiwi-wrap'));
+    });
+
+    it('reads css variables through themeVar', () => {
+        mockComputedStyle({ '--kiwi-accent': '  #ffb000  ' });
+        const { manager } = makeLoaded({ name: 'Neutral', url: 'static/themes/first' });
+
+        expect(manager.cssVar('--kiwi-accent')).toBe('#ffb000');
+        expect(manager.themeVar('accent')).toBe('#ffb000');
+    });
+
+    it('returns an empty string when no vars element exists', () => {
+        document.body.innerHTML = '';
+        const { manager } = makeLoaded({ name: 'Neutral', url: 'static/themes/first' });
+
+        expect(manager.cssVar('--kiwi-accent')).toBe('');
+    });
+
+    it('mirrors the mode onto the document colour scheme', () => {
+        const { manager } = makeLoaded({ name: 'Neutral', url: 'static/themes/first' });
+
+        manager.setMode('dark');
+        expect(manager.themeMode()).toBe('dark');
+        expect(document.documentElement.style.colorScheme).toBe('dark');
+
+        manager.setMode('dark');
+        expect(manager.themeMode()).toBe('dark');
+    });
+
+    it('ignores setting the already-active theme url', () => {
+        const first = { name: 'Neutral', url: 'static/themes/first' };
+        const { manager } = makeLoaded(first);
+        lastLink().onload();
+        document.head.innerHTML = '';
+
+        manager.setTheme({ name: 'Neutral Again', url: 'static/themes/first' });
+
+        expect(document.head.querySelector('link')).toBeNull();
+    });
+
+    it('cleans up a pending theme link that was already detached', () => {
+        const first = { name: 'Neutral', url: 'static/themes/first' };
+        const { manager } = makeLoaded(first);
+
+        // The initial theme is still loading (loadingElement set) but its <link>
+        // gets detached from <head> before the next setTheme() call.
+        document.head.innerHTML = '';
+
+        expect(() => manager.setTheme({ name: 'Second', url: 'static/themes/second' })).not.toThrow();
+        expect(manager.loadingElement).toBe(lastLink());
+        expect(manager.loadingElement.parentNode).toBe(document.head);
+    });
+
+    it('aborts on an invalid theme and restores the setting name', () => {
+        const first = { name: 'Neutral', url: 'static/themes/first' };
+        const { manager, state } = makeLoaded(first);
+        manager.activeTheme = first;
+        state.setting = jest.fn(() => 'SomethingElse');
+
+        manager.setTheme({ name: 'Broken' });
+
+        expect(manager.activeTheme).toBe(first);
+        expect(state.setting).toHaveBeenCalledWith('theme', 'Neutral');
+    });
+
+    it('reload adds a cache buster and reapplies the current theme', () => {
+        const first = { name: 'Neutral', url: 'static/themes/first' };
+        const { manager } = makeLoaded(first);
+        manager.activeTheme = first;
+        manager.setTheme = jest.fn();
+
+        manager.reload();
+
+        expect(first.url).toMatch(/^static\/themes\/first\?cb=\d+$/);
+        expect(manager.setTheme).toHaveBeenCalledWith('Neutral');
+    });
+
+    it('reload replaces an existing cache buster', () => {
+        const first = { name: 'Neutral', url: 'static/themes/first?cb=111' };
+        const { manager } = makeLoaded(first);
+        manager.activeTheme = first;
+        manager.setTheme = jest.fn();
+
+        manager.reload();
+
+        expect(first.url).toMatch(/^static\/themes\/first\?cb=\d+$/);
+        expect(first.url).not.toBe('static/themes/first?cb=111');
+    });
+
+    it('reload does nothing when no theme is current', () => {
+        const { manager } = makeLoaded({ name: 'Neutral', url: 'static/themes/first' });
+        manager.currentTheme = () => null;
+        manager.setTheme = jest.fn();
+
+        manager.reload();
+
+        expect(manager.setTheme).not.toHaveBeenCalled();
+    });
+
+    it('setCustomThemeUrl bails when no custom theme exists', () => {
+        const { manager } = makeLoaded({ name: 'Neutral', url: 'static/themes/first' });
+        const before = document.head.querySelectorAll('link').length;
+
+        manager.setCustomThemeUrl('static/themes/other/theme.css');
+
+        expect(document.head.querySelectorAll('link').length).toBe(before);
+    });
+});

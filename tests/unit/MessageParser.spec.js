@@ -275,15 +275,6 @@ describe('MessageParser.js', () => {
             expect(spoilerBlocks[0].content).toStrictEqual('||spoiler||');
         });
 
-        it('should return spoiler blocks for ||text||', () => {
-            let blocks = parseMessage('||spoiler||', { extras: true });
-            let spoilerBlocks = blocks.filter((b) => b.styles.color === 'black' && b.styles.background === 'black');
-            expect(spoilerBlocks.length).toBeGreaterThanOrEqual(1);
-            expect(spoilerBlocks[0].styles.color).toStrictEqual('black');
-            expect(spoilerBlocks[0].styles.background).toStrictEqual('black');
-            expect(spoilerBlocks[0].content).toStrictEqual('||spoiler||');
-        });
-
         it('should handle color reset code (\x03)', () => {
             let blocks = parseMessage('\x0303,01Green on Black\x03Reset');
             expect(blocks[0].styles.color).toStrictEqual('green');

@@ -454,7 +454,8 @@ export function parseIrcUri(str) {
                     '#' + _channelName;
 
                 return channelName;
-            });
+            })
+            .value();
 
         connections.push({
             tls: tls,

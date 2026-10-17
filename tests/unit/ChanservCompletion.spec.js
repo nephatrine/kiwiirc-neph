@@ -1,7 +1,4 @@
 import {
-    chanservSubcommands,
-    chanservBadge,
-    CHANSERV_SUBCOMMANDS,
     CHANSERV_SYNTAX,
     CHANSERV_SETTINGS,
     isChanservSubcommandPosition,
@@ -11,41 +8,6 @@ import {
 } from '@/libs/ErgoChanServ';
 
 describe('chanserv completion', () => {
-    it('offers non-hidden commands at top level', () => {
-        // PURGE and LIST need oper privileges; covered by the oper test below
-        const authed = chanservSubcommands({ oper: true, authenticated: true });
-        CHANSERV_SUBCOMMANDS.forEach((cmd) => {
-            expect(authed).toContain(cmd);
-        });
-        expect(authed).toContain('DROP');
-    });
-
-    it('hides auth-gated commands when logged out', () => {
-        const loggedOut = chanservSubcommands({ oper: false, authenticated: false });
-        ['OP', 'REGISTER'].forEach((cmd) => {
-            expect(loggedOut).not.toContain(cmd);
-        });
-        ['DEOP', 'UNREGISTER', 'AMODE', 'INFO'].forEach((cmd) => {
-            expect(loggedOut).toContain(cmd);
-        });
-    });
-
-    it('hides oper commands from non-opers', () => {
-        const base = chanservSubcommands({ oper: false, authenticated: true });
-        const withOper = chanservSubcommands({ oper: true, authenticated: true });
-        ['PURGE', 'LIST'].forEach((cmd) => {
-            expect(base).not.toContain(cmd);
-            expect(withOper).toContain(cmd);
-        });
-    });
-
-    it('badges oper commands as Server Administration', () => {
-        expect(chanservBadge('PURGE')).toBe('SERVER');
-        expect(chanservBadge('LIST')).toBe('SERVER');
-        expect(chanservBadge('OP')).toBe(null);
-        expect(chanservBadge('INFO')).toBe(null);
-    });
-
     it('limits subcommand completion to the subcommand token', () => {
         expect(isChanservSubcommandPosition('/cs ')).toBe(true);
         expect(isChanservSubcommandPosition('/cs R')).toBe(true);

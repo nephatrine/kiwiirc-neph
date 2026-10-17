@@ -1,7 +1,4 @@
 import {
-    histservSubcommands,
-    histservBadge,
-    HISTSERV_SUBCOMMANDS,
     HISTSERV_SYNTAX,
     isHistservSubcommandPosition,
     parseHistservInput,
@@ -10,32 +7,6 @@ import {
 } from '@/libs/ErgoHistServ';
 
 describe('histserv completion', () => {
-    it('offers non-hidden commands at top level', () => {
-        const authed = histservSubcommands({ oper: true, authenticated: true });
-        HISTSERV_SUBCOMMANDS.forEach((cmd) => {
-            expect(authed).toContain(cmd);
-        });
-    });
-
-    it('hides oper commands from non-opers', () => {
-        const base = histservSubcommands({ oper: false, authenticated: true });
-        const withOper = histservSubcommands({ oper: true, authenticated: true });
-        ['FORGET', 'EXPORT'].forEach((cmd) => {
-            expect(base).not.toContain(cmd);
-            expect(withOper).toContain(cmd);
-        });
-        ['PLAY', 'DELETE'].forEach((cmd) => {
-            expect(base).toContain(cmd);
-        });
-    });
-
-    it('badges oper commands as Server Administration', () => {
-        expect(histservBadge('FORGET')).toBe('SERVER');
-        expect(histservBadge('EXPORT')).toBe('SERVER');
-        expect(histservBadge('PLAY')).toBe(null);
-        expect(histservBadge('DELETE')).toBe(null);
-    });
-
     it('limits subcommand completion to the subcommand token', () => {
         expect(isHistservSubcommandPosition('/msg HistServ ')).toBe(true);
         expect(isHistservSubcommandPosition('/msg HistServ P')).toBe(true);

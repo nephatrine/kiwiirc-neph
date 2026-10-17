@@ -53,11 +53,11 @@ describe('Welcome account tabs', () => {
     });
 
     afterEach(() => {
-        delete Vue.prototype.$state;
         vm.$destroy();
         if (vm.$el.parentNode) {
             vm.$el.parentNode.removeChild(vm.$el);
         }
+        delete Vue.prototype.$state;
     });
 
     function inputByLabel(label) {

@@ -10,16 +10,4 @@ module.exports = {
         ],
     ],
     plugins: [['@babel/plugin-transform-runtime', { useESModules: true }]],
-    env: {
-        test: {
-            plugins: [
-                [
-                    'istanbul',
-                    {
-                        exclude: ['**/*.spec.js'],
-                    },
-                ],
-            ],
-        },
-    },
 };

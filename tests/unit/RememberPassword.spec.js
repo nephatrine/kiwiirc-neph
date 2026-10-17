@@ -111,16 +111,21 @@ describe('Remember Password', () => {
 
     describe('welcome checkbox', () => {
         let comp;
+        let vm;
 
         beforeEach(() => {
             Vue.prototype.$state = s;
-            const vm = new Vue({
+            vm = new Vue({
                 el: document.createElement('div'),
                 render: (h) => h(Welcome),
             });
             comp = vm.$children[0];
             comp.nick = 'TestNick';
             comp.channel = '#testchan';
+        });
+
+        afterEach(() => {
+            vm.$destroy();
         });
 
         it('defaults to unchecked but enabled on the account tab', () => {

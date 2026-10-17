@@ -1,5 +1,17 @@
 import * as Misc from '@/helpers/Misc';
 
+jest.mock('@/helpers/TextFormatting', () => {
+    const actual = jest.requireActual('@/helpers/TextFormatting');
+    const translations = {
+        error_test: 'Translated test',
+        error_unknown: 'Unknown error',
+    };
+    return {
+        ...actual,
+        t: jest.fn((key) => (translations[key] === undefined ? key : translations[key])),
+    };
+});
+
 describe('Misc.js', () => {
     const nicksTests = [
         ['foo', 'foo', true], // on its own
@@ -250,5 +262,253 @@ describe('Misc.js', () => {
         expect(Misc.isSafeSameOriginOpen('https://kiwi.example/a.svg?x=1')).toBe(false);
         expect(Misc.isSafeSameOriginOpen('https://kiwi.example/a.html')).toBe(false);
         expect(Misc.isSafeSameOriginOpen('https://kiwi.example/page')).toBe(false);
+    });
+});
+
+describe('Misc.js helpers', () => {
+    afterEach(() => {
+        jest.restoreAllMocks();
+        delete global.fetch;
+        delete window.URL.createObjectURL;
+        delete window.URL.revokeObjectURL;
+        // eslint-disable-next-line no-underscore-dangle
+        window.kiwi_deprecations_vueEl = false;
+    });
+
+    describe('makePluginObject', () => {
+        test('wraps a vue component object and keeps its props', () => {
+            const plugin = Misc.makePluginObject(7, { name: 'Thing' }, { props: { foo: 1 }, title: 'Hello' });
+
+            expect(plugin.id).toBe(7);
+            expect(typeof plugin.component).toBe('function');
+            expect(plugin.props).toEqual({ foo: 1 });
+            expect(plugin.title()).toBe('Hello');
+            expect(plugin.tabName).toBe('Hello');
+        });
+
+        test('defaults the tab name to plugin_tab_<id>', () => {
+            const plugin = Misc.makePluginObject(12, { name: 'Thing' });
+
+            expect(plugin.tabName).toBe('plugin_tab_12');
+            expect(plugin.title()).toBe('');
+        });
+
+        test('translates a t_ prefixed title', () => {
+            const plugin = Misc.makePluginObject(3, { name: 'Thing' }, { title: 't_error_test' });
+
+            expect(plugin.title()).toBe('Translated test');
+        });
+
+        test('wraps a raw element and carries it as a prop', () => {
+            const el = document.createElement('span');
+            const plugin = Misc.makePluginObject(4, el);
+
+            expect(plugin.component).toBeTruthy();
+            expect(plugin.props.pluginElement).toBe(el);
+        });
+
+        test('warns once when a mounted $el is passed', () => {
+            const el = document.createElement('span');
+            // eslint-disable-next-line no-underscore-dangle
+            el.__vue__ = {};
+            // eslint-disable-next-line no-underscore-dangle
+            window.kiwi_deprecations_vueEl = false;
+            const warnSpy = jest.spyOn(window.console, 'warn').mockImplementation(() => {});
+
+            Misc.makePluginObject(5, el);
+            expect(warnSpy).toHaveBeenCalled();
+
+            Misc.makePluginObject(6, el);
+            expect(warnSpy).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('downloadUrl', () => {
+        test('saves a fetched blob under the file name', async() => {
+            const blob = { size: 3 };
+            const createObjectURL = jest.fn(() => 'blob:kiwi');
+            const revokeObjectURL = jest.fn();
+            window.URL.createObjectURL = createObjectURL;
+            window.URL.revokeObjectURL = revokeObjectURL;
+            global.fetch = jest.fn(() => Promise.resolve({
+                ok: true,
+                blob: () => Promise.resolve(blob),
+            }));
+
+            let downloaded = null;
+            const clickSpy = jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function click() {
+                downloaded = this.download;
+            });
+
+            await Misc.downloadUrl('https://kiwi.example/files/report.pdf');
+
+            expect(global.fetch).toHaveBeenCalledWith(
+                'https://kiwi.example/files/report.pdf',
+                { credentials: 'same-origin' }
+            );
+            expect(createObjectURL).toHaveBeenCalledWith(blob);
+            expect(downloaded).toBe('report.pdf');
+            expect(revokeObjectURL).toHaveBeenCalledWith('blob:kiwi');
+            expect(document.querySelector('a')).toBeNull();
+            clickSpy.mockRestore();
+        });
+
+        test('resolves quietly when the fetch fails', async() => {
+            global.fetch = jest.fn(() => Promise.reject(new Error('offline')));
+
+            await expect(Misc.downloadUrl('https://kiwi.example/a.png')).resolves.toBeUndefined();
+        });
+
+        test('resolves quietly when the response is not ok', async() => {
+            global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
+
+            await expect(Misc.downloadUrl('https://kiwi.example/a.png')).resolves.toBeUndefined();
+        });
+
+        test('ignores an unparseable url without fetching', async() => {
+            global.fetch = jest.fn();
+
+            await expect(Misc.downloadUrl('http://[')).resolves.toBeUndefined();
+            expect(global.fetch).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('small helpers', () => {
+        test('connectionInfoFromConfig parses a websocket url', () => {
+            const connection = Misc.connectionInfoFromConfig({ websocket: 'wss://irc.example.com:8097/socket?token=1' });
+
+            expect(connection).toMatchObject({
+                direct: true,
+                tls: true,
+                port: 8097,
+                hostname: 'irc.example.com',
+                direct_path: '/socket?token=1',
+            });
+        });
+
+        test('connectionInfoFromConfig falls back to plain fields', () => {
+            const connection = Misc.connectionInfoFromConfig({
+                server: 'irc.example.com',
+                port: 7000,
+                tls: true,
+                direct: false,
+            });
+
+            expect(connection).toMatchObject({
+                tls: true,
+                port: 7000,
+                hostname: 'irc.example.com',
+                direct: false,
+                direct_path: '',
+            });
+        });
+
+        test('matchUri splits a uri into its parts', () => {
+            expect(Misc.matchUri('ws://host.example:6676/path?foo=val')).toEqual({
+                protocol: 'ws',
+                hostname: 'host.example',
+                port: 6676,
+                path: '/path',
+                search: 'foo=val',
+            });
+            expect(Misc.matchUri('UPPERCASE')).toBeNull();
+        });
+
+        test('parseIrcUri parses connections, channels and params', () => {
+            const connections = Misc.parseIrcUri('ircs://irc.example.com:+6697/#chan,#chan2?nick=bob');
+
+            expect(connections).toHaveLength(1);
+            expect(connections[0]).toMatchObject({
+                tls: true,
+                server: 'irc.example.com',
+                port: 6697,
+                nick: 'bob',
+                direct: false,
+            });
+            expect(connections[0].channels).toEqual(['#chan', '#chan2']);
+        });
+
+        test('parseIrcUri handles several connections and skips blanks', () => {
+            const connections = Misc.parseIrcUri('a.example; ;b.example:7000');
+
+            expect(connections).toHaveLength(2);
+            expect(connections[0].server).toBe('a.example');
+            expect(connections[1].port).toBe(7000);
+        });
+
+        test('getDefaultConnection builds an irc uri', () => {
+            const connection = Misc.getDefaultConnection();
+
+            expect(connection.port).toBe(6667);
+            expect(connection.toUri()).toBe('irc://:6667');
+        });
+
+        test('queryStringVal reads and decodes a query value', () => {
+            expect(Misc.queryStringVal('foo', 'https://x/?foo=bar')).toBe('bar');
+            expect(Misc.queryStringVal('foo', 'https://x/?foo=a%20b')).toBe('a b');
+            expect(Misc.queryStringVal('foo', 'https://x/?foo')).toBe('');
+            expect(Misc.queryStringVal('foo', 'https://x/')).toBeNull();
+        });
+
+        test('processNickRandomNumber replaces ? with digits', () => {
+            expect(Misc.processNickRandomNumber('kiwi-?')).toMatch(/^kiwi-\d+$/);
+            expect(Misc.processNickRandomNumber('fixed')).toBe('fixed');
+            expect(Misc.processNickRandomNumber('')).toMatch(/^kiwi-n\d+$/);
+        });
+
+        test('networkErrorMessage translates known codes and falls back', () => {
+            expect(Misc.networkErrorMessage('err_test')).toBe('Translated test');
+            expect(Misc.networkErrorMessage('err_missing')).toBe('Unknown error');
+        });
+
+        test('strCompare sorts numbered nicks naturally', () => {
+            expect(Misc.strCompare('nick2', 'nick10')).toBeLessThan(0);
+            expect(Misc.strCompare('same', 'same')).toBe(0);
+            expect(Misc.strCompare('b', 'a')).toBeGreaterThan(0);
+        });
+
+        test('replaceObjectProps swaps every property', () => {
+            const target = { a: 1, b: 2 };
+            Misc.replaceObjectProps(target, { c: 3 });
+
+            expect(target).toEqual({ c: 3 });
+        });
+
+        test('dateIso formats a utc timestamp', () => {
+            expect(Misc.dateIso(new Date(Date.UTC(2020, 0, 2, 3, 4, 5, 6))))
+                .toBe('2020-01-02T03:04:05.006Z');
+        });
+
+        test('parseIntZero casts and falls back to zero', () => {
+            expect(Misc.parseIntZero('42')).toBe(42);
+            expect(Misc.parseIntZero('nope')).toBe(0);
+            expect(Misc.parseIntZero('')).toBe(0);
+        });
+
+        test('hasUnmatchedTrailingBracket detects an unclosed bracket', () => {
+            expect(Misc.hasUnmatchedTrailingBracket('hello)')).toBe(true);
+            expect(Misc.hasUnmatchedTrailingBracket('(hello)')).toBe(false);
+            expect(Misc.hasUnmatchedTrailingBracket('hello')).toBe(false);
+        });
+
+        test('generateLabel is unique per call', () => {
+            const first = Misc.generateLabel();
+            const second = Misc.generateLabel();
+
+            expect(first).toMatch(/^kiwi-l-\d+-\d+$/);
+            expect(second).not.toBe(first);
+        });
+
+        test('extractBuffers pairs names with keys', () => {
+            expect(Misc.extractBuffers('#chan,#chan2 key')).toEqual([
+                { name: '#chan', key: 'key' },
+                { name: '#chan2', key: '' },
+            ]);
+        });
+
+        test('extractURL returns the first url', () => {
+            expect(Misc.extractURL('see https://example.com/a.png now')).toBe('https://example.com/a.png');
+            expect(Misc.extractURL('nothing here')).toBe('');
+        });
     });
 });

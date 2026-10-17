@@ -34,7 +34,10 @@ describe('sidebar component toggle', () => {
 
     beforeEach(() => {
         testState = state.create();
-        vm = new SidebarState();
+        vm = new SidebarState({
+            // SidebarState is a headless Vue.extend with no template
+            render: (h) => h('div'),
+        });
         vm.$mount();
     });
 
