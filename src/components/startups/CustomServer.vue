@@ -113,9 +113,9 @@
 <script>
 'kiwi public';
 
-import _ from 'lodash';
 import * as Misc from '@/helpers/Misc';
 import * as TextFormatting from '@/helpers/TextFormatting';
+import { escapeRegExp } from '@/helpers/Utils';
 import Logger from '@/libs/Logger';
 import Captcha from '@/components/Captcha';
 
@@ -204,7 +204,7 @@ export default {
                     flags = nickPatternStr.substr(pos + 1);
                 } else {
                     // Basic contains rule
-                    pattern = _.escapeRegExp(nickPatternStr);
+                    pattern = escapeRegExp(nickPatternStr);
                     flags = 'i';
                 }
 

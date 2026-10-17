@@ -1,10 +1,10 @@
 'kiwi public';
 
 import Vue from 'vue';
-import _ from 'lodash';
 
 import Logger from '@/libs/Logger';
 import * as Misc from '@/helpers/Misc';
+import { deepClone, each, find, findIndex } from '@/helpers/Utils';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import * as Reactions from '@/helpers/Reactions';
 import { configTemplates } from '@/res/configTemplates';
@@ -139,7 +139,7 @@ function createNewState() {
                                 account: network.connection.account,
                             },
                             auto_commands: network.auto_commands,
-                            settings: _.cloneDeep(network.settings),
+                            settings: deepClone(network.settings),
                             username: network.username,
                             gecos: network.gecos,
                             password: includePasswords ?
@@ -149,7 +149,7 @@ function createNewState() {
                             is_bnc: network.is_bnc,
                             // Self profile metadata (Edit Profile SETs),
                             // re-sent after reconnects. Public by design.
-                            saved_profile_metadata: _.cloneDeep(
+                            saved_profile_metadata: deepClone(
                                 network.saved_profile_metadata || {}
                             ),
                             saved_profile_owner: network.saved_profile_owner || '',
@@ -161,7 +161,7 @@ function createNewState() {
                                 name: buffer.name,
                                 key: buffer.key,
                                 enabled: !!buffer.enabled,
-                                settings: _.cloneDeep(buffer.settings),
+                                settings: deepClone(buffer.settings),
                                 latest_messages: [],
                             };
 
@@ -341,7 +341,7 @@ function createNewState() {
             },
 
             getNetwork(networkid) {
-                let network = _.find(this.networks, {
+                let network = find(this.networks, {
                     id: networkid,
                 });
 
@@ -349,14 +349,14 @@ function createNewState() {
             },
 
             getNetworkFromAddress(netAddr) {
-                return _.find(this.networks, (net) => {
+                return find(this.networks, (net) => {
                     let isMatch = netAddr.toLowerCase() === net.connection.server.toLowerCase();
                     return isMatch;
                 });
             },
 
             getNetworkFromBncNetId(bncnetid) {
-                return _.find(this.networks, (net) => bncnetid === net.connection.bncnetid);
+                return find(this.networks, (net) => bncnetid === net.connection.bncnetid);
             },
 
             addNetwork(name, nick, serverInfo) {
@@ -368,7 +368,7 @@ function createNewState() {
                 }
                 let networkid = serverInfo.channelId ?
                     parseInt(serverInfo.channelId, 10) :
-                    _.reduce(this.networks, networkidReduce, 0) + 1;
+                    this.networks.reduce(networkidReduce, 0) + 1;
 
                 let network = new NetworkState(networkid, state, userDict, bufferDict);
                 network.name = name;
@@ -558,7 +558,7 @@ function createNewState() {
                 }
 
                 let toMatch = bufferName.toLowerCase();
-                let buffer = _.find(network.buffers, (b) => b.name.toLowerCase() === toMatch);
+                let buffer = find(network.buffers, (b) => b.name.toLowerCase() === toMatch);
 
                 if (!buffer) {
                     buffer = this.addBuffer(networkid, bufferName);
@@ -578,7 +578,7 @@ function createNewState() {
                 }
 
                 let toMatch = bufferName.toLowerCase();
-                let buffer = _.find(network.buffers, (b) => b.name.toLowerCase() === toMatch);
+                let buffer = find(network.buffers, (b) => b.name.toLowerCase() === toMatch);
 
                 return buffer;
             },
@@ -626,7 +626,7 @@ function createNewState() {
                     network.buffers.splice(bufferIdx, 1);
                 }
 
-                let messageIdx = _.findIndex(messages, {
+                let messageIdx = findIndex(messages, {
                     networkid: network.id,
                     buffer: buffer.name,
                 });
@@ -964,7 +964,7 @@ function createNewState() {
                 } else {
                     // Update the existing user object with any new info we have
                     userObj = state.getUser(network.id, user.nick, usersArr);
-                    _.each(user, (val, prop) => {
+                    each(user, (val, prop) => {
                         if (typeof val !== 'undefined' && userObj[prop] !== val) {
                             userObj[prop] = val;
                         }
@@ -1027,7 +1027,7 @@ function createNewState() {
                     userObj = this.addUser(network, user);
                 } else {
                     // Verify the user object is correct
-                    _.each(user, (val, prop) => {
+                    each(user, (val, prop) => {
                         if (userObj[prop] !== val) {
                             userObj[prop] = val;
                         }

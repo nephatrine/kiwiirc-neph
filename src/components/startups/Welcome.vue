@@ -340,8 +340,8 @@
 <script>
 'kiwi public';
 
-import _ from 'lodash';
 import * as Misc from '@/helpers/Misc';
+import { escapeHtml, escapeRegExp, trim } from '@/helpers/Utils';
 import Logger from '@/libs/Logger';
 import BouncerProvider from '@/libs/BouncerProvider';
 import { probeServerCaps, createProbeTransport } from '@/libs/ServerProbe';
@@ -407,7 +407,7 @@ export default {
             }
             if (this.serverInfo && this.serverInfo.isupport.NETWORK) {
                 return this.$t('welcome_to_network', {
-                    network: _.escape(this.serverInfo.isupport.NETWORK),
+                    network: escapeHtml(this.serverInfo.isupport.NETWORK),
                 });
             }
             return this.$t('start_greeting');
@@ -584,7 +584,7 @@ export default {
                     flags = nickPatternStr.substr(pos + 1);
                 } else {
                     // Basic contains rule
-                    pattern = _.escapeRegExp(nickPatternStr);
+                    pattern = escapeRegExp(nickPatternStr);
                     flags = 'i';
                 }
 
@@ -1008,7 +1008,7 @@ export default {
 
             let options = Object.assign({}, this.$state.settings.startupOptions);
             let connectOptions = this.connectOptions();
-            let netAddress = _.trim(connectOptions.hostname);
+            let netAddress = trim(connectOptions.hostname);
 
             // Check if we have this network already
             let net = this.network || this.$state.getNetworkFromAddress(netAddress);
@@ -1055,7 +1055,7 @@ export default {
                 tls: connectOptions.tls,
                 password: password,
                 account: loginAccount,
-                encoding: _.trim(options.encoding),
+                encoding: trim(options.encoding),
                 direct: connectOptions.direct,
                 path: connectOptions.direct_path || '',
                 gecos: options.gecos,
@@ -1080,8 +1080,8 @@ export default {
                 net.password = password;
             }
 
-            if (_.trim(options.encoding || '')) {
-                net.connection.encoding = _.trim(options.encoding);
+            if (trim(options.encoding || '')) {
+                net.connection.encoding = trim(options.encoding);
             }
 
             this.network = net;
@@ -1161,7 +1161,7 @@ export default {
         processNickRandomNumber(nick) {
             // Replace ? with a random number
             let tmp = (nick || '').replace(/\?/g, () => Math.floor(Math.random() * 100).toString());
-            return _.trim(tmp);
+            return trim(tmp);
         },
         handleCaptcha(isReady) {
             this.captchaReady = isReady;

@@ -1,9 +1,9 @@
 'kiwi public';
 
-import _ from 'lodash';
 import Vue from 'vue';
 
 import Logger from '@/libs/Logger';
+import { find } from '@/helpers/Utils';
 
 const log = Logger.namespace('ThemeManager');
 
@@ -57,7 +57,7 @@ export default class ThemeManager {
         if (!name) {
             return null;
         }
-        return _.find(this.availableThemes(), (t) => t.name.toLowerCase() === name.toLowerCase());
+        return find(this.availableThemes(), (t) => t.name.toLowerCase() === name.toLowerCase());
     }
 
     currentTheme() {

@@ -1,10 +1,9 @@
 'kiwi public';
 
-import _ from 'lodash';
-
 import * as TextFormatting from '@/helpers/TextFormatting';
 import * as Misc from '@/helpers/Misc';
 import { rollDice, formatRoll } from '@/helpers/Dice';
+import { each } from '@/helpers/Utils';
 import AliasRewriter from './AliasRewriter';
 
 // Map of commandName=commandHandlerFn
@@ -244,7 +243,7 @@ function handleMessage(type, event, command, line, context) {
             nick: network.nick,
             message: messageBody,
             type: type,
-            tags: _.clone(tags),
+            tags: { ...tags },
             is_pending: (hasEcho || hasLabel) && !isSpecialBuffer,
             is_rerouted: !!tags['+channel-context'],
         };
@@ -387,7 +386,7 @@ inputCommands.part = function inputCommandPart(event, command, line, context) {
         let lineParts = line.split(' ');
         if (network.isChannelName(lineParts[0])) {
             // /part #channel,#possible_channel possible part message
-            bufferNames = _.compact(lineParts[0].split(','));
+            bufferNames = lineParts[0].split(',').filter(Boolean);
             message = lineParts.slice(1).join(' ');
         } else {
             // /part possible part message
@@ -512,7 +511,7 @@ inputCommands.close = function inputCommandClose(event, command, line, context) 
     event.handled = true;
     const { network } = context;
 
-    let bufferNames = _.compact(line.split(/[, ]/));
+    let bufferNames = line.split(/[, ]/).filter(Boolean);
     if (bufferNames.length === 0) {
         bufferNames = [this.state.getActiveBuffer().name];
     }
@@ -772,11 +771,11 @@ inputCommands.whois = function inputCommandWhois(event, command, line, context) 
             }
         }
 
-        _.each(whoisData, (val, key) => {
+        each(whoisData, (val, key) => {
             // Only include lines we haven't already used
             if (typeof formats[key] === 'undefined') {
                 // Some keys such as `special` are arrays of values
-                if (_.isArray(val)) {
+                if (Array.isArray(val)) {
                     val.forEach((v) => display(`${key}: ${v}`));
                 } else {
                     display(`${key}: ${val}`);
@@ -842,7 +841,7 @@ inputCommands.mode = function inputCommandMode(event, command, line, context) {
         buffer.name :
         network.nick;
 
-    let parts = _.compact(line.split(' '));
+    let parts = line.split(' ').filter(Boolean);
 
     if (line && line[0] !== '+' && line[0] !== '-') {
         target = parts.shift();

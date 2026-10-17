@@ -25,7 +25,6 @@
 <script>
 'kiwi public';
 
-import _ from 'lodash';
 import Vue from 'vue';
 import * as Colours from '@/helpers/Colours';
 import { htmlToIrc } from '@/helpers/HtmlToIrc';
@@ -493,13 +492,13 @@ export default Vue.component('irc-input', {
         addImg(alt, url, props) {
             this.focus();
 
-            let existingImages = [..._.values(this.$refs.editor.querySelectorAll('img'))];
+            let existingImages = [...this.$refs.editor.querySelectorAll('img')];
 
             document.execCommand('styleWithCSS', false, true);
             document.execCommand('insertImage', false, url);
 
             let newImg = null;
-            let images = [..._.values(this.$refs.editor.querySelectorAll('img'))];
+            let images = [...this.$refs.editor.querySelectorAll('img')];
 
             // Find image that has just been inserted
             images.forEach((img) => {

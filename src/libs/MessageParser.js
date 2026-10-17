@@ -1,6 +1,6 @@
 'kiwi public';
 
-import { trim } from 'lodash';
+import { trim } from '@/helpers/Utils';
 
 import * as EmojiProvider from '@/libs/EmojiProvider';
 import * as Misc from '@/helpers/Misc';

@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import Vue from 'vue';
 import JSON5 from 'json5';
 import i18next from 'i18next';
@@ -7,6 +6,7 @@ import VueI18Next from '@panter/vue-i18next';
 import VueVirtualScroller from 'vue-virtual-scroller';
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 
+import { each } from '@/helpers/Utils';
 import App from '@/components/App';
 import StartupError from '@/components/StartupError';
 import startupWelcome from '@/components/startups/Welcome';
@@ -300,7 +300,7 @@ function applyConfig(config) {
 function applyConfigObj(obj, target) {
     // Keys in the newObjects array will get new objects created (empty) before merging from config
     let newObjects = ['emojis', 'autocompleteTokens'];
-    _.each(obj, (val, key) => {
+    each(obj, (val, key) => {
         if (typeof val === 'object') {
             if (
                 // Key does not exist or is not the correct data type
@@ -309,7 +309,7 @@ function applyConfigObj(obj, target) {
                 (target === getState().settings && newObjects.includes(key))
             ) {
                 // Create the correct type of object
-                let newVal = _.isArray(val) ?
+                let newVal = Array.isArray(val) ?
                     [] :
                     {};
 
@@ -451,7 +451,7 @@ function initLocales() {
 
     const setDefaultLanguage = () => {
         let defaultLang = getState().setting('language');
-        let preferredLangs = _.clone(window.navigator && window.navigator.languages) || [];
+        let preferredLangs = Array.from((window.navigator && window.navigator.languages) || []);
 
         // our configs default lang overrides all others
         if (defaultLang) {
@@ -472,7 +472,7 @@ function initLocales() {
                 preferredLangs.splice(idx + 1, 0, lang + '-' + lang, ...altLangs);
             }
 
-            if (_.includes(AvailableLocales.locales, lang.toLowerCase())) {
+            if (AvailableLocales.locales.includes(lang.toLowerCase())) {
                 i18next.changeLanguage(lang, (err, t) => {
                     if (err) {
                         // setting the language failed so set default again

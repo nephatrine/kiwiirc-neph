@@ -53,8 +53,8 @@
 <script>
 'kiwi public';
 
-import _ from 'lodash';
 import * as Misc from '@/helpers/Misc';
+import { trim } from '@/helpers/Utils';
 import StartupLayout from './CommonLayout';
 
 export default {
@@ -135,7 +135,7 @@ export default {
             password += ':' + this.password;
 
             let net = this.$state.addNetwork(netName, 'ZNC', {
-                server: _.trim(options.server),
+                server: trim(options.server),
                 port: options.port,
                 tls: options.tls,
                 password: password,
@@ -149,7 +149,7 @@ export default {
                 this.$state.removeNetwork(this.network.id);
             }
 
-            let netList = _.compact(this.znc_network.split(','));
+            let netList = this.znc_network.split(',').filter(Boolean);
             if (netList.length === 0) {
                 netList.push('');
             }
@@ -168,7 +168,7 @@ export default {
                 net.ircClient.off('close', onClosed);
                 net.ircClient.off('irc error', onError);
                 this.network_extras.forEach((netName, idx) => {
-                    let extraNet = this.addNetwork(_.trim(netName));
+                    let extraNet = this.addNetwork(trim(netName));
                     extraNet.ircClient.connect();
                 });
             };

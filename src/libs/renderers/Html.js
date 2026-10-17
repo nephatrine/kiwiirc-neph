@@ -1,6 +1,6 @@
 'kiwi public';
 
-import { escape } from 'lodash';
+import { escapeHtml } from '@/helpers/Utils';
 import getState from '@/libs/state';
 import * as EmojiProvider from '@/libs/EmojiProvider';
 
@@ -69,7 +69,7 @@ function render(blocks, renderEmoticons) {
             content = EmojiProvider.blockToHtml(block, blocks.length === 1, showEmoticons);
             break;
         default:
-            content = escape(block.content);
+            content = escapeHtml(block.content);
         }
 
         return html + buildSpan(content, classes, style);
@@ -84,9 +84,9 @@ function linkifyUrl(block, _opts) {
 
     // Shorten the displayed URL if it's going to be too long
     if (block.content.length > 100) {
-        nice = escape(block.content.substr(0, 100)) + '...';
+        nice = escapeHtml(block.content.substr(0, 100)) + '...';
     } else {
-        nice = escape(block.content);
+        nice = escapeHtml(block.content);
     }
 
     // Make the link clickable
@@ -96,14 +96,14 @@ function linkifyUrl(block, _opts) {
     if (opts.addHandle) {
         let cssClass = opts.handleClass || '';
         let content = opts.handleContent || '';
-        out += `<a data-url="${escape(block.meta.url)}" class="${cssClass}">${content}</a>`;
+        out += `<a data-url="${escapeHtml(block.meta.url)}" class="${cssClass}">${content}</a>`;
     }
 
     return out;
 }
 
 function linkifyUser(block) {
-    let escaped = escape(block.meta.user);
+    let escaped = escapeHtml(block.meta.user);
     let colour = block.meta.colour;
 
     return `<a class="kiwi-nick" data-nick="${escaped}"` +
@@ -112,7 +112,7 @@ function linkifyUser(block) {
 }
 
 function linkifyChannel(block) {
-    return `<a class="u-link kiwi-channel" data-channel-name="${escape(block.meta.channel)}">${escape(block.content)}</a>`;
+    return `<a class="u-link kiwi-channel" data-channel-name="${escapeHtml(block.meta.channel)}">${escapeHtml(block.content)}</a>`;
 }
 
 function buildSpan(content, classes, style) {

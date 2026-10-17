@@ -112,7 +112,7 @@
 <script>
 'kiwi public';
 
-import _ from 'lodash';
+import { orderBy } from '@/helpers/Utils';
 import * as IrcdDiffs from '@/helpers/IrcdDiffs';
 import * as Misc from '@/helpers/Misc';
 
@@ -212,7 +212,7 @@ export default {
                 return { text, user };
             };
 
-            return _.orderBy(accountUsers, ['account', 'nick']).map(autocompleteMapper);
+            return orderBy(accountUsers, ['account', 'nick']).map(autocompleteMapper);
         },
     },
     watch: {

@@ -1,9 +1,9 @@
 'kiwi public';
 
-import _ from 'lodash';
 import strftime from 'strftime';
 import Irc from 'irc-framework';
 import * as TextFormatting from '@/helpers/TextFormatting';
+import { each, find } from '@/helpers/Utils';
 import typingMiddleware from './TypingMiddleware';
 import reactionMiddleware from './ReactionMiddleware';
 import redactionMiddleware from './RedactionMiddleware';
@@ -1337,7 +1337,7 @@ function clientMiddleware(state, network) {
                 pmBlock === PM_BLOCK_REQUIRES_CHECK;
             if (shouldCheckPm) {
                 // if the nick is in pendingPms it has already issued a whois request
-                let awaitingWhois = !!_.find(network.pendingPms, { nick: event.nick });
+                let awaitingWhois = !!find(network.pendingPms, { nick: event.nick });
                 network.pendingPms.push({ bufferName, message });
 
                 // Don't send another whois if we are already awaiting another
@@ -1866,7 +1866,7 @@ function clientMiddleware(state, network) {
         if (effectiveCommand === 'CHANNEL LIST') {
             network.channel_list_state = 'updating';
             // Filter private channels from the channel list
-            let filteredEvent = _.filter(event, (o) => o.channel !== '*');
+            let filteredEvent = event.filter((o) => o.channel !== '*');
             // Store the channels in channel_list_cache before moving it all to
             // channel_list at the end. This gives a huge performance boost since
             // it doesn't need to be all reactive for every update
@@ -2118,7 +2118,7 @@ function clientMiddleware(state, network) {
                     modeStrs[mode.mode] = modeStrs[mode.mode] || [];
 
                     // If this mode has a user prefix then we need to update the user object
-                    let prefix = _.find(network.supports('PREFIX'), {
+                    let prefix = find(network.supports('PREFIX'), {
                         mode: mode.mode[1],
                     });
 
@@ -2206,7 +2206,7 @@ function clientMiddleware(state, network) {
                 };
 
                 // Show one line per mode, listing each effecting user
-                _.each(modeStrs, (targets, mode) => {
+                each(modeStrs, (targets, mode) => {
                     let targetNicks = targets.map((t) => t.target);
                     let ignoreEvent = state.setting('skipHiddenMessages') && !buffer.setting('show_mode_changes');
                     let isUserInvolved = [event.nick, ...targetNicks].includes(client.user.nick);
@@ -2312,7 +2312,7 @@ function clientMiddleware(state, network) {
                 });
 
                 let serverBuffer = network.serverBuffer();
-                _.each(modeslines, (mode, value) => {
+                each(modeslines, (mode, value) => {
                     let text = TextFormatting.t('modes_other', {
                         nick: event.nick,
                         target: event.target,
@@ -2356,7 +2356,7 @@ function clientMiddleware(state, network) {
                 if (!event.bans || event.bans.length === 0) {
                     banText += TextFormatting.t('bans_nobody');
                 } else {
-                    _.each(event.bans, (ban) => {
+                    each(event.bans, (ban) => {
                         let dateStr = (new Date(ban.banned_at * 1000)).toLocaleDateString();
                         banText += `${ban.banned} [\x1d${ban.banned_by}, ${dateStr}\x1d]\n`;
                     });
@@ -2392,7 +2392,7 @@ function clientMiddleware(state, network) {
                 if (!event.invites || event.invites.length === 0) {
                     inviteText += TextFormatting.t('invited_nobody');
                 } else {
-                    _.each(event.invites, (invite) => {
+                    each(event.invites, (invite) => {
                         let dateStr = (new Date(invite.invited_at * 1000)).toLocaleDateString();
                         inviteText += `${invite.invited} [\x1d${invite.invited_by}, ${dateStr}\x1d]\n`;
                     });

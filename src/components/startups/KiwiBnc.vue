@@ -31,8 +31,9 @@
 <script>
 'kiwi public';
 
-import _ from 'lodash';
 import Logger from '@/libs/Logger';
+import { find } from '@/helpers/Utils';
+import { debounce } from '@/helpers/Async';
 import StartupLayout from './CommonLayout';
 
 let log = Logger.namespace('Startup/kiwiBnc');
@@ -256,7 +257,7 @@ export default {
                 rememberNetworks();
             };
 
-            let debouncedSaveState = _.debounce(saveState, 2000);
+            let debouncedSaveState = debounce(saveState, 2000);
 
             this.$state.$watch('networks', debouncedSaveState, { deep: true });
 
@@ -266,7 +267,7 @@ export default {
                 saveState();
 
                 let netName = event.network.connection.bncname;
-                let networkFromBnc = _.find(bncNetworks, { name: netName });
+                let networkFromBnc = find(bncNetworks, { name: netName });
                 if (networkFromBnc && !networkFromBnc.connected) {
                     bncNet.ircClient.raw('BOUNCER connect ' + netName);
                 }
@@ -278,7 +279,7 @@ export default {
                 let currentNum = 1;
                 let existingNet = true;
                 while (existingNet) {
-                    existingNet = _.find(this.$state.networks, { name: 'Network' + currentNum });
+                    existingNet = find(this.$state.networks, { name: 'Network' + currentNum });
                     if (!existingNet) {
                         event.network.name = 'Network' + currentNum;
                     }

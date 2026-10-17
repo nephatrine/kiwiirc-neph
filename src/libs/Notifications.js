@@ -1,6 +1,6 @@
 'kiwi public';
 
-import _ from 'lodash';
+import { throttle } from '@/helpers/Async';
 
 let isEnabled = (global.Notification && Notification.permission === 'granted');
 let hasRegistered = false;
@@ -48,7 +48,7 @@ export function show(title, body, opts) {
     return notify;
 }
 
-const throttledShow = _.throttle(show, 2000);
+const throttledShow = throttle(show, 2000);
 
 export function listenForNewMessages(state) {
     if (hasRegistered) {

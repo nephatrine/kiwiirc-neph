@@ -21,8 +21,8 @@
 <script>
 'kiwi public';
 
-import _ from 'lodash';
 import { curatedEmojis } from '@/helpers/Emoji';
+import { each } from '@/helpers/Utils';
 
 export default {
     props: ['buffer', 'message'],
@@ -37,7 +37,7 @@ export default {
             // Map emoji characters to their image filenames
             const emojis = this.$state.setting('emojis');
             const map = {};
-            _.each(emojis, (filename, ascii) => {
+            each(emojis, (filename, ascii) => {
                 if (!filename) return;
                 map[ascii] = filename;
             });

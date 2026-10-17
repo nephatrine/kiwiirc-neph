@@ -68,8 +68,8 @@
 <script>
 'kiwi public';
 
-import _ from 'lodash';
 import * as TextFormatting from '@/helpers/TextFormatting';
+import { escapeHtml } from '@/helpers/Utils';
 import { getRadio } from '@/libs/radio/player';
 
 export default {
@@ -99,7 +99,7 @@ export default {
     methods: {
         details(station) {
             let text = [station.description, station.channels].filter(Boolean).join(' ');
-            return TextFormatting.linkifyChannels(_.escape(text));
+            return TextFormatting.linkifyChannels(escapeHtml(text));
         },
         close(reopen) {
             this.radio.ui.listOpen = false;

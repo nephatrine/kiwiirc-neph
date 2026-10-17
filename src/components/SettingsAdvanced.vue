@@ -69,7 +69,7 @@
 <script>
 'kiwi public';
 
-import _ from 'lodash';
+import { orderBy } from '@/helpers/Utils';
 import * as settingTools from '@/libs/settingTools';
 
 export default {
@@ -97,7 +97,7 @@ export default {
             settingTools.buildTree(out, base, this.$state.getSetting('settings'), false);
             settingTools.buildTree(out, base, this.$state.getSetting('user_settings'), true);
 
-            return _.orderBy(Object.keys(out).map((key) => out[key]), [
+            return orderBy(Object.keys(out).map((key) => out[key]), [
                 (o) => o.key.split('.').length - 1,
                 'key',
             ], ['asc']);

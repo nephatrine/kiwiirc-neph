@@ -1,7 +1,7 @@
 'kiwi public';
 
-import _ from 'lodash';
 import JSON5 from 'json5';
+import { each } from '@/helpers/Utils';
 import Logger from './Logger';
 
 let log = Logger.namespace('ConfigLoader');
@@ -49,13 +49,13 @@ export default class ConfigLoader {
 
     setConfig(confObj) {
         let walkObject = (obj, target) => {
-            _.each(obj, (_val, key) => {
+            each(obj, (_val, key) => {
                 let val = _val;
                 if (typeof val === 'string') {
                     val = this.insertReplacements(val);
                     target[key] = val;
                 } else if (typeof val === 'object') {
-                    target[key] = _.isArray(val) ?
+                    target[key] = Array.isArray(val) ?
                         [] :
                         {};
                     walkObject(val, target[key]);

@@ -1,6 +1,6 @@
 'kiwi public';
 
-import _ from 'lodash';
+import { findIndex } from '@/helpers/Utils';
 import getState from '@/libs/state';
 
 export function orderBuffers(buffers) {
@@ -8,7 +8,7 @@ export function orderBuffers(buffers) {
     // on an array, clone it first so that we have a plain array to sort
     let list = buffers.map((b) => b);
 
-    list = _.filter(list, (buffer) => !buffer.isServer());
+    list = list.filter((buffer) => !buffer.isServer());
     list = list.sort((a, b) => {
         const aFav = a.setting('favorite');
         const bFav = b.setting('favorite');
@@ -173,7 +173,7 @@ function getBufferFromDirection(direction) {
     }
 
     let ordered = orderBuffers(network.buffers);
-    let index = _.findIndex(ordered, ['name', buffer.name]) + direction;
+    let index = findIndex(ordered, ['name', buffer.name]) + direction;
 
     if (index >= ordered.length || index < 0) {
         network = getNetworkFromDirection(direction);
@@ -189,7 +189,7 @@ function getNetworkFromDirection(direction) {
     let state = getState();
     let network = state.getActiveNetwork();
     for (let i = 0; i < state.networks.length; i++) {
-        let index = _.findIndex(state.networks, ['id', network.id]) + direction;
+        let index = findIndex(state.networks, ['id', network.id]) + direction;
 
         if (index >= state.networks.length && state.networks.length >= 0) {
             network = state.networks[0];

@@ -1,13 +1,13 @@
 'kiwi public';
 
 /** @module */
-import _ from 'lodash';
 import i18next from 'i18next';
 
 import getState from '@/libs/state';
 import ThemeManager from '@/libs/ThemeManager';
 import { v4Source as ipv4Source, v6Source as ipv6Source } from '@/helpers/IpRegex';
 import { hash32 } from '@/helpers/MurmurHash3';
+import { escapeHtml } from '@/helpers/Utils';
 
 export const urlRegex = new RegExp(
     // Detect either a protocol or 'www.' to start a URL
@@ -40,10 +40,10 @@ export const channelRegex = /(^|\s)([@+~&%}]*)([#&][^ ,\007<>\n\r]+?)([:;.,<>\n\
 export function linkifyChannels(word) {
     // "@#kiwiirc," = 3 parts. (prefix=@)(channel=#kiwiirc)(suffix=,)
     return word.replace(channelRegex, (match, mLead, mPrefix, mChannel, mSuffix) => {
-        let chan = _.escape(mChannel.trim());
-        let lead = _.escape(mLead);
-        let prefix = _.escape(mPrefix);
-        let suffix = _.escape(mSuffix);
+        let chan = escapeHtml(mChannel.trim());
+        let lead = escapeHtml(mLead);
+        let prefix = escapeHtml(mPrefix);
+        let suffix = escapeHtml(mSuffix);
 
         let link = `<a class="u-link kiwi-channel" data-channel-name="${chan}">${chan}</a>`;
         return `${lead}${prefix}${link}${suffix}`;

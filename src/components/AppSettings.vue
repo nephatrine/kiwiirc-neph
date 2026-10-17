@@ -323,11 +323,11 @@
 <script>
 'kiwi public';
 
-import _ from 'lodash';
 import ThemeManager from '@/libs/ThemeManager';
 import GlobalApi from '@/libs/GlobalApi';
 import localesList from '@/res/localesList';
 import { effectiveService, filehostAvailable, listUploadServices } from '@/libs/fileupload';
+import { debounce } from '@/helpers/Async';
 import SettingsAliases from './SettingsAliases';
 import SettingsAdvanced from './SettingsAdvanced';
 
@@ -471,8 +471,8 @@ export default {
         settingMessageLayout: {
             get() {
                 let s = this.$state.setting('buffers.messageLayout');
-                let l = _.invert(this.messageLayouts);
-                return l[s];
+                let keys = Object.keys(this.messageLayouts);
+                return keys.find((key) => this.messageLayouts[key] === s);
             },
             set(newVal) {
                 let l = this.messageLayouts;
@@ -604,11 +604,11 @@ export default {
                 }
             };
 
-            let watchCustomThemeUrl = _.debounce((newVal) => {
+            let watchCustomThemeUrl = debounce((newVal) => {
                 if (this.theme.toLowerCase() === 'custom') {
                     themeMgr.setCustomThemeUrl(newVal);
                 }
-            }, 800, { leading: false, trailing: true });
+            }, 800);
 
             // Remove all our attached events to cleanup
             let teardownFn = () => {

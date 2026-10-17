@@ -1,8 +1,9 @@
 'kiwi public';
 
-import _ from 'lodash';
 import Logger from '@/libs/Logger';
 import bouncerMiddleware from '@/libs/BouncerMiddleware';
+import { find } from '@/helpers/Utils';
+import { debounce } from '@/helpers/Async';
 
 let log = Logger.namespace('BouncerProvider.js');
 
@@ -410,7 +411,7 @@ export default class BouncerProvider {
 
         this.snapshotCurrentNetworks();
 
-        let debouncedSaveState = _.debounce(this.saveState.bind(this), 2000);
+        let debouncedSaveState = debounce(this.saveState.bind(this), 2000);
         this.state.$watch('networks', debouncedSaveState, { deep: true });
     }
 
@@ -496,7 +497,7 @@ export default class BouncerProvider {
                     tryNetworkName = (network.name || 'Network') + currentNum;
                 }
 
-                existingNet = _.find(state.networks, {
+                existingNet = find(state.networks, {
                     name: tryNetworkName,
                 });
 

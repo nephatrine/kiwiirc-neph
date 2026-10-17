@@ -282,7 +282,6 @@
 <script>
 'kiwi public';
 
-import _ from 'lodash';
 import * as Misc from '@/helpers/Misc';
 import * as bufferTools from '@/libs/bufferTools';
 import AutoComplete from './AutoComplete';
@@ -360,7 +359,7 @@ export default {
             if (!filter) {
                 filtered = this.network.buffers;
             } else {
-                filtered = _.filter(this.network.buffers, (buffer) => {
+                filtered = this.network.buffers.filter((buffer) => {
                     let name = buffer.name.toLowerCase();
                     return name.indexOf(filter) > -1;
                 });

@@ -1,13 +1,13 @@
 /** @module */
 
 import Vue from 'vue';
-import _ from 'lodash';
 import { def } from './common';
 import batchedAdd from '../batchedAdd';
 import * as bufferTools from '../bufferTools';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import * as Reactions from '@/helpers/Reactions';
 import * as Misc from '@/helpers/Misc';
+import { each, find } from '@/helpers/Utils';
 
 let nextBufferId = 0;
 
@@ -259,7 +259,7 @@ export default class BufferState {
     }
 
     getMessages() {
-        let bufMessages = _.find(this.messageDict, {
+        let bufMessages = find(this.messageDict, {
             networkid: this.networkid,
             buffer: this.name,
         });
@@ -347,7 +347,7 @@ export default class BufferState {
 
         let modes = userBufferInfo.modes;
         let opModes = ['Y', 'y', 'q', 'a', 'o', 'h'];
-        let hasOp = _.find(modes, (mode) => opModes.indexOf(mode.toLowerCase()) > -1);
+        let hasOp = find(modes, (mode) => opModes.indexOf(mode.toLowerCase()) > -1);
 
         return !!hasOp;
     }
@@ -403,7 +403,7 @@ export default class BufferState {
         let network = this.getNetwork();
         let netPrefixes = network.supports('PREFIX');
         // Find the first (highest) netPrefix in the users buffer modes
-        let prefix = _.find(netPrefixes, (p) => modes.indexOf(p.mode) > -1);
+        let prefix = find(netPrefixes, (p) => modes.indexOf(p.mode) > -1);
 
         return prefix ?
             prefix.mode :
@@ -443,7 +443,7 @@ export default class BufferState {
         }
 
         // update the buffer name on our messages
-        let bufferMessages = _.find(this.messageDict, { networkid: network.id, buffer: oldName });
+        let bufferMessages = find(this.messageDict, { networkid: network.id, buffer: oldName });
         bufferMessages.buffer = newName;
     }
 
@@ -646,7 +646,12 @@ export default class BufferState {
 
         // A user could be queued to be added, so make sure it's not there as it
         // would just be added again. Eg. user joins/parts during a flood
-        _.pull(this.addUserBatch.queue(), userObj);
+        let userQueue = this.addUserBatch.queue();
+        let userIdx = userQueue.indexOf(userObj);
+        while (userIdx > -1) {
+            userQueue.splice(userIdx, 1);
+            userIdx = userQueue.indexOf(userObj);
+        }
 
         this.state.$delete(this.users, nick.toUpperCase());
 
@@ -660,7 +665,7 @@ export default class BufferState {
         // would just be added again. Eg. user joins/parts during a flood
         this.addUserBatch && this.addUserBatch.queue().splice(0);
 
-        _.each(this.users, (userObj, nick) => {
+        each(this.users, (userObj, nick) => {
             delete userObj.buffers[this.id];
         });
 

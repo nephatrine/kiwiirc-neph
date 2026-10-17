@@ -2,11 +2,11 @@
 
 /** @module */
 
-import _ from 'lodash';
 import Vue from 'vue';
 import PluginWrapper from '@/components/utils/PluginWrapper';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import { urlRegex } from './TextFormatting';
+import { each, escapeRegExp, isPlainObject, setPath } from '@/helpers/Utils';
 
 const styleStripRegexp = new RegExp(
     // Decimal Colours
@@ -294,7 +294,7 @@ export function mentionsNick(input, nick) {
         return false;
     }
     let punc = '\\s,.!:;+()\\[\\]?¿\\/<>@-';
-    let escapedNick = _.escapeRegExp(nick);
+    let escapedNick = escapeRegExp(nick);
     let stylesStrippedInput = stripStyles(input);
     let withoutUrls = stylesStrippedInput.replace(new RegExp(urlRegex.source, 'gi'), ' ');
     let r = new RegExp(`(^|[${punc}])${escapedNick}([${punc}]|$)`, 'i');
@@ -308,7 +308,7 @@ export function mentionsNick(input, nick) {
  */
 export function queryStringVal(_name, _url) {
     let url = _url || window.location.href;
-    let name = _.escapeRegExp(_name);
+    let name = escapeRegExp(_name);
     let regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
     let results = regex.exec(url);
 
@@ -441,19 +441,16 @@ export function parseIrcUri(str) {
         });
 
         let channels = (m[5] || params.channel || '');
-        channels = _(channels.split(','))
-            .compact()
-            .map((_channelName) => {
-                let hasPrefix = _channelName[0] === '#' ||
-                    _channelName[0] === '&';
+        channels = channels.split(',')
+            .filter((channelName) => !!channelName)
+            .map((channelName) => {
+                let hasPrefix = channelName[0] === '#' ||
+                    channelName[0] === '&';
 
-                let channelName = hasPrefix ?
-                    _channelName :
-                    '#' + _channelName;
-
-                return channelName;
-            })
-            .value();
+                return hasPrefix ?
+                    channelName :
+                    '#' + channelName;
+            });
 
         connections.push({
             tls: tls,
@@ -575,21 +572,21 @@ export function connectionToUri(conn) {
  * @param {Object} confObj Source object to traverse
  */
 export function dedotObject(confObj) {
-    if (_.isArray(confObj)) {
+    if (Array.isArray(confObj)) {
         return;
     }
 
-    _.each(confObj, (val, key) => {
+    each(confObj, (val, key) => {
         if (typeof key === 'string' && key.includes('.')) {
             const path = key.split('.').filter(Boolean);
             if (path.length > 1) {
                 delete confObj[key];
-                _.set(confObj, path, val);
+                setPath(confObj, path, val);
                 return;
             }
         }
 
-        if (_.isPlainObject(val)) {
+        if (isPlainObject(val)) {
             dedotObject(val);
         }
     });

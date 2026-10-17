@@ -5,8 +5,8 @@
 import EventEmitter from 'eventemitter3';
 import Vue from 'vue';
 import JSON5 from 'json5';
-import _ from 'lodash';
 import * as Misc from '@/helpers/Misc';
+import { each, getPath } from '@/helpers/Utils';
 import Logger from './Logger';
 
 let singletonInstance = null;
@@ -108,7 +108,7 @@ export default class GlobalApi extends EventEmitter {
      */
     require(modPath) {
         let path = modPath.replace(/\//g, '.');
-        let mod = _.get(this.exports, path);
+        let mod = getPath(this.exports, path);
         if (typeof mod === 'undefined') {
             Logger.error('Module does not exist: ' + modPath);
         }
@@ -320,10 +320,10 @@ export default class GlobalApi extends EventEmitter {
         let getSetting = (key) => this.state.getSetting(`${base}.${key}`);
         let setSetting = (key, value) => this.state.setSetting(`${base}.${key}`, value);
         let walkConfig = (obj, _target) => {
-            _.each(obj, (val, key) => {
+            each(obj, (val, key) => {
                 let target = [..._target, key];
                 let targetName = target.join('.');
-                if (typeof val === 'object' && !_.isArray(val)) {
+                if (typeof val === 'object' && !Array.isArray(val)) {
                     walkConfig(val, target);
                 } else if (typeof getSetting(targetName) === 'undefined') {
                     setSetting(targetName, val);

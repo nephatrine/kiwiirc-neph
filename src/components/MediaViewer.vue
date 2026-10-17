@@ -50,8 +50,8 @@
 <script>
 'kiwi public';
 
-import _ from 'lodash';
 import * as Misc from '@/helpers/Misc';
+import { debounce } from '@/helpers/Async';
 import UrlEmbed from './UrlEmbed.vue';
 
 export default {
@@ -99,7 +99,7 @@ export default {
     created() {
         // Debounce as both watchers may call it in the same tick
         // also causes the method to be called next tick to give dom time to update
-        this.debouncedUpdateEmbed = _.debounce(() => {
+        this.debouncedUpdateEmbed = debounce(() => {
             this.updateEmbed(true);
         }, 0);
     },

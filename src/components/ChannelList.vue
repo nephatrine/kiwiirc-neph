@@ -67,7 +67,7 @@
 <script>
 'kiwi public';
 
-import _ from 'lodash';
+import { sortBy } from '@/helpers/Utils';
 import toHtml from '@/libs/renderers/Html';
 import parseMessage from '@/libs/MessageParser';
 
@@ -133,7 +133,7 @@ export default {
                 });
             }
 
-            return _.sortBy(list, 'num_users').reverse();
+            return sortBy(list, 'num_users').reverse();
         },
         paginated() {
             let offset = this.page * this.page_size;

@@ -1,7 +1,7 @@
 'kiwi public';
 
-import _ from 'lodash';
 import * as MetadataCache from '@/libs/MetadataCache';
+import { debounce } from '@/helpers/Async';
 
 export default class StatePersistence {
     constructor(storageKey, state, storage, logger) {
@@ -48,7 +48,7 @@ export default class StatePersistence {
         }
 
         // Throttle saving the state into storage so we don't thrash the disk
-        let debouncedSaveState = _.debounce(() => this.saveStateNow(), 1000);
+        let debouncedSaveState = debounce(() => this.saveStateNow(), 1000);
 
         this.state.$watch('networks', debouncedSaveState, { deep: true });
         this.state.$watch('user_settings', debouncedSaveState, { deep: true });

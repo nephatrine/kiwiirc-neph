@@ -199,8 +199,6 @@
 <script>
 'kiwi public';
 
-import _ from 'lodash';
-
 import * as Misc from '@/helpers/Misc';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import * as EmojiProvider from '@/libs/EmojiProvider';
@@ -1062,9 +1060,9 @@ export default {
                 }
             }
             let ghost = nickservSyntaxFor(parsed.path);
-            let knownNicks = _.values(this.buffer.users).map((user) => user.nick);
+            let knownNicks = Object.values(this.buffer.users).map((user) => user.nick);
             let accounts = {};
-            _.values(this.network.users).forEach((user) => {
+            Object.values(this.network.users).forEach((user) => {
                 if (user.account) {
                     accounts[user.account] = true;
                 }
@@ -1128,10 +1126,10 @@ export default {
                 } else {
                     channels.notFounder.push(buffer.name);
                 }
-                let channelNicks = _.values(buffer.users).map((user) => user.nick);
+                let channelNicks = Object.values(buffer.users).map((user) => user.nick);
                 channelUsers[buffer.name.toLowerCase()] = channelNicks;
                 let accounts = {};
-                _.values(buffer.users).forEach((user) => {
+                Object.values(buffer.users).forEach((user) => {
                     if (user.account) {
                         accounts[user.account] = true;
                     }
@@ -1172,7 +1170,7 @@ export default {
             }
             let ghost = hostservSyntaxFor(parsed.path);
             let accounts = {};
-            _.values(this.network.users).forEach((user) => {
+            Object.values(this.network.users).forEach((user) => {
                 if (user.account) {
                     accounts[user.account] = true;
                 }
@@ -1210,7 +1208,7 @@ export default {
             }
             let ghost = histservSyntaxFor(parsed.path);
             let accounts = {};
-            _.values(this.network.users).forEach((user) => {
+            Object.values(this.network.users).forEach((user) => {
                 if (user.account) {
                     accounts[user.account] = true;
                 }
@@ -1270,7 +1268,7 @@ export default {
             let list = [];
 
             if (opts.users) {
-                let userList = _.values(this.buffer.users).map((user) => {
+                let userList = Object.values(this.buffer.users).map((user) => {
                     let item = {
                         text: user.nick,
                         type: 'user',
