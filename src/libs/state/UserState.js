@@ -1,11 +1,11 @@
 /** @module */
 
 import Vue from 'vue';
-import ipRegex from 'ip-regex';
 import getState from '@/libs/state';
 import ThemeManager from '@/libs/ThemeManager';
 import * as IrcdDiffs from '@/helpers/IrcdDiffs';
 import * as TextFormatting from '@/helpers/TextFormatting';
+import { v4Source, v6Source } from '@/helpers/IpRegex';
 import { def } from './common';
 
 let nextId = 0;
@@ -160,7 +160,7 @@ export default class UserState {
 
         // if an ip address is in the host and not the whole host ban the ip
         // Eg. user@gateway/1.2.3.4
-        let ipTest = new RegExp('(' + ipRegex.v4().source + '|' + ipRegex.v6().source + ')');
+        let ipTest = new RegExp('(' + v4Source + '|' + v6Source + ')');
         if (ipTest.test(this.host)) {
             let match = this.host.match(ipTest)[0];
             if (match !== this.host) {

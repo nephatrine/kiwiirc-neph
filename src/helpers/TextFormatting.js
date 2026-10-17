@@ -2,12 +2,12 @@
 
 /** @module */
 import _ from 'lodash';
-import ipRegex from 'ip-regex';
 import i18next from 'i18next';
-import * as murmurhash3 from 'murmurhash3js';
 
 import getState from '@/libs/state';
 import ThemeManager from '@/libs/ThemeManager';
+import { v4Source as ipv4Source, v6Source as ipv6Source } from '@/helpers/IpRegex';
+import { hash32 } from '@/helpers/MurmurHash3';
 
 export const urlRegex = new RegExp(
     // Detect either a protocol or 'www.' to start a URL
@@ -19,11 +19,11 @@ export const urlRegex = new RegExp(
         'localhost' +
         '|' +
         // IPv4 address
-        ipRegex.v4().source +
+        ipv4Source +
         '|' +
         // IPv6 address
         '(\\[?' +
-        ipRegex.v6().source +
+        ipv6Source +
         '\\]?)' +
         ')' +
         // Optional port..
@@ -61,7 +61,7 @@ export function linkifyChannels(word) {
 export function createNickColour(nick) {
     let themeMngr = ThemeManager.instance();
     let nickLower = (nick || '').toLowerCase();
-    let nickNum = murmurhash3.x86.hash32(nickLower);
+    let nickNum = hash32(nickLower);
 
     let bucketSize = toInt(themeMngr.themeVar('nickcolour-count')) || 200;
     let hueOffset = toInt(themeMngr.themeVar('nickcolour-hueoffset'));
