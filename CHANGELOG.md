@@ -8,127 +8,70 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-17
+
 ### Added
 
-- **Themes**: Added 40 themes with a shared color system, including balanced
-  separators on dark themes, and a custom theme URL.
-- **Formatting**: Added Markdown-inspired formatting, IRC colors (0-99 and hex),
-  theme-aware styles, a formatting toolbar with a hex picker, and an emoji
-  picker. Shortcodes can be converted while typing and on incoming messages.
+- **Themes and formatting**: Added a theme system with 39 built-in themes and a
+  custom theme URL. Markdown-style formatting, IRC colours (0-99 and hex),
+  spoilers, and a formatting toolbar with colour and emoji pickers. Emoji
+  shortcodes convert while typing and on incoming messages.
 - **Conversations**: Added threaded replies (`+reply`, falling back to
-  `+draft/reply`), per-message reactions (`+draft/react`), and typing indicators
-  (`+typing`). Long messages can use `draft/multiline`. Redaction uses
-  `draft/message-redaction`, with a confirmation prompt and click-to-reveal.
+  `+draft/reply`), per-message reactions (`+draft/react`), typing indicators
+  (`+typing`), long messages sent as one `draft/multiline` batch, and redaction
+  (`draft/message-redaction`) with a confirmation prompt and click-to-reveal.
+  Messages rerouted with `+channel-context` appear in the correct buffer.
 - **History and read state**: Added `draft/chathistory` and
   `draft/event-playback` for gap-filling, including replayed joins, parts, and
-  modes. `draft/read-marker` keeps read state in sync across sessions.
-  `echo-message` and `labeled-response` confirm outgoing messages. Also requests
-  `extended-isupport`, `multi-prefix`, and `userhost-in-names`. `FAIL`, `WARN`,
-  and `NOTE` are routed to the relevant buffer. The `standard-replies`
-  capability is requested, and replies for unimplemented commands are shown
-  generically.
-- **Identity**: Added SASL login, preferring `SCRAM-SHA-256` over `PLAIN`, live
-  `/setname` updates, a "Remember me" toggle that can purge saved state, and a
-  separate "Remember password" toggle beneath it. The login page now offers
-  Anonymous, Account, and Register tabs driven by a pre-login server probe: the
-  account block hides when SASL is unoffered, account fields become mandatory on
-  `DRAFT/ACCOUNTREQUIRED`, and the greeting uses `NETWORK` and `draft/ICON`
-  branding. `draft/metadata-2` shows display names, pronouns, descriptions,
-  homepages, status, and contrast-adjusted color. Away text takes precedence
-  over social status. When a server advertises `draft/metadata-3` it is
-  preferred, with channel joins subscribing rather than fetching outright.
-  Profile edits are remembered per account and re-sent after reconnecting when
-  the server comes back blank. Includes a fallback avatar template and a warning
-  that profile edits are public. Ignored users stay hidden in history, and
-  self-highlights are suppressed. `draft/persistence` adds a Preferred
-  Persistence setting (Keep As-Is by default) for account logins, syncing the
-  client preference with the server, and suppresses our own channel rejoins
-  while the server reports us persistent. `draft/account-registration` adds a
-  Register Account action to the own profile for connected guests, plus a
-  Register tab on the login page when the probe sees `before-connect`, with an
-  inline `VERIFY` step. Successful registrations log in immediately and, with
-  "Remember me" checked, persist for future SASL logins. The form adapts to the
-  probed tokens (`custom-account-name`, `email-required`, password lengths).
-- **Media**: Added image, audio, and video embeds, including Discord and Shopify
-  URLs. Iframe previews cover YouTube, Twitch, Streamable, SoundCloud, Spotify,
-  RedGifs, and Giphy. Imgur single images are shown as images, not iframes.
-  Links are parsed when the message arrives. The pinned viewer keeps sidebar
-  alignment, and images open in a lightbox.
-- **Buffers**: Added favorite pinning and mute, which dims a buffer and hides
-  its unread count. Mentions use a short scale pulse. Buffers can be exported as
-  plain text. Desktop notifications can be toggled separately from synthesized
-  sounds.
-- **File uploads**: Added optional uploads from the input bar, file picker,
-  drag-drop, and paste. `fileupload.service` is `none` (default), `litterbox`,
-  or `filehost`. Litterbox retention is `1h`, `12h`, `24h`, or `72h` (default
-  `72h`). Users can override the service and retention even when the admin sets
-  `none`. Successful uploads post the URL to the current channel or query;
-  failures stay local. `filehost` is not a URL in config. It prefers
-  `draft/FILEHOST`, then `soju.im/FILEHOST`, and only when a SASL account and
-  password are available. Requests use HTTP Basic, refuse `http` when the client
-  connection is marked TLS, and treat `201` plus `Location` as success.
-- **Routing**: Added `+channel-context` rerouting with lenient and strict
-  policies.
-- **Branding**: Added `NETWORK` and `draft/ICON` support, with an Ergo icon
-  fallback, plus channel avatars in headers and info panels.
-- **Radio**: Added a built-in station player in the sidebar, inspired by the
-  external kiwi radio plugin, with a station list, starred stations,
-  click-to-play, volume control, a theme-colored waveform, and lock-screen
-  integration. While a station plays, the current track is polled from the
-  host's Icecast status feed and shown under the station name. Stations can
-  override this with a `nowPlaying` URL or disable it with `nowPlaying: false`.
-  Silent streams are reloaded automatically and marked as failed after repeated
-  stalls. Player and channel-option buttons use larger touch targets on mobile.
+  modes. `draft/read-marker` keeps read state in sync across sessions, and
+  `echo-message` with `labeled-response` confirms outgoing messages.
+- **Accounts and login**: Added SASL login, preferring `SCRAM-SHA-256` over
+  `PLAIN`, with a "Remember me" toggle that can purge saved state and a separate
+  "Remember password" toggle beneath it. The login page offers Anonymous,
+  Account, and Register tabs driven by a pre-login server probe.
+  `draft/account-registration` adds a Register Account action for connected
+  guests and a Register tab when the probe sees `before-connect`, with an inline
+  `VERIFY` step. `draft/persistence` adds a Preferred Persistence setting (Keep
+  As-Is by default).
+- **Profiles and branding**: Added `draft/metadata-2` and `draft/metadata-3` for
+  display names, pronouns, descriptions, homepages, status, and
+  contrast-adjusted colours, with a fallback avatar. `NETWORK` and `draft/ICON`
+  brand the network, with an Ergo icon fallback and channel avatars.
+- **Media and uploads**: Added image, audio, and video embeds, with iframe
+  previews for YouTube, Twitch, SoundCloud, Spotify, Streamable, RedGifs, and
+  Giphy. Imgur single images are shown as images. Uploads work from the input
+  bar, file picker, drag-drop, and paste, through Litterbox or the server
+  `FILEHOST` (`draft/FILEHOST`, then `soju.im/FILEHOST`), with per-user service
+  and retention overrides.
+- **Buffers and notifications**: Added favourite pinning and mute, plain-text
+  buffer export, and desktop notifications independent of synthesized sounds.
+- **Radio**: Added a built-in station player in the sidebar with a station list,
+  starred stations, volume control, and a theme-coloured waveform.
 - **Bridging and relays**: Bot messages prefixed with `<Name>` are attributed to
-  the bridged user. The prefix is stripped, the bridged name gets its own nick
-  color, and replies and message grouping follow the bridged identity. IRC
-  formatting inside the brackets is stripped, the bot's channel mode prefix is
-  hidden on bridged names, and a `+avatar` client-only tag supplies the avatar.
-  `draft/relaymsg` is requested: relayed users get a limited profile panel with
-  block/ignore actions and a link to the relaying bot instead of query and whois
-  actions, and no server metadata is requested for them. Bots advertising
-  `RELAYMETA` are queried over CTCP, with rate limiting and session caching, for
-  relayed users' display names and avatars.
+  the bridged user, with their own nick colour and avatar. `draft/relaymsg`
+  relays give those users a limited profile panel, and bots advertising
+  `RELAYMETA` are queried over CTCP for display names and avatars.
 - **Diagnostics**: Added an anonymized state and log dump for troubleshooting.
 
 ### Changed
 
-- **Message IDs**: Separated local message IDs from protocol IDs and added
-  `protocol_target` tracking for reactions, replies, and redactions.
-- **Interface**: Settings and headers follow network capabilities and viewport
-  size.
-- **Runtime**: Requires Node 22+ and modern browsers. Removed legacy IE11 and
-  EdgeHTML polyfills.
-- **Performance**: Reduced reactivity in message state and replaced image
-  emoticons with Unicode emoji.
-- **Reconnection**: Capped reconnect delays and heals channel joins after
-  reconnect, waiting for persistence status first and skipping our own rejoins
-  while the server reports us persistent via `draft/persistence`.
-- **Channel list requests**: Deferred `LIST` for 30 seconds after connect. After
-  a completed list, automatic fetches wait 30 minutes. Manual refresh and bare
-  `/list` wait 5 minutes. In-flight lists are not resent. Filtered `/list` is
-  sent only after the connect window and when no list is in flight; otherwise it
-  is dropped. The refresh button stays disabled during the connect window and
-  the 5-minute cooldown.
+- Replies, reactions, and redactions now reference messages by IRCv3 `msgid`
+  rather than a local ID.
+- Settings and headers follow network capabilities and viewport size.
+- Reconnect delays are capped, and channel joins are healed after reconnect.
+- `/list` is deferred for 30 seconds after connect, then rate-limited.
+- Replaced image emoticons with Unicode emoji.
 
 ### Removed
 
 - Removed support for legacy IE11 and EdgeHTML browsers and their polyfills.
-- Removed the legacy BNC `bufferSeen` mechanism in favor of `draft/read-marker`.
-- Removed `znc.in/self-message` support in favor of `echo-message`.
-- Removed static `.mp3` and `.ogg` audio assets.
+- Removed the legacy BNC `bufferSeen` mechanism in favour of
+  `draft/read-marker`.
+- Removed `znc.in/self-message` support in favour of `echo-message`.
 
 ### Fixed
 
 - **Security**: Updated dependencies, including PostCSS, to address known
   vulnerabilities.
-- **History sync**: Stopped historical messages from disappearing and improved
-  user discovery during busy logins.
-- **Text selection**: Set `user-select: none` on persistent buttons so clicks do
-  not insert a text cursor.
-- **Spoilers**: Kept spoiler text hidden when the theme changes.
 - **Same-origin links**: Same-origin document links, including `.svg`, now
-  download instead of opening. Same-origin iframes are not rendered. Image,
-  audio, and video embeds and the lightbox are unchanged.
-- **Login**: Failed SASL logins show the server's reason and return to the login
-  form instead of spinning forever.
+  download instead of opening. Same-origin iframes are not rendered.

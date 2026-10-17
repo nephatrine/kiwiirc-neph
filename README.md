@@ -1,19 +1,18 @@
 # Kiwi IRC
 
-***A versatile web based messenger using IRC***
+***A web-based IRC client***
 
-- 100% static files. Host with your favourite web server or a CDN
-- One public JSON config file. The browser fetches it, so do not put secrets in
-  it
-- One or many networks, over a websocket,
-  [webircgateway](https://github.com/kiwiirc/webircgateway), or
+- Static files only, so it can be hosted on any web server or CDN
+- One or many networks, over a websocket directly, through
+  [webircgateway](https://github.com/kiwiirc/webircgateway), or with
   [KiwiBNC](https://github.com/kiwiirc/kiwibnc)
-- 40 included themes, plus a custom theme URL
+- 39 built-in themes, plus a custom theme URL
 - Replies, reactions, typing indicators, and an emoji picker
-- Display names, pronouns, and profile color when the server provides them
+- Display names, pronouns, and profile colour when the server provides them
 - History and read markers that stay in sync across sessions
-- Image, audio, and video embeds, with previews for YouTube, Twitch, Streamable,
-  Giphy, and RedGifs. Imgur single images are shown as images
+- Image, audio, and video embeds, with previews for YouTube, Twitch, SoundCloud,
+  Spotify, Streamable, Giphy, and RedGifs. Imgur single images are shown as
+  images
 - Optional uploads through Litterbox or the server `FILEHOST`, with per-user
   service and retention overrides
 - Favourite and mute channels, and export a buffer as plain text
@@ -22,20 +21,10 @@
   including self-hosted
   [file uploading](https://github.com/kiwiirc/plugin-fileuploader/) and
   [video calling](https://github.com/kiwiirc/plugin-conference)
-- Team mode for workplaces
-
-Connection modes:
-
-- Directly to a websocket IRC server
-- Connect via the [webircgateway](https://github.com/kiwiirc/webircgateway)
-  websocket proxy for normal IRC servers
-- Stay connected with [KiwiBNC](https://github.com/kiwiirc/kiwibnc)
 
 ## Installing Kiwi IRC
 
 Source and issues: https://code.nephatrine.net/nephatrine/kiwiirc
-
-File issues at https://code.nephatrine.net/nephatrine/kiwiirc/issues
 
 For help, join `#support` on `irc.nephatrine.net`.
 
@@ -43,15 +32,15 @@ To install on your own server, build from source below.
 
 ## Building from source
 
-#### Dependencies
+### Dependencies
 
 Before you can build or start to develop on Kiwi IRC, make sure to have the
 following installed on your system:
 
-- [Nodejs](https://nodejs.org/) (>= 22.0.0)
+- [Node.js](https://nodejs.org/) (>= 22.0.0)
 - [npm](https://www.npmjs.com/)
 
-#### Building for production
+### Building for production
 
 ```bash
 # Install dependencies
@@ -64,9 +53,9 @@ $ npm run build
 ***Note:*** *Be sure to copy the files from the `dist/` folder to your
 webserver! This folder will be overwritten each time it is built.*
 
-#### Development environment
+### Development environment
 
-Kiwi IRC is built using Vuejs, webpack and babel.
+Kiwi IRC is built with Vue.js, webpack, and Babel.
 
 ```bash
 # Install dependencies
@@ -82,7 +71,7 @@ npm run dev
 ***Note:*** *Do not use this development environment on your live website. It is
 slow, very large, and insecure.*
 
-#### Configuration
+### Configuration
 
 The client loads [static/config.json](static/config.json) on startup. The
 browser fetches it, so do not put secrets in it. Options, defaults, and the keys
@@ -103,6 +92,7 @@ Kiwi IRC is tested on all modern browsers.
 For more detailed technical information, refer to the following documents in the
 repository:
 
+- **[CONFIGURATION.md](CONFIGURATION.md)**: Configuration options and defaults.
 - **[IRCv3.md](IRCv3.md)**: Supported capabilities, client tags, and
-  synchronization behavior.
+  synchronization behaviour.
 - **[CHANGELOG.md](CHANGELOG.md)**: Features, changes, and security updates.

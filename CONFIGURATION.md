@@ -1,4 +1,4 @@
-# Configuration
+# Kiwi IRC Configuration
 
 The browser fetches the config on startup. Do not put passwords, SASL secrets,
 or user hashes in it.
@@ -230,7 +230,7 @@ them.
 | `windowTitle`                   | `Kiwi IRC - The web IRC client`     |                            |
 | `useMonospace`                  | `false`                             |                            |
 | `language`                      | `""`                                | Empty follows the browser. |
-| `theme`                         | `Dark`                              |                            |
+| `theme`                         | `Kiwi Dark`                         |                            |
 | `google_fonts`                  | Source Sans Pro and Source Code Pro |                            |
 | `showEmojiPicker`               | `true`                              |                            |
 | `forceShowEmojiPicker`          | `false`                             |                            |

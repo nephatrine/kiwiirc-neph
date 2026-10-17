@@ -1,11 +1,11 @@
-# KiwiIRC IRCv3 Technical Reference
+# Kiwi IRC IRCv3 Technical Reference
 
-KiwiIRC requests a fixed set of IRCv3 capabilities and uses several client-only
+Kiwi IRC requests a fixed set of IRCv3 capabilities and uses several client-only
 tags. `RPL_ISUPPORT` tokens adjust history, branding, bans, and file uploads.
 
 ## Capability Negotiation
 
-KiwiIRC requests the following capabilities during connection and again on
+Kiwi IRC requests the following capabilities during connection and again on
 `CAP NEW`.
 
 ### Synchronization
@@ -46,9 +46,9 @@ KiwiIRC requests the following capabilities during connection and again on
   server's message. Successful registrations authenticate like SASL logins and
   persist under Remember Me.
 - **draft/metadata-2**: Syncs public user and channel metadata (`display-name`,
-  `pronouns`, `description`, `homepage`, `status`, `color`). KiwiIRC respects
+  `pronouns`, `description`, `homepage`, `status`, `color`). Kiwi IRC respects
   `max-subs`, `max-keys`, and `max-value-bytes`, and waits 30 minutes between
-  proactive fetches. Social colors are adjusted to at least 4.5:1 contrast
+  proactive fetches. Social colours are adjusted to at least 4.5:1 contrast
   against the theme background. An IRC away message takes precedence over the
   social `status` key.
 - **draft/metadata-3**: Preferred over `draft/metadata-2` when a server
@@ -58,59 +58,61 @@ KiwiIRC requests the following capabilities during connection and again on
   limits are honored the same way as `774`.
 
 SASL is negotiated when an account password is set. It is not in the
-always-requested list above. KiwiIRC prefers `SCRAM-SHA-256` over `PLAIN`.
+always-requested list above. Kiwi IRC prefers `SCRAM-SHA-256` over `PLAIN`.
 
 ### Helpers
 
 - **cap-notify**: Reacts to capability changes after registration.
 - **multi-prefix**: Shows every user prefix in member lists, such as `~@`.
 - **userhost-in-names**: Includes full hostmasks in `NAMES` replies.
+- **standard-replies**: Receives `FAIL`, `WARN`, and `NOTE`, routed to the
+  relevant buffer rather than the server tab.
 - **draft/extended-isupport**: Receives `RPL_ISUPPORT` during capability
   negotiation, before registration finishes. The name is draft-prefixed: servers
   never advertise the unprefixed form, so requesting it literally would NAK.
-  When the server ACKs it for a login without credentials, KiwiIRC holds
+  When the server ACKs it for a login without credentials, Kiwi IRC holds
   `CAP END` until the first `005` batch arrives (1s debounce, 5s absolute cap),
   then checks `draft/ACCOUNTREQUIRED` below. Logins with credentials ask for
   `ISUPPORT` too, but without holding negotiation open.
 - **draft/persistence**: Reports server-side client persistence with
   `PERSISTENCE STATUS <client-setting> <effective>` (in the registration burst
-  and whenever it changes). KiwiIRC assumes non-persistent until told otherwise.
-  A Preferred Persistence setting (Keep As-Is by default, otherwise Server
-  Default / Enabled / Disabled, shown only for account logins on servers with
-  the cap) sends `PERSISTENCE SET DEFAULT|ON|OFF` when it disagrees with the
-  reported client setting, and treats the next `STATUS` as the actual truth.
+  and whenever it changes). Kiwi IRC assumes non-persistent until told
+  otherwise. A Preferred Persistence setting (Keep As-Is by default, otherwise
+  Server Default / Enabled / Disabled, shown only for account logins on servers
+  with the cap) sends `PERSISTENCE SET DEFAULT|ON|OFF` when it disagrees with
+  the reported client setting, and treats the next `STATUS` as the actual truth.
   When the cap is negotiated for an account login, our post-001 channel joins
   are held until the first STATUS arrives (5s backstop assumes non-persistent):
   effectively ON suppresses our rejoins since the server kept us joined, while
   OFF runs them normally. Guests and networks without the cap always join
   immediately.
-- **draft/webpush** (or **soju.im/webpush**): Browser push notifications.
-  KiwiIRC negotiates exactly one of the two names, preferring the draft form,
-  and never both in one request. Push Notifications is an opt-in checkbox
-  (default off), shown only for account logins on servers that negotiate a cap
-  and send a VAPID key. When enabled, the browser subscribes via its vendor push
-  service and KiwiIRC sends WEBPUSH REGISTER with the endpoint and keys,
-  renewing daily; toggling off sends WEBPUSH UNREGISTER. Server FAILs only clear
-  the local registered flag (the message itself still surfaces) and never
-  trigger a retry loop. A dependency-free worker in static/sw.js turns each
-  pushed IRC line into a system notification.
+- **draft/webpush** (or **soju.im/webpush**): Browser push notifications. Kiwi
+  IRC negotiates exactly one of the two names, preferring the draft form, and
+  never both in one request. Push Notifications is an opt-in checkbox (default
+  off), shown only for account logins on servers that negotiate a cap and send a
+  VAPID key. When enabled, the browser subscribes via its vendor push service
+  and Kiwi IRC sends WEBPUSH REGISTER with the endpoint and keys, renewing
+  daily; toggling off sends WEBPUSH UNREGISTER. Server FAILs only clear the
+  local registered flag (the message itself still surfaces) and never trigger a
+  retry loop. A dependency-free worker in static/sw.js turns each pushed IRC
+  line into a system notification.
 
 ## Client Tags
 
-These tags are not capabilities. KiwiIRC sends them only when the server allows
+These tags are not capabilities. Kiwi IRC sends them only when the server allows
 the tag.
 
 - **+channel-context**: Sent on `PRIVMSG` and `NOTICE` to show a message in a
   different buffer, such as a query copied into a channel.
 - **+reply**: Points a message at another message by `msgid`. If the server does
-  not allow `+reply`, KiwiIRC falls back to `+draft/reply`.
+  not allow `+reply`, Kiwi IRC falls back to `+draft/reply`.
 - **+draft/react**: Adds or removes a reaction on a message with an `msgid`.
 - **+typing**: Shares typing state (`active`, `paused`, `done`) when the user
   has typing sharing enabled.
 
 ## Message Confirmation
 
-KiwiIRC uses one of three paths for outgoing messages:
+Kiwi IRC uses one of three paths for outgoing messages:
 
 1. **No echo**: The UI updates immediately.
 1. **Echo without labels**: Matches the echo by nick, text, and a time window,
@@ -182,12 +184,12 @@ Keys are stored in uppercase.
 - **UTF8ONLY**: Forces `utf8` and blocks non-ASCII outgoing actions, including
   emoji reactions, on networks that cannot carry them.
 - **draft/ACCOUNTREQUIRED**: The connection cannot register without SASL
-  authentication. When seen pre-registration on a credential-less login, KiwiIRC
-  aborts the connect with an `account_required` error instead of wasting a
+  authentication. When seen pre-registration on a credential-less login, Kiwi
+  IRC aborts the connect with an `account_required` error instead of wasting a
   registration round-trip, so the login page can collect credentials first.
 - **NETWORK**: Shows the network name in the server view.
 - **DRAFT/ICON**: Network icon URL. `{size}` is replaced with `64`. If the token
-  is missing and the server is Ergo (`IRCD` or numeric `002`), KiwiIRC uses
+  is missing and the server is Ergo (`IRCD` or numeric `002`), Kiwi IRC uses
   `/static/ergo.svg`.
 - **DRAFT/FILEHOST**: Preferred upload URI when `fileupload.service` is
   `filehost`. See File Host Uploads.
@@ -196,7 +198,7 @@ Keys are stored in uppercase.
 
 ## File Host Uploads
 
-When `fileupload.service` is `filehost`, KiwiIRC uploads to the ISUPPORT URI.
+When `fileupload.service` is `filehost`, Kiwi IRC uploads to the ISUPPORT URI.
 `draft/FILEHOST` is preferred. `soju.im/FILEHOST` is used only if the draft
 token is missing or unusable. Empty and non-string tokens are ignored.
 
@@ -207,7 +209,7 @@ check of the gateway's upstream IRC link.
 Uploads require a completed SASL login and the stored SASL password. A NickServ
 `ACCOUNT` notify is not enough. The request is an HTTP `POST` of the file body
 with `Content-Type` and `Content-Disposition: attachment`, using HTTP Basic.
-KiwiIRC does not implement `OAUTHBEARER`, so Bearer auth is not used.
+Kiwi IRC does not implement `OAUTHBEARER`, so Bearer auth is not used.
 `Content-Length` is left to the browser. Success is `201 Created` plus a
 `Location` header, resolved against the upload URL. Resumable uploads are not
 implemented.
@@ -228,14 +230,12 @@ those lines do not become sync boundaries.
 
 ### Message Redaction
 
-KiwiIRC ignores `REDACT` commands that target `TAGMSG` events, including
+Kiwi IRC ignores `REDACT` commands that target `TAGMSG` events, including
 reactions. Reactions already have `+draft/unreact`. Redacting them as well can
 desync the reaction state from the message log.
 
 ### Standard Replies
 
-`FAIL`, `WARN`, and `NOTE` are routed to the relevant channel or query from the
-command arguments or the active label. They are not dumped on the server tab.
-KiwiIRC requests the `standard-replies` capability. Replies for commands it does
-not implement are shown generically, so arbitrary codes need no per-code
-handling.
+Replies are routed using the command arguments or the active label. Replies for
+commands Kiwi IRC does not implement are shown generically, so arbitrary codes
+need no per-code handling.
