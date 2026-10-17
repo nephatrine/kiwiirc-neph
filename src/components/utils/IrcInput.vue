@@ -27,9 +27,8 @@
 
 import _ from 'lodash';
 import Vue from 'vue';
-import * as htmlparser from 'htmlparser2';
 import * as Colours from '@/helpers/Colours';
-import * as Misc from '@/helpers/Misc';
+import { htmlToIrc } from '@/helpers/HtmlToIrc';
 import * as EmojiProvider from '@/libs/EmojiProvider';
 
 export default Vue.component('irc-input', {
@@ -270,203 +269,9 @@ export default Vue.component('irc-input', {
         buildIrcText() {
             this.updateSpacing();
             let source = this.$refs.editor.innerHTML;
-            let textValue = '';
-            let pendingStyles = '';
-
-            // Stack of style states for nested tags
-            let styleStack = [{
-                fg: '',
-                bg: '',
-                bold: false,
-                italic: false,
-                underline: false,
-                strike: false,
-                mono: false,
-                fancy: false,
-            }];
-
-            const getActive = () => styleStack[styleStack.length - 1];
-
-            const pad = (code) => {
-                if (!code || code[0] === '#') return code;
-                return code.length === 1 ? '0' + code : code;
-            };
-
-            const flushStyles = (nextText) => {
-                if (!pendingStyles) return;
-
-                // Check for \x03 followed by a digit or comma.
-                // If it is, we must make the \x03 reset explicit (\x0399) to avoid
-                // it being misparsed as a color code for the following text.
-                if (nextText && pendingStyles.endsWith('\x03')) {
-                    if ('0123456789,'.includes(nextText[0])) {
-                        pendingStyles += '99';
-                    }
-                }
-
-                textValue += pendingStyles;
-                pendingStyles = '';
-            };
-
-            const extractIrcColor = (colorStr) => {
-                if (!colorStr) return '';
-                let cleanColor = this.normalizeColor(colorStr);
-                let mappedCode = this.code_map[cleanColor];
-                return mappedCode || cleanColor;
-            };
-
-            const parseStyle = (styleAttr) => {
-                let styles = Object.create(null);
-                if (!styleAttr) return styles;
-                styleAttr.split(';').forEach((s) => {
-                    let parts = s.split(':');
-                    if (parts.length >= 2) {
-                        styles[parts[0].trim().toLowerCase()] = parts.slice(1).join(':').trim();
-                    }
-                });
-                return styles;
-            };
-
-            const emitStyleChanges = (next, current) => {
-                let out = '';
-
-                // Optimization: if we are moving to a completely plain state,
-                // just use the global reset character.
-                const isPlain = !next.fg && !next.bg && !next.bold && !next.italic &&
-                    !next.underline && !next.strike && !next.mono && !next.fancy;
-
-                if (isPlain && (current.fg || current.bg || current.bold || current.italic ||
-                    current.underline || current.strike || current.mono || current.fancy)) {
-                    return '\x0f';
-                }
-
-                // Handle Colors
-                if (next.fg !== current.fg || next.bg !== current.bg) {
-                    let isNextHex = (next.fg && next.fg[0] === '#') || (next.bg && next.bg[0] === '#');
-                    if (isNextHex) {
-                        // Protocol \x04 requires a foreground if background is present.
-                        // We strictly only emit if a hex foreground is present.
-                        if (next.fg && next.fg[0] === '#') {
-                            let fgHex = next.fg.substr(1);
-                            let bgHex = next.bg && next.bg[0] === '#' ?
-                                next.bg.substr(1) :
-                                '';
-
-                            out += '\x04' + fgHex;
-                            if (bgHex) {
-                                out += ',' + bgHex;
-                            }
-                        } else if (!next.fg && !next.bg) {
-                            // If both are cleared, emit hex reset
-                            out += '\x04';
-                        }
-                    } else if (!next.fg && !next.bg) {
-                        // Standard IRC color reset
-                        out += '\x03';
-                    } else {
-                        // Standard IRC colors
-                        out += '\x03' + (pad(next.fg) || '99');
-                        if (next.bg || current.bg) {
-                            out += ',' + (pad(next.bg) || '99');
-                        }
-                    }
-                }
-
-                if (next.bold !== current.bold) out += '\x02';
-                if (next.italic !== current.italic) out += '\x1d';
-                if (next.underline !== current.underline) out += '\x1f';
-                if (next.strike !== current.strike) out += '\x1e';
-                if (next.mono !== current.mono) out += '\x11';
-                if (next.fancy !== current.fancy) out += '\x16';
-
-                return out;
-            };
-
-            let parser = new htmlparser.Parser({
-                onopentag: (name, attribs) => {
-                    let current = getActive();
-                    let next = Object.assign({}, current);
-
-                    if (attribs.style) {
-                        let styles = parseStyle(attribs.style);
-                        if (styles.color) {
-                            next.fg = extractIrcColor(styles.color);
-                        }
-                        if (styles['background-color']) {
-                            next.bg = extractIrcColor(styles['background-color']);
-                        }
-                        if (attribs.style.indexOf('bold') > -1) {
-                            next.bold = !next.bold;
-                        }
-                        if (attribs.style.indexOf('italic') > -1) {
-                            next.italic = !next.italic;
-                        }
-                        if (attribs.style.indexOf('underline') > -1) {
-                            next.underline = !next.underline;
-                        }
-                        if (attribs.style.indexOf('line-through') > -1) {
-                            next.strike = !next.strike;
-                        }
-                        if (attribs.style.indexOf('monospace') > -1) {
-                            next.mono = !next.mono;
-                        }
-                        if (attribs.style.indexOf('kiwi-reverse') > -1) {
-                            next.fancy = !next.fancy;
-                        }
-                    }
-
-                    if (name === 'strong' || name === 'b') next.bold = !next.bold;
-                    if (name === 'em' || name === 'i') next.italic = !next.italic;
-                    if (name === 'u') next.underline = !next.underline;
-                    if (name === 'strike' || name === 's' || name === 'del') next.strike = !next.strike;
-                    if (name === 'code' || name === 'tt' || name === 'kbd') next.mono = !next.mono;
-
-                    if (name === 'div' || name === 'br') {
-                        flushStyles('\n');
-                        textValue += '\n';
-                    } else if (name === 'img' && attribs.alt) {
-                        flushStyles(attribs.alt);
-                        textValue += attribs.alt;
-                    } else {
-                        pendingStyles += emitStyleChanges(next, current);
-                        styleStack.push(next);
-                    }
-                },
-                ontext: (text) => {
-                    flushStyles(text);
-                    textValue += text;
-                },
-                onclosetag: (name) => {
-                    if (['div', 'br', 'img'].includes(name)) return;
-
-                    let current = getActive();
-                    styleStack.pop();
-                    let next = getActive();
-
-                    pendingStyles += emitStyleChanges(next, current);
-                },
-            }, {
-                decodeEntities: true,
-            });
-
-            parser.write(source);
-            parser.end();
-
-            // Final reset of any lingering styles
-            let currentState = getActive();
-            let hasStyles = currentState.fg || currentState.bg || currentState.bold ||
-                currentState.italic || currentState.underline || currentState.strike ||
-                currentState.mono || currentState.fancy;
-
-            if (hasStyles) {
-                pendingStyles += '\x0f';
-            }
-            flushStyles();
-
-            // Firefox likes to add <br/> at the end (some times inside the span)
-            // fix by filtering out any lines that contain no content
-            return textValue.split(/\r?\n/).filter((line) => !!Misc.stripStyles(line)).join('\n');
+            return htmlToIrc(source, (colorStr) => this.extractIrcColor(colorStr));
         },
+
         reset(rawHtml, shouldFocus) {
             this.$refs.editor.innerHTML = rawHtml || '';
 
@@ -637,6 +442,11 @@ export default Vue.component('irc-input', {
                 fg: style.color,
                 bg: style.backgroundColor,
             };
+        },
+        extractIrcColor(colorStr) {
+            if (!colorStr) return '';
+            let cleanColor = this.normalizeColor(colorStr);
+            return this.code_map[cleanColor] || cleanColor;
         },
         normalizeColor(colorStr) {
             if (!colorStr) return '';
