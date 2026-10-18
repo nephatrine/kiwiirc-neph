@@ -28,7 +28,7 @@
     "eventemitter3": "^5.0.1",
     "font-awesome": "^4.7.0",
     "i18next": "^25.10.10",
-    "i18next-http-backend": "^v3.0.2",
+    "i18next-http-backend": "^4.0.3",
     "irc-framework": "^4.14.0",
     "json5": "^2.2.3",
     "sockjs-client": "^1.6.1",
