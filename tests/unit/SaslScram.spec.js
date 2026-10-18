@@ -1,10 +1,19 @@
 import SaslScram from '@/libs/SaslScram';
 
-// Mock Web Crypto API for Node environment
+// Mock Web Crypto API for Node environment.
+// jsdom already defines a crypto object without the subtle API, so it has to
+// be replaced with a property definition rather than assigned to.
 const { webcrypto } = require('crypto');
 const { TextEncoder, TextDecoder } = require('util');
 
-global.crypto = webcrypto;
+Object.defineProperty(window, 'crypto', {
+    value: webcrypto,
+    configurable: true,
+    writable: true,
+});
+
+window.TextEncoder = TextEncoder;
+window.TextDecoder = TextDecoder;
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 

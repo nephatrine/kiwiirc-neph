@@ -1,5 +1,20 @@
 module.exports = {
-    preset: '@vue/cli-plugin-unit-jest',
+    testEnvironment: 'jsdom',
+    moduleFileExtensions: ['js', 'jsx', 'json', 'vue'],
+    transform: {
+        // Process *.vue single file components with vue-jest
+        '^.+\\.vue$': '@vue/vue2-jest',
+        // Everything else goes through babel
+        '^.+\\.jsx?$': 'babel-jest',
+    },
+    // Support the same @ -> src alias mapping as the source code
+    moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/src/$1',
+    },
+    testMatch: [
+        '**/tests/unit/**/*.spec.[jt]s?(x)',
+        '**/__tests__/*.[jt]s?(x)',
+    ],
     collectCoverage: true,
     // Only plain JS/JSX can be instrumented; istanbul cannot process the .vue
     // SFCs in this setup, so they are excluded (the glob is relative to the
@@ -9,7 +24,4 @@ module.exports = {
     coverageDirectory: 'tests/coverage/',
     coverageReporters: ['html', 'text-summary'],
     setupFiles: ['<rootDir>/tests/unit/setup.js'],
-    transformIgnorePatterns: [
-        '/node_modules/(?!(ip-regex)/)',
-    ],
 };
