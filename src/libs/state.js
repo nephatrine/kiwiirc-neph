@@ -653,7 +653,6 @@ function createNewState() {
                 }
 
                 // Remove this buffer from any users
-                /* eslint-disable guard-for-in */
                 Object.keys(buffer.users).forEach((nick) => {
                     let user = buffer.users[nick];
                     delete user.buffers[buffer.id];
@@ -867,7 +866,6 @@ function createNewState() {
 
                                 // Newer webkit browser use parent.focus() while older webkit uses
                                 // window.focus()
-                                /* eslint-disable no-restricted-globals */
                                 if (parent && parent.focus) {
                                     parent.focus();
                                 }

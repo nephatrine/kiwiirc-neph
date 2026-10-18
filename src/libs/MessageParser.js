@@ -53,7 +53,6 @@ function processBlock(block, userList) {
     //    block: <the block that will replace the match>
     // }
 
-    // eslint-disable-next-line no-cond-assign
     while ((wordMatch = wordsRegex.exec(block.content)) !== null) {
         // `wordMatch` is an array with the match and the index of the match. We need that so
         // we can re-construct the original message.

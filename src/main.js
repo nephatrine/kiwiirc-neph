@@ -55,7 +55,6 @@ let log = Logger.namespace('main');
 let api = window.kiwi = GlobalApi.singleton();
 
 // Third party imports now have access to the state and api
-/* eslint-disable import/first */
 import '@/thirdparty/';
 
 function getQueryVariable(variable) {

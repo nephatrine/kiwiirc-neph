@@ -271,7 +271,6 @@ describe('Misc.js helpers', () => {
         delete global.fetch;
         delete window.URL.createObjectURL;
         delete window.URL.revokeObjectURL;
-        // eslint-disable-next-line no-underscore-dangle
         window.kiwi_deprecations_vueEl = false;
     });
 
@@ -311,7 +310,6 @@ describe('Misc.js helpers', () => {
             const el = document.createElement('span');
             // eslint-disable-next-line no-underscore-dangle
             el.__vue__ = {};
-            // eslint-disable-next-line no-underscore-dangle
             window.kiwi_deprecations_vueEl = false;
             const warnSpy = jest.spyOn(window.console, 'warn').mockImplementation(() => {});
 

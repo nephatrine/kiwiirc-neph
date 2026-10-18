@@ -79,7 +79,6 @@ export default {
 
             // If not UTF-8, only allow reacting if the string is ASCII
             if (!this.isUtf8) {
-                // eslint-disable-next-line no-control-regex
                 const isAscii = /^[\x00-\x7F]*$/.test(emoji);
                 if (!isAscii) {
                     return;

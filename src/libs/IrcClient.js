@@ -348,7 +348,6 @@ export function handleStandardReply(command, event, network, state) {
 
 function clientMiddleware(state, network) {
     let networkid = network.id;
-    // eslint-disable-next-line
     let numConnects = 0;
     let isRegistered = false;
     let saslSucceeded = false;

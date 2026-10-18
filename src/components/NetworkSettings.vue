@@ -372,7 +372,6 @@ export default {
             );
         },
         removeNetwork() {
-            /* eslint-disable no-restricted-globals, no-alert */
             let confirmed = confirm('Really remove this network? This cannot be undone!');
             if (!confirmed) {
                 return;

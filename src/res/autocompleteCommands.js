@@ -1,7 +1,5 @@
 'kiwi public';
 
-/* eslint-disable */
-
 // command descriptions can be either a static string or a translation key prefixed with locale_id_
 export default [
     { command: 'msg', alias: [], description: 'locale_id_command_msg' },

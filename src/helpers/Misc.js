@@ -722,7 +722,6 @@ export function makePluginObject(pluginId, componentOrElement, args = {}) {
         // eslint-disable-next-line no-underscore-dangle
         if (componentOrElement.__vue__ && !window.kiwi_deprecations_vueEl) {
             window.kiwi_deprecations_vueEl = true;
-            // eslint-disable-next-line no-console
             console.warn('deprecated component.$el added to plugin api, please switch to just passing the vue.js component object');
         }
         plugin.component = PluginWrapper;

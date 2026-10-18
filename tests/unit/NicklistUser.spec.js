@@ -10,7 +10,6 @@ jest.mock('@/components/TypingStatusIndicator', () => ({
     render: (h) => h('div'),
 }));
 
-// eslint-disable-next-line import/first
 import NicklistUser from '@/components/NicklistUser';
 
 Vue.prototype.$t = (key) => key;

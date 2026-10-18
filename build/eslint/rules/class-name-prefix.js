@@ -1,15 +1,19 @@
 module.exports = {
     meta: {
+        type: 'problem',
         docs: {
             description: 'html class names must start with `u-` or `kiwi-`',
-            category: 'base',
-            url: null,
         },
-        fixable: null,
         schema: [],
     },
     create: function (context) {
-        return context.parserServices.defineTemplateBodyVisitor({
+        let parserServices = context.sourceCode.parserServices;
+        // The rule only inspects Vue template attributes, so it has nothing to
+        // do for plain JS files where the template visitor is unavailable.
+        if (!parserServices || typeof parserServices.defineTemplateBodyVisitor !== 'function') {
+            return {};
+        }
+        return parserServices.defineTemplateBodyVisitor({
             "VAttribute[key.name='class']"(node) {
                 let classes = node.value.value.split(' ');
                 classes.forEach((c) => {

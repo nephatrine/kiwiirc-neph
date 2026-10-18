@@ -9,7 +9,6 @@ const tokens = Object.create(null);
  * 0+ - move to this point in the input
  */
 
-/* eslint-disable dot-notation */
 tokens['***'] = {
     token: '***',
     extra: true,
