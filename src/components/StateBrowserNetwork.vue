@@ -52,7 +52,10 @@
         </div>
 
         <transition-expand>
-            <div v-if="channel_filter_display" class="kiwi-statebrowser-channelfilter">
+            <div
+                v-if="channel_filter_display && !isBouncerController"
+                class="kiwi-statebrowser-channelfilter"
+            >
                 <input
                     v-model="channel_filter"
                     v-focus
@@ -67,7 +70,10 @@
                     </a>
                 </p>
             </div>
-            <div v-if="channel_add_display" class="kiwi-statebrowser-channels-info">
+            <div
+                v-if="channel_add_display && !isBouncerController"
+                class="kiwi-statebrowser-channels-info"
+            >
                 <form
                     class="kiwi-statebrowser-newchannel"
                     @submit.prevent="submitNewChannelForm"
@@ -132,7 +138,10 @@
                     </template>
                 </div>
                 <div
-                    v-if="!showBufferGroups && !channel_filter_display && !channel_add_display"
+                    v-if="!showBufferGroups
+                        && !channel_filter_display
+                        && !channel_add_display
+                        && !isBouncerController"
                     class="kiwi-statebrowser-network-options"
                 >
                     <div
@@ -160,7 +169,10 @@
                 class="kiwi-statebrowser-buffers"
             >
                 <div
-                    v-if="!channel_filter_display && showBufferGroups && type !== 'other'"
+                    v-if="!channel_filter_display
+                        && showBufferGroups
+                        && type !== 'other'
+                        && !(isBouncerController && type === 'channels')"
                     class="kiwi-statebrowser-channels-header"
                 >
                     <div class="kiwi-statebrowser-buffertype" :title="$t('toggle_section')" @click="toggleSection(type)">
@@ -311,6 +323,9 @@ export default {
     computed: {
         serverBuffer() {
             return this.network.serverBuffer();
+        },
+        isBouncerController() {
+            return this.network.isBouncerController();
         },
         isActiveNetwork: function isActiveNetwork() {
             return this.$state.getActiveNetwork() === this.network;

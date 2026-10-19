@@ -198,28 +198,24 @@ describe('metadata capabilities', () => {
         requestSpy.mockRestore();
     });
 
-    it('subscribes but does not GET on join with draft/metadata-3', () => {
+    it('sends no metadata on join with draft/metadata-3', () => {
         let { client, rawEvents, parsedEvents } = makeClient();
         network.enabled_caps = ['draft/metadata-3'];
         metadataMiddleware(network)(client, rawEvents, parsedEvents);
         client.emit('join', { nick: 'TestNick', channel: '#chan' });
 
-        let commands = metadataCommands(client);
-        let subcommands = commands.map((cmd) => cmd.params[1]);
-        expect(subcommands).toContain('SUB');
-        expect(subcommands).not.toContain('GET');
+        // The subscription is a single per-connection key list; the join
+        // burst delivers the channel and member metadata itself.
+        expect(metadataCommands(client)).toHaveLength(0);
     });
 
-    it('subscribes and GETs on join with draft/metadata-2', () => {
+    it('sends no metadata on join with draft/metadata-2', () => {
         let { client, rawEvents, parsedEvents } = makeClient();
         network.enabled_caps = ['draft/metadata-2'];
         metadataMiddleware(network)(client, rawEvents, parsedEvents);
         client.emit('join', { nick: 'TestNick', channel: '#chan' });
 
-        let commands = metadataCommands(client);
-        let subcommands = commands.map((cmd) => cmd.params[1]);
-        expect(subcommands).toContain('SUB');
-        expect(subcommands).toContain('GET');
+        expect(metadataCommands(client)).toHaveLength(0);
     });
 
     it('sends no metadata before registration completes', () => {
@@ -231,9 +227,14 @@ describe('metadata capabilities', () => {
         expect(metadataCommands(client)).toHaveLength(0);
 
         client.emit('connected');
-        let subcommands = metadataCommands(client).map((cmd) => cmd.params[1]);
+        let commands = metadataCommands(client);
+        let subcommands = commands.map((cmd) => cmd.params[1]);
         expect(subcommands).toContain('SUB');
         expect(subcommands).toContain('GET');
+
+        // The key list is subscribed with the wildcard target, not per target.
+        let sub = commands.find((cmd) => cmd.params[1] === 'SUB');
+        expect(sub.params[0]).toBe('*');
     });
 
     it('retries with SYNC after a 775 rate limit delay', () => {

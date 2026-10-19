@@ -27,6 +27,15 @@ export default function webpushMiddleware(network, deps = {}) {
             window.Notification.permission === 'granted'
         );
 
+        // A push subscription registered with the bouncer is bouncer-wide:
+        // only the control connection may register or remove it.
+        const bouncerManaged = () => (
+            typeof network.bouncerHasCap === 'function' &&
+            !(typeof network.isBouncerController === 'function' &&
+                network.isBouncerController()) &&
+            network.bouncerHasCap(network.webpushCap())
+        );
+
         const clearRenewTimer = () => {
             if (renewTimer) {
                 clearTimeout(renewTimer);
@@ -45,7 +54,12 @@ export default function webpushMiddleware(network, deps = {}) {
         };
 
         const ensureRegistered = async() => {
-            if (!network.webpushAvailable() || !settingOn() || !notificationsGranted()) {
+            if (
+                bouncerManaged() ||
+                !network.webpushAvailable() ||
+                !settingOn() ||
+                !notificationsGranted()
+            ) {
                 return;
             }
             let sub = null;
@@ -164,6 +178,12 @@ export default function webpushMiddleware(network, deps = {}) {
                 return;
             }
             const verb = (event.command || command || '').toUpperCase();
+            if (verb === 'PERSISTENCE' && bouncerManaged()) {
+                // The bouncer owns the endpoint: a bound connection must not
+                // unregister it or change the shared setting.
+                next();
+                return;
+            }
             if (verb === 'WEBPUSH') {
                 const subcommand = (event.params[0] || '').toUpperCase();
                 if (subcommand === 'REGISTER') {
@@ -194,12 +214,6 @@ export default function webpushMiddleware(network, deps = {}) {
                     network.webpush_registered = false;
                     network.webpush_endpoint = '';
                     clearRenewTimer();
-                    try {
-                        network.appState.setting('webpushEnabled', false);
-                    } catch (err) {
-                        // No setting store; the cleared flag above is what
-                        // actually stops re-registration.
-                    }
                 }
             } else if (verb === 'FAIL' && (event.params[0] || '').toUpperCase() === 'WEBPUSH') {
                 // The failure itself surfaces via the normal FAIL path below;

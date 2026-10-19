@@ -18,6 +18,18 @@ function alertUnknownVisibility(network, target, key, visibility, visCache) {
     }
 }
 
+const sojuBufferKeys = ['soju.im/pinned', 'soju.im/muted'];
+const sojuUserKeys = ['soju.im/blocked'];
+const sojuMetadataKeys = sojuBufferKeys.concat(sojuUserKeys);
+const watchedSojuBuffers = new WeakSet();
+
+// max-keys=0 means the server does not store arbitrary metadata at all.
+// Soju's own keys are still valid in that mode, which is how it stores the
+// user's pinned/muted channels and blocked users.
+function metadataKeyAllowed(network, key) {
+    return network.metadata_limits.maxKeys > 0 || sojuMetadataKeys.includes(key);
+}
+
 export default function metadataMiddleware(network) {
     const visibilityCache = new Set();
 
@@ -32,8 +44,14 @@ export default function metadataMiddleware(network) {
     ];
 
     const initialSync = () => {
-        // Subscribe to self metadata changes
-        network.subMetadata('*', initialSyncKeys);
+        // Subscriptions are a per-connection key list, not per target. Joining
+        // a channel then delivers its metadata and its members' metadata for
+        // these keys, so no per-channel SUB or SYNC is needed.
+        let keys = initialSyncKeys;
+        if (network.isSoju()) {
+            keys = keys.concat(sojuMetadataKeys);
+        }
+        network.subMetadata('*', keys);
         // Initial fetch
         network.getMetadata('*', initialSyncKeys);
     };
@@ -133,6 +151,11 @@ export default function metadataMiddleware(network) {
         client.on('cap ack', updateLimits);
 
         client.on('connected', () => {
+            if (network.isBouncerController()) {
+                // The bouncer control connection has no metadata of its own
+                return;
+            }
+
             visibilityCache.clear();
             if (network.metadataCap()) {
                 updateLimits();
@@ -162,15 +185,15 @@ export default function metadataMiddleware(network) {
         });
 
         client.on('join', (event) => {
-            if (event.nick === client.user.nick && network.metadataCap()) {
-                let keys = ['description', 'display-name', 'avatar'];
-                network.subMetadata(event.channel, keys);
-                if (network.metadataCap() === 'draft/metadata-2') {
-                    let buffer = network.bufferByName(event.channel);
-                    if (!buffer || !buffer.lastMetadataFetch) {
-                        network.getMetadata(event.channel, keys);
-                    }
-                }
+            // Channel and member metadata arrive with the join burst for the
+            // keys subscribed to in initialSync(). Soju's buffer keys still
+            // need watching so the Favorite/Mute settings stay in sync.
+            if (
+                network.metadataCap() &&
+                network.isSoju() &&
+                event.nick === client.user.nick
+            ) {
+                watchSojuBufferSettings(network, network.bufferByName(event.channel));
             }
         });
 
@@ -322,6 +345,10 @@ export default function metadataMiddleware(network) {
                 value = keyArg;
             }
 
+            if (!metadataKeyAllowed(network, key)) {
+                return;
+            }
+
             const normalizedTarget = target === '*' ? network.nick : target;
             const throttle = network.metadata_throttles.get(normalizedTarget);
             if (throttle && Date.now() < throttle) {
@@ -383,9 +410,15 @@ export default function metadataMiddleware(network) {
                 return;
             }
 
-            let keyList = Array.isArray(keys) ? keys : [keys];
-            if (keyList.length > network.metadata_limits.maxKeys) {
-                keyList = keyList.slice(0, network.metadata_limits.maxKeys);
+            let keyList = (Array.isArray(keys) ? keys : [keys]).filter((key) => (
+                metadataKeyAllowed(network, key)
+            ));
+            const maxKeys = network.metadata_limits.maxKeys;
+            if (maxKeys > 0 && keyList.length > maxKeys) {
+                keyList = keyList.slice(0, maxKeys);
+            }
+            if (keyList.length === 0) {
+                return;
             }
             dispatchLabeledCommand(targetArg, 'GET', keyList);
         };
@@ -402,7 +435,9 @@ export default function metadataMiddleware(network) {
                 return;
             }
 
-            let keyList = Array.isArray(keys) ? keys : [keys];
+            let keyList = (Array.isArray(keys) ? keys : [keys]).filter((key) => (
+                metadataKeyAllowed(network, key)
+            ));
 
             // Filter out keys we are already subscribed to for this target
             const active = network.active_metadata_subs[target];
@@ -482,6 +517,88 @@ function queueMetadataSync(network, target, retryVal) {
     }, retryAfter * 1000);
 }
 
+// Soju's own buffer metadata maps onto our own buffer settings. The watchers
+// installed by watchSojuBufferSettings() send the reverse direction, and skip
+// keys whose server value already matches so incoming metadata never echoes.
+function applySojuBufferMetadata(buffer, key, value) {
+    if (key === 'soju.im/pinned') {
+        buffer.setting('favorite', value === '1');
+    } else if (key === 'soju.im/muted') {
+        if (value === '1') {
+            buffer.setting('alert_on', 'never');
+            buffer.setting('mute_sound', true);
+        } else if (buffer.setting('alert_on') === 'never' && buffer.setting('mute_sound')) {
+            buffer.setting('alert_on', 'highlight');
+            buffer.setting('mute_sound', false);
+        }
+    }
+}
+
+function watchSojuBufferSettings(network, buffer) {
+    if (!buffer || watchedSojuBuffers.has(buffer)) {
+        return;
+    }
+    watchedSojuBuffers.add(buffer);
+
+    let lastPinned = null;
+    let lastMuted = null;
+    let pinnedQueued = false;
+    let mutedQueued = false;
+
+    // Coalesce changes made in the same tick (ticking both notification
+    // settings counts as one muted change) and never echo a value the server
+    // just gave us.
+    const flushPinned = () => {
+        pinnedQueued = false;
+        if (!network.isSoju() || !network.metadataCap()) {
+            return;
+        }
+
+        const pinned = buffer.setting('favorite') ? '1' : '0';
+        if (buffer.metadata['soju.im/pinned'] === pinned || lastPinned === pinned) {
+            return;
+        }
+        lastPinned = pinned;
+        network.setMetadata(buffer.name, 'soju.im/pinned', pinned);
+    };
+
+    const flushMuted = () => {
+        mutedQueued = false;
+        if (!network.isSoju() || !network.metadataCap()) {
+            return;
+        }
+
+        const muted = buffer.setting('alert_on') === 'never' && buffer.setting('mute_sound') ?
+            '1' :
+            '0';
+        if (buffer.metadata['soju.im/muted'] === muted || lastMuted === muted) {
+            return;
+        }
+        lastMuted = muted;
+        network.setMetadata(buffer.name, 'soju.im/muted', muted);
+    };
+
+    const queuePinned = () => {
+        if (pinnedQueued) {
+            return;
+        }
+        pinnedQueued = true;
+        Promise.resolve().then(flushPinned);
+    };
+
+    const queueMuted = () => {
+        if (mutedQueued) {
+            return;
+        }
+        mutedQueued = true;
+        Promise.resolve().then(flushMuted);
+    };
+
+    network.appState.$watch(() => buffer.setting('favorite'), queuePinned);
+    network.appState.$watch(() => buffer.setting('alert_on'), queueMuted);
+    network.appState.$watch(() => buffer.setting('mute_sound'), queueMuted);
+}
+
 function updateMetadataState(network, target, key, value, event, isAuth) {
     const state = network.appState;
     const isChannel = network.isChannelName(target);
@@ -508,6 +625,9 @@ function updateMetadataState(network, target, key, value, event, isAuth) {
             } else {
                 state.$set(buffer.metadata, key, sanitizedValue);
             }
+            if (network.isSoju()) {
+                applySojuBufferMetadata(buffer, key, sanitizedValue);
+            }
         }
     } else {
         const user = isAuth ?
@@ -520,6 +640,9 @@ function updateMetadataState(network, target, key, value, event, isAuth) {
                 state.$delete(user.metadata, key);
             } else {
                 state.$set(user.metadata, key, sanitizedValue);
+            }
+            if (network.isSoju() && key === 'soju.im/blocked') {
+                user.ignore = sanitizedValue === '1';
             }
             if (key === 'display-name' || key === 'avatar') {
                 MetadataCache.rememberUser(network, user);

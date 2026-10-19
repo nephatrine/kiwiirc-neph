@@ -6,7 +6,19 @@
                 <div v-if="restricted" class="kiwi-networksettings-locked">
                     {{ $t('settings_server_details_locked') }}
                 </div>
-                <div v-if="network.state_error" class="kiwi-networksettings-error">
+                <div v-else-if="isBouncerController" class="kiwi-networksettings-locked">
+                    {{ $t('settings_bouncer_managed') }}
+                </div>
+                <div v-else-if="isBouncerManaged" class="kiwi-networksettings-locked">
+                    {{ $t('settings_bouncer_save_hint') }}
+                </div>
+                <div
+                    v-if="isBouncerManaged && network.bnc_error"
+                    class="kiwi-networksettings-error"
+                >
+                    <span>{{ network.bnc_error }}</span>
+                </div>
+                <div v-else-if="network.state_error" class="kiwi-networksettings-error">
                     {{ $t('network_noconnect') }}
                     <span>{{ readableStateError(network.state_error) }}</span>
                 </div>
@@ -19,75 +31,53 @@
                     :network="network"
                 />
 
-                <div v-if="network.editable_name" class="kiwi-networksettings-networkname">
+                <div
+                    v-if="network.editable_name"
+                    class="kiwi-networksettings-networkname"
+                >
                     <input-text
                         v-model="network.name"
                         :label="$t('network_name')"
-                        :disabled="restricted"
+                        :disabled="settingsLocked"
                     />
                 </div>
 
                 <server-selector
                     :enable-custom="startupOptions.enableCustom ?? true"
-                    :disabled="network.state !== 'disconnected' || restricted"
+                    :disabled="connectionDetailsLocked"
                     :connection="network.connection"
                 />
 
                 <div class="kiwi-networksettings-connection-password">
-                    <template v-if="server_type === 'network'">
-                        <input-text
-                            v-model="network.connection.nick"
-                            :label="$t('settings_nickname')"
-                        />
-                        <input-text
-                            v-model="network.connection.account"
-                            :label="$t('account_name')"
-                            :placeholder="network.connection.nick"
-                        />
-                        <input-text
-                            v-model="network.password"
-                            :show-plain-text="true"
-                            :label="$t('password')"
-                            type="password"
-                        />
-                    </template>
-                    <template v-else>
-                        <input-text v-model="znc_username" :label="$t('username')" />
-                        <input-text v-model="znc_network" :label="$t('network')" />
-                        <input-text
-                            v-model="znc_password"
-                            :label="$t('password')"
-                            type="password"
-                        />
-                    </template>
-                </div>
-
-                <div v-if="!restricted" class="kiwi-networksettings-server-types">
+                    <input-text
+                        v-model="network.connection.nick"
+                        :label="$t('settings_nickname')"
+                    />
+                    <input-text
+                        v-model="network.connection.account"
+                        :label="$t('account_name')"
+                        :placeholder="network.connection.nick"
+                    />
+                    <input-text
+                        v-if="!isBouncerController"
+                        v-model="network.password"
+                        :show-plain-text="true"
+                        :label="$t('password')"
+                        type="password"
+                    />
+                    <a
+                        v-if="bouncerSaslCommand"
+                        class="u-button kiwi-networksettings-bouncer-sasl"
+                        @click="prefillBouncerSaslCommand"
+                    >
+                        {{ $t('settings_bouncer_sasl_command') }}
+                    </a>
                     <div
-                        v-if="server_type === 'znc'"
-                        class="kiwi-networksettings-server-types-info"
+                        v-else-if="bouncerSaslManual"
+                        class="kiwi-networksettings-bouncer-sasl-warning"
                     >
-                        {{ $t('settings_znc_other') }}
+                        {{ $t('settings_bouncer_sasl_manual') }}
                     </div>
-                    <a
-                        :class="{
-                            'kiwi-networksettings-server-type-active':
-                                server_type === 'network',
-                        }"
-                        class="u-link kiwi-network-type-button"
-                        @click="server_type = 'network'"
-                    >
-                        {{ $t('network') }}
-                    </a>
-                    <a
-                        :class="{
-                            'kiwi-networksettings-server-type-active': server_type === 'znc',
-                        }"
-                        class="u-link kiwi-network-type-button"
-                        @click="server_type = 'znc'"
-                    >
-                        {{ $t('znc') }}
-                    </a>
                 </div>
 
                 <h4
@@ -106,10 +96,10 @@
                     <input-text
                         v-model="network.connection.encoding"
                         :label="$t('settings_encoding')"
-                        :disabled="restricted"
+                        :disabled="settingsLocked"
                     />
 
-                    <div class="u-input-text">
+                    <div v-if="!isBouncer" class="u-input-text">
                         <label>{{ $t('settings_sasl_mechanism') }}</label>
                         <select v-model="network.connection.sasl_mechanism" class="u-input">
                             <option value="AUTO">AUTO (Recommended)</option>
@@ -122,13 +112,14 @@
                         v-model="network.connection.password"
                         :show-plain-text="true"
                         :label="$t('server_password')"
-                        :disabled="restricted"
+                        :disabled="settingsLocked"
                         type="password"
                     />
 
                     <input-text
                         v-model="network.gecos"
                         :label="$t('whois_realname')"
+                        :disabled="settingsLocked"
                     />
 
                     <label>
@@ -154,11 +145,15 @@
                         <span class="kiwi-appsettings-showraw-label">
                             {{ $t('settings_use_websocket') }}
                         </span>
-                        <input v-model="network.connection.direct" :disabled="restricted" type="checkbox">
+                        <input
+                            v-model="network.connection.direct"
+                            :disabled="settingsLocked"
+                            type="checkbox"
+                        >
                         <input-text
                             v-if="network.connection.direct"
                             v-model="directWs"
-                            :disabled="restricted"
+                            :disabled="settingsLocked"
                         />
                     </label>
 
@@ -172,31 +167,50 @@
                 </div>
 
                 <div class="kiwi-networksettings-control">
-                    <a
-                        v-if="network.state !== 'connected'"
-                        type="button"
-                        class="u-button u-button-primary u-submit kiwi-connect-to-newnetwork"
-                        :disabled="network.state !== 'disconnected'"
-                        @click="connect()"
-                    >
-                        {{
-                            $t(network.state === 'disconnected'
-                                ? 'network_connect'
-                                : 'network_connecting')
-                        }}
-                    </a>
-                    <a
-                        v-else
-                        type="button"
-                        class="u-button u-button-warning u-submit kiwi-connect-to-newnetwork"
-                        @click="disconnect()"
-                    >
-                        {{ $t('network_disconnect') }}
-                    </a>
+                    <template v-if="isBouncerManaged">
+                        <a
+                            type="button"
+                            class="u-button u-submit kiwi-networksettings-save"
+                            @click="saveBouncerNetwork()"
+                        >
+                            {{ $t('save') }}
+                        </a>
+                        <a
+                            type="button"
+                            class="u-button u-button-primary u-submit kiwi-connect-to-newnetwork"
+                            :disabled="bouncerNetworkState === 'connecting'"
+                            @click="connectBouncerNetwork()"
+                        >
+                            {{ $t(connectButtonLabel) }}
+                        </a>
+                    </template>
+                    <template v-else>
+                        <a
+                            v-if="network.state !== 'connected'"
+                            type="button"
+                            class="u-button u-button-primary u-submit kiwi-connect-to-newnetwork"
+                            :disabled="network.state !== 'disconnected'"
+                            @click="connect()"
+                        >
+                            {{
+                                $t(network.state === 'disconnected'
+                                    ? 'network_connect'
+                                    : 'network_connecting')
+                            }}
+                        </a>
+                        <a
+                            v-else
+                            type="button"
+                            class="u-button u-button-warning u-submit kiwi-connect-to-newnetwork"
+                            @click="disconnect()"
+                        >
+                            {{ $t('network_disconnect') }}
+                        </a>
+                    </template>
                 </div>
             </div>
 
-            <div v-if="!restricted" class="kiwi-dangerzone">
+            <div v-if="!restricted && !isBouncerController" class="kiwi-dangerzone">
                 <h3>{{ $t('settings_danger') }}</h3>
                 <a class="u-button u-button-warning" @click="removeNetwork">
                     <i class="fa fa-times" aria-hidden="true" /> {{ $t('settings_remove') }}
@@ -221,10 +235,6 @@ export default {
     props: ['network'],
     data() {
         return {
-            server_type: 'network',
-            znc_username: '',
-            znc_network: '',
-            znc_password: '',
             show_advanced: false,
             switch_tabs_on_connect: false,
             network_list: [],
@@ -233,6 +243,68 @@ export default {
     computed: {
         restricted() {
             return this.$state.setting('restricted');
+        },
+        isBouncerController() {
+            return this.network.isBouncerController();
+        },
+        // The connection details are read-only in restricted mode and on the
+        // bouncer's control connection. They stay visible either way.
+        settingsLocked() {
+            return this.restricted || this.isBouncerController;
+        },
+        // A bouncer-bound network keeps its connection details editable while
+        // its socket is up: edits are only sent when Save or Connect is
+        // pressed. Other networks lock their details once connected.
+        connectionDetailsLocked() {
+            if (this.settingsLocked) {
+                return true;
+            }
+            return !this.isBouncerManaged && this.network.state !== 'disconnected';
+        },
+        // The bouncer provider is created by the startup screens and kept on
+        // the app state. Its presence means connections are routed through a
+        // bouncer, where network changes have to be sent explicitly.
+        bouncerProvider() {
+            return this.$state.bouncer_provider || null;
+        },
+        // A network the bouncer holds the connection settings for. The control
+        // connection is not one: its own details are always locked.
+        isBouncerManaged() {
+            if (this.isBouncerController) {
+                return false;
+            }
+            if (this.network.connection.bncnetid) {
+                return true;
+            }
+            return !!(this.bouncerProvider && this.bouncerProvider.getController());
+        },
+        // The bouncer's view of this network. `network.state` only tracks our
+        // socket to the bouncer, so a failed upstream link still looks
+        // connected locally.
+        bouncerNetworkState() {
+            return this.network.bouncerState();
+        },
+        connectButtonLabel() {
+            if (this.bouncerNetworkState === 'connected') {
+                return 'network_reconnect';
+            }
+            if (this.bouncerNetworkState === 'connecting') {
+                return 'network_connecting';
+            }
+            return 'network_connect';
+        },
+        // A bouncer-bound connection keeps its SASL credentials on the bouncer.
+        // The password field stays visible so the user can prepare the
+        // BouncerServ command that stores them, but the mechanism selector is
+        // hidden because sasl set-plain only configures PLAIN.
+        isBouncer() {
+            return !!this.network.connection.bncnetid || !!this.network.is_bnc;
+        },
+        bouncerSaslCommand() {
+            return this.network.bouncerSaslCommand();
+        },
+        bouncerSaslManual() {
+            return this.network.bouncerSaslManual();
         },
         startupOptions() {
             return this.$state.getSetting('settings.startupOptions');
@@ -316,15 +388,6 @@ export default {
         },
     },
     watch: {
-        znc_username() {
-            this.setZncPass();
-        },
-        znc_network() {
-            this.setZncPass();
-        },
-        znc_password() {
-            this.setZncPass();
-        },
         'network.state'() {
             if (!this.switch_tabs_on_connect) {
                 return;
@@ -339,17 +402,6 @@ export default {
         },
     },
     created() {
-        let isZnc = !!(this.network.connection.password || '').match(/^(.*)\/(.*):(.*)$/);
-        this.server_type = isZnc ?
-            'znc' :
-            'network';
-        if (isZnc) {
-            let match = (this.network.connection.password || '').match(/^(.*)\/(.*):(.*)$/);
-            this.znc_username = match[1] || '';
-            this.znc_network = match[2] || '';
-            this.znc_password = match[3] || '';
-        }
-
         this.network_list = this.$state.setting('presetNetworks') || [];
     },
     methods: {
@@ -371,6 +423,25 @@ export default {
                 this.$state.setting('quitMessage') || 'Client Closed Connection'
             );
         },
+        // Explicit save: diff this one network against the last bouncer
+        // snapshot and send the result to the bouncer, nothing else.
+        saveBouncerNetwork() {
+            if (!this.bouncerProvider) {
+                return;
+            }
+            this.bouncerProvider.saveNetworkChanges(this.network);
+        },
+        // Save first, then (re)connect the local socket. The overloaded
+        // connect() ends an existing socket itself, so this also retries a
+        // network whose upstream link failed.
+        connectBouncerNetwork() {
+            this.saveBouncerNetwork();
+            if (this.network.state === 'connecting') {
+                return;
+            }
+            this.switch_tabs_on_connect = true;
+            this.network.ircClient.connect();
+        },
         removeNetwork() {
             let confirmed = confirm('Really remove this network? This cannot be undone!');
             if (!confirmed) {
@@ -379,10 +450,6 @@ export default {
 
             this.$state.removeNetwork(this.network.id);
             this.$state.$emit('active.component');
-        },
-        setZncPass() {
-            let newPass = `${this.znc_username}/${this.znc_network}:${this.znc_password}`;
-            this.network.connection.password = newPass;
         },
         toggleTls() {
             let connection = this.network.connection;
@@ -394,6 +461,30 @@ export default {
             } else if (!connection.tls && connection.port === 6697) {
                 connection.port = 6667;
             }
+        },
+        // Open the controller's BouncerServ query with the command already in
+        // the input. ControlInput restores it on mount, so nothing is sent
+        // until the user presses Enter themselves.
+        prefillBouncerSaslCommand() {
+            const controller = this.network.bouncerController();
+            const command = this.network.bouncerSaslCommand();
+            if (!controller || !command) {
+                return;
+            }
+
+            this.$state.addBuffer(controller.id, 'BouncerServ');
+            const buffer = this.$state.getBufferByName(controller.id, 'BouncerServ');
+            if (!buffer) {
+                return;
+            }
+
+            if (this.$state.setting('buffers.shared_input')) {
+                this.$state.ui.current_input = command;
+            } else {
+                buffer.current_input = command;
+            }
+
+            this.$state.setActiveBuffer(controller.id, 'BouncerServ');
         },
     },
 };
@@ -530,6 +621,22 @@ export default {
     border-radius: 4px;
 }
 
+.kiwi-networksettings-bouncer-sasl {
+    display: block;
+    margin: 0 0 1.5em 0;
+    text-align: center;
+}
+
+.kiwi-networksettings-bouncer-sasl-warning {
+    margin: 0 0 1.5em 0;
+    padding: 0.8em;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.05);
+    font-style: italic;
+    font-size: 0.9em;
+    border-radius: 4px;
+}
+
 .kiwi-networksettings .kiwi-networksettings-error span {
     display: block;
     font-style: italic;
@@ -547,6 +654,14 @@ export default {
 
 .kiwi-networksettings-control {
     text-align: center;
+}
+
+.kiwi-networksettings .kiwi-networksettings-save {
+    margin-right: 10px;
+    display: inline-block;
+    cursor: pointer;
+    padding: 0 10px;
+    line-height: 35px;
 }
 
 .kiwi-networksettings-danger h3 {

@@ -13,7 +13,7 @@
                     <network-settings :network="network" />
                 </tabbed-tab>
                 <tabbed-tab
-                    v-if="networkConnected"
+                    v-if="networkConnected && !isBouncerController"
                     :header="$t('channels')"
                     name="channels"
                 >
@@ -77,6 +77,9 @@ export default {
         },
         networkConnected() {
             return this.network.state === 'connected';
+        },
+        isBouncerController() {
+            return this.network.isBouncerController();
         },
     },
     watch: {

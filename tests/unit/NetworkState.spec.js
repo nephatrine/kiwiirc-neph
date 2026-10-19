@@ -55,4 +55,37 @@ describe('NetworkState', () => {
         network.setting('setting_key', 'some value');
         expect(network.setting('setting_key')).toEqual('some value');
     });
+
+    it('reports the bouncer state for a bound network', () => {
+        let s = state.create();
+        let network = s.addNetwork('Bound', 'nick', {
+            server: 'irc.example.com',
+            bncnetid: '1',
+        });
+        network.state = 'connected';
+        expect(network.bouncerState()).toBe('connected');
+
+        // Our socket to the bouncer is up, but the upstream link is not.
+        network.bnc_state = 'disconnected';
+        expect(network.bouncerState()).toBe('disconnected');
+        expect(network.state).toBe('connected');
+    });
+
+    it('keeps the transport state for plain and control connections', () => {
+        let s = state.create();
+        let plain = s.addNetwork('Plain', 'nick', {
+            server: 'irc.example.com',
+        });
+        plain.state = 'connected';
+        plain.bnc_state = 'disconnected';
+        expect(plain.bouncerState()).toBe('connected');
+
+        let control = s.addNetwork('BNC', 'nick', {
+            server: 'bnc.example.com',
+        });
+        control.is_bnc = true;
+        control.state = 'connected';
+        control.bnc_state = 'disconnected';
+        expect(control.bouncerState()).toBe('connected');
+    });
 });

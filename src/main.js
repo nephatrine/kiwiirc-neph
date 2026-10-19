@@ -10,13 +10,13 @@ import { each } from '@/helpers/Utils';
 import App from '@/components/App';
 import StartupError from '@/components/StartupError';
 import startupWelcome from '@/components/startups/Welcome';
-import startupZncLogin from '@/components/startups/ZncLogin';
 import startupCustomServer from '@/components/startups/CustomServer';
-import startupKiwiBnc from '@/components/startups/KiwiBnc';
+import startupBouncer from '@/components/startups/Bouncer';
 import startupPersonal from '@/components/startups/Personal';
 import Logger from '@/libs/Logger';
 import ConfigLoader from '@/libs/ConfigLoader';
 import getState from '@/libs/state';
+import { installGlobalErrorHandlers } from '@/libs/GlobalErrorHandler';
 import ThemeManager from '@/libs/ThemeManager';
 import InputHandler from '@/libs/InputHandler';
 import StatePersistence from '@/libs/StatePersistence';
@@ -220,6 +220,8 @@ Vue.directive('resizeobserver', {
     },
 });
 
+installGlobalErrorHandlers(Vue, window);
+
 loadApp();
 
 function loadApp() {
@@ -243,7 +245,7 @@ function loadApp() {
             configObj = window.kiwiConfig();
         } catch (err) {
             log.error('Config file: ' + err.stack);
-            showError();
+            showError(err);
         }
     } else if (document.querySelector('meta[name="kiwiconfig"]')) {
         configFile = document.querySelector('meta[name="kiwiconfig"]').content;
@@ -254,7 +256,7 @@ function loadApp() {
             configObj = JSON5.parse(configContents);
         } catch (parseErr) {
             log.error('Config file: ' + parseErr.stack);
-            showError();
+            showError(parseErr);
         }
     }
 
@@ -548,8 +550,9 @@ function startApp() {
     let startupScreens = {
         welcome: startupWelcome,
         customServer: startupCustomServer,
-        kiwiBnc: startupKiwiBnc,
-        znc: startupZncLogin,
+        bouncer: startupBouncer,
+        kiwiBnc: startupBouncer,
+        znc: startupBouncer,
         personal: startupPersonal,
     };
     let extraStartupScreens = state.getStartups();
@@ -581,12 +584,14 @@ function showError(err) {
         log.error('Unknown error starting Kiwi IRC');
     }
 
+    let errorText = err ? Misc.errorMessage(err) : 'Unknown error. Please check the browser console for details.';
+
     /* eslint-disable no-new */
     new Vue({
         el: '#app',
         render: (h) => h(
             StartupError,
-            { props: { error: err } },
+            { props: { error: errorText } },
         ),
     });
 }

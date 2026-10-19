@@ -24,23 +24,45 @@ function currentPreference(network) {
         'keep';
 }
 
+// Maps a wire value reported by the server back to a stored preference.
+function wireToPreference(wire) {
+    if (wire === 'DEFAULT') {
+        return 'default';
+    }
+    if (wire === 'ON') {
+        return 'on';
+    }
+    if (wire === 'OFF') {
+        return 'off';
+    }
+    return '';
+}
+
 export default function persistenceMiddleware(network) {
-    // Wire value of the last PERSISTENCE SET sent while converging on the
-    // user's preference. Reset whenever the server confirms the desired
-    // value (or a new connection starts) so a refused SET can be retried
-    // on the next STATUS instead of wedging, while a repeated STATUS for
-    // an already-sent value never produces a second SET.
-    let lastSentSet = '';
+    // Wire value of the PERSISTENCE SET sent in response to the user's most
+    // recent choice. The first STATUS after it is not adopted: it may have
+    // been generated before the server saw our SET.
+    let pendingSet = '';
 
     return function middlewareFn(client, rawEvents, parsedEvents) {
-        const maybeSendSet = () => {
-            const desired = preferenceToWire(currentPreference(network));
-            const reported = (network.persistence_status &&
-                network.persistence_status.client) || '';
-            if (!desired || desired === reported || lastSentSet === desired) {
+        // Bouncer-provided persistence is set from the control connection
+        // only. The setting is bouncer-wide, so a bound connection must not
+        // act on its own STATUS or send SET on its behalf.
+        const ownedHere = () => (
+            typeof network.bouncerHasCap !== 'function' ||
+            !network.bouncerHasCap('draft/persistence') ||
+            network.isBouncerController()
+        );
+
+        const sendSet = () => {
+            if (!ownedHere()) {
                 return;
             }
-            lastSentSet = desired;
+            const desired = preferenceToWire(currentPreference(network));
+            if (!desired) {
+                return;
+            }
+            pendingSet = desired;
             client.raw('PERSISTENCE', 'SET', desired);
         };
 
@@ -48,7 +70,7 @@ export default function persistenceMiddleware(network) {
             // Assume non-persistent on every connection until the server
             // says otherwise via PERSISTENCE STATUS.
             network.persistence_status = { client: '', effective: 'OFF' };
-            lastSentSet = '';
+            pendingSet = '';
             // Drop any parked channel joins from the previous attempt.
             if (network.pending_channel_joins_timer) {
                 clearTimeout(network.pending_channel_joins_timer);
@@ -61,7 +83,7 @@ export default function persistenceMiddleware(network) {
         // against the last reported STATUS instead of waiting for the next
         // one (servers only send STATUS on change or at connect).
         network.setPersistencePreference = () => {
-            maybeSendSet();
+            sendSet();
         };
 
         parsedEvents.use((command, event, clientArg, next) => {
@@ -92,18 +114,26 @@ export default function persistenceMiddleware(network) {
                     validClients.includes(tail[0]) &&
                     validEffective.includes(tail[1])
                 ) {
+                    if (!ownedHere()) {
+                        next();
+                        return;
+                    }
                     network.persistence_status = {
                         client: tail[0],
                         effective: tail[1],
                     };
-                    // The server confirmed a value. If it is the desired one
-                    // the loop guard can be released; otherwise try to send
-                    // the desired SET (guarded against repeats).
-                    const desired = preferenceToWire(currentPreference(network));
-                    if (tail[0] === desired) {
-                        lastSentSet = '';
-                    } else {
-                        maybeSendSet();
+                    // The server's reported value is the truth. Adopt it
+                    // instead of correcting it, so a change made from another
+                    // client is not overwritten. The first STATUS after our
+                    // own SET may predate it, so it is ignored.
+                    const reported = wireToPreference(tail[0]);
+                    if (pendingSet) {
+                        pendingSet = '';
+                    } else if (reported && reported !== 'keep') {
+                        const current = currentPreference(network);
+                        if (current !== 'keep' && current !== reported) {
+                            network.appState.setting('persistencePreference', reported);
+                        }
                     }
                     // The hold from the REGISTERED handler (if any) is over
                     // now the status is known. Joins run only when the server

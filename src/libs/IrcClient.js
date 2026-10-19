@@ -18,6 +18,7 @@ import chathistoryMiddleware from './ChathistoryMiddleware';
 import * as BatchHandlers from './BatchHandlers';
 import * as ServerConnection from './ServerConnection';
 import * as RelayMeta from './RelayMeta';
+import { addAdvertisedCaps, dropCap, foldPreferredCap, preferredCap } from './CapNegotiation';
 
 const DESIRED_CAPS = [
     'echo-message',
@@ -46,6 +47,28 @@ const DESIRED_CAPS = [
     'draft/account-registration',
     'draft/persistence',
 ];
+
+// The control connection of a bouncer only ever talks to the bouncer itself.
+// Caps such as labeled-response are advertised because the bouncer forwards
+// them to its upstream networks, not because it supports them on its own
+// replies, so requesting them would leave messages to BouncerServ pending.
+// Persistence is requested here because the bouncer keeps its networks alive
+// itself; webpush is folded in separately, by preference.
+const CONTROL_CAPS = [
+    'echo-message',
+    'message-tags',
+    'batch',
+    'server-time',
+    'standard-replies',
+    'cap-notify',
+    'draft/extended-isupport',
+    'draft/persistence',
+];
+
+// Capability groups negotiated by preference: exactly one name from each group
+// is ever requested (see CapNegotiation.js).
+const METADATA_CAPS = ['draft/metadata-3', 'draft/metadata-2'];
+const WEBPUSH_CAPS = ['draft/webpush', 'soju.im/webpush'];
 
 export function create(state, network) {
     let networkid = network.id;
@@ -431,6 +454,7 @@ function clientMiddleware(state, network) {
         if (
             !registerPending &&
             !network.password &&
+            !network.isBouncerConnection() &&
             !network.sasl_account &&
             typeof network.isupport['DRAFT/ACCOUNTREQUIRED'] !== 'undefined'
         ) {
@@ -452,6 +476,8 @@ function clientMiddleware(state, network) {
             network.cap_values = {};
             network.enabled_caps = [];
             advertisedLsCaps = new Set();
+            network.advertised_caps = [];
+            network.bouncer_isupport = null;
             network.metadata_timeout_active = false;
             network.active_metadata_subs = Object.create(null);
             network.metadata_throttles = new Map();
@@ -493,6 +519,11 @@ function clientMiddleware(state, network) {
                 options[key.toUpperCase()] = event.options[key];
             });
             network.isupport = options;
+            if (!isRegistered && network.isBouncerConnection()) {
+                // Everything before registration (and so before BOUNCER BIND
+                // completes) is the bouncer's own ISUPPORT reply.
+                network.bouncer_isupport = Object.assign({}, options);
+            }
 
             // Draft/extended-isupport replies may arrive as several 005
             // lines (batched 005s are re-emitted together at batch end, but
@@ -571,15 +602,20 @@ function clientMiddleware(state, network) {
             let requested = [];
             Object.keys(event.capabilities).forEach((capName) => {
                 const name = capName.toLowerCase();
-                if (DESIRED_CAPS.includes(name)) {
-                    client.requestCap(name);
-                    requested.push(name);
+                if (!DESIRED_CAPS.includes(name)) {
+                    return;
                 }
+                if (network.isBouncerController() && !CONTROL_CAPS.includes(name)) {
+                    return;
+                }
+                client.requestCap(name);
+                requested.push(name);
             });
 
             // Metadata caps are negotiated by preference, never both.
-            // Only request one if none is enabled yet.
-            if (!network.metadataCap()) {
+            // Only request one if none is enabled yet, and never on the
+            // bouncer control connection.
+            if (!network.isBouncerController() && !network.metadataCap()) {
                 const advertised = Object.keys(event.capabilities).map((c) => c.toLowerCase());
                 const preferred = ['draft/metadata-3', 'draft/metadata-2'].find(
                     (cap) => advertised.includes(cap)
@@ -723,70 +759,54 @@ function clientMiddleware(state, network) {
     };
 
     function rawEventsHandler(command, event, rawLine, client, next) {
-        // Fold the preferred metadata cap into the framework's batched CAP REQ
-        // before irc-framework processes each CAP LS line. Raw middleware runs
-        // before command dispatch, but irc-framework intersects each LS line
-        // with its own command-handler copy of request_extra_caps (synced only
-        // once at connect time) and accumulates the match into
-        // network.cap.requested, sending one REQ on the final line. Waiting for
-        // the final line is too late when the metadata caps were advertised on
-        // an earlier line, and mutating only client.request_extra_caps never
-        // reaches the negotiation at all. So parse every LS line here (* and
-        // final), track the preferred cap seen so far, and keep exactly one
-        // metadata cap in both extra-caps lists. A separate REQ here would
-        // produce a second ACK, and irc-framework treats an ACK without
-        // `sasl` while SASL credentials exist as a fatal capability_missing
-        // failure that drops the connection. Requesting more than one
-        // metadata cap at a time is forbidden, so this cannot go through
-        // DESIRED_CAPS.
+        // CAP LS may be split over several lines during CAP 302 negotiation.
+        // Raw middleware runs before command dispatch, so accumulate every
+        // advertised name here and let the preference lookups below fold a
+        // single cap from each group into the framework's batched CAP REQ.
+        if (command === 'CAP' && event && event.params && event.params[1] === 'LS') {
+            addAdvertisedCaps(advertisedLsCaps, event);
+            // A bouncer socket sends CAP LS before BOUNCER BIND, so this is
+            // the bouncer's own advert. Keep it to tell bouncer-provided
+            // features (webpush, persistence, ...) from upstream ones.
+            network.advertised_caps = Array.from(advertisedLsCaps);
+        }
+
+        // Drop everything the control connection has no use for before the
+        // framework builds its REQ. Bound connections keep the full list.
         if (
             command === 'CAP' &&
             event &&
             event.params &&
             event.params[1] === 'LS' &&
-            !network.metadataCap()
+            network.isBouncerController()
         ) {
-            const capList = event.params[event.params.length - 1] || '';
-            capList.split(' ').forEach((entry) => {
-                const name = entry.split('=')[0].toLowerCase();
-                if (name) {
-                    advertisedLsCaps.add(name);
+            DESIRED_CAPS.forEach((cap) => {
+                if (!CONTROL_CAPS.includes(cap)) {
+                    dropCap(client, cap);
                 }
             });
-            const preferred = ['draft/metadata-3', 'draft/metadata-2'].find((cap) => (
-                advertisedLsCaps.has(cap)
-            ));
-            if (preferred) {
-                const loser = preferred === 'draft/metadata-3' ?
-                    'draft/metadata-2' :
-                    'draft/metadata-3';
-                client.request_extra_caps = client.request_extra_caps || [];
-                if (!client.request_extra_caps.includes(preferred)) {
-                    client.request_extra_caps = client.request_extra_caps.filter(
-                        (cap) => cap !== 'draft/metadata-2' && cap !== 'draft/metadata-3'
-                    );
-                    client.request_extra_caps.push(preferred);
-                }
-                if (client.command_handler && client.command_handler.request_extra_caps) {
-                    client.command_handler.request_extra_caps = client
-                        .command_handler.request_extra_caps.filter((cap) => cap !== loser);
-                    if (!client.command_handler.request_extra_caps.includes(preferred)) {
-                        client.command_handler.request_extra_caps.push(preferred);
-                    }
-                }
-                if (client.network && client.network.cap && client.network.cap.requested) {
-                    const idx = client.network.cap.requested.indexOf(loser);
-                    if (idx !== -1) {
-                        client.network.cap.requested.splice(idx, 1);
-                    }
-                }
+        }
+
+        // Metadata caps are negotiated by preference, never both. Only request
+        // one if none is enabled yet. Requesting more than one metadata cap at
+        // a time is forbidden, so this cannot go through DESIRED_CAPS.
+        if (
+            command === 'CAP' &&
+            event &&
+            event.params &&
+            event.params[1] === 'LS' &&
+            !network.isBouncerController() &&
+            !network.metadataCap()
+        ) {
+            const preferredMetadata = preferredCap(advertisedLsCaps, METADATA_CAPS);
+            if (preferredMetadata) {
+                foldPreferredCap(client, preferredMetadata, METADATA_CAPS);
             }
         }
 
-        // Fold the preferred webpush cap into the framework's batched CAP REQ
-        // the same way as metadata above: Ergo advertises `draft/webpush`
-        // while soju uses `soju.im/webpush`. Negotiate both names but request
-        // only one, preferring the draft name -- never both in one REQ.
+        // Webpush caps are negotiated by preference, never both: Ergo
+        // advertises `draft/webpush` while soju uses `soju.im/webpush`.
+        // Only request one if none is enabled yet.
         if (
             command === 'CAP' &&
             event &&
@@ -794,33 +814,9 @@ function clientMiddleware(state, network) {
             event.params[1] === 'LS' &&
             !network.webpushCap()
         ) {
-            const preferredWebpush = ['draft/webpush', 'soju.im/webpush'].find((cap) => (
-                advertisedLsCaps.has(cap)
-            ));
+            const preferredWebpush = preferredCap(advertisedLsCaps, WEBPUSH_CAPS);
             if (preferredWebpush) {
-                const loserWebpush = preferredWebpush === 'draft/webpush' ?
-                    'soju.im/webpush' :
-                    'draft/webpush';
-                client.request_extra_caps = client.request_extra_caps || [];
-                if (!client.request_extra_caps.includes(preferredWebpush)) {
-                    client.request_extra_caps = client.request_extra_caps.filter(
-                        (cap) => cap !== 'draft/webpush' && cap !== 'soju.im/webpush'
-                    );
-                    client.request_extra_caps.push(preferredWebpush);
-                }
-                if (client.command_handler && client.command_handler.request_extra_caps) {
-                    client.command_handler.request_extra_caps = client
-                        .command_handler.request_extra_caps.filter((cap) => cap !== loserWebpush);
-                    if (!client.command_handler.request_extra_caps.includes(preferredWebpush)) {
-                        client.command_handler.request_extra_caps.push(preferredWebpush);
-                    }
-                }
-                if (client.network && client.network.cap && client.network.cap.requested) {
-                    const webpushIdx = client.network.cap.requested.indexOf(loserWebpush);
-                    if (webpushIdx !== -1) {
-                        client.network.cap.requested.splice(webpushIdx, 1);
-                    }
-                }
+                foldPreferredCap(client, preferredWebpush, WEBPUSH_CAPS);
             }
         }
 
@@ -857,6 +853,7 @@ function clientMiddleware(state, network) {
                     if (
                         !isupportGate &&
                         !network.password &&
+                        !network.isBouncerConnection() &&
                         client.options &&
                         client.options.sasl_mechanism !== 'EXTERNAL'
                     ) {
@@ -900,6 +897,14 @@ function clientMiddleware(state, network) {
             network.ircd = m ?
                 m[1] :
                 '';
+        }
+
+        if (command === '004' && !network.ircd) {
+            // RPL_MYINFO: 004 <client> <servername> <version> <usermodes> <chanmodes>
+            // Not every ircd uses the "running version ..." wording in 002, so
+            // fall back to the version string it reports here. soju, for example,
+            // sends its own name.
+            network.ircd = event.params[2] || '';
         }
 
         if (command === 'CAP' && network.setting('show_raw_caps')) {
@@ -1302,6 +1307,7 @@ function clientMiddleware(state, network) {
                 server_time: serverTime,
                 nick: event.nick,
                 message: messageBody,
+                raw_text: event.message,
                 type: event.type,
                 tags: event.tags || {},
                 is_rerouted: isRerouted,

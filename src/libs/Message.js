@@ -37,6 +37,9 @@ export default class Message {
         this.server_time = message.server_time || this.time;
         this.nick = message.nick;
         this.message = message.message;
+        // Raw text as it was sent on the wire, before any formatting was
+        // applied. Used to match an echo back to the local pending copy.
+        this.raw_text = typeof message.raw_text === 'string' ? message.raw_text : this.message;
         this.tags = message.tags;
         this.type = message.type || 'message';
         this.type_extra = message.type_extra;
@@ -211,6 +214,7 @@ export default class Message {
             server_time: this.server_time,
             nick: this.nick,
             message: this.message,
+            raw_text: this.raw_text,
             tags: this.tags,
             type: this.type,
             type_extra: this.type_extra,

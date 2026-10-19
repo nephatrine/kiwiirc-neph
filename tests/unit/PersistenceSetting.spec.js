@@ -52,24 +52,28 @@ describe('draft/persistence preference', () => {
         expect(network.persistenceCap()).toBe('');
     });
 
-    it('sends SET ON when the preference is on and the server reports OFF', () => {
+    it('adopts the server preference instead of sending a SET', () => {
         const h = makeHarness('on');
         h.emitStatus(['STATUS', 'OFF', 'OFF']);
         expect(h.network.persistence_status).toEqual({ client: 'OFF', effective: 'OFF' });
-        expect(h.sets()).toEqual([['PERSISTENCE', 'SET', 'ON']]);
+        expect(h.sets()).toHaveLength(0);
+        expect(h.s.setting('persistencePreference')).toBe('off');
     });
 
-    it('sends SET DEFAULT when the preference is default and the server reports ON', () => {
-        const h = makeHarness('default');
-        h.emitStatus(['STATUS', 'ON', 'ON']);
-        expect(h.network.persistence_status.client).toBe('ON');
-        expect(h.sets()).toEqual([['PERSISTENCE', 'SET', 'DEFAULT']]);
-    });
-
-    it('sends SET OFF when the preference is off and the server reports DEFAULT', () => {
-        const h = makeHarness('off');
+    it('adopts DEFAULT when the server reports it', () => {
+        const h = makeHarness('on');
         h.emitStatus(['STATUS', 'DEFAULT', 'OFF']);
-        expect(h.sets()).toEqual([['PERSISTENCE', 'SET', 'OFF']]);
+        expect(h.network.persistence_status.client).toBe('DEFAULT');
+        expect(h.sets()).toHaveLength(0);
+        expect(h.s.setting('persistencePreference')).toBe('default');
+    });
+
+    it('never overwrites keep-as-is with the server value', () => {
+        const h = makeHarness('keep');
+        h.emitStatus(['STATUS', 'OFF', 'OFF']);
+        expect(h.network.persistence_status.client).toBe('OFF');
+        expect(h.sets()).toHaveLength(0);
+        expect(h.s.setting('persistencePreference')).toBe('keep');
     });
 
     it('sends nothing on keep-as-is or when already converged', () => {
@@ -87,7 +91,8 @@ describe('draft/persistence preference', () => {
         const h = makeHarness('on');
         h.emitStatus(['STATUS', 'TestNick', 'OFF', 'OFF']);
         expect(h.network.persistence_status).toEqual({ client: 'OFF', effective: 'OFF' });
-        expect(h.sets()).toEqual([['PERSISTENCE', 'SET', 'ON']]);
+        expect(h.sets()).toHaveLength(0);
+        expect(h.s.setting('persistencePreference')).toBe('off');
     });
 
     it('ignores malformed STATUS lines', () => {
@@ -105,29 +110,34 @@ describe('draft/persistence preference', () => {
         expect(h.sets()).toHaveLength(0);
     });
 
-    it('never sends a second SET for a repeated STATUS, but retries after convergence', () => {
-        const h = makeHarness('on');
+    it('sends one SET per dropdown action and ignores a stale STATUS', () => {
+        const h = makeHarness('keep');
+        h.s.setting('persistencePreference', 'on');
+        h.network.setPersistencePreference();
+        expect(h.sets()).toEqual([['PERSISTENCE', 'SET', 'ON']]);
+
+        // The server's next STATUS predates our SET: ignore it rather than
+        // adopting the old value back over the user's choice.
         h.emitStatus(['STATUS', 'OFF', 'OFF']);
-        h.emitStatus(['STATUS', 'OFF', 'OFF']);
+        expect(h.s.setting('persistencePreference')).toBe('on');
         expect(h.sets()).toHaveLength(1);
 
-        // Server confirms the desired value: guard released.
+        // A STATUS reporting the value we asked for is not a change either.
         h.emitStatus(['STATUS', 'ON', 'ON']);
+        expect(h.s.setting('persistencePreference')).toBe('on');
         expect(h.sets()).toHaveLength(1);
-
-        // Server drops back to OFF later: one retry allowed.
-        h.emitStatus(['STATUS', 'OFF', 'OFF']);
-        expect(h.sets()).toHaveLength(2);
     });
 
-    it('resets status and the loop guard on a new connection', () => {
-        const h = makeHarness('on');
-        h.emitStatus(['STATUS', 'OFF', 'OFF']);
-        expect(h.sets()).toHaveLength(1);
+    it('resets the pending guard and status on a new connection', () => {
+        const h = makeHarness('keep');
+        h.s.setting('persistencePreference', 'on');
+        h.network.setPersistencePreference();
         h.emitConnecting();
         expect(h.network.persistence_status).toEqual({ client: '', effective: 'OFF' });
+        // With the guard cleared the next STATUS is adopted again.
         h.emitStatus(['STATUS', 'OFF', 'OFF']);
-        expect(h.sets()).toHaveLength(2);
+        expect(h.s.setting('persistencePreference')).toBe('off');
+        expect(h.sets()).toHaveLength(1);
     });
 
     it('applies dropdown changes immediately via setPersistencePreference', () => {

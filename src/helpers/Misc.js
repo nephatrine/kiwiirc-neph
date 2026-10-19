@@ -337,6 +337,33 @@ export function networkErrorMessage(err) {
 }
 
 /**
+ * Convert an unexpected error/rejection value into a readable message
+ */
+export function errorMessage(err) {
+    if (!err) {
+        return TextFormatting.t('error_unknown');
+    }
+    if (typeof err === 'string') {
+        return err;
+    }
+    if (typeof err.reason === 'string' && err.reason) {
+        return err.reason;
+    }
+    if (typeof err.message === 'string' && err.message) {
+        return err.message;
+    }
+
+    let stringified;
+    try {
+        stringified = JSON.stringify(err);
+    } catch {
+        stringified = '';
+    }
+
+    return stringified || String(err);
+}
+
+/**
  * Replace ? in nick with random number
  * @param {String} nick A users nick where ? needs replacing
  * @returns {String}

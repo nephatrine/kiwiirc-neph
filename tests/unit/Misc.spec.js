@@ -263,6 +263,43 @@ describe('Misc.js', () => {
         expect(Misc.isSafeSameOriginOpen('https://kiwi.example/a.html')).toBe(false);
         expect(Misc.isSafeSameOriginOpen('https://kiwi.example/page')).toBe(false);
     });
+
+    describe('errorMessage', () => {
+        test('falls back for empty values', () => {
+            expect(Misc.errorMessage(undefined)).toBe('Unknown error');
+            expect(Misc.errorMessage('')).toBe('Unknown error');
+        });
+
+        test('returns a plain string unchanged', () => {
+            expect(Misc.errorMessage('plain string')).toBe('plain string');
+        });
+
+        test('prefers a string reason', () => {
+            expect(Misc.errorMessage({ reason: 'readonly database' })).toBe('readonly database');
+        });
+
+        test('uses a message when there is no reason', () => {
+            expect(Misc.errorMessage({ message: 'boom' })).toBe('boom');
+        });
+
+        test('prefers the reason over the message', () => {
+            expect(Misc.errorMessage({ reason: 'reason wins', message: 'message' })).toBe('reason wins');
+        });
+
+        test('reads an Error message', () => {
+            expect(Misc.errorMessage(new Error('nope'))).toBe('nope');
+        });
+
+        test('stringifies an object with neither reason nor message', () => {
+            expect(Misc.errorMessage({ error: 'UNKNOWN_ERROR' })).toBe('{"error":"UNKNOWN_ERROR"}');
+        });
+
+        test('falls back to String() when the value cannot be stringified', () => {
+            let circular = {};
+            circular.self = circular;
+            expect(Misc.errorMessage(circular)).toBe('[object Object]');
+        });
+    });
 });
 
 describe('Misc.js helpers', () => {

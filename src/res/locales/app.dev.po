@@ -132,10 +132,6 @@ msgstr "Network"
 msgid "networks"
 msgstr "Networks"
 
-#: ZNC
-msgid "znc"
-msgstr "ZNC"
-
 #: Logging in...
 msgid "logging_in"
 msgstr "Logging in..."
@@ -761,6 +757,10 @@ msgstr "Kick reason"
 msgid "settings_server_details"
 msgstr "Server details"
 
+#: Connection details managed by the bouncer
+msgid "settings_bouncer_managed"
+msgstr "Connection details are managed by the bouncer."
+
 #: Preset Servers
 msgid "preset_servers"
 msgstr "Preset Servers"
@@ -773,9 +773,27 @@ msgstr "Custom Server"
 msgid "settings_port"
 msgstr "Port"
 
-#: Other networks on this ZNC account will be listed in the network list
-msgid "settings_znc_other"
-msgstr "Other networks on this ZNC account will be listed in the network list"
+#: Failed to save this network to the bouncer: {{reason}}
+msgid "settings_bnc_save_error"
+msgstr "Failed to save this network to the bouncer: {{reason}}"
+
+#: Prepare SASL command for BouncerServ
+msgid "settings_bouncer_sasl_command"
+msgstr "Prepare SASL command for BouncerServ"
+
+#: SASL credentials are not synced to this bouncer automatically. Configure them
+#: on the bouncer itself, otherwise this network may fail to authenticate.
+msgid "settings_bouncer_sasl_manual"
+msgstr "SASL credentials are not synced to this bouncer automatically. Configure them on the bouncer itself, otherwise this network may fail to authenticate."
+
+
+#: Save
+msgid "save"
+msgstr "Save"
+
+#: Changes are saved to the bouncer when you press Save or Connect.
+msgid "settings_bouncer_save_hint"
+msgstr "Changes are saved to the bouncer when you press Save or Connect."
 
 #: Your details
 msgid "settings_your_details"
@@ -871,6 +889,11 @@ msgstr "Connect To Network"
 #: Network Connecting...
 msgid "network_connecting"
 msgstr "Network Connecting..."
+
+
+#: Reconnect To Network
+msgid "network_reconnect"
+msgstr "Reconnect To Network"
 
 #: Disconnect From Network
 msgid "network_disconnect"
@@ -1163,6 +1186,14 @@ msgstr "Nickname must not start with a number"
 #: Unexpected error occurred
 msgid "error_unexpected"
 msgstr "Unexpected error occurred"
+
+#: An unexpected error occurred: {{message}}
+msgid "error_uncaught"
+msgstr "An unexpected error occurred: {{message}}"
+
+#: Bouncer error {{code}} on {{subcommand}}: {{reason}}
+msgid "bouncer_error"
+msgstr "Bouncer error {{code}} on {{subcommand}}: {{reason}}"
 
 
 

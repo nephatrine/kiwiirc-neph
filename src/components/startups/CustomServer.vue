@@ -64,7 +64,7 @@
                     </tabbed-tab>
                     <tabbed-tab header="Bouncer" name="bnc">
                         <input-text
-                            v-model="nick"
+                            v-model="connection.account"
                             :label="$t('username')"
                             class="kiwi-customserver-nick"
                         />
@@ -73,11 +73,6 @@
                             v-model="password"
                             :label="$t('password')"
                             type="password"
-                        />
-
-                        <input-text
-                            v-model="connection.channels"
-                            :label="$t('networks')"
                         />
                     </tabbed-tab>
                 </tabbed-view>
@@ -117,6 +112,7 @@ import * as Misc from '@/helpers/Misc';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import { escapeRegExp } from '@/helpers/Utils';
 import Logger from '@/libs/Logger';
+import BouncerProvider from '@/libs/BouncerProvider';
 import Captcha from '@/components/Captcha';
 
 import StartupLayout from './CommonLayout';
@@ -219,13 +215,16 @@ export default {
             return this.nick.match(nickPattern);
         },
         readyToStart() {
-            let ready = !!this.nick;
+            let isBouncer = this.connection.type === 'bnc';
+            let ready = isBouncer ?
+                !!this.connection.account :
+                !!this.nick;
 
             if (!this.connection.server) {
                 return false;
             }
 
-            if (!this.isNickValid) {
+            if (!isBouncer && !this.isNickValid) {
                 ready = false;
             }
 
@@ -238,6 +237,12 @@ export default {
     },
     created() {
         const options = this.startupOptions;
+
+        // The Bouncer tab's username field writes to connection.account,
+        // which is not part of the default connection object.
+        if (typeof this.connection.account === 'undefined') {
+            this.$set(this.connection, 'account', '');
+        }
 
         if (Misc.queryStringVal('nick')) {
             this.nick = Misc.queryStringVal('nick');
@@ -320,38 +325,58 @@ export default {
         readableStateError(err) {
             return Misc.networkErrorMessage(err);
         },
-        createNetwork(conn, nick, password, netName) {
+        createNetwork(conn, nick, password) {
             const options = this.startupOptions;
 
-            const net = this.$state.addNetwork(TextFormatting.t('network'), nick, {
-                server: conn.server,
-                port: conn.port,
-                tls: conn.tls,
-                direct: conn.direct,
-                path: conn.path,
-                password: password,
+            // A bouncer login always needs its control connection, but logging
+            // out leaves the previous session's networks in state. Reuse the
+            // control connection that is already here instead of adding a stale
+            // duplicate to the sidebar.
+            let net = conn.type === 'bnc' ?
+                this.$state.networks.find((network) => (
+                    network.is_bnc && !network.connection.bncnetid
+                )) :
+                null;
 
-                encoding: (options.encoding || 'utf-8').trim(),
-                gecos: options.gecos,
-                username: options.username,
-            });
+            if (!net) {
+                net = this.$state.addNetwork(TextFormatting.t('network'), nick, {
+                    server: conn.server,
+                    port: conn.port,
+                    tls: conn.tls,
+                    direct: conn.direct,
+                    path: conn.path,
+                    password: password,
+                    account: conn.account || '',
 
+                    encoding: (options.encoding || 'utf-8').trim(),
+                    gecos: options.gecos,
+                    username: options.username,
+                });
+            }
+
+            // The password is the network's SASL secret; the server PASS is
+            // never used. For a bouncer it is the bouncer password, alongside
+            // connection.account as the bouncer username. BouncerProvider reads
+            // those back off this network once it is marked is_bnc.
+            net.connection.password = '';
+            net.password = password;
             if (conn.type === 'bnc') {
-                // Bouncer mode uses server PASS
-                net.connection.password = netName
-                    ? `${this.nick}/${netName}:${password}`
-                    : `${this.nick}:${password}`;
-                net.password = '';
-            } else {
-                net.connection.password = '';
-                net.password = password;
+                net.is_bnc = true;
+                net.hidden = false;
+                net.name = 'BNC';
+                net.connection.nick = nick;
+                net.connection.account = conn.account || '';
+                net.connection.server = conn.server;
+                net.connection.port = conn.port;
+                net.connection.tls = conn.tls;
+                net.connection.direct = !!conn.direct;
+                net.connection.path = conn.path || '';
             }
 
             return net;
         },
         startUp() {
             const conn = this.connection;
-            let netList = [];
 
             if (conn.type === 'irc') {
                 this.network = this.createNetwork(conn, this.nick, this.password);
@@ -378,10 +403,12 @@ export default {
                 }
             } else {
                 // conn.type === 'bnc'
-                netList = conn.channels.split(',').filter((n) => !!n).map((n) => n.trim());
+                this.network = this.createNetwork(conn, conn.account || this.nick, this.password);
 
-                this.network = this.createNetwork(conn, this.nick, this.password, netList.shift());
-                this.$state.setActiveBuffer(this.network.id, this.network.serverBuffer().name);
+                // Route every connection through the bouncer and let it manage
+                // the bouncer's own networks from here on.
+                let bouncer = new BouncerProvider(this.$state);
+                bouncer.enable(conn.server, conn.port, conn.tls, conn.direct, conn.path);
             }
 
             this.network.ircClient.connect();
@@ -392,11 +419,6 @@ export default {
                 this.network.ircClient.off('registered', onRegistered);
                 this.network.ircClient.off('close', onClosed);
                 this.network.ircClient.off('irc error', onError);
-
-                netList.forEach((netName) => {
-                    const net = this.createNetwork(conn, this.nick, this.password, netList.shift());
-                    net.ircClient.connect();
-                });
             };
             let onClosed = () => {
                 let lastError = this.network.last_error;
@@ -417,18 +439,47 @@ export default {
             this.network.ircClient.once('close', onClosed);
             this.network.ircClient.on('irc error', onError);
         },
+        // The endpoint to connect to, honouring whichever config style the
+        // deployment used (explicit server/port/tls, direct, or websocket)
+        endpointFromConfig(conn) {
+            let endpoint = Misc.connectionInfoFromConfig({
+                websocket: conn.websocket,
+                server: conn.server,
+                port: conn.port,
+                tls: conn.tls,
+                direct: conn.direct,
+                direct_path: conn.path,
+            });
+
+            if (!endpoint.port) {
+                if (endpoint.direct) {
+                    endpoint.port = endpoint.tls ? 443 : 80;
+                } else {
+                    endpoint.port = endpoint.tls ? 6697 : 6667;
+                }
+            }
+
+            return endpoint;
+        },
         applyDefaults() {
-            const options = this.startupOptions;
-
-            this.showSelector = true;
-
-            const port = options.port || 6697;
-            Object.assign(this.connection, {
+            let options = this.startupOptions;
+            let port = options.port || 6697;
+            let endpoint = this.endpointFromConfig({
+                websocket: options.websocket,
                 server: options.server || '',
-                port: port,
+                port,
                 tls: options.tls || port !== 6667,
                 direct: options.direct || false,
                 path: options.direct_path || '',
+            });
+
+            this.showSelector = true;
+            Object.assign(this.connection, {
+                server: endpoint.hostname || '',
+                port: endpoint.port,
+                tls: endpoint.tls,
+                direct: endpoint.direct,
+                path: endpoint.direct_path,
                 type: options.bouncer ? 'bnc' : 'irc',
                 channels: options.channel || '',
             });

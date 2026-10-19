@@ -242,6 +242,7 @@ function handleMessage(type, event, command, line, context) {
             time: Date.now(),
             nick: network.nick,
             message: messageBody,
+            raw_text: message,
             type: type,
             tags: { ...tags },
             is_pending: (hasEcho || hasLabel) && !isSpecialBuffer,
@@ -477,7 +478,7 @@ inputCommands.ignore = function inputCommandIgnore(event, command, line, context
 
     let user = this.state.getUser(network.id, toIgnore);
     if (user) {
-        user.ignore = true;
+        network.setUserIgnored(user, true);
         this.state.addMessage(buffer, {
             nick: '*',
             message: 'Ignoring ' + user.nick,
@@ -498,7 +499,7 @@ inputCommands.unignore = function inputCommandUnignore(event, command, line, con
 
     let user = this.state.getUser(network.id, toUnignore);
     if (user) {
-        user.ignore = false;
+        network.setUserIgnored(user, false);
         this.state.addMessage(buffer, {
             nick: '*',
             message: 'No longer ignoring ' + user.nick,

@@ -134,6 +134,7 @@ describe('ReactionMiddleware', () => {
             nick: 'TestNick',
             message: text,
             time: Date.now(),
+            is_pending: true,
         });
 
         const localMsg = buffer.getMessages()[0];

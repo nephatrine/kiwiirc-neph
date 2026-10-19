@@ -14,20 +14,70 @@ export function usableFilehostToken(value, tls) {
     return url;
 }
 
-export function filehostUploadUrl(network) {
+// The upload host is advertised as an ISUPPORT token. draft/FILEHOST is the
+// upstream server's own service; soju.im/FILEHOST is the bouncer's. Both can
+// appear on a bound connection, in which case the bouncer's wins: uploads go
+// through the bouncer session either way.
+export function filehostToken(network) {
     if (!network || typeof network.supports !== 'function') {
-        return '';
+        return null;
     }
     let tls = !!(network.connection && network.connection.tls);
-    let draft = usableFilehostToken(network.supports('draft/FILEHOST'), tls);
-    if (draft) {
-        return draft;
+    let names = ['draft/FILEHOST', 'soju.im/FILEHOST'];
+
+    if (typeof network.bouncerSupports === 'function') {
+        for (let i = 0; i < names.length; i++) {
+            let url = usableFilehostToken(network.bouncerSupports(names[i]), tls);
+            if (url) {
+                return { name: names[i], url, plane: 'bouncer' };
+            }
+        }
     }
-    return usableFilehostToken(network.supports('soju.im/FILEHOST'), tls);
+
+    for (let i = 0; i < names.length; i++) {
+        let url = usableFilehostToken(network.supports(names[i]), tls);
+        if (url) {
+            return { name: names[i], url, plane: 'upstream' };
+        }
+    }
+
+    return null;
+}
+
+export function filehostUploadUrl(network) {
+    let token = filehostToken(network);
+    return token ? token.url : '';
+}
+
+// Credentials belong to whoever advertised the token. On a bouncer connection
+// the upstream login is performed by the bouncer, so the upstream account and
+// password stay empty until we can learn them.
+export function filehostCredentials(network) {
+    let token = filehostToken(network);
+    if (!network || !token) {
+        return { account: '', password: '' };
+    }
+
+    let account = '';
+    let password = '';
+    if (token.plane === 'bouncer') {
+        account = typeof network.bouncerAccount === 'function' ? network.bouncerAccount() : '';
+        password = typeof network.bouncerPassword === 'function' ? network.bouncerPassword() : '';
+    } else {
+        account = typeof network.upstreamAccount === 'function' ?
+            network.upstreamAccount() :
+            (network.sasl_account || '');
+        password = typeof network.upstreamPassword === 'function' ?
+            network.upstreamPassword() :
+            (network.password || '');
+    }
+
+    return { account: account || '', password: password || '' };
 }
 
 export function filehostAvailable(network) {
-    if (!network || !network.sasl_account || !network.password) {
+    let creds = filehostCredentials(network);
+    if (!creds.account || !creds.password) {
         return false;
     }
     return !!filehostUploadUrl(network);
@@ -61,9 +111,8 @@ export function resolveUploadLocation(uploadUrl, location) {
 
 export async function uploadFilehost(file, network) {
     let uploadUrl = filehostUploadUrl(network);
-    let account = network && network.sasl_account;
-    let password = network && network.password;
-    if (!uploadUrl || !account || !password) {
+    let creds = filehostCredentials(network);
+    if (!uploadUrl || !creds.account || !creds.password) {
         throw new Error('upload failed');
     }
 
@@ -72,7 +121,7 @@ export async function uploadFilehost(file, network) {
     let response = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
-            'Authorization': basicAuthorization(account, password),
+            'Authorization': basicAuthorization(creds.account, creds.password),
             'Content-Type': type,
             'Content-Disposition': `attachment; filename="${filename}"`,
         },

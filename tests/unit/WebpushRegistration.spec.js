@@ -298,7 +298,7 @@ describe('webpush registration', () => {
     });
 
     describe('persistence loss', () => {
-        it('UNREGISTERs and switches the setting off when STATUS goes OFF', async() => {
+        it('UNREGISTERs and leaves the setting alone when STATUS goes OFF', async() => {
             const h = makeHarness();
             await h.emitConnected();
             h.emitWebpush(['REGISTER', ENDPOINT]);
@@ -307,7 +307,7 @@ describe('webpush registration', () => {
             expect(h.unregisters()).toEqual([['WEBPUSH', 'UNREGISTER', ENDPOINT]]);
             expect(h.network.webpush_registered).toBe(false);
             expect(h.network.webpush_endpoint).toBe('');
-            expect(h.s.setting('webpushEnabled')).toBe(false);
+            expect(h.s.setting('webpushEnabled')).toBe(true);
         });
 
         it('sends nothing further on repeated OFF STATUS', async() => {
@@ -318,15 +318,15 @@ describe('webpush registration', () => {
             expect(h.unregisters()).toHaveLength(1);
             h.emitPersistence(['STATUS', 'ON', 'OFF']);
             expect(h.unregisters()).toHaveLength(1);
-            expect(h.s.setting('webpushEnabled')).toBe(false);
+            expect(h.s.setting('webpushEnabled')).toBe(true);
         });
 
-        it('flips the setting silently when never registered', () => {
+        it('does not flip the setting when never registered', () => {
             const h = makeHarness();
             expect(h.s.setting('webpushEnabled')).toBe(true);
             h.emitPersistence(['STATUS', 'DEFAULT', 'OFF']);
             expect(h.unregisters()).toHaveLength(0);
-            expect(h.s.setting('webpushEnabled')).toBe(false);
+            expect(h.s.setting('webpushEnabled')).toBe(true);
         });
 
         it('leaves everything alone when STATUS stays ON', async() => {

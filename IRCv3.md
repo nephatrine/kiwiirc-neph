@@ -47,15 +47,23 @@ Kiwi IRC requests the following capabilities during connection and again on
   persist under Remember Me.
 - **draft/metadata-2**: Syncs public user and channel metadata (`display-name`,
   `pronouns`, `description`, `homepage`, `status`, `color`). Kiwi IRC respects
-  `max-subs`, `max-keys`, and `max-value-bytes`, and waits 30 minutes between
-  proactive fetches. Social colours are adjusted to at least 4.5:1 contrast
-  against the theme background. An IRC away message takes precedence over the
-  social `status` key.
+  `max-subs`, `max-keys`, and `max-value-bytes`. The subscription is a single
+  per-connection key list (`METADATA * SUB`), sent once at connect; joining a
+  channel then delivers that channel's metadata and its members' metadata for
+  those keys. A stale query buffer is refreshed after 30 minutes. Social colours
+  are adjusted to at least 4.5:1 contrast against the theme background. An IRC
+  away message takes precedence over the social `status` key.
 - **draft/metadata-3**: Preferred over `draft/metadata-2` when a server
   advertises both; only one metadata capability is ever requested. Channel joins
-  subscribe without an explicit `GET` (the server guarantees metadata or a
-  `774`), `max-key-bytes` is enforced locally (default 64 bytes), and `775` rate
-  limits are honored the same way as `774`.
+  deliver the metadata for the subscribed keys without an explicit `GET` (or a
+  `774` asking for it at a later time), `max-key-bytes` is enforced locally
+  (default 64 bytes), and `775` rate limits are honored the same way as `774`.
+- **Soju metadata**: `soju.im/pinned`, `soju.im/muted`, and `soju.im/blocked`
+  are subscribed even when the server advertises `max-keys=0`, which otherwise
+  stops Kiwi IRC from sending `GET`, `SUB`, or `SET` for its own metadata keys.
+  `soju.im/pinned=1` maps to the Favorite Channel setting, `soju.im/muted=1`
+  maps to Never notify plus Mute Sounds, and `soju.im/blocked=1` maps to Ignore
+  User; changing those settings sends the metadata back so Soju stays in sync.
 
 SASL is negotiated when an account password is set. It is not in the
 always-requested list above. Kiwi IRC prefers `SCRAM-SHA-256` over `PLAIN`.
@@ -96,6 +104,10 @@ always-requested list above. Kiwi IRC prefers `SCRAM-SHA-256` over `PLAIN`.
   local registered flag (the message itself still surfaces) and never trigger a
   retry loop. A dependency-free worker in static/sw.js turns each pushed IRC
   line into a system notification.
+- **draft/bouncer-networks** (or **soju.im/bouncer-networks**): Connects through
+  a modern bouncer and manages its networks. Kiwi IRC negotiates exactly one of
+  the two names, preferring the draft form, and never both in one request. See
+  Bouncer Networks.
 
 ## Client Tags
 
@@ -169,6 +181,151 @@ Relayed users created by `draft/relaymsg` are not real IRC users, so the
 There is no subscription or polling. A client asks once per nick and keeps the
 answer for the session. Unanswered requests may be retried; a bot that stays
 silent is treated as having no data.
+
+## Bouncer Networks
+
+Kiwi IRC speaks the IRCv3 `bouncer-networks` specification to connect through a
+modern IRC bouncer such as soju. Support for the pre-IRCv3 KiwiBNC dialect was
+removed.
+
+### Dialects
+
+The specification exists under two equivalent capability names that differ only
+by prefix. Kiwi IRC negotiates exactly one, preferring the draft name:
+
+1. `draft/bouncer-networks` — the IRCv3 draft, preferred when advertised.
+1. `soju.im/bouncer-networks` — soju's vendored copy of the same protocol.
+
+The two are never requested together, and the legacy unprefixed `bouncer`
+capability is gone. `-notify` (`draft/bouncer-networks-notify` or
+`soju.im/bouncer-networks-notify`) is deliberately not requested yet, so network
+changes are read from a `LISTNETWORKS` snapshot and can be stale on a modern
+bouncer until reconnect.
+
+### Authentication and BIND
+
+The bouncer connection authenticates with SASL using the bouncer account:
+`connection.account` is the SASL username and `network.password` is the SASL
+secret, while the server `PASS` (`connection.password`) stays empty. A BIND
+requires that authenticated session and is only valid before registration
+completes, so `BOUNCER BIND <netid>` is sent after SASL succeeds and before
+`CAP END`:
+
+- With SASL credentials it goes out on the first `900` or `903` line, ahead of
+  the `CAP END` irc-framework writes for that same line.
+- Without SASL credentials it goes out on the `CAP ... ACK` line.
+
+BIND is fire-and-forget, since the server only replies on failure, and is sent
+at most once per connection. The bound netid is read back from the
+`BOUNCER_NETID` ISUPPORT token.
+
+### The control connection
+
+A connection that finishes registration without binding to a netid is the
+bouncer **control connection**: it is the unbound session used to talk to the
+bouncer itself (for example the `BouncerServ` service or `BOUNCER ...` commands)
+rather than to an upstream network. Kiwi IRC exposes it as an always-visible
+network named `BNC` with its own server buffer, so bouncer output and errors
+have somewhere to land and `/msg BouncerServ` or `/quote BOUNCER ...` can be
+typed directly. Query buffers open normally, and the raw (`*raw`) buffer can be
+enabled from its settings. It has no channels tab and no channel controls.
+
+The control connection is identified by `network.isBouncerController()`: it has
+`is_bnc` set and no `connection.bncnetid`. A connection bound to a netid clears
+`is_bnc` and is an ordinary IRC connection. Metadata is never negotiated on the
+control connection: neither `draft/metadata-3` nor `draft/metadata-2` is
+requested and no `METADATA SUB` or `GET` is sent. It is never saved back to the
+bouncer as a network.
+
+Only the capabilities a control connection can actually use are requested:
+`echo-message`, `message-tags`, `batch`, `server-time`, `standard-replies`,
+`cap-notify`, `draft/extended-isupport` and `draft/persistence`, plus one
+webpush name negotiated by preference, `sasl` and `draft/bouncer-networks` from
+their own middleware. Bouncers advertise capabilities they forward to their
+upstream networks, such as `labeled-response`, without supporting them on their
+own replies, so everything else is dropped from the request. Messages to
+`BouncerServ` are then confirmed by the unlabelled echo and its `msgid` instead
+of hanging until the confirm timeout. Connections bound to a netid still request
+the full set.
+
+### Bouncer and upstream features
+
+A bound connection's `CAP LS` arrives before `BOUNCER BIND`, so it is the
+bouncer's own advertisement. Its pre-BIND `ISUPPORT` reply and the control
+connection's ISUPPORT describe the bouncer's tokens, while everything sent after
+registration belongs to the upstream network. `bouncerHasCap()` and
+`bouncerSupports()` expose that split and `capPlane()` / `tokenPlane()` name it.
+A control connection never negotiates metadata; metadata belongs to the upstream
+network.
+
+Persistence, webpush and FILEHOST follow the plane that advertised them. A
+bouncer-provided persistence or webpush setting is managed on the control
+connection and never offered on a bound network, because a bouncer cannot set it
+per network. A bouncer-provided FILEHOST signs uploads with the bouncer account.
+Otherwise the feature belongs to the upstream network and uses the upstream
+account, which stays empty until a bound connection can learn it.
+
+`draft/ACCOUNTREQUIRED` is ignored on bouncer connections: the bouncer's own
+requirement was already satisfied by SASL, and an upstream that requires an
+account is reported by the bouncer itself. Its `error` attribute is shown in the
+network's server buffer rather than aborting the connection. The extended
+ISUPPORT gate is never engaged for a bouncer connection, so registration does
+not wait for a pre-BIND `ISUPPORT` reply.
+
+SASL credentials for a network behind Soju are not part of `bouncer-networks`:
+the `pass` attribute is the upstream server password, not the SASL secret. The
+add-network form keeps the SASL account and password fields visible, and on a
+Soju control connection offers a button that opens the `BouncerServ` query with
+`sasl set-plain -network <name> <account> <password>` already in the input.
+Nothing is sent automatically and no reply is parsed; the user reviews and sends
+it, so the command also appears in the controller's `*raw` buffer. On other
+bouncers the form instead warns that SASL must be configured on the bouncer
+itself. `network.isSoju()` recognises Soju from the `002`/`004` version string.
+
+Logging out and back in restores the saved state, so the startup screens reuse
+the control connection they find there (matched by `is_bnc` with no `bncnetid`)
+instead of adding a second one, and the leftovers of an earlier login are
+dropped when the control connection registers. The connection details of a
+control connection are read-only in its settings tab, exactly as they are in
+restricted mode.
+
+The `004` (`RPL_MYINFO`) reply is used for `network.ircd` when the `002` reply
+does not name a version, so the Information tab shows the server software (such
+as soju's own name) instead of `Unknown`.
+
+### Network Management
+
+`BOUNCER LISTNETWORKS` is answered by a batch named after the negotiated
+capability containing zero or more `BOUNCER NETWORK <netid> <attributes>` lines.
+Kiwi IRC accumulates them and flushes the list when the batch closes.
+
+Each `BOUNCER NETWORK` carries the specification's attributes, encoded as
+message-tag pairs:
+
+- `name`, `host`, `port`, `tls`, `nickname`, `username`, `realname`, `pass`
+- `state` (read-only: `connected`, `connecting`, or `disconnected`)
+- `error` (read-only, present only when the network could not connect)
+
+`BOUNCER ADDNETWORK <attributes>` adds a network and is answered by
+`BOUNCER ADDNETWORK <netid>`, with the server generating the netid. Only `host`
+is required; `tls` defaults to `1`, and `port` defaults to `6697` when `tls` is
+set, otherwise `6667`. `BOUNCER CHANGENETWORK <netid> <attributes>` updates a
+network and is answered by `BOUNCER CHANGENETWORK <netid>`.
+`BOUNCER DELNETWORK <netid>` removes one and is answered by
+`BOUNCER DELNETWORK <netid>`.
+
+Errors arrive as standard replies, `FAIL BOUNCER <CODE> <subcommand> [...]`,
+with codes such as `UNKNOWN_COMMAND`, `ACCOUNT_REQUIRED`,
+`REGISTRATION_IS_COMPLETED`, `INVALID_NETID`, `INVALID_ATTRIBUTE`,
+`READ_ONLY_ATTRIBUTE`, `UNKNOWN_ATTRIBUTE`, and `NEED_ATTRIBUTE`. A failure is
+matched to the outstanding subcommand; an unmatched failure is reported as a
+generic bouncer error.
+
+The modern specification has no buffer subcommands and no connect or disconnect
+commands, and `state` is read-only. A connection bound to a netid is an ordinary
+IRC connection from then on: the bouncer replays its joins and history, and read
+state is handled by `draft/read-marker` (see Capability Negotiation) rather than
+any bouncer-specific mechanism.
 
 ## ISUPPORT Tokens
 

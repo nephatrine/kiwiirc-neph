@@ -472,21 +472,24 @@ function createNewState() {
                 if (buffer) {
                     buffer.isVisible = true;
 
-                    // Proactively sync/get metadata for the buffer if it hasn't
-                    // been fetched in 30 mins
+                    // Queries are never joined, so the channel join metadata
+                    // burst does not cover them. Joining a channel delivers its
+                    // metadata and its members' metadata for the subscribed
+                    // keys, so only a stale query is fetched here.
                     const network = buffer.getNetwork();
                     const now = Date.now();
                     const cooldown = 30 * 60 * 1000;
                     const hasCap = network && network.metadataCap();
                     const isOld = now - (buffer.lastMetadataFetch || 0) > cooldown;
-                    if (hasCap && isOld) {
-                        if (buffer.isChannel() && buffer.joined) {
-                            network.syncMetadata(buffer.name);
-                        } else if (buffer.isQuery() && !network.isService(buffer.name)) {
-                            const keys = ['avatar', 'pronouns',
-                                'display-name', 'description'];
-                            network.getMetadata(buffer.name, keys);
-                        }
+                    if (
+                        hasCap &&
+                        isOld &&
+                        buffer.isQuery() &&
+                        !network.isService(buffer.name)
+                    ) {
+                        const keys = ['avatar', 'pronouns',
+                            'display-name', 'description'];
+                        network.getMetadata(buffer.name, keys);
                     }
                 }
             },
@@ -691,27 +694,65 @@ function createNewState() {
                     }
                 }
 
-                if (isEcho && msgid) {
+                // Without a label, match the echo back to our local pending copy
+                // by comparing the raw text. A message replayed from chathistory
+                // is never a confirmation, and a locally created message (which
+                // is pending by definition) is not an incoming echo.
+                let isHistoryEcho = !!(
+                    message.tags && (
+                        typeof message.tags['kiwi-history'] !== 'undefined' ||
+                        typeof message.tags['draft/chathistory-context'] !== 'undefined'
+                    )
+                );
+                if (isEcho && !isHistoryEcho && !message.is_pending) {
                     let bufMessages = buffer.getMessages();
-                    // Search backwards through the last 20 messages for a match
-                    let startIdx = bufMessages.length - 1;
-                    let endIdx = Math.max(0, bufMessages.length - 20);
-                    for (let i = startIdx; i >= endIdx; i--) {
+                    let startIdx = Math.max(0, bufMessages.length - 20);
+                    let rawText = typeof message.raw_text === 'string' ?
+                        message.raw_text :
+                        message.message;
+                    let withinWindow = (m) => Math.abs(m.time - message.time) < 60000;
+                    let adoptEcho = (m) => {
+                        if (msgid) {
+                            m.irc_id = msgid;
+                            // Add the new IRC ID to the map for future lookups (e.g. replies)
+                            Vue.set(buffer.messagesObj.messageIds, msgid, m);
+                        }
+                        m.tags = message.tags;
+                        m.is_pending = false;
+                        return m;
+                    };
+
+                    // Search oldest first so identical messages are confirmed in
+                    // the order they were sent. The msgid is optional: a server
+                    // may support echo-message without supporting message-ids.
+                    for (let i = startIdx; i < bufMessages.length; i++) {
                         let m = bufMessages[i];
                         if (
                             m.nick === network.nick &&
-                            m.message === message.message &&
-                            !m.irc_id &&
-                            Math.abs(m.time - message.time) < 60000
+                            m.raw_text === rawText &&
+                            m.is_pending && !m.irc_id &&
+                            withinWindow(m)
                         ) {
-                            // Update the existing message with the authoritative IRC ID and tags
-                            m.irc_id = msgid;
-                            m.tags = message.tags;
-                            m.is_pending = false;
-                            // Add the new IRC ID to the map for future lookups (e.g. replies)
-                            Vue.set(buffer.messagesObj.messageIds, msgid, m);
-                            return m;
+                            return adoptEcho(m);
                         }
+                    }
+
+                    // The server may rewrite the text before echoing it. If
+                    // exactly one of our messages is pending then it can only be
+                    // that one; anything else is ambiguous, so leave it alone.
+                    let candidates = [];
+                    for (let i = startIdx; i < bufMessages.length; i++) {
+                        let m = bufMessages[i];
+                        if (
+                            m.nick === network.nick &&
+                            m.is_pending && !m.irc_id &&
+                            withinWindow(m)
+                        ) {
+                            candidates.push(m);
+                        }
+                    }
+                    if (candidates.length === 1) {
+                        return adoptEcho(candidates[0]);
                     }
                 }
 

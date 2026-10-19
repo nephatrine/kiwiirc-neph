@@ -18,8 +18,12 @@ export default class NetworkState {
         this.state_error = '';
         // Last error from the IRC server. Resets on reconnect
         this.last_error = '';
+        // The bouncer's own view of a bound network's upstream link and last
+        // failure. `state`/`state_error` describe only our socket to the
+        // bouncer, so an upstream that is down still looks connected locally.
+        this.bnc_state = '';
+        this.bnc_error = '';
         this.auto_commands = '';
-        this.is_znc = false;
         this.is_bnc = false;
         this.hidden = false;
         this.channel_list = [];
@@ -68,6 +72,15 @@ export default class NetworkState {
         };
         this.password = '';
         this.sasl_account = '';
+        // Bouncer provenance. A bouncer socket sends CAP LS before
+        // BOUNCER BIND, so the advert belongs to the bouncer itself; the
+        // pre-registration ISUPPORT reply is the bouncer's partial token set.
+        this.advertised_caps = [];
+        this.bouncer_isupport = null;
+        // Upstream SASL identity on a bouncer connection. The bouncer does
+        // that login for us, so these stay empty until we can learn them.
+        this.upstream_account = '';
+        this.upstream_password = '';
         this.is_oper = false;
         this.away = '';
         this.enabled_caps = [];
@@ -357,6 +370,13 @@ export default class NetworkState {
         return /^ergo/i.test(this.ircd || '');
     }
 
+    // True when the server identifies as Soju in 002 (or the 004 fallback).
+    // Soju is the bouncer whose BouncerServ service can store upstream SASL
+    // credentials for us. Only the controller's answer matters here.
+    isSoju() {
+        return /^soju/i.test(this.ircd || '');
+    }
+
     persistenceCap() {
         return this.hasCap('draft/persistence') ?
             'draft/persistence' :
@@ -366,7 +386,15 @@ export default class NetworkState {
     // Whether the Preferred Persistence setting applies to this network:
     // only when logged in with an account and the cap was negotiated.
     persistencePreferenceAvailable() {
-        return !!this.sasl_account && this.hasCap('draft/persistence');
+        if (!this.hasCap('draft/persistence')) {
+            return false;
+        }
+        if (this.capPlane('draft/persistence') === 'bouncer') {
+            // The bouncer keeps its networks alive itself, so this can only
+            // be set from the control connection, for the whole bouncer.
+            return this.isBouncerController() && !!this.bouncerAccount();
+        }
+        return !!this.upstreamAccount();
     }
 
     metadataCap() {
@@ -377,6 +405,26 @@ export default class NetworkState {
             return 'draft/metadata-2';
         }
         return '';
+    }
+
+    // Apply an ignore locally and keep Soju's user metadata in sync. Incoming
+    // soju.im/blocked metadata sets user.ignore directly, never through here,
+    // so the two directions cannot echo each other.
+    setUserIgnored(user, ignored) {
+        if (!user) {
+            return;
+        }
+
+        user.ignore = !!ignored;
+        if (!this.isSoju() || !this.metadataCap() || typeof this.setMetadata !== 'function') {
+            return;
+        }
+
+        const value = ignored ? '1' : '0';
+        if (user.metadata['soju.im/blocked'] === value) {
+            return;
+        }
+        this.setMetadata(user.nick, 'soju.im/blocked', value);
     }
 
     // Negotiated webpush capability, preferring the draft name over soju's
@@ -391,14 +439,206 @@ export default class NetworkState {
         return '';
     }
 
+    // Negotiated bouncer-networks capability, preferring the draft name over
+    // soju's vendor name. Exactly one is ever requested (see CapNegotiation.js).
+    bouncerCap() {
+        if (this.hasCap('draft/bouncer-networks')) {
+            return 'draft/bouncer-networks';
+        }
+        if (this.hasCap('soju.im/bouncer-networks')) {
+            return 'soju.im/bouncer-networks';
+        }
+        return '';
+    }
+
+    // The unbound connection used to talk to the bouncer itself. A bound
+    // connection has a bncnetid and is an ordinary IRC connection.
+    isBouncerController() {
+        return this.is_bnc && !this.connection.bncnetid;
+    }
+
+    // Any connection that goes through a bouncer: the unbound control
+    // connection itself or one bound to a network behind it.
+    isBouncerConnection() {
+        return !!this.is_bnc || !!this.connection.bncnetid;
+    }
+
+    // The bouncer's view of a bound network's upstream link. `state` only
+    // tracks our socket to the bouncer, so an upstream that failed still looks
+    // connected here. Falls back to the transport state until the bouncer has
+    // told us anything.
+    bouncerState() {
+        if (
+            this.bnc_state &&
+            this.isBouncerConnection() &&
+            !this.isBouncerController()
+        ) {
+            return this.bnc_state;
+        }
+        return this.state;
+    }
+
+    // The control connection for this bouncer, when it is in the network list.
+    bouncerController() {
+        const networks = this.appState.networks || [];
+        return networks.find((net) => net.is_bnc) || null;
+    }
+
+    // The BouncerServ command that stores this network's SASL credentials on a
+    // Soju bouncer, or '' when there is nothing that can be synced. The caller
+    // only prefills it for the user to send; nothing is sent automatically and
+    // no reply is parsed.
+    bouncerSaslCommand() {
+        const controller = this.bouncerController();
+        if (!controller || !controller.isSoju() || this.isBouncerController()) {
+            return '';
+        }
+
+        // Soju resolves -network against networks it already knows about, so
+        // the controller has to have saved this one first.
+        if (!this.connection.bncnetid) {
+            return '';
+        }
+
+        // saveState() uses the same rule, so the name is always one token.
+        if (!/^[a-zA-Z_0-9.]+$/.test(this.name)) {
+            return '';
+        }
+
+        const account = this.connection.account || this.connection.nick || '';
+        const password = this.password || '';
+        if (!account || !password) {
+            return '';
+        }
+
+        return `sasl set-plain -network ${this.name} ${account} ${password}`;
+    }
+
+    // Whether this network is using SASL that a non-Soju bouncer has to be
+    // configured for by hand. A Soju bouncer can be told through BouncerServ.
+    bouncerSaslManual() {
+        const controller = this.bouncerController();
+        if (!controller || controller.isSoju() || this.isBouncerController()) {
+            return false;
+        }
+
+        const account = this.connection.account || this.connection.nick || '';
+        return !!account && !!this.password;
+    }
+
+    // Whether the bouncer itself advertised `name` before binding. This is
+    // how bouncer-provided features are told apart from upstream ones.
+    bouncerHasCap(name) {
+        if (!this.isBouncerConnection()) {
+            return false;
+        }
+        return (this.advertised_caps || []).includes(name.toLowerCase());
+    }
+
+    // The bouncer's ISUPPORT value for `name`. A bound connection only sees
+    // a partial pre-BIND reply, so fall back to the control connection, which
+    // receives the bouncer's full token set after registration.
+    bouncerSupports(name) {
+        if (!this.isBouncerConnection()) {
+            return undefined;
+        }
+        if (this.isBouncerController()) {
+            return this.supports(name);
+        }
+        const token = name.toUpperCase();
+        if (
+            this.bouncer_isupport &&
+            typeof this.bouncer_isupport[token] !== 'undefined'
+        ) {
+            return this.bouncer_isupport[token];
+        }
+        const controller = this.bouncerController();
+        return controller ? controller.supports(name) : undefined;
+    }
+
+    // Which side advertised a negotiated capability: 'bouncer', 'upstream',
+    // or 'none' when it was not negotiated at all.
+    capPlane(name) {
+        if (!this.hasCap(name)) {
+            return 'none';
+        }
+        return this.bouncerHasCap(name) ? 'bouncer' : 'upstream';
+    }
+
+    // Which side advertised an ISUPPORT token.
+    tokenPlane(name) {
+        if (typeof this.bouncerSupports(name) !== 'undefined') {
+            return 'bouncer';
+        }
+        return typeof this.supports(name) !== 'undefined' ? 'upstream' : 'none';
+    }
+
+    // The account that logs in to the bouncer itself. The control connection
+    // holds it; bound connections borrow it.
+    bouncerAccount() {
+        if (!this.isBouncerConnection()) {
+            return '';
+        }
+        if (this.isBouncerController()) {
+            return this.connection.account || this.sasl_account || '';
+        }
+        const controller = this.bouncerController();
+        if (!controller) {
+            return '';
+        }
+        return controller.connection.account || controller.sasl_account || '';
+    }
+
+    bouncerPassword() {
+        if (!this.isBouncerConnection()) {
+            return '';
+        }
+        if (this.isBouncerController()) {
+            return this.password || '';
+        }
+        const controller = this.bouncerController();
+        return controller ? (controller.password || '') : '';
+    }
+
+    // The account logged in to the upstream network. A direct connection
+    // knows it from SASL; a bouncer connection leaves that login to the
+    // bouncer, so it is only known once the bouncer tells us.
+    upstreamAccount() {
+        if (!this.isBouncerConnection()) {
+            return this.sasl_account || '';
+        }
+        if (this.isBouncerController()) {
+            return '';
+        }
+        return this.upstream_account || this.sasl_account || '';
+    }
+
+    upstreamPassword() {
+        if (!this.isBouncerConnection()) {
+            return this.password || '';
+        }
+        return this.upstream_password || '';
+    }
+
     // Whether push notifications apply to this network: only when logged in
     // with an account, the cap was negotiated, the server sent a VAPID key,
     // and the connection is persistent. Networks without the persistence
     // cap (eg. soju) skip the persistence check: they never report STATUS.
     webpushAvailable() {
+        const cap = this.webpushCap();
+        if (!cap) {
+            return false;
+        }
+        // A push subscription registered with the bouncer is bouncer-wide,
+        // so it is managed from the control connection only.
+        if (this.capPlane(cap) === 'bouncer' && !this.isBouncerController()) {
+            return false;
+        }
+        const account = this.bouncerHasCap(cap) ?
+            this.bouncerAccount() :
+            this.upstreamAccount();
         // Push extends desktop notifications; never offer it alone.
-        return !!this.webpushCap() &&
-            !!this.sasl_account &&
+        return !!account &&
             !!this.supports('VAPID') &&
             (!this.hasCap('draft/persistence') ||
                 this.persistence_status.effective === 'ON') &&
@@ -409,6 +649,14 @@ export default class NetworkState {
     // the capability is not enabled.
     accountRegistration() {
         if (!this.hasCap('draft/account-registration')) {
+            return null;
+        }
+        // When the bouncer advertised the cap, registration is a bouncer
+        // feature and cannot be set per network from a bound connection.
+        if (
+            this.capPlane('draft/account-registration') === 'bouncer' &&
+            !this.isBouncerController()
+        ) {
             return null;
         }
         return parseAccountRegistrationCap(this.capValue('draft/account-registration'));

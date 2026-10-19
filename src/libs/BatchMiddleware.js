@@ -142,5 +142,14 @@ function resolveBatch(network, client, batch) {
             // Re-dispatch to the command_handler to hit Kiwi's main loop
             client.command_handler.dispatch(reEvent);
         });
+
+        // IrcCommand keeps only a handful of fields, so a re-dispatched event
+        // cannot carry the batch it came from. Announce the close of the batch
+        // so handlers can flush whatever they accumulated from it.
+        client.emit('kiwi.batch.end', {
+            type: batch.type,
+            id: batch.id,
+            params: batch.params,
+        });
     }
 }

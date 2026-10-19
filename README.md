@@ -4,8 +4,9 @@
 
 - Static files only, so it can be hosted on any web server or CDN
 - One or many networks, over a websocket directly, through
-  [webircgateway](https://github.com/kiwiirc/webircgateway), or with
-  [KiwiBNC](https://github.com/kiwiirc/kiwibnc)
+  [webircgateway](https://github.com/kiwiirc/webircgateway), or through a
+  bouncer such as [soju](https://soju.im/) with the IRCv3 `bouncer-networks`
+  extension
 - 39 built-in themes, plus a custom theme URL
 - Replies, reactions, typing indicators, and an emoji picker
 - Display names, pronouns, and profile colour when the server provides them

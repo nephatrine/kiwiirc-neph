@@ -324,7 +324,7 @@
 
         <form v-if="!isSelf" class="u-form kiwi-userbox-ignoreuser">
             <label>
-                <input v-model="user.ignore" type="checkbox">
+                <input :checked="user.ignore" type="checkbox" @change="toggleIgnore">
                 <span> {{ $t('ignore_user') }} </span>
             </label>
         </form>
@@ -740,7 +740,7 @@ export default {
                 !this.isRegistering &&
                 !this.isEditingProfile &&
                 this.network.state === 'connected' &&
-                !this.network.sasl_account &&
+                !(this.network.upstreamAccount && this.network.upstreamAccount()) &&
                 !this.network.registration.pending &&
                 !!this.registrationInfo;
         },
@@ -794,7 +794,8 @@ export default {
             return !!(this.network && typeof this.network.isErgo === 'function' && this.network.isErgo());
         },
         hasServicesAccount() {
-            return !!(this.network && this.network.sasl_account);
+            return !!(this.network && this.network.upstreamAccount &&
+                this.network.upstreamAccount());
         },
         isNickServCard() {
             return !this.isSelf &&
@@ -872,6 +873,9 @@ export default {
         this.maybeFetchMetadata();
     },
     methods: {
+        toggleIgnore(event) {
+            this.network.setUserIgnored(this.user, event.target.checked);
+        },
         maybeFetchMetadata() {
             if (this.user.relayed_by) {
                 return;

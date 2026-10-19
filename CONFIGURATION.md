@@ -39,8 +39,9 @@ IRC server. `nick` may contain `?`, which is replaced with a random digit.
 `restricted: true` locks the client to one network. The template default is
 `true`. The starter file sets `false`.
 
-`startupScreen` is `welcome`, `customServer`, `znc`, `personal`, or a custom
-component name. The template default is `customServer`.
+`startupScreen` is `welcome`, `customServer`, `bouncer` (the bouncer login
+screen), `personal`, or a custom component name. `kiwiBnc` and `znc` are
+accepted aliases for `bouncer`. The template default is `customServer`.
 
 `theme` is a theme name from the built-in list, or a theme object URL under
 `themes`. Omitting `themes` keeps the themes shipped in the template. If you set
@@ -141,7 +142,7 @@ Other cards are `600px`.
 | ------------------------- | ------------------ | ------------------------------------------ |
 | `kiwiServer`              | `/webirc/kiwiirc/` | Gateway URL.                               |
 | `restricted`              | `true`             | One network only.                          |
-| `bnc.active`              | `false`            | Route networks through a BNC.              |
+| `bnc.active`              | `false`            | Route networks through a bouncer.          |
 | `bnc.server`              | `""`               |                                            |
 | `bnc.port`                | `6667`             |                                            |
 | `bnc.tls`                 | `false`            |                                            |

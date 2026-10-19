@@ -159,10 +159,6 @@ msgstr "Replying To:"
 msgid "networks"
 msgstr "Networks"
 
-#: ZNC
-msgid "znc"
-msgstr "ZNC"
-
 #: Logging in...
 msgid "logging_in"
 msgstr "Logging in..."
@@ -759,9 +755,23 @@ msgstr "Custom Server"
 msgid "settings_port"
 msgstr "Port"
 
-#: Other networks on this ZNC account will be listed in the network list
-msgid "settings_znc_other"
-msgstr "Other networks on this ZNC account will be listed in the network list."
+#: Failed to save this network to the bouncer: {{reason}}
+msgid "settings_bnc_save_error"
+msgstr "BNC Network Save Failed: {{reason}}"
+
+#: Prepare SASL command for BouncerServ
+msgid "settings_bouncer_sasl_command"
+msgstr "[Set SASL]"
+
+#: SASL credentials are not synced to this bouncer automatically. Configure them
+#: on the bouncer itself, otherwise this network may fail to authenticate.
+msgid "settings_bouncer_sasl_manual"
+msgstr "We cannot sync SASL credentials to this bouncer automatically. Configure them on the bouncer itself, otherwise this network may fail to authenticate."
+
+
+#: Changes are saved to the bouncer when you press Save or Connect.
+msgid "settings_bouncer_save_hint"
+msgstr "Changes are only saved to the bouncer when you press Save or (Re)-Connect."
 
 #: Your details
 msgid "settings_your_details"
@@ -841,15 +851,20 @@ msgstr "We couldn't connect to that server."
 
 #: Connect To Network
 msgid "network_connect"
-msgstr "Connect To Network"
+msgstr "Connect"
 
 #: Network Connecting...
 msgid "network_connecting"
 msgstr "Network Connecting..."
 
+
+#: Reconnect To Network
+msgid "network_reconnect"
+msgstr "Reconnect"
+
 #: Disconnect From Network
 msgid "network_disconnect"
-msgstr "Disconnect From Network"
+msgstr "Disconnect"
 
 #: Network Name
 msgid "network_name"
@@ -1106,6 +1121,14 @@ msgstr "Nicknames must not start with a number."
 #: Unexpected error occurred
 msgid "error_unexpected"
 msgstr "An unexpected error occurred."
+
+#: An unexpected error occurred: {{message}}
+msgid "error_uncaught"
+msgstr "Unexpected Error: {{message}}"
+
+#: Bouncer error {{code}} on {{subcommand}}: {{reason}}
+msgid "bouncer_error"
+msgstr "Bouncer Error [{{subcommand}} {{code}}]: {{reason}}"
 
 #: Unknown domain name or host
 msgid "error_unknown_host"
@@ -1672,6 +1695,10 @@ msgstr "Default SASL Mechanism"
 #: Connection details locked
 msgid "settings_server_details_locked"
 msgstr "Connection details are locked by the administrator."
+
+#: Connection details managed by the bouncer
+msgid "settings_bouncer_managed"
+msgstr "Connection details are managed by the bouncer."
 
 #: Information tab title
 msgid "information"
