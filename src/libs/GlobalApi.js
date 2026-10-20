@@ -35,6 +35,7 @@ export default class GlobalApi extends EventEmitter {
         this.vueI18n = null;
         this.translationUrls = Object.create(null);
 
+        this.appPlugins = [];
         this.controlInputPlugins = [];
         this.stateBrowserPlugins = [];
         this.channelHeaderPlugins = [];
@@ -160,6 +161,7 @@ export default class GlobalApi extends EventEmitter {
 
     /**
      * Add a DOM element to different parts of the Kiwi UI
+     * - addUi('app', componentObject)
      * - addUi('input', componentObject)
      * - addUi('browser', componentObject)
      * - addUi('header_channel', componentObject)
@@ -174,6 +176,9 @@ export default class GlobalApi extends EventEmitter {
         const plugin = Misc.makePluginObject(nextPluginId++, component, args);
 
         switch (type) {
+        case 'app':
+            this.appPlugins.push(plugin);
+            break;
         case 'input':
             this.controlInputPlugins.push(plugin);
             break;

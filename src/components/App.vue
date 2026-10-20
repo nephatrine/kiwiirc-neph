@@ -56,6 +56,15 @@
                 />
                 <component :is="activeComponent" v-else v-bind="activeComponentProps" />
             </div>
+            <component
+                :is="plugin.component"
+                v-for="plugin in appPlugins"
+                :key="plugin.id"
+                :plugin-props="{ network, buffer, activeComponent }"
+                v-bind="plugin.props"
+                :network="network"
+                :buffer="buffer"
+            />
         </template>
         <AvatarCommon />
         <emoji-picker />
@@ -82,6 +91,7 @@ import RedactionPrompt from '@/components/RedactionPrompt';
 import HexColorPicker from '@/components/HexColorPicker';
 import MediaLightbox from '@/components/MediaLightbox';
 import { State as SidebarState } from '@/components/Sidebar';
+import GlobalApi from '@/libs/GlobalApi';
 import ThemeManager from '@/libs/ThemeManager';
 import * as Notifications from '@/libs/Notifications';
 import * as bufferTools from '@/libs/bufferTools';
@@ -120,6 +130,7 @@ export default {
             mediaviewerComponentProps: {},
             mediaviewerIframe: false,
             sidebarState: new SidebarState(),
+            appPlugins: GlobalApi.singleton().appPlugins,
         };
     },
     computed: {

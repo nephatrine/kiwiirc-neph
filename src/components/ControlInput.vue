@@ -486,6 +486,13 @@ export default {
             // Clear the command warning on any new input
             this.showCommandWarning = false;
             this.maybeHidePlugins();
+
+            // Let plugins react to typing without exposing the draft text.
+            this.$state.$emit('input.activity', {
+                network: this.network,
+                buffer: this.buffer,
+                textLength: (val || '').length,
+            });
         },
         inputRestore() {
             let currentInput = this.$state.setting('buffers.shared_input') ?

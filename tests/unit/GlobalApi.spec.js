@@ -62,6 +62,7 @@ describe('GlobalApi plugin surface', () => {
 
     it('addUi routes each type to its plugin list', () => {
         let component = { name: 'Thing' };
+        api.addUi('app', component);
         api.addUi('input', component);
         api.addUi('browser', component);
         api.addUi('header_channel', component);
@@ -72,6 +73,7 @@ describe('GlobalApi plugin surface', () => {
         api.addUi('about_buffer', component);
         api.addUi('message_info', component);
 
+        expect(api.appPlugins).toHaveLength(1);
         expect(api.controlInputPlugins).toHaveLength(1);
         expect(api.stateBrowserPlugins).toHaveLength(1);
         expect(api.channelHeaderPlugins).toHaveLength(1);
@@ -86,6 +88,7 @@ describe('GlobalApi plugin surface', () => {
     it('addUi ignores unknown types', () => {
         api.addUi('not-a-real-type', { name: 'Thing' });
 
+        expect(api.appPlugins).toHaveLength(0);
         expect(api.stateBrowserPlugins).toHaveLength(0);
         expect(api.controlInputPlugins).toHaveLength(0);
     });
