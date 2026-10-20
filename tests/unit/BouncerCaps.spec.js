@@ -88,11 +88,13 @@ describe('bouncer-networks capabilities', () => {
         await emitRawLs(client, [
             '*', 'LS', '*',
             'labeled-response draft/chathistory away-notify draft/persistence ' +
-            'draft/metadata-3 draft/webpush soju.im/webpush',
+            'draft/account-registration draft/metadata-3 draft/webpush ' +
+            'soju.im/webpush',
         ]);
         expect(client.request_extra_caps).toContain('echo-message');
         expect(client.request_extra_caps).toContain('batch');
         expect(client.request_extra_caps).toContain('draft/persistence');
+        expect(client.request_extra_caps).toContain('draft/account-registration');
         expect(client.request_extra_caps).toContain('draft/webpush');
         expect(client.request_extra_caps).not.toContain('soju.im/webpush');
         expect(client.request_extra_caps).not.toContain('labeled-response');

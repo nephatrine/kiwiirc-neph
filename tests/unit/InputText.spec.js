@@ -30,6 +30,11 @@ describe('input-text autocomplete', () => {
         expect(el.getAttribute('autocomplete')).toBe('current-password');
     });
 
+    it('forwards a title hint to the rendered input', () => {
+        const el = mount({ value: '', type: 'text', title: 'Field hint' });
+        expect(el.getAttribute('title')).toBe('Field hint');
+    });
+
     it('focuses its inner input', () => {
         // Attached so focus() moves document.activeElement under jsdom
         const mountEl = document.createElement('div');

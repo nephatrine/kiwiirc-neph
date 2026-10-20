@@ -165,11 +165,13 @@
 }
 
 /*buttons */
+
 .u-button {
     color: #2c3e50;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
-.u-button-primary {
+
+.u-button-primary, .u-button-online {
     color: #fff;
     background-color: #00e3b5;
     border: none;
@@ -187,6 +189,7 @@
     background-color: #d16c6c;
     color: #fff;
 }
+
 .u-link {
     color: #fff;
 }

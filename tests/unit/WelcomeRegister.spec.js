@@ -60,8 +60,10 @@ describe('Welcome register startup', () => {
         });
         comp = vm.$children[0];
 
-        comp.nick = 'RegNick';
-        comp.channel = '#testchan';
+        comp.tabs.anonymous.nick = 'RegNick';
+        comp.tabs.anonymous.channel = '#testchan';
+        comp.tabs.register.channel = '#testchan';
+        comp.tabs.register.account = 'RegNick';
         comp.serverInfo = {
             caps: {
                 'draft/account-registration': 'before-connect,email-required',
@@ -69,8 +71,8 @@ describe('Welcome register startup', () => {
             isupport: {},
         };
         comp.activeTab = 'register';
-        comp.registerEmail = 'reg@example.com';
-        comp.registerPassword = 'secret123';
+        comp.tabs.register.email = 'reg@example.com';
+        comp.tabs.register.password = 'secret123';
     });
 
     afterEach(() => {
@@ -96,10 +98,10 @@ describe('Welcome register startup', () => {
         // Without custom-account-name the account IS the nick, and the
         // nick field is hidden: the typed account goes out directly and
         // no other tab's field is modified.
-        comp.nick = 'UnrelatedNick';
-        comp.registerAccount = 'NewAccount';
+        comp.tabs.anonymous.nick = 'UnrelatedNick';
+        comp.tabs.register.account = 'NewAccount';
         comp.startUp('register');
-        expect(comp.nick).toBe('UnrelatedNick');
+        expect(comp.tabs.anonymous.nick).toBe('UnrelatedNick');
         expect(comp.network.connection.nick).toBe('NewAccount');
         expect(comp.network.ircClient.connect).toHaveBeenCalledTimes(1);
     });
@@ -152,8 +154,8 @@ describe('Welcome register startup', () => {
             comp.showAdvanced = true;
             await comp.$nextTick();
             expect(comp.nickIsLoginUsername).toBe(false);
-            expect(inputByLabel('nick').autocomplete).not.toBe('username');
-            expect(inputByLabel('account').autocomplete).toBe('username');
+            expect(inputByLabel('nick_name').autocomplete).not.toBe('username');
+            expect(inputByLabel('account_name').autocomplete).toBe('username');
         });
 
         it('keeps the username token on the register account field', async() => {
@@ -169,10 +171,10 @@ describe('Welcome register startup', () => {
             // The account field is authoritative: it always carries the
             // token and never a nick-derived placeholder, and no nick
             // field exists to carry it either.
-            expect(inputByLabel('account')).not.toBeUndefined();
-            expect(inputByLabel('account').autocomplete).toBe('username');
-            expect(inputByLabel('account').placeholder).toBeUndefined();
-            expect(inputByLabel('nick')).toBeUndefined();
+            expect(inputByLabel('account_name')).not.toBeUndefined();
+            expect(inputByLabel('account_name').autocomplete).toBe('username');
+            expect(inputByLabel('account_name').placeholder).toBeUndefined();
+            expect(inputByLabel('nick_name')).toBeUndefined();
         });
 
         it('keeps the token on the account field with custom-account-name', async() => {
@@ -187,8 +189,8 @@ describe('Welcome register startup', () => {
             comp.showAdvanced = true;
             await comp.$nextTick();
             expect(comp.nickIsLoginUsername).toBe(false);
-            expect(inputByLabel('nick').autocomplete).not.toBe('username');
-            expect(inputByLabel('account').autocomplete).toBe('username');
+            expect(inputByLabel('nick_name').autocomplete).not.toBe('username');
+            expect(inputByLabel('account_name').autocomplete).toBe('username');
         });
     });
 });

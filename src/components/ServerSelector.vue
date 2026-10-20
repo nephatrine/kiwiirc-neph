@@ -65,6 +65,7 @@
                     class="kiwi-serverselector-connection-port"
                 >
                     <span
+                        v-if="!ircOnly"
                         class="kiwi-serverselector-connection-tls"
                         :class="{ 'kiwi-serverselector-connection-tls--disabled': disabled }"
                         @click="toggleTls"
@@ -105,6 +106,10 @@ export default {
             default: true,
         },
         disabled: {
+            type: Boolean,
+            default: false,
+        },
+        ircOnly: {
             type: Boolean,
             default: false,
         },
@@ -155,11 +160,16 @@ export default {
             },
         },
         serverProtocols() {
+            // A bouncer-managed network is an IRC network, not a websocket
+            // transport. Its protocol field only chooses TLS.
+            if (this.ircOnly) {
+                return ['irc', 'ircs'];
+            }
             return this.$state.getSetting('settings.serverProtocols') || ['irc', 'ircs', 'ws', 'wss'];
         },
         protocol: {
             get() {
-                let proto = this.connection.direct ? 'ws' : 'irc';
+                let proto = this.ircOnly || !this.connection.direct ? 'irc' : 'ws';
                 if (this.connection.tls) {
                     proto += 's';
                 }
@@ -177,6 +187,11 @@ export default {
 
                 if (portMap[proto] === this.connection.port && portMap[newProto]) {
                     this.connection.port = portMap[newProto];
+                }
+
+                if (this.ircOnly) {
+                    this.connection.tls = newProto === 'ircs';
+                    return;
                 }
 
                 switch (newProto) {
@@ -208,16 +223,24 @@ export default {
             this.importUris(networkList);
         }
 
-        // If the given network is in the preset server list, select it
+        // If the given network is in the preset server list, select it. A
+        // caller that disables presets (bouncer-managed networks) must not have
+        // its connection overwritten by a matching preset.
         const con = this.connection;
-        const presetIdx = this.presetNetworks.findIndex((s) => {
-            let match = s.server === con.server
-                && s.port === con.port
-                && s.tls === con.tls
-                && s.direct === con.direct
-                && s.path === con.path;
-            return match;
-        });
+        const presetIdx = this.usePreset ?
+            this.presetNetworks.findIndex((s) => {
+                let match = s.server === con.server
+                    && s.port === con.port
+                    && s.tls === con.tls
+                    && s.direct === con.direct
+                    && s.path === con.path;
+                return match;
+            }) :
+            -1;
+
+        if (this.ircOnly && !con.port) {
+            con.port = con.tls ? 6697 : 6667;
+        }
 
         if (presetIdx > -1) {
             this.presetServer = presetIdx.toString();

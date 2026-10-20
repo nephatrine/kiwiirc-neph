@@ -227,16 +227,18 @@ describe('BouncerProvider network saving', () => {
             account_password: 'sasl-pass',
             account: 'account',
         });
+        network.username = 'ident';
 
         provider.saveState();
         await flushPromises();
 
         expect(addNetwork).toHaveBeenCalledTimes(1);
         expect(addNetwork.mock.calls[0][0]).toMatchObject({
-            username: 'account',
+            username: 'ident',
             pass: 'server-pass',
         });
         expect(addNetwork.mock.calls[0][0].pass).not.toBe(network.password);
+        expect(network.connection.account).toBe('account');
     });
 
     it('restores the bouncer pass into the server password field', () => {
@@ -248,12 +250,15 @@ describe('BouncerProvider network saving', () => {
             port: '6697',
             tls: true,
             username: 'account',
+            realname: 'Real Name',
             pass: 'server-pass',
         });
 
+        expect(network.username).toBe('account');
+        expect(network.gecos).toBe('Real Name');
         expect(network.connection.password).toBe('server-pass');
         expect(network.password).toBe('');
-        expect(network.connection.account).toBe('account');
+        expect(network.connection.account).toBe('');
     });
 
     it('snapshots the server password rather than the SASL password', () => {
@@ -264,10 +269,14 @@ describe('BouncerProvider network saving', () => {
         });
         network.connection.password = 'server-pass';
         network.password = 'sasl-pass';
+        network.username = 'ident';
+        network.gecos = 'Real Name';
 
         provider.snapshotCurrentNetworks();
 
         expect(provider.networksSnapshot.abc.pass).toBe('server-pass');
+        expect(provider.networksSnapshot.abc.username).toBe('ident');
+        expect(provider.networksSnapshot.abc.realname).toBe('Real Name');
     });
 
     it('applies an explicit save to one network only and re-snapshots it', async() => {
@@ -419,5 +428,27 @@ describe('BouncerProvider network saving', () => {
 
         expect(network.bnc_error).toBe('');
         expect(network.bouncerState()).toBe('connected');
+    });
+
+    it('reads control credentials, never a bound network\'s upstream login', () => {
+        let bound = s.addNetwork('Bound', 'nick', {
+            server: 'irc.example.com',
+            account: 'upstream-account',
+        });
+        bound.is_bnc = true;
+        bound.connection.bncnetid = '1';
+        bound.password = 'upstream-password';
+
+        let control = s.addNetwork('BNC', 'nick', {
+            server: 'bnc.example.com',
+            account: 'bouncer-account',
+        });
+        control.is_bnc = true;
+        control.password = 'bouncer-password';
+
+        provider.enable('bnc.example.com', 6697, true, false, '');
+
+        expect(provider.bnc.username).toBe('bouncer-account');
+        expect(provider.bnc.password).toBe('bouncer-password');
     });
 });

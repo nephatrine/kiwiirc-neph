@@ -24,6 +24,22 @@ msgstr "Account"
 msgid "register_tab"
 msgstr "Register"
 
+#: BNC
+msgid "bouncer_tab"
+msgstr "BNC"
+
+#: Bouncer User
+msgid "bouncer_user"
+msgstr "Bouncer User"
+
+#: Bouncer Password
+msgid "bouncer_password"
+msgstr "Bouncer Password"
+
+#: This startup screen requires the bouncer-networks capability, but the server does not advertise it.
+msgid "bouncer_networks_required"
+msgstr "This startup screen requires the bouncer-networks capability, but the server does not advertise it."
+
 #: Advanced
 msgid "advanced"
 msgstr "Advanced"
@@ -88,9 +104,13 @@ msgstr "Notifications"
 msgid "username"
 msgstr "Username"
 
-#: Password
-msgid "password"
-msgstr "Password"
+#: User name (IRC ident)
+msgid "user_name"
+msgstr "IRC User"
+
+#: Channel list
+msgid "channel_list"
+msgstr "Channel List"
 
 #: Server Password
 msgid "server_password"
@@ -105,12 +125,16 @@ msgid "server"
 msgstr "Server"
 
 #: Nick
-msgid "nick"
-msgstr "Nick"
+msgid "nick_name"
+msgstr "IRC Nick"
 
 #: Channel
 msgid "channel"
 msgstr "Channel"
+
+#: Channel key
+msgid "channel_key"
+msgstr "Channel Key"
 
 #: Channels
 msgid "channels"
@@ -185,8 +209,8 @@ msgid "window_unload"
 msgstr "This will close all Kiwi IRC conversations. Are you sure you want to close this window?"
 
 #: Real name
-msgid "whois_realname"
-msgstr "Real name"
+msgid "real_name"
+msgstr "Real Name"
 
 #: Status
 msgid "whois_status"
@@ -216,25 +240,25 @@ msgstr "Registering as"
 msgid "register_account_name"
 msgstr "Account name"
 
-#: Account
-msgid "account"
-msgstr "Account"
+#: SASL account name
+msgid "account_name"
+msgstr "SASL Account"
 
 #: Without an account, features like user metadata, read markers, and personal message history may not be retained beyond this session.
 msgid "anonymous_warning"
 msgstr "Without an account, features like user metadata, read markers, and personal message history may not be retained beyond this session."
 
 #: Email address (optional)
-msgid "register_account_email_optional"
-msgstr "Email address (optional)"
+msgid "account_email_opt"
+msgstr "Email (Optional)"
 
 #: Email address (required)
-msgid "register_account_email_required"
-msgstr "Email address (required)"
+msgid "account_email_req"
+msgstr "Email (Required)"
 
 #: Password
-msgid "register_account_password"
-msgstr "Password"
+msgid "account_password"
+msgstr "SASL Password"
 
 #: Password must be between {min} and {max} characters.
 msgid "register_password_length"
@@ -257,8 +281,8 @@ msgid "register_verify_prompt"
 msgstr "A verification code is required to complete registration. Enter it below."
 
 #: Verification code
-msgid "register_verify_code"
-msgstr "Verification code"
+msgid "verification_code"
+msgstr "Verification Code"
 
 #: Verify
 msgid "verify_submit"
@@ -757,6 +781,18 @@ msgstr "Kick reason"
 msgid "settings_server_details"
 msgstr "Server details"
 
+#: IRC authentication
+msgid "settings_irc_auth"
+msgstr "IRC Auth"
+
+#: SASL authentication
+msgid "settings_sasl_auth"
+msgstr "SASL Auth"
+
+#: SASL username
+msgid "sasl_user"
+msgstr "SASL User"
+
 #: Connection details managed by the bouncer
 msgid "settings_bouncer_managed"
 msgstr "Connection details are managed by the bouncer."
@@ -807,13 +843,13 @@ msgstr "Nickname"
 msgid "settings_advanced"
 msgstr "Advanced"
 
-#: Encoding
+#: Protocol encoding
 msgid "settings_encoding"
-msgstr "Encoding"
+msgstr "Protocol Encoding"
 
-#: Show Raw
+#: Raw buffer
 msgid "settings_show_raw"
-msgstr "Show Raw"
+msgstr "Raw Buffer (Requires Reload)"
 
 #: Raw buffer scrollback size
 msgid "settings_raw_scrollback"
@@ -823,9 +859,13 @@ msgstr "Raw Scrollback Size"
 msgid "settings_use_websocket"
 msgstr "Direct websocket"
 
-#: Run commands when connected
+#: Auto commands when connected
 msgid "settings_autorun"
-msgstr "Run commands when connected"
+msgstr "Auto Commands (On Connect)"
+
+#: SASL authentication mechanism
+msgid "settings_sasl_mechanism"
+msgstr "SASL Mechanism"
 
 #: Danger Zone
 msgid "settings_danger"
@@ -1007,7 +1047,23 @@ msgstr "Your settings and networks will be remembered on this computer."
 
 #: Remember password on this computer
 msgid "remember_password"
-msgstr "Remember Password"
+msgstr "Remember Password(s)"
+
+#: Password strength: weak
+msgid "password_strength_weak"
+msgstr "Weak"
+
+#: Password strength: fair
+msgid "password_strength_fair"
+msgstr "Fair"
+
+#: Password strength: good
+msgid "password_strength_good"
+msgstr "Good"
+
+#: Password strength: strong
+msgid "password_strength_strong"
+msgstr "Strong"
 
 #: Forget me
 msgid "state_forget"

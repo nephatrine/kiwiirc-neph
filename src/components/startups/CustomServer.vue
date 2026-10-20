@@ -39,7 +39,7 @@
                     <tabbed-tab header="Network" name="irc">
                         <input-text
                             v-model="nick"
-                            :label="$t('nick')"
+                            :label="$t('nick_name')"
                             class="kiwi-customserver-nick"
                             :class="{ 'kiwi-customserver-nick--invalid': !isNickValid }"
                         />
@@ -54,7 +54,7 @@
                                 v-if="show_password_box"
                                 v-model="password"
                                 v-focus
-                                :label="$t('password')"
+                                :label="$t('server_password')"
                                 :show-plain-text="true"
                                 type="password"
                             />
@@ -71,7 +71,7 @@
 
                         <input-text
                             v-model="password"
-                            :label="$t('password')"
+                            :label="$t('account_password')"
                             type="password"
                         />
                     </tabbed-tab>

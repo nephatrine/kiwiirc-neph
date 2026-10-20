@@ -115,28 +115,26 @@
 }
 
 /* ---- Global : Buttons ---- */
-.u-button-primary {
-    background-color: var(--brand-primary);
-    color: var(--brand-default-bg);
-}
 
-.u-button-primary:hover {
+.u-button-primary, .u-button-secondary, .u-button-online, .u-button-warning {
+    color: var(--brand-default-bg);
+    transition: background-color 0.2s;
+}
+.u-button-primary:hover, .u-button-secondary:hover, .u-button-online:hover, .u-button-warning:hover {
     background-color: var(--brand-primary-hover);
 }
 
+.u-button-primary {
+    background-color: var(--brand-primary);
+}
 .u-button-secondary {
-    background: rgba(128, 128, 128, 0.25);
-    color: var(--brand-default-fg);
-    transition: background-color 0.2s;
+    background-color: var(--brand-default-fg);
 }
-
-.u-button-secondary:hover {
-    background: rgba(128, 128, 128, 0.35);
+.u-button-online {
+    background-color: var(--brand-online);
 }
-
 .u-button-warning {
     background-color: var(--brand-error);
-    color: var(--brand-default-bg);
 }
 
 /* ---- Global : Links / anchors etc ---- */

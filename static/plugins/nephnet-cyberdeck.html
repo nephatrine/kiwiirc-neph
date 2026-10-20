@@ -630,10 +630,24 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         );
     }
 
+    /* The power button lives in the persistent chrome, but the startup screens
+     * all share .kiwi-startup-common. Flag those screens so CSS can hide the
+     * power key while the user is still logging in. */
+    function syncStartupPresence() {
+        if (!document.body) {
+            return;
+        }
+        document.body.classList.toggle(
+            'nephnet-deck-startup',
+            !!document.querySelector('.kiwi-startup-common')
+        );
+    }
+
     function activate() {
         buildChrome();
         document.body.classList.add('nephnet-deck-active');
         syncStateBrowserPresence();
+        syncStartupPresence();
         chromeRoot.hidden = false;
         applyCrt();
         applyPower();
@@ -654,6 +668,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
             document.body.classList.remove(
                 'nephnet-deck-active',
                 'nephnet-deck-statebrowser',
+                'nephnet-deck-startup',
                 'nephnet-deck-crt-on',
                 'nephnet-deck-crt-off',
                 'nephnet-deck-glitch',

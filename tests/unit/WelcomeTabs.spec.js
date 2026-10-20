@@ -29,6 +29,19 @@ Vue.mixin({
     },
 });
 
+const REG_INFO = {
+    caps: { 'sasl': 'PLAIN', 'draft/account-registration': 'before-connect' },
+    isupport: {},
+};
+
+const CUSTOM_REG_INFO = {
+    caps: {
+        'sasl': 'PLAIN',
+        'draft/account-registration': 'before-connect,custom-account-name',
+    },
+    isupport: {},
+};
+
 describe('Welcome account tabs', () => {
     let s;
     let comp;
@@ -48,8 +61,10 @@ describe('Welcome account tabs', () => {
         });
         comp = vm.$children[0];
 
-        comp.nick = 'TestNick';
-        comp.channel = '#testchan';
+        comp.tabs.anonymous.nick = 'TestNick';
+        comp.tabs.anonymous.channel = '#testchan';
+        comp.tabs.account.channel = '#testchan';
+        comp.tabs.register.channel = '#testchan';
     });
 
     afterEach(() => {
@@ -83,6 +98,11 @@ describe('Welcome account tabs', () => {
     it('keeps both tabs when the probe saw sasl', () => {
         comp.serverInfo = { caps: { sasl: 'PLAIN' }, isupport: {} };
         expect(comp.showAnonymousTab).toBe(true);
+        expect(comp.showAccountTab).toBe(true);
+    });
+
+    it('treats a valueless sasl cap as offered', () => {
+        comp.serverInfo = { caps: { sasl: '' }, isupport: {} };
         expect(comp.showAccountTab).toBe(true);
     });
 
@@ -124,13 +144,7 @@ describe('Welcome account tabs', () => {
     });
 
     it('picks register only when it is the sole offered tab', async() => {
-        comp.serverInfo = {
-            caps: {
-                'sasl': 'PLAIN',
-                'draft/account-registration': 'before-connect',
-            },
-            isupport: { 'DRAFT/ACCOUNTREQUIRED': '' },
-        };
+        comp.serverInfo = CUSTOM_REG_INFO;
         comp.activeTab = 'account';
         comp.applyServerInfo({
             caps: { 'draft/account-registration': 'before-connect' },
@@ -143,28 +157,37 @@ describe('Welcome account tabs', () => {
         expect(comp.activeTab).toBe('register');
     });
 
-    it('defaults the account override from the account, stripping a @suffix', async() => {
-        comp.accountNick = '';
-        comp.account = 'USER@TAG';
-        await comp.$nextTick();
-        expect(comp.accountNick).toBe('USER');
-        // The Anonymous tab's own nick is untouched by account typing
-        expect(comp.nick).toBe('TestNick');
+    it('defaults the account nick placeholder from the account, stripping @', () => {
+        comp.tabs.account.account = 'USER@TAG';
+        expect(comp.accountNickSuggestion).toBe('USER');
+        // The override stays empty: the suggestion is only a placeholder
+        expect(comp.tabs.account.nick).toBe('');
     });
 
-    it('defaults the account override from a plain account name', async() => {
-        comp.accountNick = '';
-        comp.account = 'SomeUser';
-        await comp.$nextTick();
-        expect(comp.accountNick).toBe('SomeUser');
+    it('strips network and client suffixes from the account', () => {
+        comp.tabs.account.account = 'USER/NETWORK';
+        expect(comp.accountNickSuggestion).toBe('USER');
+        comp.tabs.account.account = 'USER/NETWORK@CLIENT';
+        expect(comp.accountNickSuggestion).toBe('USER');
+        comp.tabs.account.account = 'USER@CLIENT/NETWORK';
+        expect(comp.accountNickSuggestion).toBe('USER');
     });
 
-    it('never clobbers an override the user took over', async() => {
-        comp.accountNick = 'Custom';
-        comp.accountNickTouched = true;
-        comp.account = 'USER@TAG';
-        await comp.$nextTick();
-        expect(comp.accountNick).toBe('Custom');
+    it('lets an empty override fall back to the account name', () => {
+        comp.activeTab = 'account';
+        comp.tabs.account.account = 'TestAccount';
+        comp.tabs.account.password = 'secret';
+        expect(comp.effectiveNick).toBe('TestAccount');
+        expect(comp.isNickValid).toBeTruthy();
+        expect(comp.readyAccount).toBe(true);
+        expect(comp.formReady).toBe(true);
+    });
+
+    it('still requires a valid nick when the account name is not nick-safe', () => {
+        comp.activeTab = 'account';
+        comp.tabs.account.account = '123bad';
+        comp.tabs.account.password = 'secret';
+        expect(comp.formReady).toBe(false);
     });
 
     it('starts anonymously with no account identity', () => {
@@ -177,8 +200,8 @@ describe('Welcome account tabs', () => {
     });
 
     it('starts the account tab with SASL credentials', () => {
-        comp.account = 'TestAccount';
-        comp.password = 'secret';
+        comp.tabs.account.account = 'TestAccount';
+        comp.tabs.account.password = 'secret';
         comp.startUp('account');
         const net = comp.network;
         expect(net.connection.account).toBe('TestAccount');
@@ -186,10 +209,40 @@ describe('Welcome account tabs', () => {
         expect(net.connection.password).toBe('');
     });
 
+    it('sends the tab server password as PASS, not as the SASL secret', () => {
+        comp.tabs.account.account = 'TestAccount';
+        comp.tabs.account.password = 'sasl-secret';
+        comp.tabs.account.serverPassword = 'server-pass';
+        comp.startUp('account');
+        const net = comp.network;
+        expect(net.connection.password).toBe('server-pass');
+        expect(net.password).toBe('sasl-secret');
+    });
+
+    it('connects with the tab username and real name', () => {
+        comp.tabs.account.account = 'TestAccount';
+        comp.tabs.account.password = 'secret';
+        comp.tabs.account.username = 'ident';
+        comp.tabs.account.gecos = 'Real Name';
+        comp.startUp('account');
+        expect(comp.network.username).toBe('ident');
+        expect(comp.network.gecos).toBe('Real Name');
+    });
+
+    it('connects an empty override with the account-derived name', () => {
+        comp.activeTab = 'account';
+        comp.tabs.account.account = 'TestAccount';
+        comp.tabs.account.password = 'secret';
+        comp.startUp('account');
+        expect(comp.tabs.account.nick).toBe('');
+        expect(comp.network.connection.nick).toBe('TestAccount');
+        expect(comp.network.connection.account).toBe('TestAccount');
+    });
+
     it('carries no password-manager tokens on the anonymous tab', async() => {
         comp.activeTab = 'anonymous';
         await comp.$nextTick();
-        expect(inputByLabel('nick').autocomplete).not.toBe('username');
+        expect(inputByLabel('nick_name').autocomplete).not.toBe('username');
         const tokens = [...comp.$el.querySelectorAll('input')]
             .map((el) => el.getAttribute('autocomplete'));
         expect(tokens).not.toContain('username');
@@ -212,74 +265,33 @@ describe('Welcome account tabs', () => {
     });
 
     it('validates each tab on its own fields', () => {
-        comp.nick = 'TestNick';
-        comp.channel = '#testchan';
-
         comp.activeTab = 'anonymous';
         expect(comp.formReady).toBe(true);
 
         comp.activeTab = 'account';
         expect(comp.formReady).toBe(false);
-        comp.account = 'TestAccount';
-        comp.password = 'secret';
+        comp.tabs.account.account = 'TestAccount';
+        comp.tabs.account.password = 'secret';
         expect(comp.formReady).toBe(true);
     });
 
     it('shows the account-derived nick as the override placeholder', async() => {
         comp.activeTab = 'account';
         comp.showAdvanced = true;
-        comp.accountNickTouched = true;
-        comp.accountNick = '';
-        comp.account = 'ankle@phone';
+        comp.tabs.account.account = 'ankle@phone';
         await comp.$nextTick();
-        expect(comp.accountNickSuggestion).toBe('ankle');
-        expect(inputByLabel('nick').placeholder).toBe('ankle');
-    });
-
-    it('lets an empty override fall back to the account name', () => {
-        comp.activeTab = 'account';
-        comp.accountNickTouched = true;
-        comp.accountNick = '';
-        comp.account = 'TestAccount';
-        comp.password = 'secret';
-        expect(comp.effectiveNick).toBe('TestAccount');
-        expect(comp.isNickValid).toBeTruthy();
-        expect(comp.readyAccount).toBe(true);
-        expect(comp.formReady).toBe(true);
-    });
-
-    it('still requires a valid nick when the account name is not nick-safe', () => {
-        comp.activeTab = 'account';
-        comp.accountNickTouched = true;
-        comp.accountNick = '';
-        comp.account = '123bad';
-        comp.password = 'secret';
-        expect(comp.formReady).toBe(false);
-    });
-
-    it('connects an empty override with the account-derived name', () => {
-        comp.activeTab = 'account';
-        comp.accountNickTouched = true;
-        comp.accountNick = '';
-        comp.account = 'TestAccount';
-        comp.password = 'secret';
-        comp.startUp('account');
-        // The tabs keep their own fields: nothing is written back into
-        // the shared nick, the derived name goes out on the connection.
-        expect(comp.accountNick).toBe('');
-        expect(comp.network.connection.nick).toBe('TestAccount');
-        expect(comp.network.connection.account).toBe('TestAccount');
+        expect(inputByLabel('nick_name').placeholder).toBe('ankle');
     });
 
     it('focuses the account input when switching to the account tab', async() => {
         comp.activeTab = 'anonymous';
         await comp.$nextTick();
         await comp.$nextTick();
-        comp.account = 'TestAccount';
+        comp.tabs.account.account = 'TestAccount';
         comp.activeTab = 'account';
         await comp.$nextTick();
         await comp.$nextTick();
-        const accountInput = inputByLabel('account').$el.querySelector('input');
+        const accountInput = inputByLabel('account_name').$el.querySelector('input');
         expect(document.activeElement).toBe(accountInput);
     });
 
@@ -287,76 +299,60 @@ describe('Welcome account tabs', () => {
         comp.activeTab = 'account';
         await comp.$nextTick();
         await comp.$nextTick();
-        comp.nick = '';
+        comp.tabs.anonymous.nick = '';
         comp.activeTab = 'anonymous';
         await comp.$nextTick();
         await comp.$nextTick();
-        const nickInput = inputByLabel('nick').$el.querySelector('input');
+        const nickInput = inputByLabel('nick_name').$el.querySelector('input');
         expect(document.activeElement).toBe(nickInput);
     });
 
     it('always shows an account field on the register tab', async() => {
-        comp.serverInfo = {
-            caps: { 'draft/account-registration': 'before-connect', 'sasl': 'PLAIN' },
-            isupport: {},
-        };
+        comp.serverInfo = REG_INFO;
         comp.activeTab = 'register';
-        comp.nick = 'TestNick';
         await comp.$nextTick();
         expect(comp.showRegisterTab).toBe(true);
-        // The account IS the nick without custom-account-name, so the
-        // old 'registering as' hint is gone and the field is always there.
-        expect(inputByLabel('account')).not.toBeUndefined();
+        expect(inputByLabel('account_name')).not.toBeUndefined();
         expect(comp.$el.textContent).not.toContain('register_as');
-        expect(inputByLabel('nick')).toBeUndefined();
-        // The account field is authoritative: username token on it, no
-        // nick-derived placeholder.
-        expect(inputByLabel('account').autocomplete).toBe('username');
-        expect(inputByLabel('account').placeholder).toBeUndefined();
+        expect(inputByLabel('nick_name')).toBeUndefined();
+        expect(inputByLabel('account_name').autocomplete).toBe('username');
+        expect(inputByLabel('account_name').placeholder).toBeUndefined();
     });
 
     it('focuses the account input on the register tab with custom names', async() => {
-        comp.serverInfo = {
-            caps: {
-                'draft/account-registration': 'before-connect,custom-account-name',
-                'sasl': 'PLAIN',
-            },
-            isupport: {},
-        };
+        comp.serverInfo = CUSTOM_REG_INFO;
         comp.activeTab = 'register';
         await comp.$nextTick();
         await comp.$nextTick();
-        const nameInput = inputByLabel('account').$el.querySelector('input');
+        const nameInput = inputByLabel('account_name').$el.querySelector('input');
         expect(document.activeElement).toBe(nameInput);
     });
 
     it('focuses the account input on the register tab without custom names', async() => {
-        comp.serverInfo = {
-            caps: { 'draft/account-registration': 'before-connect', 'sasl': 'PLAIN' },
-            isupport: {},
-        };
+        comp.serverInfo = REG_INFO;
         comp.activeTab = 'register';
         await comp.$nextTick();
         await comp.$nextTick();
-        const nameInput = inputByLabel('account')
-            .$el.querySelector('input');
+        const nameInput = inputByLabel('account_name').$el.querySelector('input');
         expect(document.activeElement).toBe(nameInput);
     });
 
-    it('collapses nick, channel, and remember password behind Advanced', async() => {
+    it('collapses the advanced fields behind a toggle', async() => {
         comp.activeTab = 'account';
         comp.showAdvanced = false;
         await comp.$nextTick();
         expect(comp.$el.querySelector('.kiwi-welcome-advanced-toggle')).not.toBe(null);
-        expect(inputByLabel('nick')).toBeUndefined();
-        expect(inputByLabel('channel')).toBeUndefined();
+        expect(inputByLabel('nick_name')).toBeUndefined();
+        expect(inputByLabel('user_name')).toBeUndefined();
+        expect(inputByLabel('channel_list')).toBeUndefined();
         expect(comp.$el.textContent).not.toContain('remember_password');
         // Remember Me itself always stays visible
         expect(comp.$el.textContent).toContain('remember_settings');
         comp.showAdvanced = true;
         await comp.$nextTick();
-        expect(inputByLabel('nick')).not.toBeUndefined();
-        expect(inputByLabel('channel')).not.toBeUndefined();
+        expect(inputByLabel('nick_name')).not.toBeUndefined();
+        expect(inputByLabel('user_name')).not.toBeUndefined();
+        expect(inputByLabel('channel_list')).not.toBeUndefined();
         expect(comp.$el.textContent).toContain('remember_password');
     });
 
@@ -373,8 +369,9 @@ describe('Welcome account tabs', () => {
         expect(boxPos).toBeGreaterThan(togglePos);
         const box = comp.$el.querySelector('.kiwi-welcome-advanced-box');
         expect(box.textContent).toContain('remember_password');
-        // Nick override, channel, and the checkbox all live in the box
-        expect(box.querySelectorAll('input').length).toBe(3);
+        // Nick override, user name, real name, server password, channel
+        // and the checkbox all live in the box
+        expect(box.querySelectorAll('input').length).toBe(6);
     });
 
     describe('per-tab restore', () => {
@@ -399,16 +396,12 @@ describe('Welcome account tabs', () => {
             const freshVm = mountWithOptions({ nick: 'kiwi_?', account: 'ankle' });
             try {
                 const freshComp = freshVm.$children[0];
-                // One tick settles the suspended account watcher, proving
-                // the restore does not echo into the nick override.
                 await freshComp.$nextTick();
-                expect(freshComp.account).toBe('ankle');
-                // Anonymous gets the configured default, not the account
-                // nick; Register starts blank for the new account.
-                expect(freshComp.nick).toMatch(/^kiwi_\d+$/);
-                expect(freshComp.accountNick).toBe('');
+                expect(freshComp.tabs.account.account).toBe('ankle');
+                expect(freshComp.tabs.anonymous.nick).toMatch(/^kiwi_\d+$/);
+                expect(freshComp.tabs.account.nick).toBe('');
                 expect(freshComp.accountNickSuggestion).toBe('ankle');
-                expect(freshComp.registerAccount).toBe('');
+                expect(freshComp.tabs.register.account).toBe('');
             } finally {
                 destroyVm(freshVm);
             }
@@ -419,11 +412,40 @@ describe('Welcome account tabs', () => {
             try {
                 const freshComp = freshVm.$children[0];
                 await freshComp.$nextTick();
-                expect(freshComp.nick).toBe('AnonNick');
-                expect(freshComp.account).toBe('');
-                expect(freshComp.accountNick).toBe('');
-                // One-time copy so reserving the nick is one click away
-                expect(freshComp.registerAccount).toBe('AnonNick');
+                expect(freshComp.tabs.anonymous.nick).toBe('AnonNick');
+                expect(freshComp.tabs.account.account).toBe('');
+                expect(freshComp.tabs.account.nick).toBe('');
+                // One-time prefill so reserving the nick is one click away
+                expect(freshComp.tabs.register.account).toBe('AnonNick');
+            } finally {
+                destroyVm(freshVm);
+            }
+        });
+
+        it('starts a remembered anonymous network on the anonymous tab', async() => {
+            s.addNetwork('SavedNetwork', 'SavedNick', { server: 'default' });
+            const freshVm = mountWithOptions({});
+            try {
+                const freshComp = freshVm.$children[0];
+                await freshComp.$nextTick();
+                expect(freshComp.activeTab).toBe('anonymous');
+                expect(freshComp.tabs.anonymous.nick).toBe('SavedNick');
+            } finally {
+                destroyVm(freshVm);
+            }
+        });
+
+        it('starts a remembered account network on the account tab', async() => {
+            s.addNetwork('SavedNetwork', 'SavedNick', {
+                server: 'default',
+                account: 'ankle',
+            });
+            const freshVm = mountWithOptions({});
+            try {
+                const freshComp = freshVm.$children[0];
+                await freshComp.$nextTick();
+                expect(freshComp.activeTab).toBe('account');
+                expect(freshComp.tabs.account.account).toBe('ankle');
             } finally {
                 destroyVm(freshVm);
             }
@@ -434,28 +456,25 @@ describe('Welcome account tabs', () => {
             try {
                 const freshComp = freshVm.$children[0];
                 await freshComp.$nextTick();
-                freshComp.serverInfo = {
-                    caps: { 'draft/account-registration': 'before-connect', 'sasl': 'PLAIN' },
-                    isupport: {},
-                };
-                freshComp.channel = '#testchan';
+                freshComp.serverInfo = REG_INFO;
+                freshComp.tabs.register.channel = '#testchan';
                 freshComp.activeTab = 'register';
-                freshComp.registerAccount = 'BrandNew';
-                freshComp.registerEmail = 'new@example.com';
-                freshComp.registerPassword = 'secret123';
+                freshComp.tabs.register.account = 'BrandNew';
+                freshComp.tabs.register.email = 'new@example.com';
+                freshComp.tabs.register.password = 'secret123';
                 freshComp.startUp('register');
                 expect(freshComp.network.connection.nick).toBe('BrandNew');
                 expect(freshComp.network.registration.account).toBe('BrandNew');
                 // No tab leaked into another: the anonymous nick is still
                 // the configured default.
-                expect(freshComp.nick).toMatch(/^kiwi_\d+$/);
+                expect(freshComp.tabs.anonymous.nick).toMatch(/^kiwi_\d+$/);
             } finally {
                 destroyVm(freshVm);
             }
         });
     });
 
-    it('keeps the legacy form untouched in bouncer mode', async() => {
+    it('keeps the single-form bouncer mode untouched', async() => {
         s.settings.startupOptions = { bouncer: true };
         await comp.$nextTick();
         expect(comp.useTabs).toBe(false);
@@ -464,46 +483,33 @@ describe('Welcome account tabs', () => {
     });
 
     it('shows the register nick only with custom names under Advanced', async() => {
-        comp.serverInfo = {
-            caps: {
-                'draft/account-registration': 'before-connect,custom-account-name',
-                'sasl': 'PLAIN',
-            },
-            isupport: {},
-        };
+        comp.serverInfo = CUSTOM_REG_INFO;
         comp.activeTab = 'register';
         comp.showAdvanced = false;
         await comp.$nextTick();
-        expect(inputByLabel('nick')).toBeUndefined();
+        expect(inputByLabel('nick_name')).toBeUndefined();
         comp.showAdvanced = true;
         await comp.$nextTick();
-        expect(inputByLabel('nick')).not.toBeUndefined();
+        expect(inputByLabel('nick_name')).not.toBeUndefined();
     });
 
     it('requires the register account field, never the nick', async() => {
-        comp.serverInfo = {
-            caps: { 'draft/account-registration': 'before-connect', 'sasl': 'PLAIN' },
-            isupport: {},
-        };
+        comp.serverInfo = REG_INFO;
         comp.activeTab = 'register';
-        comp.nick = 'TestNick';
-        comp.registerAccount = '';
-        comp.registerPassword = 'secret123';
+        comp.tabs.register.account = '';
+        comp.tabs.register.password = 'secret123';
         await comp.$nextTick();
         expect(comp.readyToRegister).toBe(false);
-        comp.registerAccount = 'TestNick';
+        comp.tabs.register.account = 'TestNick';
         expect(comp.readyToRegister).toBe(true);
         expect(comp.formReady).toBe(true);
     });
 
     it('uses the register account verbatim as the nick fallback', async() => {
-        comp.serverInfo = {
-            caps: { 'draft/account-registration': 'before-connect', 'sasl': 'PLAIN' },
-            isupport: {},
-        };
+        comp.serverInfo = REG_INFO;
         comp.activeTab = 'register';
-        comp.nick = '';
-        comp.registerAccount = 'SomeAccount';
+        comp.tabs.anonymous.nick = '';
+        comp.tabs.register.account = 'SomeAccount';
         await comp.$nextTick();
         // No @suffix strip here: without custom-account-name the
         // account IS the nick.
@@ -511,54 +517,49 @@ describe('Welcome account tabs', () => {
     });
 
     it('prefers the register account over a stale nick without custom names', async() => {
-        comp.serverInfo = {
-            caps: { 'draft/account-registration': 'before-connect', 'sasl': 'PLAIN' },
-            isupport: {},
-        };
+        comp.serverInfo = REG_INFO;
         comp.activeTab = 'register';
-        // A stale anonymous nick must not win: the account IS the nick,
-        // so validation follows the account field.
-        comp.nick = 'StaleNick';
-        comp.registerAccount = 'FreshAccount';
+        comp.tabs.anonymous.nick = 'StaleNick';
+        comp.tabs.register.account = 'FreshAccount';
         await comp.$nextTick();
         expect(comp.effectiveNick).toBe('FreshAccount');
         expect(comp.isNickValid).toBeTruthy();
     });
 
     it('registers the register account even when a stale nick exists', () => {
-        comp.serverInfo = {
-            caps: { 'draft/account-registration': 'before-connect', 'sasl': 'PLAIN' },
-            isupport: {},
-        };
+        comp.serverInfo = REG_INFO;
         comp.activeTab = 'register';
-        comp.nick = 'StaleNick';
-        comp.registerAccount = 'FreshAccount';
-        comp.registerEmail = 'fresh@example.com';
-        comp.registerPassword = 'secret123';
+        comp.tabs.anonymous.nick = 'StaleNick';
+        comp.tabs.register.account = 'FreshAccount';
+        comp.tabs.register.email = 'fresh@example.com';
+        comp.tabs.register.password = 'secret123';
         comp.startUp('register');
         // The stale anonymous nick is ignored, not overwritten: NICK and
         // the armed REGISTER both target the account the user typed.
-        expect(comp.nick).toBe('StaleNick');
+        expect(comp.tabs.anonymous.nick).toBe('StaleNick');
         expect(comp.network.connection.nick).toBe('FreshAccount');
         expect(comp.network.registration.account).toBe('FreshAccount');
     });
 
     it('keeps an explicit nick with custom-account-name on register', () => {
-        comp.serverInfo = {
-            caps: {
-                'draft/account-registration': 'before-connect,custom-account-name',
-                'sasl': 'PLAIN',
-            },
-            isupport: {},
-        };
+        comp.serverInfo = CUSTOM_REG_INFO;
         comp.activeTab = 'register';
         comp.showAdvanced = true;
-        comp.registerNick = 'CustomNick';
-        comp.registerAccount = 'OtherAccount';
-        comp.registerEmail = 'other@example.com';
-        comp.registerPassword = 'secret123';
+        comp.tabs.register.nick = 'CustomNick';
+        comp.tabs.register.account = 'OtherAccount';
+        comp.tabs.register.email = 'other@example.com';
+        comp.tabs.register.password = 'secret123';
         comp.startUp('register');
-        expect(comp.registerNick).toBe('CustomNick');
+        expect(comp.tabs.register.nick).toBe('CustomNick');
         expect(comp.network.connection.nick).toBe('CustomNick');
+    });
+
+    it('derives the custom register nick from the authcid when empty', () => {
+        comp.serverInfo = CUSTOM_REG_INFO;
+        comp.activeTab = 'register';
+        comp.tabs.register.nick = '';
+        comp.tabs.register.account = 'user/network@client';
+        expect(comp.registerNickSuggestion).toBe('user');
+        expect(comp.effectiveNick).toBe('user');
     });
 });

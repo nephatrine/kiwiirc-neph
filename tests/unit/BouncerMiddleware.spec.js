@@ -95,6 +95,57 @@ describe('BouncerMiddleware wire format', () => {
         expect(next).toHaveBeenCalled();
     });
 
+    test('defaults a TLS network without a port to 6697', () => {
+        const h = makeHarness();
+
+        h.parsed(...bouncerLine(
+            'BOUNCER',
+            'NETWORK',
+            '5',
+            'name=soju;host=irc.example;tls=1'
+        ), h.client, jest.fn());
+        h.client.emit('kiwi.batch.end', { type: 'soju.im/bouncer-networks', id: 'b1' });
+
+        expect(h.client.command_handler.emit).toHaveBeenCalledWith(
+            'bouncer networks',
+            [expect.objectContaining({ port: 6697, tls: true })]
+        );
+    });
+
+    test('defaults a plain network without a port to 6667', () => {
+        const h = makeHarness();
+
+        h.parsed(...bouncerLine(
+            'BOUNCER',
+            'NETWORK',
+            '5',
+            'name=soju;host=irc.example;tls=0'
+        ), h.client, jest.fn());
+        h.client.emit('kiwi.batch.end', { type: 'soju.im/bouncer-networks', id: 'b1' });
+
+        expect(h.client.command_handler.emit).toHaveBeenCalledWith(
+            'bouncer networks',
+            [expect.objectContaining({ port: 6667, tls: false })]
+        );
+    });
+
+    test('keeps an explicit port when one is present', () => {
+        const h = makeHarness();
+
+        h.parsed(...bouncerLine(
+            'BOUNCER',
+            'NETWORK',
+            '5',
+            'name=soju;host=irc.example;port=7000;tls=1'
+        ), h.client, jest.fn());
+        h.client.emit('kiwi.batch.end', { type: 'soju.im/bouncer-networks', id: 'b1' });
+
+        expect(h.client.command_handler.emit).toHaveBeenCalledWith(
+            'bouncer networks',
+            [expect.objectContaining({ port: 7000, tls: true })]
+        );
+    });
+
     test('clears the accumulation after each batch', () => {
         const h = makeHarness();
 

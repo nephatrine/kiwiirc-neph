@@ -120,8 +120,10 @@ describe('Remember Password', () => {
                 render: (h) => h(Welcome),
             });
             comp = vm.$children[0];
-            comp.nick = 'TestNick';
-            comp.channel = '#testchan';
+            comp.tabs.anonymous.nick = 'TestNick';
+            comp.tabs.anonymous.channel = '#testchan';
+            comp.tabs.account.channel = '#testchan';
+            comp.tabs.register.channel = '#testchan';
         });
 
         afterEach(() => {
@@ -130,7 +132,7 @@ describe('Remember Password', () => {
 
         it('defaults to unchecked but enabled on the account tab', () => {
             expect(comp.activeTab).toBe('account');
-            expect(comp.remember_password).toBe(false);
+            expect(comp.tabs.account.rememberPasswords).toBe(false);
             expect(comp.rememberPasswordDisabled).toBe(false);
         });
 
@@ -140,17 +142,20 @@ describe('Remember Password', () => {
             expect(comp.rememberPasswordDisabled).toBe(true);
 
             comp.activeTab = 'account';
-            comp.remember_password = true;
+            comp.tabs.account.rememberPasswords = true;
             await comp.$nextTick();
             expect(comp.rememberPasswordDisabled).toBe(false);
 
-            comp.remember_settings = false;
+            comp.tabs.account.rememberSettings = false;
             await comp.$nextTick();
             expect(comp.rememberPasswordDisabled).toBe(true);
-            expect(comp.remember_password).toBe(false);
+            // Disabling never throws away the tab's own choice: turning
+            // Remember Me back on restores the checkbox as it was.
+            expect(comp.tabs.account.rememberPasswords).toBe(true);
+            expect(comp.layoutRememberPasswords).toBe(false);
         });
 
-        it('keeps the legacy rule outside tabbed mode', async() => {
+        it('keeps the flat single-form rule outside tabbed mode', async() => {
             // Replacing the object: adding a bouncer key to the mounted
             // object would not be reactive under Vue 2.
             s.settings.startupOptions = { bouncer: true };
@@ -163,7 +168,9 @@ describe('Remember Password', () => {
         });
 
         it('writes the preference when the login starts', () => {
-            comp.remember_password = true;
+            comp.tabs.account.account = 'TestAccount';
+            comp.tabs.account.password = 'secret';
+            comp.tabs.account.rememberPasswords = true;
             comp.startUp('account');
             const net = comp.network;
             net.ircClient.emit('registered', { nick: 'TestNick' });
@@ -171,6 +178,8 @@ describe('Remember Password', () => {
         });
 
         it('writes a false preference when left unchecked', () => {
+            comp.tabs.account.account = 'TestAccount';
+            comp.tabs.account.password = 'secret';
             comp.startUp('account');
             const net = comp.network;
             net.ircClient.emit('registered', { nick: 'TestNick' });

@@ -359,6 +359,10 @@ export default class NetworkState {
         return this.enabled_caps.includes(name.toLowerCase());
     }
 
+    hasAdvertisedCap(name) {
+        return (this.advertised_caps || []).includes(name.toLowerCase());
+    }
+
     capValue(name) {
         return this.cap_values[name.toLowerCase()] || '';
     }

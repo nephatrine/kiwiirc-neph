@@ -61,7 +61,7 @@
                             <input v-model="modeN" type="checkbox">
                         </label>
                         <label>
-                            <span>{{ $t('password') }}</span>
+                            <span>{{ $t('channel_key') }}</span>
                             <input v-model.lazy="modeK" type="text" class="u-input">
                         </label>
                     </form>

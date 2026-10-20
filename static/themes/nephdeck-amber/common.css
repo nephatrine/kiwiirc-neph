@@ -133,10 +133,6 @@
     color: var(--brand-primary);
 }
 
-.u-input-text {
-    background: var(--brand-default-bg);
-}
-
 .u-form label {
     color: var(--brand-default-fg);
 }
@@ -198,10 +194,7 @@
 .u-button-primary {
     background-color: var(--brand-primary);
     color: var(--cd-bezel);
-}
-
-.u-button-primary:hover {
-    background-color: var(--brand-primary-hover);
+    transition: background-color 0.2s;
 }
 
 .u-button-secondary {
@@ -210,13 +203,20 @@
     transition: background-color 0.2s;
 }
 
-.u-button-secondary:hover {
-    background: rgb(255 255 255 / 14%);
+.u-button-online {
+    background-color: var(--brand-online);
+    color: var(--cd-bezel);
+    transition: background-color 0.2s;
 }
 
 .u-button-warning {
     background-color: var(--brand-error);
     color: #fff;
+    transition: background-color 0.2s;
+}
+
+.u-button-primary:hover, .u-button-secondary:hover, .u-button-online:hover, .u-button-warning:hover {
+    background-color: var(--brand-primary-hover);
 }
 
 /* ==================================================================== *
@@ -1797,6 +1797,12 @@ body.nephnet-deck-active .kiwi-wrap {
         0 2px 0 #0d1015,
         inset 0 1px 1px rgb(255 255 255 / 25%),
         0 0 12px rgb(var(--cd-glow-rgb) / 65%);
+}
+
+/* Startup screens share .kiwi-startup-common. There is nothing to power on
+ * until the user leaves the login form, so hide the persistent power key. */
+body.nephnet-deck-startup .nephnet-btn--power {
+    display: none;
 }
 
 /* ---- Rivets ---- */

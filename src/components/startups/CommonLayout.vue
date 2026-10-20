@@ -111,10 +111,18 @@ export default {
 
 .kiwi-startup-common-section-connection {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     width: 40%;
     max-width: 500px;
+}
+
+/* Auto block margins centre the form while it fits, but collapse to zero
+ * when it is taller than this scrollable column. Centring it with
+ * align-items:center would instead push its top above the scroll origin,
+ * making the start of the form unreachable. */
+.kiwi-startup-common-section-connection > * {
+    margin-block: auto;
 }
 
 /** Right side */
@@ -135,6 +143,19 @@ export default {
     padding: 2em;
     border-radius: 5px;
     line-height: 1.6em;
+}
+
+/* Same rule as the connection column: auto block margins centre the info
+ * panel while it fits and let a taller one start at the top of the column
+ * instead of losing its top above the scroll origin. */
+@media (width >= 850px) {
+    .kiwi-startup-common-section-info {
+        align-items: flex-start;
+    }
+
+    .kiwi-startup-common-section-info-content {
+        margin-block: auto;
+    }
 }
 
 .kiwi-fontawesome-preload {

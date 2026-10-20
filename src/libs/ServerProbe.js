@@ -109,7 +109,12 @@ export function probeServerCaps({ createTransport, transportOptions, timeout } =
         try {
             transport = createTransport(transportOptions);
         } catch (err) {
-            resolve({ caps: {}, isupport: {}, extendedIsupport: false });
+            resolve({
+                caps: {},
+                isupport: {},
+                extendedIsupport: false,
+                capsComplete: false,
+            });
             return;
         }
 
@@ -136,8 +141,13 @@ export function probeServerCaps({ createTransport, transportOptions, timeout } =
                 caps: { ...caps },
                 isupport: { ...isupport },
                 extendedIsupport: isupportRequested,
+                capsComplete: lsComplete,
             };
-            writeCache(key, info);
+            // A truncated CAP LS is not a statement about the server, so let
+            // the next page load ask again instead of caching the failure.
+            if (lsComplete) {
+                writeCache(key, info);
+            }
             resolve(info);
         };
 

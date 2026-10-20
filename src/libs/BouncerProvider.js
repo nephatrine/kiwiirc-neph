@@ -60,7 +60,9 @@ export default class BouncerProvider {
 
         // The bouncer account lives on the bouncer network: the account name in
         // its connection and the account password as the network SASL secret.
-        const bncNetwork = this.state.networks.find((network) => network.is_bnc);
+        const bncNetwork = this.state.networks.find((network) => (
+            network.isBouncerController && network.isBouncerController()
+        ));
         if (bncNetwork) {
             this.bnc.username = bncNetwork.connection.account || '';
             this.bnc.password = bncNetwork.password || '';
@@ -206,24 +208,29 @@ export default class BouncerProvider {
 
     addNetworkToState(bncNetwork) {
         let net = this.state.getNetworkFromBncNetId(bncNetwork.netid);
+        const port = parseInt(bncNetwork.port, 10) ||
+            (bncNetwork.tls ? 6697 : 6667);
+
         if (!net) {
             net = this.state.addNetwork(bncNetwork.name, bncNetwork.nickname || '', {
                 server: bncNetwork.host,
-                port: bncNetwork.port,
+                port: port,
                 tls: bncNetwork.tls,
                 password: '',
                 bncnetid: bncNetwork.netid,
-                account: bncNetwork.username || '',
+                username: bncNetwork.username || '',
+                gecos: bncNetwork.realname || '',
             });
         } else {
             // Make sure our existing network is all up to date
             net.name = bncNetwork.name;
             net.connection.server = bncNetwork.host;
-            net.connection.port = parseInt(bncNetwork.port, 10);
+            net.connection.port = port;
             net.connection.tls = bncNetwork.tls;
             net.connection.nick = bncNetwork.nickname || net.connection.nick;
             net.connection.password = '';
-            net.connection.account = bncNetwork.username || '';
+            net.username = bncNetwork.username || net.username || '';
+            net.gecos = bncNetwork.realname || net.gecos || '';
             net.nick = bncNetwork.nickname || net.nick || '';
         }
 
@@ -270,7 +277,8 @@ export default class BouncerProvider {
                 port: network.connection.port,
                 tls: network.connection.tls,
                 nickname: network.connection.nick,
-                username: network.connection.account,
+                username: network.username,
+                realname: network.gecos,
                 pass: network.connection.password,
             };
         });
@@ -353,8 +361,11 @@ export default class BouncerProvider {
         if (network.connection.nick !== snapshot.nickname) {
             tags.nickname = network.connection.nick;
         }
-        if (network.connection.account !== snapshot.username) {
-            tags.username = network.connection.account;
+        if (network.username !== snapshot.username) {
+            tags.username = network.username;
+        }
+        if (network.gecos !== snapshot.realname) {
+            tags.realname = network.gecos;
         }
         // `pass` is the upstream server password. The SASL secret never
         // goes through ADDNETWORK/CHANGENETWORK; Soju receives it through

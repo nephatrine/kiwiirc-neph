@@ -164,14 +164,19 @@ function saslCredentials(client) {
 
 function networkFromAttrs(netid, attrString) {
     const tags = MessageTags.decode(attrString || '');
+    const tls = tags.tls === '1';
+    const port = parseInt(tags.port, 10);
+    const defaultPort = tls ? 6697 : 6667;
 
     return {
         netid: netid || '',
         name: tags.name || '',
         state: tags.state || '',
         host: tags.host || '',
-        port: parseInt(tags.port, 10) || 0,
-        tls: tags.tls === '1',
+        // bouncer-networks defaults an omitted port to the IRC default for
+        // the TLS setting: 6697 for TLS, 6667 otherwise.
+        port: port > 0 ? port : defaultPort,
+        tls: tls,
         nickname: tags.nickname || '',
         username: tags.username || '',
         realname: tags.realname || '',

@@ -31,10 +31,7 @@
                     :network="network"
                 />
 
-                <div
-                    v-if="network.editable_name"
-                    class="kiwi-networksettings-networkname"
-                >
+                <div class="kiwi-networksettings-networkname">
                     <input-text
                         v-model="network.name"
                         :label="$t('network_name')"
@@ -46,23 +43,66 @@
                     :enable-custom="startupOptions.enableCustom ?? true"
                     :disabled="connectionDetailsLocked"
                     :connection="network.connection"
+                    :use-preset="!isBouncerManaged"
+                    :irc-only="isBouncerManaged"
                 />
 
-                <div class="kiwi-networksettings-connection-password">
-                    <input-text
-                        v-model="network.connection.nick"
-                        :label="$t('settings_nickname')"
-                    />
+                <h4 class="kiwi-networksettings-auth-title">
+                    {{ $t('settings_irc_auth') }}
+                </h4>
+                <input-text
+                    v-model="network.connection.nick"
+                    :label="$t('nick_name')"
+                    :class="{ 'kiwi-networksettings-invalid': !isNickValid || !isNickLengthValid }"
+                    :maxlength="nickLen || undefined"
+                    :disabled="nickLocked"
+                    @blur="applyNick"
+                />
+                <input-text
+                    v-model="network.username"
+                    :label="$t('user_name')"
+                    :class="{ 'kiwi-networksettings-invalid': !isUserLengthValid }"
+                    :maxlength="userLen || undefined"
+                    :disabled="ircDetailsLocked"
+                />
+                <input-text
+                    v-model="network.gecos"
+                    :label="$t('real_name')"
+                    :class="{ 'kiwi-networksettings-invalid': !isRealNameLengthValid }"
+                    :maxlength="nameLen || undefined"
+                    :disabled="realNameLocked"
+                    @blur="applyRealName"
+                />
+                <input-text
+                    v-model="network.connection.password"
+                    :show-plain-text="true"
+                    :label="$t('server_password')"
+                    :class="{ 'kiwi-networksettings-invalid': !isServerPasswordValid }"
+                    :disabled="ircDetailsLocked"
+                    type="password"
+                />
+
+                <template v-if="saslVisible">
+                    <h4 class="kiwi-networksettings-auth-title">
+                        {{ $t('settings_sasl_auth') }}
+                    </h4>
+                    <div
+                        v-if="saslWarning"
+                        class="kiwi-networksettings-bouncer-sasl-warning"
+                    >
+                        {{ $t('settings_bouncer_sasl_manual') }}
+                    </div>
                     <input-text
                         v-model="network.connection.account"
-                        :label="$t('account_name')"
+                        :label="$t('sasl_user')"
                         :placeholder="network.connection.nick"
+                        :disabled="saslLocked"
                     />
                     <input-text
-                        v-if="!isBouncerController"
                         v-model="network.password"
                         :show-plain-text="true"
-                        :label="$t('password')"
+                        :label="$t('account_password')"
+                        :disabled="saslLocked"
                         type="password"
                     />
                     <a
@@ -72,112 +112,20 @@
                     >
                         {{ $t('settings_bouncer_sasl_command') }}
                     </a>
-                    <div
-                        v-else-if="bouncerSaslManual"
-                        class="kiwi-networksettings-bouncer-sasl-warning"
-                    >
-                        {{ $t('settings_bouncer_sasl_manual') }}
-                    </div>
-                </div>
-
-                <h4
-                    class="kiwi-show-advanced-title"
-                    @click="show_advanced = !show_advanced"
-                >
-                    {{ $t('settings_advanced') }}
-                    <i
-                        :class="[`fa-caret-${show_advanced ? 'up' : 'down'}`]"
-                        class="fa"
-                        aria-hidden="true"
-                    />
-                </h4>
-
-                <div v-if="show_advanced" class="kiwi-networksettings-advanced">
-                    <input-text
-                        v-model="network.connection.encoding"
-                        :label="$t('settings_encoding')"
-                        :disabled="settingsLocked"
-                    />
-
-                    <div v-if="!isBouncer" class="u-input-text">
-                        <label>{{ $t('settings_sasl_mechanism') }}</label>
-                        <select v-model="network.connection.sasl_mechanism" class="u-input">
-                            <option value="AUTO">AUTO (Recommended)</option>
-                            <option value="PLAIN">PLAIN</option>
-                            <option value="SCRAM-SHA-256">SCRAM-SHA-256</option>
-                        </select>
-                    </div>
-
-                    <input-text
-                        v-model="network.connection.password"
-                        :show-plain-text="true"
-                        :label="$t('server_password')"
-                        :disabled="settingsLocked"
-                        type="password"
-                    />
-
-                    <input-text
-                        v-model="network.gecos"
-                        :label="$t('whois_realname')"
-                        :disabled="settingsLocked"
-                    />
-
-                    <label>
-                        <span class="kiwi-appsettings-showraw-label">
-                            {{ $t('settings_show_raw') }}
-                        </span>
-                        <input v-model="settingShowRaw" type="checkbox">
-                    </label>
-
-                    <label>
-                        <span class="kiwi-appsettings-showraw-label">
-                            {{ $t('settings_raw_scrollback') }}
-                        </span>
-                        <input
-                            v-model.number="settingRawScrollback"
-                            type="number"
-                            min="50"
-                            class="u-input"
-                        >
-                    </label>
-
-                    <label>
-                        <span class="kiwi-appsettings-showraw-label">
-                            {{ $t('settings_use_websocket') }}
-                        </span>
-                        <input
-                            v-model="network.connection.direct"
-                            :disabled="settingsLocked"
-                            type="checkbox"
-                        >
-                        <input-text
-                            v-if="network.connection.direct"
-                            v-model="directWs"
-                            :disabled="settingsLocked"
-                        />
-                    </label>
-
-                    <label class="u-form-block">
-                        <input-text
-                            v-model="network.auto_commands"
-                            :label="$t('settings_autorun')"
-                            type="textarea"
-                        />
-                    </label>
-                </div>
+                </template>
 
                 <div class="kiwi-networksettings-control">
                     <template v-if="isBouncerManaged">
                         <a
                             type="button"
-                            class="u-button u-submit kiwi-networksettings-save"
+                            class="u-button u-button-primary u-submit kiwi-networksettings-save"
                             @click="saveBouncerNetwork()"
                         >
                             {{ $t('save') }}
                         </a>
                         <a
                             type="button"
-                            class="u-button u-button-primary u-submit kiwi-connect-to-newnetwork"
+                            class="u-button u-button-online u-submit kiwi-connect-to-newnetwork"
                             :disabled="bouncerNetworkState === 'connecting'"
                             @click="connectBouncerNetwork()"
                         >
@@ -188,7 +136,7 @@
                         <a
                             v-if="network.state !== 'connected'"
                             type="button"
-                            class="u-button u-button-primary u-submit kiwi-connect-to-newnetwork"
+                            class="u-button u-button-online u-submit kiwi-connect-to-newnetwork"
                             :disabled="network.state !== 'disconnected'"
                             @click="connect()"
                         >
@@ -208,6 +156,90 @@
                         </a>
                     </template>
                 </div>
+
+                <h4
+                    class="kiwi-show-advanced-title"
+                    @click="show_advanced = !show_advanced"
+                >
+                    {{ $t('settings_advanced') }}
+                    <i
+                        :class="[`fa-caret-${show_advanced ? 'up' : 'down'}`]"
+                        class="fa"
+                        aria-hidden="true"
+                    />
+                </h4>
+
+                <div v-if="show_advanced" class="kiwi-networksettings-advanced">
+                    <label class="u-form-block">
+                        <input-text
+                            v-model="network.auto_commands"
+                            :label="$t('settings_autorun')"
+                            type="textarea"
+                        />
+                    </label>
+
+                    <div class="kiwi-networksettings-option">
+                        <label>
+                            <span class="kiwi-appsettings-showraw-label">
+                                {{ $t('settings_show_raw') }}
+                            </span>
+                            <input v-model="settingShowRaw" type="checkbox">
+                        </label>
+                        <div
+                            v-if="settingShowRaw"
+                            class="kiwi-networksettings-option-input"
+                        >
+                            <input-text
+                                v-model.number="settingRawScrollback"
+                                :title="$t('settings_raw_scrollback')"
+                                type="number"
+                                class="kiwi-networksettings-raw-scrollback"
+                            />
+                        </div>
+                    </div>
+
+                    <div v-if="!isBouncerManaged" class="kiwi-networksettings-option">
+                        <label>
+                            <span class="kiwi-appsettings-showraw-label">
+                                {{ $t('settings_use_websocket') }}
+                            </span>
+                            <input
+                                v-model="network.connection.direct"
+                                :disabled="connectionDetailsLocked"
+                                type="checkbox"
+                            >
+                        </label>
+                        <div
+                            v-if="network.connection.direct"
+                            class="kiwi-networksettings-option-input"
+                        >
+                            <input-text
+                                v-model="directWs"
+                                :disabled="connectionDetailsLocked"
+                                class="kiwi-networksettings-websocket-url"
+                            />
+                        </div>
+                    </div>
+
+                    <input-text
+                        v-model="network.connection.encoding"
+                        :label="$t('settings_encoding')"
+                        :disabled="connectionDetailsLocked"
+                    />
+
+                    <div v-if="!isBouncer" class="u-input-text">
+                        <label>{{ $t('settings_sasl_mechanism') }}</label>
+                        <select
+                            v-model="network.connection.sasl_mechanism"
+                            class="u-input"
+                            :disabled="saslLocked"
+                        >
+                            <option value="AUTO">AUTO (Recommended)</option>
+                            <option value="PLAIN">PLAIN</option>
+                            <option value="SCRAM-SHA-256">SCRAM-SHA-256</option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
             <div v-if="!restricted && !isBouncerController" class="kiwi-dangerzone">
@@ -226,6 +258,11 @@
 import * as Misc from '@/helpers/Misc';
 import Captcha from '@/components/Captcha';
 import ServerSelector from './ServerSelector';
+import {
+    compileNickPattern,
+    isValidServerPassword,
+    withinLimit
+} from '@/helpers/LoginFields';
 
 export default {
     components: {
@@ -260,6 +297,101 @@ export default {
                 return true;
             }
             return !this.isBouncerManaged && this.network.state !== 'disconnected';
+        },
+        isConnected() {
+            return this.network.state === 'connected';
+        },
+        nickLen() {
+            return this.supportLimit('NICKLEN');
+        },
+        userLen() {
+            return this.supportLimit('USERLEN');
+        },
+        nameLen() {
+            return this.supportLimit('NAMELEN');
+        },
+        isNickValid() {
+            const nickPattern = compileNickPattern(
+                this.$state.setting('startupOptions.nick_format')
+            );
+            if (!nickPattern) {
+                return false;
+            }
+
+            return !!(this.network.connection.nick || '').match(nickPattern);
+        },
+        isNickLengthValid() {
+            return withinLimit(this.network.connection.nick || '', this.nickLen);
+        },
+        isUserLengthValid() {
+            return withinLimit(this.network.username || '', this.userLen);
+        },
+        isRealNameLengthValid() {
+            return withinLimit(this.network.gecos || '', this.nameLen);
+        },
+        isServerPasswordValid() {
+            return isValidServerPassword(this.network.connection.password || '');
+        },
+        // Nick is live-editable on a connected normal network; the rest of the
+        // IRC identity only takes effect on the next connection.
+        nickLocked() {
+            if (this.isBouncerController) {
+                return true;
+            }
+            if (this.isBouncerManaged) {
+                return false;
+            }
+            return this.network.state !== 'disconnected' && !this.isConnected;
+        },
+        // IRC User, server password and SASL credentials only take effect on
+        // the next connection. Restricted mode does not lock the user's own
+        // account details, only the network endpoint above.
+        ircDetailsLocked() {
+            if (this.isBouncerController) {
+                return true;
+            }
+            if (this.isBouncerManaged) {
+                return false;
+            }
+            return this.network.state !== 'disconnected';
+        },
+        // SETNAME is the only way to change the real name after registration.
+        realNameLocked() {
+            if (this.isBouncerController) {
+                return true;
+            }
+            if (this.isBouncerManaged) {
+                return false;
+            }
+            if (!this.isConnected) {
+                return this.network.state !== 'disconnected';
+            }
+            return !this.network.hasCap('setname');
+        },
+        saslLocked() {
+            return this.ircDetailsLocked;
+        },
+        // A disconnected network has not told us whether it supports SASL yet,
+        // so keep the fields available until we know it does not.
+        saslVisible() {
+            if (this.isBouncerController) {
+                return false;
+            }
+            if (this.isBouncerManaged) {
+                return true;
+            }
+            if (this.network.hasCap('sasl') || this.network.hasAdvertisedCap('sasl')) {
+                return true;
+            }
+            if (this.network.connection.account || this.network.password) {
+                return true;
+            }
+            return this.network.state !== 'connected';
+        },
+        saslWarning() {
+            return this.isBouncerManaged && !!(
+                this.network.connection.account || this.network.password
+            );
         },
         // The bouncer provider is created by the startup screens and kept on
         // the app state. Its presence means connections are routed through a
@@ -451,6 +583,55 @@ export default {
             this.$state.removeNetwork(this.network.id);
             this.$state.$emit('active.component');
         },
+        supportLimit(name) {
+            const value = parseInt(this.network.supports(name), 10);
+            return Number.isFinite(value) && value > 0 ? value : 0;
+        },
+        // Apply a nick change as if the user had run /nick. A bouncer-managed
+        // network only stores the change until Save or Connect is pressed.
+        applyNick() {
+            if (this.isBouncerManaged || !this.isConnected || this.nickLocked) {
+                return;
+            }
+            if (!this.isNickValid || !this.isNickLengthValid) {
+                return;
+            }
+
+            const nick = (this.network.connection.nick || '').trim();
+            const currentUser = this.network.currentUser();
+            if (!nick || (currentUser && currentUser.nick === nick)) {
+                return;
+            }
+
+            this.network.ircClient.changeNick(nick);
+        },
+        // Apply a real name change as if the user had run /setname. The
+        // capability check is also reflected by realNameLocked.
+        applyRealName() {
+            if (this.isBouncerManaged || !this.isConnected || this.realNameLocked) {
+                return;
+            }
+            if (!this.isRealNameLengthValid) {
+                return;
+            }
+
+            const realName = (this.network.gecos || '').trim();
+            if (!realName) {
+                return;
+            }
+
+            const tags = {};
+            if (this.network.hasCap('labeled-response')) {
+                tags.label = Misc.generateLabel();
+            }
+
+            const ircMessage = new this.network.ircClient.Message('SETNAME', realName);
+            if (Object.keys(tags).length > 0) {
+                ircMessage.tags = tags;
+            }
+
+            this.network.ircClient.raw(ircMessage);
+        },
         toggleTls() {
             let connection = this.network.connection;
             connection.tls = !connection.tls;
@@ -534,6 +715,15 @@ export default {
     padding: 20px;
 }
 
+.kiwi-networksettings-auth-title {
+    text-align: left;
+    margin: 0 0 0.5em 0;
+}
+
+.kiwi-networksettings-invalid.u-input-text input.u-input {
+    border-color: var(--brand-error);
+}
+
 .kiwi-networksettings-captcha {
     margin-bottom: 1em;
 }
@@ -569,6 +759,22 @@ export default {
 //Apply spacing to the advanced options checkbox label
 .kiwi-networksettings .kiwi-networksettings-advanced .kiwi-appsettings-showraw-label {
     margin-left: 5px;
+}
+
+.kiwi-networksettings .kiwi-networksettings-advanced .kiwi-networksettings-option {
+    margin-bottom: 20px;
+}
+
+.kiwi-networksettings .kiwi-networksettings-advanced .kiwi-networksettings-option > label {
+    margin-bottom: 0;
+}
+
+.kiwi-networksettings .kiwi-networksettings-advanced .kiwi-networksettings-option-input {
+    margin: 10px 0 0 25px;
+}
+
+.kiwi-networksettings .kiwi-networksettings-advanced .kiwi-networksettings-option-input .u-input-text {
+    margin-bottom: 0;
 }
 
 //Large connection button

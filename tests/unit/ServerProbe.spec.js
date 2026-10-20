@@ -42,6 +42,7 @@ describe('server probe', () => {
         expect(info.caps.sasl).toBe('');
         expect(info.caps['draft/account-registration']).toBe('before-connect');
         expect(info.extendedIsupport).toBe(false);
+        expect(info.capsComplete).toBe(true);
         expect(transport.writeLine).toHaveBeenCalledTimes(1);
         expect(transport.writeLine).toHaveBeenCalledWith('CAP LS 302');
         expect(transport.close).toHaveBeenCalled();
@@ -57,6 +58,7 @@ describe('server probe', () => {
         expect(info.caps.sasl).toBe('');
         expect(info.caps['multi-prefix']).toBe('');
         expect(info.caps['server-time']).toBe('');
+        expect(info.capsComplete).toBe(true);
         expect(transport.writeLine).not.toHaveBeenCalledWith(
             expect.stringContaining('REQ')
         );
@@ -105,6 +107,7 @@ describe('server probe', () => {
 
         expect(info.caps).toEqual({});
         expect(info.isupport).toEqual({});
+        expect(info.capsComplete).toBe(false);
         expect(transport.close).toHaveBeenCalled();
     });
 
@@ -116,6 +119,19 @@ describe('server probe', () => {
         const info = await pending;
 
         expect(info.caps.sasl).toBe('');
+        expect(info.capsComplete).toBe(false);
+    });
+
+    it('reports an incomplete probe when the transport cannot be created', async() => {
+        const info = await probeServerCaps({
+            createTransport: () => {
+                throw new Error('no transport');
+            },
+            transportOptions: { direct: false, host: 'irc.example.net', port: 6671 },
+        });
+
+        expect(info.caps).toEqual({});
+        expect(info.capsComplete).toBe(false);
     });
 
     it('caches results for the session', async() => {
@@ -132,5 +148,29 @@ describe('server probe', () => {
         const secondInfo = await probeServerCaps(options);
         expect(factory).toHaveBeenCalledTimes(1);
         expect(secondInfo).toEqual(firstInfo);
+    });
+
+    it('does not cache a probe that never completed CAP LS', async() => {
+        const first = makeTransport();
+        const factory = jest.fn(() => first);
+        const options = {
+            createTransport: factory,
+            transportOptions: { direct: false, host: 'irc.example.net', port: 6672 },
+        };
+
+        const firstPending = probeServerCaps(options);
+        jest.advanceTimersByTime(8000);
+        const firstInfo = await firstPending;
+        expect(firstInfo.capsComplete).toBe(false);
+
+        const second = makeTransport();
+        factory.mockReturnValue(second);
+        const secondPending = probeServerCaps(options);
+        second.emit('line', ':serv CAP * LS :sasl');
+        const secondInfo = await secondPending;
+
+        expect(factory).toHaveBeenCalledTimes(2);
+        expect(secondInfo.capsComplete).toBe(true);
+        expect(secondInfo.caps.sasl).toBe('');
     });
 });

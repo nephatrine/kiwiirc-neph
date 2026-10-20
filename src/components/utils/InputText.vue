@@ -9,6 +9,7 @@
                     v-model="currentValue"
                     :disabled="disabled"
                     :placeholder="placeholder"
+                    :maxlength="maxlength || undefined"
                     :type="plainTextEnabled ? 'text' : 'password'"
                     :class="{ 'u-form-input-plaintext': showPlainText }"
                     :autocomplete="autocomplete || 'off'"
@@ -16,13 +17,16 @@
                     autocapitalize="off"
                     spellcheck="false"
                     class="u-input"
+                    :title="title || undefined"
                     @keypress="$emit('keypress', $event)"
                     @paste="$emit('paste', $event)"
+                    @blur="$emit('blur', $event)"
                 >
 
                 <i
                     v-if="showPlainText"
                     :class="{ 'u-input-text-plaintext--active': plainTextEnabled }"
+                    :title="title || undefined"
                     class="u-input-text-plaintext fa fa-eye"
                     aria-hidden="true"
                     @click="plainTextEnabled = !plainTextEnabled"
@@ -37,6 +41,7 @@
                 :placeholder="placeholder"
                 type="number"
                 class="u-input"
+                :title="title || undefined"
                 @keypress="$emit('keypress', $event)"
                 @paste="$emit('paste', $event)"
             >
@@ -46,9 +51,12 @@
                 v-model="currentValue"
                 :disabled="disabled"
                 :placeholder="placeholder"
+                :maxlength="maxlength || undefined"
                 class="u-input"
+                :title="title || undefined"
                 @keypress="$emit('keypress', $event)"
                 @paste="$emit('paste', $event)"
+                @blur="$emit('blur', $event)"
             />
             <input
                 v-else
@@ -56,13 +64,16 @@
                 v-model="currentValue"
                 :disabled="disabled"
                 :placeholder="placeholder"
+                :maxlength="maxlength || undefined"
                 :autocomplete="autocomplete || 'off'"
                 autocorrect="off"
                 autocapitalize="off"
                 spellcheck="false"
                 class="u-input"
+                :title="title || undefined"
                 @keypress="$emit('keypress', $event)"
                 @paste="$emit('paste', $event)"
+                @blur="$emit('blur', $event)"
             >
 
             <div v-if="$slots.default" class="u-input-text-c">
@@ -79,7 +90,7 @@ import Vue from 'vue';
 
 export default Vue.component('input-text', {
     props: ['value', 'label', 'type', 'showPlainText', 'disabled', 'placeholder',
-        'autocomplete'],
+        'autocomplete', 'maxlength', 'title'],
     data: function data() {
         return {
             plainTextEnabled: false,

@@ -1,8 +1,8 @@
 <template>
     <startup-layout
         ref="layout"
-        :remember-settings="remember_settings"
-        :remember-passwords="remember_settings && remember_password"
+        :remember-settings="layoutRememberSettings"
+        :remember-passwords="layoutRememberPasswords"
         class="kiwi-welcome-simple"
     >
         <template v-if="startupOptions.altComponent" #connection>
@@ -64,28 +64,29 @@
                         </div>
                         <input-text
                             ref="anonymousTabNick"
-                            v-model="nick"
-                            v-focus="!isIframe && !nick"
-                            :label="$t('nick')"
+                            v-model="fields.nick"
+                            v-focus="!isIframe && !fields.nick"
+                            :label="$t('nick_name')"
+                            :maxlength="nickLen || undefined"
                             type="text"
-                            :class="{ 'kiwi-welcome-invalid-nick': !isNickValid }"
+                            :class="{ 'kiwi-welcome-invalid-nick': !isNickValid || !isNickLengthValid }"
                         />
                     </template>
                     <template v-else-if="activeTab === 'account' && showAccountTab">
                         <div class="kiwi-welcome-simple-input-container">
                             <input-text
                                 ref="accountTabAccount"
-                                v-model="account"
-                                v-focus="!isIframe && !account"
-                                :label="$t('account')"
+                                v-model="fields.account"
+                                v-focus="!isIframe && !fields.account"
+                                :label="$t('account_name')"
                                 type="text"
                                 autocomplete="username"
                             />
                             <input-text
-                                v-model="password"
-                                v-focus="!isIframe && !!account && !password"
+                                v-model="fields.password"
+                                v-focus="!isIframe && !!fields.account && !fields.password"
                                 :show-plain-text="true"
-                                :label="$t('password')"
+                                :label="$t('account_password')"
                                 type="password"
                                 autocomplete="current-password"
                             />
@@ -95,35 +96,46 @@
                         <div class="kiwi-welcome-simple-input-container">
                             <input-text
                                 ref="registerTabAccount"
-                                v-model="registerAccount"
-                                :label="$t('account')"
+                                v-model="fields.account"
+                                :label="$t('account_name')"
                                 type="text"
                                 autocomplete="username"
                                 :class="{
                                     'kiwi-welcome-invalid-nick':
                                         !(probeRegInfo && probeRegInfo.customAccountName)
-                                        && !!registerAccount.trim() && !isNickValid,
+                                        && !!fields.account.trim() && !isNickValid,
                                 }"
                             />
                             <input-text
                                 ref="registerTabPassword"
-                                v-model="registerPassword"
+                                v-model="fields.password"
                                 :show-plain-text="true"
-                                :label="$t('register_account_password')"
+                                :label="$t('account_password')"
                                 type="password"
                                 autocomplete="new-password"
                             />
-                            <input-text
-                                v-model="registerEmail"
-                                :label="$t(probeRegInfo && probeRegInfo.emailRequired
-                                    ? 'register_account_email_required'
-                                    : 'register_account_email_optional')"
-                                type="email"
-                                autocomplete="email"
-                            />
+                            <div v-if="fields.password" class="kiwi-welcome-password-strength">
+                                <div class="kiwi-welcome-password-strength-bar">
+                                    <span
+                                        class="kiwi-welcome-password-strength-level"
+                                        :class="passwordStrengthClass"
+                                    />
+                                </div>
+                                <span class="kiwi-welcome-password-strength-label">
+                                    {{ $t(passwordStrengthLabel) }}
+                                </span>
+                            </div>
                             <div v-if="registerPasswordHint" class="kiwi-welcome-register-hint">
                                 {{ registerPasswordHint }}
                             </div>
+                            <input-text
+                                v-model="fields.email"
+                                :label="$t(probeRegInfo && probeRegInfo.emailRequired
+                                    ? 'account_email_req'
+                                    : 'account_email_opt')"
+                                type="email"
+                                autocomplete="email"
+                            />
                         </div>
                     </template>
                 </template>
@@ -131,45 +143,14 @@
                     <input-text
                         v-model="nick"
                         v-focus="!isIframe && (!nick || !show_password_box)"
-                        :label="$t('nick')"
+                        :label="$t('nick_name')"
                         :autocomplete="nickIsLoginUsername ? 'username' : undefined"
                         type="text"
                         :class="{ 'kiwi-welcome-invalid-nick': !isNickValid }"
                     />
 
-                    <template v-if="activeTab === 'register' && showRegisterTab">
+                    <template v-if="showPass && toggablePass">
                         <div class="kiwi-welcome-simple-input-container">
-                            <input-text
-                                v-if="probeRegInfo && probeRegInfo.customAccountName"
-                                v-model="registerAccount"
-                                :label="$t('register_account_name')"
-                                :placeholder="nick"
-                                :autocomplete="nickIsLoginUsername ? undefined : 'username'"
-                                type="text"
-                            />
-                            <input-text
-                                v-model="registerEmail"
-                                :label="$t(probeRegInfo && probeRegInfo.emailRequired
-                                    ? 'register_account_email_required'
-                                    : 'register_account_email_optional')"
-                                type="email"
-                                autocomplete="email"
-                            />
-                            <input-text
-                                v-model="registerPassword"
-                                :show-plain-text="true"
-                                :label="$t('register_account_password')"
-                                type="password"
-                                autocomplete="new-password"
-                            />
-                            <div v-if="registerPasswordHint" class="kiwi-welcome-register-hint">
-                                {{ registerPasswordHint }}
-                            </div>
-                        </div>
-                    </template>
-
-                    <template v-else>
-                        <div v-if="showPass && toggablePass" class="kiwi-welcome-simple-input-container">
                             <label
                                 class="kiwi-welcome-simple-have-password"
                             >
@@ -177,33 +158,34 @@
                                 <span> {{ $t('password_have') }} </span>
                             </label>
                         </div>
-
-                        <div
-                            v-if="showPass && (show_password_box || !toggablePass)"
-                            class="kiwi-welcome-simple-input-container"
-                        >
-                            <input-text
-                                v-model="account"
-                                :label="$t('account_name')"
-                                :placeholder="nick"
-                                :autocomplete="nickIsLoginUsername ? undefined : 'username'"
-                                type="text"
-                            />
-                            <input-text
-                                v-model="password"
-                                v-focus="(!isIframe && nick) || show_password_box"
-                                :show-plain-text="true"
-                                :label="$t('password')"
-                                type="password"
-                                autocomplete="current-password"
-                            />
-                        </div>
                     </template>
+
+                    <div
+                        v-if="showPass && (show_password_box || !toggablePass)"
+                        class="kiwi-welcome-simple-input-container"
+                    >
+                        <input-text
+                            v-model="account"
+                            :label="$t('account_name')"
+                            :placeholder="nick"
+                            :autocomplete="nickIsLoginUsername ? undefined : 'username'"
+                            type="text"
+                        />
+                        <input-text
+                            v-model="password"
+                            v-focus="(!isIframe && nick) || show_password_box"
+                            :show-plain-text="true"
+                            :label="$t('account_password')"
+                            type="password"
+                            autocomplete="current-password"
+                        />
+                    </div>
                 </template>
 
                 <div class="kiwi-welcome-simple-input-container">
                     <label>
-                        <input v-model="remember_settings" type="checkbox">
+                        <input v-if="useTabs" v-model="fields.rememberSettings" type="checkbox">
+                        <input v-else v-model="remember_settings" type="checkbox">
                         <span> {{ $t('remember_settings') }} </span>
                     </label>
                 </div>
@@ -221,31 +203,49 @@
 
                     <div v-if="showAdvanced" class="kiwi-welcome-advanced-box">
                         <input-text
-                            v-if="activeTab === 'account' && showAccountTab"
-                            v-model="accountNick"
-                            :label="$t('nick')"
-                            :placeholder="accountNickSuggestion"
+                            v-if="(activeTab === 'account' && showAccountTab)
+                                || (activeTab === 'register' && showRegisterTab
+                                    && probeRegInfo && probeRegInfo.customAccountName)"
+                            v-model="fields.nick"
+                            :label="$t('nick_name')"
+                            :placeholder="activeTab === 'account'
+                                ? accountNickSuggestion
+                                : registerNickSuggestion"
+                            :maxlength="nickLen || undefined"
                             type="text"
-                            :class="{ 'kiwi-welcome-invalid-nick': !isNickValid }"
-                            @input="accountNickTouched = true"
+                            :class="{ 'kiwi-welcome-invalid-nick': !isNickValid || !isNickLengthValid }"
                         />
                         <input-text
-                            v-if="activeTab === 'register' && showRegisterTab
-                                && probeRegInfo && probeRegInfo.customAccountName"
-                            v-model="registerNick"
-                            :label="$t('nick')"
+                            v-model="fields.username"
+                            :label="$t('user_name')"
+                            :placeholder="effectiveNick"
+                            :maxlength="userLen || undefined"
                             type="text"
-                            :class="{ 'kiwi-welcome-invalid-nick': !isNickValid }"
+                            :class="{ 'kiwi-welcome-invalid-nick': !isUsernameValid }"
+                        />
+                        <input-text
+                            v-model="fields.gecos"
+                            :label="$t('real_name')"
+                            :maxlength="nameLen || undefined"
+                            type="text"
+                            :class="{ 'kiwi-welcome-invalid-nick': !isGecosValid }"
+                        />
+                        <input-text
+                            v-model="fields.serverPassword"
+                            :show-plain-text="true"
+                            :label="$t('server_password')"
+                            type="password"
+                            :class="{ 'kiwi-welcome-invalid-nick': !isServerPasswordValid }"
                         />
                         <input-text
                             v-if="showChannel"
-                            v-model="channel"
-                            :label="$t('channel')"
+                            v-model="fields.channel"
+                            :label="$t('channel_list')"
                         />
                         <div class="kiwi-welcome-advanced-row">
                             <label>
                                 <input
-                                    v-model="remember_password"
+                                    v-model="fields.rememberPasswords"
                                     :disabled="rememberPasswordDisabled"
                                     type="checkbox"
                                 >
@@ -300,7 +300,7 @@
                     <div class="kiwi-welcome-simple-input-container">
                         <input-text
                             v-model="registerCode"
-                            :label="$t('register_verify_code')"
+                            :label="$t('verification_code')"
                             type="text"
                         />
                     </div>
@@ -341,15 +341,41 @@
 'kiwi public';
 
 import * as Misc from '@/helpers/Misc';
-import { escapeHtml, escapeRegExp, trim } from '@/helpers/Utils';
+import { escapeHtml, trim } from '@/helpers/Utils';
+import {
+    byteLength,
+    compileNickPattern,
+    isValidServerPassword,
+    stripAccountSuffix,
+    withinLimit
+} from '@/helpers/LoginFields';
 import Logger from '@/libs/Logger';
 import BouncerProvider from '@/libs/BouncerProvider';
 import { probeServerCaps, createProbeTransport } from '@/libs/ServerProbe';
 import { parseAccountRegistrationCap } from '@/libs/accountRegistration';
+import { passwordScore } from '@/helpers/PasswordStrength';
 import Captcha from '@/components/Captcha';
 import StartupLayout from './CommonLayout';
 
 let log = Logger.namespace('Welcome.vue');
+
+// Each login tab owns every field it puts on the wire. Nothing is copied
+// between tabs after the initial restore, so switching tabs can never leak
+// (or lose) a value from another tab.
+function createTabFields() {
+    return {
+        nick: '',
+        account: '',
+        password: '',
+        email: '',
+        username: '',
+        gecos: '',
+        serverPassword: '',
+        channel: '',
+        rememberSettings: true,
+        rememberPasswords: false,
+    };
+}
 
 export default {
     components: {
@@ -377,15 +403,16 @@ export default {
             remember_settings: true,
             remember_password: false,
             activeTab: 'account',
-            accountNickTouched: false,
-            suspendAccountAutofill: false,
             showAdvanced: false,
-            accountNick: '',
-            registerNick: '',
-            registerAccount: '',
-            registerEmail: '',
-            registerPassword: '',
             registerCode: '',
+            // Standard mode: one independent field set per tab. The flat
+            // fields above are the single-form bouncer mode state and
+            // stay untouched while the tabs are in use.
+            tabs: {
+                anonymous: createTabFields(),
+                account: createTabFields(),
+                register: createTabFields(),
+            },
         };
     },
     computed: {
@@ -395,10 +422,27 @@ export default {
         startupOptions() {
             return this.$state.settings.startupOptions;
         },
-        // Bouncer mode keeps the legacy single login form; the tabbed
-        // Anonymous / Account / Register flow is standard mode only.
+        // Bouncer mode (a network added through a bouncer) keeps the
+        // single login form; the tabbed Anonymous / Account / Register flow
+        // is for direct connections only.
         useTabs() {
             return !this.$state.settings.startupOptions.bouncer;
+        },
+        // The fields belonging to the active tab (tabbed mode only). The
+        // object itself is reactive, so v-model writes straight into it.
+        fields() {
+            return this.tabs[this.activeTab];
+        },
+        layoutRememberSettings() {
+            return this.useTabs ? this.fields.rememberSettings : this.remember_settings;
+        },
+        layoutRememberPasswords() {
+            if (!this.useTabs) {
+                return this.remember_settings && this.remember_password;
+            }
+            return this.fields.rememberSettings &&
+                this.fields.rememberPasswords &&
+                !this.rememberPasswordDisabled;
         },
         greetingText() {
             let greeting = this.$state.settings.startupOptions.greetingText;
@@ -446,7 +490,8 @@ export default {
         // without sasl. If it is the only remaining pathway (Anonymous
         // forbidden, no registration), it shows anyway as a last resort.
         accountOffered() {
-            return !this.probeCaps || !!this.probeCaps.sasl;
+            return !this.probeCaps ||
+                Object.prototype.hasOwnProperty.call(this.probeCaps, 'sasl');
         },
         showAccountTab() {
             return this.accountOffered ||
@@ -475,7 +520,7 @@ export default {
                 null;
         },
         // True when the probe proved account names default to the nick, so the
-        // legacy (bouncer) nickname field carries the username autofill
+        // single-form bouncer nickname field carries the username autofill
         // token. The tabbed Account and Register forms always put the token
         // on their account fields instead, so the two never duplicate it.
         nickIsLoginUsername() {
@@ -518,31 +563,43 @@ export default {
         // configured default nick (or none at all) never forces the user
         // to type a nick by hand.
         accountNickSuggestion() {
-            return this.stripAccountSuffix((this.account || '').trim());
+            return this.stripAccountSuffix((this.tabs.account.account || '').trim());
+        },
+        // Register nick default: the authcid with any network/client suffix
+        // stripped, falling back to the remembered anonymous nick.
+        registerNickSuggestion() {
+            const account = (this.tabs.register.account || '').trim();
+            return this.stripAccountSuffix(account) || this.tabs.anonymous.nick;
         },
         // Nick actually validated and connected with. Each tab owns its
         // identity: the Account tab uses its nick override, falling back
         // to the account-derived suggestion; the Register tab uses the
         // account field verbatim (the account IS the nick unless
         // custom-account-name is set, when its own nick override wins);
-        // Anonymous and legacy mode use the nick field verbatim.
+        // Anonymous and single-form bouncer mode use the nick field verbatim.
         effectiveNick() {
-            if (this.useTabs && this.activeTab === 'account' && this.showAccountTab) {
-                return this.accountNick || this.accountNickSuggestion;
+            if (!this.useTabs) {
+                return this.nick;
             }
-            if (this.useTabs && this.activeTab === 'register' && this.showRegisterTab) {
+            if (this.activeTab === 'account') {
+                return this.fields.nick || this.accountNickSuggestion;
+            }
+            if (this.activeTab === 'register') {
                 return this.registerModeNick();
             }
-            return this.nick;
+            return this.fields.nick;
+        },
+        currentChannel() {
+            return this.useTabs ? this.fields.channel : this.channel;
         },
         channelReady() {
-            if (this.connectWithoutChannel || this.channel) {
+            if (this.connectWithoutChannel || this.currentChannel) {
                 if (this.connectWithoutChannel) {
                     return true;
                 }
                 // Make sure the channel name starts with a common channel prefix
                 let valid = true;
-                let bufferObjs = Misc.extractBuffers(this.channel);
+                let bufferObjs = Misc.extractBuffers(this.currentChannel);
                 bufferObjs.forEach((bufferObj) => {
                     if ('#&'.indexOf(bufferObj.name[0]) === -1) {
                         valid = false;
@@ -564,39 +621,54 @@ export default {
                 Misc.sanitizeUrl(tokens[key]) :
                 '';
         },
+        // IRC lengths are byte counts, so a multi-byte character can be
+        // shorter than the field limit while still exceeding it on the wire.
+        nickLen() {
+            return this.probeLimit('NICKLEN');
+        },
+        userLen() {
+            return this.probeLimit('USERLEN');
+        },
+        nameLen() {
+            return this.probeLimit('NAMELEN');
+        },
+        isNickLengthValid() {
+            return this.withinLimit(this.effectiveNick, this.nickLen);
+        },
+        isUsernameValid() {
+            return !this.useTabs || this.withinLimit(this.fields.username, this.userLen);
+        },
+        isGecosValid() {
+            return !this.useTabs || this.withinLimit(this.fields.gecos, this.nameLen);
+        },
+        isServerPasswordValid() {
+            return !this.useTabs || isValidServerPassword(this.fields.serverPassword);
+        },
+        passwordStrength() {
+            return passwordScore(this.useTabs ? this.fields.password : '');
+        },
+        passwordStrengthClass() {
+            return 'kiwi-welcome-password-strength-level--' + this.passwordStrength;
+        },
+        passwordStrengthLabel() {
+            const labels = [
+                'password_strength_weak',
+                'password_strength_fair',
+                'password_strength_good',
+                'password_strength_strong',
+            ];
+            return labels[Math.max(0, this.passwordStrength - 1)] || labels[0];
+        },
         isNickValid() {
-            let nickPatternStr = this.$state.setting('startupOptions.nick_format');
-            let nickPattern = '';
-            if (!nickPatternStr) {
-                // Nicks cannot start with [0-9- ]
-                // ? is not a valid nick character but we allow it as it gets replaced
-                // with a number.
-                nickPattern = /^[a-z_\\[\]{}^`|][a-z0-9_\-\\[\]{}^`|]*$/i;
-            } else {
-                // Support custom pattern matches. Eg. only '@example.com' may be allowed
-                // on some IRCDs
-                let pattern = '';
-                let flags = '';
-                if (nickPatternStr[0] === '/') {
-                    // Custom regex
-                    let pos = nickPatternStr.lastIndexOf('/');
-                    pattern = nickPatternStr.substring(1, pos);
-                    flags = nickPatternStr.substr(pos + 1);
-                } else {
-                    // Basic contains rule
-                    pattern = escapeRegExp(nickPatternStr);
-                    flags = 'i';
-                }
-
-                try {
-                    nickPattern = new RegExp(pattern, flags);
-                } catch (error) {
-                    log.error('Nick format error: ' + error.message);
-                    return false;
-                }
+            const nickPattern = compileNickPattern(
+                this.$state.setting('startupOptions.nick_format')
+            );
+            if (!nickPattern) {
+                log.error('Nick format error in startupOptions.nick_format');
+                return false;
             }
 
-            return (this.effectiveNick || '').match(nickPattern);
+            return !!(this.effectiveNick || '').match(nickPattern);
         },
         readyToStart() {
             let ready = !!this.nick;
@@ -614,6 +686,10 @@ export default {
                 ready = false;
             }
 
+            if (!this.isNickLengthValid) {
+                ready = false;
+            }
+
             if (this.termsContent && !this.termsAccepted) {
                 ready = false;
             }
@@ -621,12 +697,15 @@ export default {
             return ready;
         },
         readyAnonymous() {
-            return !!this.nick && this.channelReady && !!this.isNickValid &&
+            return !!this.fields.nick && this.channelReady && !!this.isNickValid &&
+                !!this.isNickLengthValid && this.isUsernameValid && this.isGecosValid &&
+                this.isServerPasswordValid &&
                 (!this.termsContent || this.termsAccepted);
         },
         readyAccount() {
-            return !!this.effectiveNick && !!this.account.trim() && !!this.password &&
-                this.channelReady && !!this.isNickValid &&
+            return !!this.effectiveNick && !!this.fields.account.trim() && !!this.fields.password &&
+                this.channelReady && !!this.isNickValid && !!this.isNickLengthValid &&
+                this.isUsernameValid && this.isGecosValid && this.isServerPasswordValid &&
                 (!this.termsContent || this.termsAccepted);
         },
         readyToRegister() {
@@ -639,17 +718,17 @@ export default {
             // server creates. The nick field is optional: when empty (or
             // hidden under Advanced / without custom-account-name) the
             // account name is used as the nick via effectiveNick.
-            let ready = !!this.registerAccount.trim() && !!this.registerPassword;
+            let ready = !!this.fields.account.trim() && !!this.fields.password;
 
             if (!this.channelReady) {
                 ready = false;
             }
 
-            if (info.emailRequired && !this.registerEmail.trim()) {
+            if (info.emailRequired && !this.fields.email.trim()) {
                 ready = false;
             }
 
-            const length = new TextEncoder().encode(this.registerPassword).length;
+            const length = this.byteLength(this.fields.password);
             if (info.minPasswordLength && length < info.minPasswordLength) {
                 ready = false;
             }
@@ -657,7 +736,11 @@ export default {
                 ready = false;
             }
 
-            if (!this.isNickValid) {
+            if (!this.isNickValid || !this.isNickLengthValid) {
+                ready = false;
+            }
+
+            if (!this.isUsernameValid || !this.isGecosValid || !this.isServerPasswordValid) {
                 ready = false;
             }
 
@@ -680,19 +763,22 @@ export default {
             return this.readyAnonymous;
         },
         // Remember Password needs Remember Me plus a password actually in
-        // play. In tabbed mode that means the Account and Register tabs,
-        // whose password fields are always shown; the Anonymous tab has no
-        // password. Legacy (bouncer) mode keeps the old rule: a forced
-        // (untoggable) account block counts as in play.
+        // play. In tabbed mode the Account and Register tabs always have
+        // one; the Anonymous tab only has its server password. Legacy
+        // (bouncer) mode keeps the old rule: a forced (untoggable) account
+        // block counts as in play.
         rememberPasswordDisabled() {
-            if (!this.remember_settings) {
-                return true;
-            }
             if (!this.useTabs) {
+                if (!this.remember_settings) {
+                    return true;
+                }
                 return !this.showPass ||
                     (this.toggablePass && !this.show_password_box);
             }
-            return this.activeTab !== 'account' && this.activeTab !== 'register';
+            if (!this.fields.rememberSettings) {
+                return true;
+            }
+            return this.activeTab === 'anonymous' && !this.fields.serverPassword;
         },
     },
     watch: {
@@ -700,32 +786,6 @@ export default {
             if (newVal === false) {
                 // clear the password when show password is unchecked
                 this.password = '';
-            }
-        },
-        rememberPasswordDisabled(disabled) {
-            if (disabled) {
-                this.remember_password = false;
-            }
-        },
-        // Default the Account tab's nick override from the account name
-        // until the user takes over that field themselves. Only fills an
-        // empty override so a typed value is never clobbered. The override
-        // lives on its own field, so other tabs are never affected.
-        account(newVal) {
-            // The restore in created() assigns the remembered account
-            // before the user can type anything: skip that first run so
-            // the nick override starts empty (placeholder shows the
-            // default) instead of echoing the restored account.
-            if (this.suspendAccountAutofill) {
-                this.suspendAccountAutofill = false;
-                return;
-            }
-            if (this.accountNickTouched || this.accountNick) {
-                return;
-            }
-            const stripped = this.stripAccountSuffix((newVal || '').trim());
-            if (stripped) {
-                this.accountNick = stripped;
             }
         },
         showAccountTab() {
@@ -768,35 +828,6 @@ export default {
             restoreAccount = options.account || '';
         }
 
-        if (restoreAccount) {
-            // Account user: pre-fill the Account tab only. The other tabs
-            // keep their defaults: Anonymous gets the configured default
-            // nick (an account nick cannot be reused anonymously) and
-            // Register starts blank for the new account.
-            this.account = restoreAccount;
-            this.suspendAccountAutofill = true;
-            this.nick = this.processNickRandomNumber(options.nick || '');
-        } else {
-            // Anonymous user: pre-fill the Anonymous tab only, plus a
-            // one-time copy of the nick into the Register account field
-            // (reserving your nick as an account is the common flow).
-            // The Account tab stays blank.
-            this.nick = this.processNickRandomNumber(restoreNick || '');
-            this.account = '';
-            if (this.nick) {
-                this.registerAccount = this.nick;
-            }
-        }
-
-        if (options.password) {
-            this.password = options.password;
-        } else if (previousNet && previousNet.password) {
-            this.password = previousNet.password;
-            this.show_password_box = true;
-        } else {
-            this.password = '';
-        }
-
         let previousChannels = '';
         if (previousNet) {
             previousChannels = previousNet.buffers
@@ -805,7 +836,62 @@ export default {
                 .join(',');
         }
 
-        this.channel = decodeURIComponent(window.location.hash) || previousChannels || options.channel || '';
+        const initialChannel = decodeURIComponent(window.location.hash) ||
+            previousChannels || options.channel || '';
+        const restoredPassword = options.password ||
+            (previousNet && previousNet.password) || '';
+
+        if (this.useTabs) {
+            // Seed only the tab that owns the remembered identity. The
+            // others keep their own defaults: an account nick is not a
+            // valid anonymous default, and Register is a brand new account.
+            if (restoreAccount) {
+                this.tabs.account.account = restoreAccount;
+                this.tabs.anonymous.nick = this.processNickRandomNumber(options.nick || '');
+            } else {
+                const anonNick = this.processNickRandomNumber(restoreNick || '');
+                this.tabs.anonymous.nick = anonNick;
+                // One-time prefill only: reserving the remembered
+                // anonymous nick is the common way to start registering.
+                this.tabs.register.account = anonNick;
+            }
+
+            this.tabs.account.password = restoredPassword;
+            this.tabs.anonymous.channel = initialChannel;
+            this.tabs.account.channel = initialChannel;
+            this.tabs.register.channel = initialChannel;
+
+            // Remembered passwords belong to the identity that was
+            // remembered, so only an account restore starts them checked.
+            if (restoreAccount) {
+                this.tabs.account.rememberPasswords =
+                    !!this.$state.user_settings.remember_password;
+            }
+
+            // A saved anonymous identity starts on Anonymous. First-time
+            // visitors and remembered accounts start on Account.
+            this.activeTab = (previousNet && !restoreAccount) ? 'anonymous' : 'account';
+        } else {
+            if (restoreAccount) {
+                this.account = restoreAccount;
+                this.nick = this.processNickRandomNumber(options.nick || '');
+            } else {
+                this.nick = this.processNickRandomNumber(restoreNick || '');
+            }
+
+            this.password = restoredPassword;
+            if (!options.password && previousNet && previousNet.password) {
+                this.show_password_box = true;
+            }
+
+            this.channel = initialChannel;
+
+            this.remember_password = !!this.$state.user_settings.remember_password;
+            if (this.rememberPasswordDisabled) {
+                this.remember_password = false;
+            }
+        }
+
         this.showChannel = typeof options.showChannel === 'boolean' ?
             options.showChannel :
             true;
@@ -818,14 +904,6 @@ export default {
         this.toggablePass = typeof options.toggablePassword === 'boolean' ?
             options.toggablePassword :
             true;
-
-        // Restore the password-memory preference, clamped to the same rule
-        // as the checkbox: meaningless without Remember Me or a password
-        // field, so never restored checked in those states.
-        this.remember_password = !!this.$state.user_settings.remember_password;
-        if (this.rememberPasswordDisabled) {
-            this.remember_password = false;
-        }
 
         this.connectWithoutChannel = !!options.allowNoChannel;
 
@@ -891,18 +969,33 @@ export default {
         // button stays disabled until the account is filled anyway).
         registerModeNick() {
             const custom = !!(this.probeRegInfo && this.probeRegInfo.customAccountName);
+            const account = (this.tabs.register.account || '').trim();
             if (!custom) {
-                return (this.registerAccount || '').trim() || this.nick;
+                return account || this.tabs.anonymous.nick;
             }
-            return this.registerNick || (this.registerAccount || '').trim() || this.nick;
+            return this.tabs.register.nick ||
+                this.stripAccountSuffix(account) ||
+                this.tabs.anonymous.nick;
         },
-        // An account name doubles as a nick suggestion: strip a trailing
-        // `@suffix` (eg. ankle@phone becomes ankle) for the nickname default.
+        // An account name doubles as a nick suggestion: strip everything
+        // from the first `@` (client suffix) or `/` (network suffix), so
+        // USERNAME@CLIENT, USERNAME/NETWORK and USERNAME/NETWORK@CLIENT
+        // all suggest USERNAME.
         stripAccountSuffix(name) {
-            const idx = (name || '').indexOf('@');
-            return idx === -1 ?
-                name :
-                name.substr(0, idx);
+            return stripAccountSuffix(name);
+        },
+        // ISUPPORT length tokens are optional and only present when the
+        // probe got that far; 0 means "no known limit".
+        probeLimit(token) {
+            const tokens = this.probeIsupport || {};
+            const limit = parseInt(tokens[token], 10);
+            return limit > 0 ? limit : 0;
+        },
+        byteLength(value) {
+            return byteLength(value);
+        },
+        withinLimit(value, limit) {
+            return withinLimit(value, limit);
         },
         // Keep the active tab on one the server actually offers. Account
         // first, then Anonymous; Register is never auto-picked.
@@ -966,14 +1059,16 @@ export default {
             this.ensureValidTab();
         },
         onAltClose(event) {
+            // An alt component feeds whichever tab is currently open.
+            const target = this.useTabs ? this.fields : this;
             if (event.channel) {
-                this.channel = event.channel;
+                target.channel = event.channel;
             }
             if (event.nick) {
-                this.nick = event.nick;
+                target.nick = event.nick;
             }
             if (event.password) {
-                this.password = event.password;
+                target.password = event.password;
             }
             if (event.error) {
                 this.connectErrors.push(event.error);
@@ -1013,25 +1108,43 @@ export default {
             // Check if we have this network already
             let net = this.network || this.$state.getNetworkFromAddress(netAddress);
 
+            // Every tab supplies its own complete field set; single-form
+            // bouncer mode maps its one form onto the same shape.
+            let fields = this.tabs[mode];
+            if (!this.useTabs) {
+                fields = {
+                    nick: this.nick,
+                    account: this.account,
+                    password: this.password,
+                    email: '',
+                    username: '',
+                    gecos: '',
+                    serverPassword: '',
+                    channel: this.channel,
+                    rememberSettings: this.remember_settings,
+                    rememberPasswords: this.remember_password,
+                };
+            }
+
             // Register mode never logs in with SASL: the password below is the
             // new account password and is armed for the pre-connect REGISTER
             // instead of being stored as the SASL secret. Anonymous mode
             // likewise carries no account identity at all.
             let isRegister = mode === 'register' && !!this.probeRegInfo;
-            let isAnonymous = mode === 'anonymous';
+            let isAnonymous = this.useTabs && mode === 'anonymous';
             let password = (isRegister || isAnonymous) ?
                 '' :
-                this.password;
+                fields.password;
             let loginAccount = (isRegister || isAnonymous) ?
                 '' :
-                this.account;
+                fields.account;
 
             // Each tab owns its identity: connect with that tab's nick so
             // nothing leaks between tabs (an account nick must never go
             // out on an anonymous connect, nor a stale nick on REGISTER).
-            let modeNick = this.nick;
-            if (mode === 'account') {
-                modeNick = this.accountNick || this.accountNickSuggestion;
+            let modeNick = fields.nick;
+            if (this.useTabs && mode === 'account') {
+                modeNick = fields.nick || this.stripAccountSuffix(fields.account.trim());
             } else if (isRegister) {
                 modeNick = this.registerModeNick();
             }
@@ -1053,13 +1166,13 @@ export default {
                 server: netAddress,
                 port: connectOptions.port,
                 tls: connectOptions.tls,
-                password: password,
+                password: fields.serverPassword || '',
                 account: loginAccount,
                 encoding: trim(options.encoding),
                 direct: connectOptions.direct,
                 path: connectOptions.direct_path || '',
-                gecos: options.gecos,
-                username: options.username,
+                gecos: fields.gecos || options.gecos,
+                username: fields.username || options.username,
             });
 
             // Clear the server buffer in case it already existed and contains messages relating to
@@ -1073,11 +1186,20 @@ export default {
             net.connection.account = loginAccount;
             if (options.bouncer) {
                 // Bouncer mode uses server PASS
-                net.connection.password = `${modeNick}:${password}`;
+                net.connection.password = `${modeNick}:${fields.password}`;
                 net.password = '';
             } else {
-                net.connection.password = '';
+                // The server password (PASS) is a separate secret from the
+                // SASL login password.
+                net.connection.password = fields.serverPassword || '';
                 net.password = password;
+            }
+
+            if (fields.username) {
+                net.username = fields.username;
+            }
+            if (fields.gecos) {
+                net.gecos = fields.gecos;
             }
 
             if (trim(options.encoding || '')) {
@@ -1088,7 +1210,7 @@ export default {
 
             // Only switch to the first channel we join if multiple are being joined
             let hasSwitchedActiveBuffer = false;
-            let bufferObjs = Misc.extractBuffers(this.channel);
+            let bufferObjs = Misc.extractBuffers(fields.channel);
             bufferObjs.forEach((bufferObj) => {
                 let newBuffer = this.$state.addBuffer(net.id, bufferObj.name);
                 newBuffer.enabled = true;
@@ -1118,20 +1240,23 @@ export default {
                 // negotiating. The password never touches the network state.
                 const regInfo = this.probeRegInfo;
                 const regAccount = regInfo.customAccountName ?
-                    this.registerAccount.trim() :
+                    fields.account.trim() :
                     '*';
-                const regEmail = this.registerEmail.trim() || '*';
-                net.armPreConnectRegistration(regAccount, regEmail, this.registerPassword);
-                this.registerPassword = '';
+                const regEmail = fields.email.trim() || '*';
+                net.armPreConnectRegistration(regAccount, regEmail, fields.password);
+                fields.password = '';
             }
 
             ircClient.connect();
             let onRegistered = () => {
                 // Persist the password-memory preference alongside everything
                 // else; it only takes effect on disk when Remember Me starts
-                // the watcher in layout.close().
-                this.$state.user_settings.remember_password = this.remember_settings &&
-                    this.remember_password;
+                // the watcher in layout.close(). Anonymous only has a server
+                // password to remember, so it needs one to have been set.
+                const canRememberPasswords = fields.rememberSettings &&
+                    fields.rememberPasswords &&
+                    (mode !== 'anonymous' || !!fields.serverPassword);
+                this.$state.user_settings.remember_password = canRememberPasswords;
                 if (this.$refs.layout) {
                     this.$refs.layout.close();
                 }
@@ -1315,6 +1440,55 @@ form.kiwi-welcome-simple-form h2 {
     font-size: 0.9em;
     font-style: italic;
     margin-top: 4px;
+}
+
+.kiwi-welcome-password-strength {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: -8px 0 12px 0;
+}
+
+.kiwi-welcome-password-strength-bar {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: rgb(128, 128, 128, 0.25);
+    overflow: hidden;
+}
+
+.kiwi-welcome-password-strength-level {
+    display: block;
+    width: 0;
+    height: 100%;
+    transition: width 0.2s, background-color 0.2s;
+}
+
+.kiwi-welcome-password-strength-level--1 {
+    width: 25%;
+    background: #c0392b;
+}
+
+.kiwi-welcome-password-strength-level--2 {
+    width: 50%;
+    background: #e67e22;
+}
+
+.kiwi-welcome-password-strength-level--3 {
+    width: 75%;
+    background: #f1c40f;
+}
+
+.kiwi-welcome-password-strength-level--4 {
+    width: 100%;
+    background: #27ae60;
+}
+
+.kiwi-welcome-password-strength-label {
+    font-size: 0.85em;
+    min-width: 60px;
+    text-align: right;
+    opacity: 0.8;
 }
 
 .kiwi-welcome-anonymous-warning {

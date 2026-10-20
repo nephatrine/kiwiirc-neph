@@ -53,7 +53,8 @@ const DESIRED_CAPS = [
 // them to its upstream networks, not because it supports them on its own
 // replies, so requesting them would leave messages to BouncerServ pending.
 // Persistence is requested here because the bouncer keeps its networks alive
-// itself; webpush is folded in separately, by preference.
+// itself; webpush is folded in separately, by preference. Account registration
+// is about the control connection's own account, not a forwarded upstream cap.
 const CONTROL_CAPS = [
     'echo-message',
     'message-tags',
@@ -63,6 +64,7 @@ const CONTROL_CAPS = [
     'cap-notify',
     'draft/extended-isupport',
     'draft/persistence',
+    'draft/account-registration',
 ];
 
 // Capability groups negotiated by preference: exactly one name from each group
@@ -505,6 +507,19 @@ function clientMiddleware(state, network) {
             }
             network.enabled_caps = client.network.cap.enabled.map((c) => c.toLowerCase());
 
+            // A normal network that cannot do SASL should not keep credentials
+            // around from an earlier server or from a copied configuration.
+            // Bouncer-bound networks store their SASL credentials on the
+            // bouncer, so they are exempt from this cleanup.
+            if (
+                !network.isBouncerConnection() &&
+                !network.hasCap('sasl') &&
+                !network.hasAdvertisedCap('sasl')
+            ) {
+                network.connection.account = '';
+                network.password = '';
+            }
+
             let currentUser = network.currentUser();
             if (currentUser) {
                 currentUser.away = '';
@@ -722,8 +737,11 @@ function clientMiddleware(state, network) {
         });
 
         client.on('socket close', (err) => {
-            if (network.state === 'connecting' || network.state === 'connected') {
-                // Ignore stale close events if we are already reconnecting or connected
+            if (!client.connection.requested_disconnect && network.state === 'connecting') {
+                // A replacement connection attempt can end an old socket
+                // before the new one is registered. Ignore that stale close; a
+                // manual quit while connecting sets requested_disconnect and
+                // must still run cleanup.
                 return;
             }
             isRegistered = false;

@@ -75,7 +75,7 @@
                 <template v-if="network.registration.awaitingVerify">
                     <p>{{ $t('register_verify_prompt') }}</p>
                     <label>
-                        <span>{{ $t('register_verify_code') }}</span>
+                        <span>{{ $t('verification_code') }}</span>
                         <input v-model="registerForm.code" type="text" class="u-input" autocomplete="off">
                     </label>
                     <div class="kiwi-userbox-register-actions">
@@ -101,8 +101,26 @@
                         {{ $t('register_as') }}: {{ network.nick }}
                     </div>
                     <label>
-                        <span v-if="registrationInfo && registrationInfo.emailRequired">{{ $t('register_account_email_required') }}</span>
-                        <span v-else>{{ $t('register_account_email_optional') }}</span>
+                        <span>{{ $t('account_password') }}</span>
+                        <input v-model="registerForm.password" type="password" class="u-input" autocomplete="new-password">
+                    </label>
+                    <div v-if="registerForm.password" class="kiwi-welcome-password-strength">
+                        <div class="kiwi-welcome-password-strength-bar">
+                            <span
+                                class="kiwi-welcome-password-strength-level"
+                                :class="registerPasswordStrengthClass"
+                            />
+                        </div>
+                        <span class="kiwi-welcome-password-strength-label">
+                            {{ $t(registerPasswordStrengthLabel) }}
+                        </span>
+                    </div>
+                    <div v-if="registerPasswordHint" class="kiwi-userbox-register-hint">
+                        {{ registerPasswordHint }}
+                    </div>
+                    <label>
+                        <span v-if="registrationInfo && registrationInfo.emailRequired">{{ $t('account_email_req') }}</span>
+                        <span v-else>{{ $t('account_email_opt') }}</span>
                         <input
                             v-model="registerForm.email"
                             type="email"
@@ -111,13 +129,6 @@
                             :required="registrationInfo && registrationInfo.emailRequired"
                         >
                     </label>
-                    <label>
-                        <span>{{ $t('register_account_password') }}</span>
-                        <input v-model="registerForm.password" type="password" class="u-input" autocomplete="new-password">
-                    </label>
-                    <div v-if="registerPasswordHint" class="kiwi-userbox-register-hint">
-                        {{ registerPasswordHint }}
-                    </div>
                     <div class="kiwi-userbox-register-actions">
                         <button
                             type="button"
@@ -549,6 +560,7 @@ import * as Misc from '@/helpers/Misc';
 import GlobalApi from '@/libs/GlobalApi';
 import toHtml from '@/libs/renderers/Html';
 import parseMessage from '@/libs/MessageParser';
+import { passwordScore } from '@/helpers/PasswordStrength';
 import { effectiveRetention, effectiveService } from '@/libs/fileupload';
 import { NICKSERV_SETTINGS } from '@/libs/ErgoServices';
 import { CHANSERV_SETTINGS } from '@/libs/ErgoChanServ';
@@ -766,6 +778,21 @@ export default {
                 });
             }
             return '';
+        },
+        registerPasswordStrength() {
+            return passwordScore(this.registerForm.password);
+        },
+        registerPasswordStrengthClass() {
+            return 'kiwi-welcome-password-strength-level--' + this.registerPasswordStrength;
+        },
+        registerPasswordStrengthLabel() {
+            const labels = [
+                'password_strength_weak',
+                'password_strength_fair',
+                'password_strength_good',
+                'password_strength_strong',
+            ];
+            return labels[Math.max(0, this.registerPasswordStrength - 1)] || labels[0];
         },
         registerValid() {
             const info = this.registrationInfo;
