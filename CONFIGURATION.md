@@ -30,7 +30,9 @@ value shows it.
 ## What to set
 
 `kiwiServer` is the websocket gateway, unless `startupOptions.direct` is true.
-Replace the example URL.
+Replace the example URL. Set it to an empty string when the deployment has no
+gateway: connection pickers then offer only direct `ws`/`wss`, and existing
+`irc`/`ircs` selections are switched to their direct websocket equivalent.
 
 `startupOptions.server`, `port`, `tls`, `channel`, and `nick` fill the startup
 form. `tls` here is the gateway or direct websocket, not a check of the upstream
@@ -49,7 +51,8 @@ accepted aliases for `bouncer`. The template default is `customServer`.
 
 `presetNetworks` is a list of servers for the startup picker. Each entry is an
 `irc://` or `ircs://` URI string, or a connection object (`server`, `port`,
-`tls`, `direct`, `path`). Example: `"ircs://irc.example.net:6697"`.
+`tls`, `direct`, `path`). Example: `"ircs://irc.example.net:6697"`. Without a
+gateway, gateway presets are switched to their direct websocket equivalent.
 
 `plugins` is `{ "name": "...", "url": "static/plugins/...." }`. An empty array
 loads none. HTML plugins are injected with `innerHTML`. `<i />` is not

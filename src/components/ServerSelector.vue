@@ -5,7 +5,7 @@
     >
         <div v-if="usePreset && presetNetworks.length > 0" class="kiwi-serverselector-presets">
             <label for="kiwi_preset_server">
-                {{ $t(presetServer === 'custom' ? 'preset_servers' : 'server') }}
+                {{ $t(presetLabel || (presetServer === 'custom' ? 'preset_servers' : 'server')) }}
             </label>
             <select
                 id="kiwi_preset_server"
@@ -117,6 +117,10 @@ export default {
             type: Object,
             default: () => {},
         },
+        presetLabel: {
+            type: String,
+            default: '',
+        },
     },
     data() {
         return {
@@ -138,6 +142,7 @@ export default {
                     : this.presetNetworks[newVal];
 
                 Object.assign(this.connection, conn);
+                this.ensureProtocolAvailable();
             },
             get() {
                 return this.presetSelected;
@@ -159,13 +164,29 @@ export default {
                 }
             },
         },
+        gatewayConfigured() {
+            return !!String(
+                this.$state.getSetting('settings.kiwiServer') || ''
+            ).trim();
+        },
         serverProtocols() {
             // A bouncer-managed network is an IRC network, not a websocket
             // transport. Its protocol field only chooses TLS.
             if (this.ircOnly) {
                 return ['irc', 'ircs'];
             }
-            return this.$state.getSetting('settings.serverProtocols') || ['irc', 'ircs', 'ws', 'wss'];
+
+            const protocols = this.$state.getSetting('settings.serverProtocols') ||
+                ['irc', 'ircs', 'ws', 'wss'];
+            if (this.gatewayConfigured) {
+                return protocols;
+            }
+
+            // A browser can only reach IRC through a gateway or a direct
+            // websocket. Without a gateway, the non-websocket options cannot
+            // work, so do not offer them.
+            const direct = protocols.filter((proto) => proto === 'ws' || proto === 'wss');
+            return direct.length ? direct : ['ws', 'wss'];
         },
         protocol: {
             get() {
@@ -247,8 +268,31 @@ export default {
         } else if (!this.enableCustom && !this.connection.server && this.presetNetworks.length) {
             this.presetServer = '0';
         }
+
+        this.ensureProtocolAvailable();
     },
     methods: {
+        // Keep the selected protocol in the list the deployment can actually
+        // use. Without a gateway, a gateway protocol has to become its direct
+        // websocket equivalent before the connection is attempted.
+        ensureProtocolAvailable() {
+            if (this.ircOnly || this.gatewayConfigured) {
+                return;
+            }
+
+            if (this.serverProtocols.includes(this.protocol)) {
+                return;
+            }
+
+            const preferred = this.connection.tls ? 'wss' : 'ws';
+            const nextProtocol = this.serverProtocols.includes(preferred) ?
+                preferred :
+                this.serverProtocols[0];
+
+            if (nextProtocol) {
+                this.protocol = nextProtocol;
+            }
+        },
         onServerPaste(event) {
             event.preventDefault();
             const pasted = event.clipboardData.getData('text');
@@ -256,6 +300,7 @@ export default {
             const conn = Misc.parsePresetServer(pasted);
             if (conn) {
                 Object.assign(this.connection, conn);
+                this.ensureProtocolAvailable();
             } else {
                 this.connection.server = pasted;
             }

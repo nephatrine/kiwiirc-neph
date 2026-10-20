@@ -125,7 +125,7 @@ msgstr "SASL Account"
 
 #: Without an account, features like user metadata, read markers, and personal message history may not be retained beyond this session.
 msgid "anonymous_warning"
-msgstr "Without an account, server-tracked features like last-read markers and personal message chathistory might not be retained beyond the active session."
+msgstr "Without an account, some server features may be disabled."
 
 #: Server Password
 msgid "server_password"

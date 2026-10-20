@@ -27,6 +27,7 @@
                     :enable-custom="startupOptions.enableCustom ?? true"
                     :show-path="true"
                     :connection="connection"
+                    preset-label="network"
                     @selected="presetSelected = $event"
                 />
 
@@ -37,43 +38,261 @@
                     class="kiwi-customserver-tabs"
                 >
                     <tabbed-tab header="Network" name="irc">
-                        <input-text
-                            v-model="nick"
-                            :label="$t('nick_name')"
-                            class="kiwi-customserver-nick"
-                            :class="{ 'kiwi-customserver-nick--invalid': !isNickValid }"
-                        />
+                        <template v-if="connection.type === 'irc'">
+                            <div class="kiwi-welcome-tabs kiwi-customserver-identity-tabs">
+                                <button
+                                    v-if="showAnonymousTab"
+                                    type="button"
+                                    :class="{
+                                        'kiwi-welcome-tab--active': activeTab === 'anonymous',
+                                    }"
+                                    class="kiwi-welcome-tab"
+                                    @click="activeTab = 'anonymous'"
+                                >
+                                    {{ $t('anonymous_tab') }}
+                                </button>
+                                <button
+                                    v-if="showAccountTab"
+                                    type="button"
+                                    :class="{
+                                        'kiwi-welcome-tab--active': activeTab === 'account',
+                                    }"
+                                    class="kiwi-welcome-tab"
+                                    @click="activeTab = 'account'"
+                                >
+                                    {{ $t('account_tab') }}
+                                </button>
+                            </div>
 
-                        <label class="kiwi-customserver-have-password">
-                            <input v-model="show_password_box" type="checkbox">
-                            <span> {{ $t('password_have') }} </span>
-                        </label>
+                            <template v-if="activeTab === 'anonymous' && showAnonymousTab">
+                                <div
+                                    v-if="showAccountTab"
+                                    class="kiwi-welcome-anonymous-warning"
+                                >
+                                    {{ $t('anonymous_warning') }}
+                                </div>
+                                <input-text
+                                    v-model="fields.nick"
+                                    :label="$t('nick_name')"
+                                    :maxlength="nickLen || undefined"
+                                    type="text"
+                                    :class="{
+                                        'kiwi-welcome-invalid-nick':
+                                            !isNickValid || !isNickLengthValid,
+                                    }"
+                                />
+                            </template>
+                            <template v-else-if="activeTab === 'account' && showAccountTab">
+                                <div class="kiwi-welcome-simple-input-container">
+                                    <input-text
+                                        v-model="fields.account"
+                                        :label="$t('account_name')"
+                                        type="text"
+                                        autocomplete="username"
+                                    />
+                                    <input-text
+                                        v-model="fields.password"
+                                        :show-plain-text="true"
+                                        :label="$t('account_password')"
+                                        type="password"
+                                        autocomplete="current-password"
+                                    />
+                                </div>
+                            </template>
 
-                        <transition-expand>
-                            <input-text
-                                v-if="show_password_box"
-                                v-model="password"
-                                v-focus
-                                :label="$t('server_password')"
-                                :show-plain-text="true"
-                                type="password"
-                            />
-                        </transition-expand>
+                            <div class="kiwi-welcome-simple-input-container">
+                                <button
+                                    type="button"
+                                    class="kiwi-welcome-advanced-toggle"
+                                    @click="showAdvanced = !showAdvanced"
+                                >
+                                    {{ showAdvanced ? '▾' : '▸' }} {{ $t('advanced') }}
+                                </button>
+                            </div>
 
-                        <input-text v-model="connection.channels" :label="$t('channels')" />
+                            <div v-if="showAdvanced" class="kiwi-welcome-advanced-box">
+                                <input-text
+                                    v-if="activeTab === 'account' && showAccountTab"
+                                    v-model="fields.nick"
+                                    :label="$t('nick_name')"
+                                    :placeholder="accountNickSuggestion"
+                                    :maxlength="nickLen || undefined"
+                                    type="text"
+                                    :class="{
+                                        'kiwi-welcome-invalid-nick':
+                                            !isNickValid || !isNickLengthValid,
+                                    }"
+                                />
+                                <input-text
+                                    v-model="fields.username"
+                                    :label="$t('user_name')"
+                                    :placeholder="effectiveNick"
+                                    :maxlength="userLen || undefined"
+                                    type="text"
+                                    :class="{ 'kiwi-welcome-invalid-nick': !isUsernameValid }"
+                                />
+                                <input-text
+                                    v-model="fields.gecos"
+                                    :label="$t('real_name')"
+                                    :maxlength="nameLen || undefined"
+                                    type="text"
+                                    :class="{ 'kiwi-welcome-invalid-nick': !isGecosValid }"
+                                />
+                                <input-text
+                                    v-model="fields.serverPassword"
+                                    :show-plain-text="true"
+                                    :label="$t('server_password')"
+                                    type="password"
+                                    :class="{
+                                        'kiwi-welcome-invalid-nick': !isServerPasswordValid,
+                                    }"
+                                />
+                                <input-text
+                                    v-if="showChannel"
+                                    v-model="fields.channel"
+                                    :label="$t('channel_list')"
+                                />
+                            </div>
+                        </template>
                     </tabbed-tab>
                     <tabbed-tab header="Bouncer" name="bnc">
-                        <input-text
-                            v-model="connection.account"
-                            :label="$t('username')"
-                            class="kiwi-customserver-nick"
-                        />
+                        <template v-if="isBouncerPreset">
+                            <div
+                                v-if="bouncerUnsupported"
+                                class="kiwi-welcome-simple-error"
+                            >
+                                <span>{{ $t('bouncer_networks_required') }}</span>
+                            </div>
+                            <template v-else>
+                                <div class="kiwi-welcome-tabs kiwi-customserver-bouncer-tabs">
+                                    <button
+                                        v-if="showBouncerBncTab"
+                                        type="button"
+                                        :class="{
+                                            'kiwi-welcome-tab--active':
+                                                bouncerActiveTab === 'bnc',
+                                        }"
+                                        class="kiwi-welcome-tab"
+                                        @click="bouncerActiveTab = 'bnc'"
+                                    >
+                                        {{ $t('bouncer_tab') }}
+                                    </button>
+                                    <button
+                                        v-if="showBouncerAccountTab"
+                                        type="button"
+                                        :class="{
+                                            'kiwi-welcome-tab--active':
+                                                bouncerActiveTab === 'account',
+                                        }"
+                                        class="kiwi-welcome-tab"
+                                        @click="bouncerActiveTab = 'account'"
+                                    >
+                                        {{ $t('account_tab') }}
+                                    </button>
+                                </div>
 
-                        <input-text
-                            v-model="password"
-                            :label="$t('account_password')"
-                            type="password"
-                        />
+                                <template
+                                    v-if="bouncerActiveTab === 'bnc' && showBouncerBncTab"
+                                >
+                                    <div class="kiwi-welcome-simple-input-container">
+                                        <input-text
+                                            v-model="bouncerFields.user"
+                                            :label="$t('bouncer_user')"
+                                            :title="$t('user_name')"
+                                            :maxlength="userLen || undefined"
+                                            type="text"
+                                            autocomplete="username"
+                                            :class="{
+                                                'kiwi-welcome-invalid-nick':
+                                                    !bouncerNickValid
+                                                    || !bouncerNickLengthValid
+                                                    || !bouncerUserLengthValid,
+                                            }"
+                                        />
+                                        <input-text
+                                            v-model="bouncerFields.password"
+                                            :show-plain-text="true"
+                                            :label="$t('bouncer_password')"
+                                            :title="$t('server_password')"
+                                            type="password"
+                                            autocomplete="current-password"
+                                        />
+                                    </div>
+                                </template>
+                                <template
+                                    v-else-if="
+                                        bouncerActiveTab === 'account'
+                                            && showBouncerAccountTab
+                                    "
+                                >
+                                    <div class="kiwi-welcome-simple-input-container">
+                                        <input-text
+                                            v-model="bouncerFields.user"
+                                            :label="$t('bouncer_user')"
+                                            :title="$t('account_name')"
+                                            type="text"
+                                            autocomplete="username"
+                                            :class="{
+                                                'kiwi-welcome-invalid-nick':
+                                                    !bouncerNickValid
+                                                    || !bouncerNickLengthValid,
+                                            }"
+                                        />
+                                        <input-text
+                                            v-model="bouncerFields.password"
+                                            :show-plain-text="true"
+                                            :label="$t('bouncer_password')"
+                                            :title="$t('account_password')"
+                                            type="password"
+                                            autocomplete="current-password"
+                                        />
+                                    </div>
+                                </template>
+
+                                <div
+                                    v-if="showBouncerAccountTab"
+                                    class="kiwi-welcome-simple-input-container"
+                                >
+                                    <button
+                                        type="button"
+                                        class="kiwi-welcome-advanced-toggle"
+                                        @click="bouncerShowAdvanced = !bouncerShowAdvanced"
+                                    >
+                                        {{ bouncerShowAdvanced ? '▾' : '▸' }}
+                                        {{ $t('advanced') }}
+                                    </button>
+                                </div>
+
+                                <div
+                                    v-if="bouncerShowAdvanced && showBouncerAccountTab"
+                                    class="kiwi-welcome-advanced-box"
+                                >
+                                    <input-text
+                                        v-model="bouncerFields.serverPassword"
+                                        :show-plain-text="true"
+                                        :label="$t('server_password')"
+                                        type="password"
+                                        :class="{
+                                            'kiwi-welcome-invalid-nick':
+                                                !bouncerServerPasswordValid,
+                                        }"
+                                    />
+                                </div>
+                            </template>
+                        </template>
+                        <template v-else>
+                            <input-text
+                                v-model="connection.account"
+                                :label="$t('username')"
+                                class="kiwi-customserver-nick"
+                            />
+
+                            <input-text
+                                v-model="bouncerPassword"
+                                :label="$t('account_password')"
+                                type="password"
+                            />
+                        </template>
                     </tabbed-tab>
                 </tabbed-view>
 
@@ -89,7 +308,7 @@
                 />
 
                 <button
-                    :disabled="!readyToStart"
+                    :disabled="!formReady"
                     type="submit"
                     class="u-button u-button-primary u-submit kiwi-customserver-start"
                 >
@@ -110,15 +329,46 @@
 
 import * as Misc from '@/helpers/Misc';
 import * as TextFormatting from '@/helpers/TextFormatting';
-import { escapeRegExp } from '@/helpers/Utils';
+import {
+    compileNickPattern,
+    isValidServerPassword,
+    stripAccountSuffix,
+    withinLimit
+} from '@/helpers/LoginFields';
 import Logger from '@/libs/Logger';
 import BouncerProvider from '@/libs/BouncerProvider';
+import { probeServerCaps, createProbeTransport } from '@/libs/ServerProbe';
 import Captcha from '@/components/Captcha';
 
 import StartupLayout from './CommonLayout';
 import ServerSelector from '../ServerSelector';
 
 const log = Logger.namespace('CustomServer');
+
+// Each identity tab owns every field it may put on the wire. Nothing is
+// copied between Anonymous and Account after the initial restore, so switching
+// tabs can neither leak nor lose a value.
+function createTabFields() {
+    return {
+        nick: '',
+        account: '',
+        password: '',
+        username: '',
+        gecos: '',
+        serverPassword: '',
+        channel: '',
+    };
+}
+
+// BNC logins use a bouncer username, whereas Account logins use a bouncer
+// account and may also need an upstream server password.
+function createBouncerTabFields() {
+    return {
+        user: '',
+        password: '',
+        serverPassword: '',
+    };
+}
 
 export default {
     components: {
@@ -129,8 +379,7 @@ export default {
     data() {
         return {
             nick: '',
-            password: '',
-            show_password_box: false,
+            bouncerPassword: '',
             network: null,
             isFragment: false,
             showSelector: false,
@@ -138,6 +387,24 @@ export default {
             presetSelected: 'custom',
             connectErrors: [],
             connection: Misc.getDefaultConnection(),
+            activeTab: 'account',
+            showAdvanced: false,
+            bouncerActiveTab: 'account',
+            bouncerShowAdvanced: false,
+            showChannel: true,
+            connectWithoutChannel: true,
+            serverInfo: null,
+            probeKey: '',
+            probePending: false,
+            probeCache: Object.create(null),
+            tabs: {
+                anonymous: createTabFields(),
+                account: createTabFields(),
+            },
+            bouncerTabs: {
+                bnc: createBouncerTabFields(),
+                account: createBouncerTabFields(),
+            },
         };
     },
     computed: {
@@ -162,6 +429,33 @@ export default {
             }
             return this.startupOptions.enableTabs ?? true;
         },
+        selectedPreset() {
+            if (this.presetSelected === 'custom') {
+                return null;
+            }
+
+            const presets = this.$state.getSetting('settings.presetNetworks') || [];
+            const idx = parseInt(this.presetSelected, 10);
+            if (!Number.isInteger(idx) || idx < 0 || idx >= presets.length) {
+                return null;
+            }
+
+            const entry = presets[idx];
+            if (typeof entry === 'object') {
+                return Object.assign(Misc.getDefaultConnection(), entry);
+            }
+            return Misc.parsePresetServer(entry);
+        },
+        isBouncerPreset() {
+            const preset = this.selectedPreset;
+            return !!preset && preset.type === 'bnc';
+        },
+        fields() {
+            return this.tabs[this.activeTab];
+        },
+        bouncerFields() {
+            return this.bouncerTabs[this.bouncerActiveTab];
+        },
         termsContent() {
             const terms = this.startupOptions.termsContent;
             return typeof terms === 'string' ?
@@ -180,59 +474,203 @@ export default {
                 footer :
                 '';
         },
-        isNickValid() {
-            let nickPatternStr = this.$state.getSetting('settings.startupOptions.nick_format');
-            let nickPattern = '';
-            if (!nickPatternStr) {
-                // Nicks cannot start with [0-9- ]
-                // ? is not a valid nick character but we allow it as it gets replaced
-                // with a number.
-                nickPattern = /^[a-z_\\[\]{}^`|][a-z0-9_\-\\[\]{}^`|]*$/i;
-            } else {
-                // Support custom pattern matches. Eg. only '@example.com' may be allowed
-                // on some IRCDs
-                let pattern = '';
-                let flags = '';
-                if (nickPatternStr[0] === '/') {
-                    // Custom regex
-                    let pos = nickPatternStr.lastIndexOf('/');
-                    pattern = nickPatternStr.substring(1, pos);
-                    flags = nickPatternStr.substr(pos + 1);
-                } else {
-                    // Basic contains rule
-                    pattern = escapeRegExp(nickPatternStr);
-                    flags = 'i';
-                }
-
-                try {
-                    nickPattern = new RegExp(pattern, flags);
-                } catch (error) {
-                    log.error('Nick format error: ' + error.message);
-                    return false;
-                }
-            }
-
-            return this.nick.match(nickPattern);
+        // A probe is only run for presets, so Custom endpoints keep both
+        // identity tabs and any server-advertised limits are simply unknown.
+        probeCaps() {
+            return (this.serverInfo && this.serverInfo.caps) || null;
         },
-        readyToStart() {
-            let isBouncer = this.connection.type === 'bnc';
-            let ready = isBouncer ?
-                !!this.connection.account :
-                !!this.nick;
-
-            if (!this.connection.server) {
+        probeIsupport() {
+            return (this.serverInfo && this.serverInfo.isupport) || null;
+        },
+        probeComplete() {
+            return !!(this.serverInfo && this.serverInfo.capsComplete);
+        },
+        bouncerHasSasl() {
+            return this.probeHasCap('sasl');
+        },
+        bouncerHasCap() {
+            return this.probeHasCap('draft/bouncer-networks') ||
+                this.probeHasCap('soju.im/bouncer-networks');
+        },
+        bouncerUnsupported() {
+            return this.isBouncerPreset && this.probeComplete && !this.bouncerHasCap;
+        },
+        showBouncerBncTab() {
+            return this.isBouncerPreset && (!this.probeComplete || !this.bouncerHasSasl);
+        },
+        showBouncerAccountTab() {
+            return this.isBouncerPreset && (!this.probeComplete || this.bouncerHasSasl);
+        },
+        // Account is shown unless the probe affirmatively returned caps
+        // without sasl. If Anonymous is forbidden it shows anyway as the only
+        // remaining pathway.
+        accountOffered() {
+            return !this.probeCaps ||
+                Object.prototype.hasOwnProperty.call(this.probeCaps, 'sasl');
+        },
+        showAccountTab() {
+            return this.accountOffered || !this.anonymousAllowed;
+        },
+        // Anonymous is shown unless the probe affirmatively saw
+        // DRAFT/ACCOUNTREQUIRED in the ISUPPORT tokens.
+        anonymousAllowed() {
+            return !this.probeIsupport ||
+                this.probeIsupport['DRAFT/ACCOUNTREQUIRED'] === undefined;
+        },
+        showAnonymousTab() {
+            return this.anonymousAllowed;
+        },
+        accountNickSuggestion() {
+            return stripAccountSuffix((this.tabs.account.account || '').trim());
+        },
+        effectiveNick() {
+            if (this.connection.type === 'bnc') {
+                return this.nick;
+            }
+            if (this.activeTab === 'account') {
+                return this.fields.nick || this.accountNickSuggestion;
+            }
+            return this.fields.nick;
+        },
+        currentChannel() {
+            return this.connection.type === 'bnc' ?
+                '' :
+                this.fields.channel;
+        },
+        channelReady() {
+            if (this.connectWithoutChannel) {
+                return true;
+            }
+            if (!this.currentChannel) {
                 return false;
             }
 
-            if (!isBouncer && !this.isNickValid) {
-                ready = false;
+            // Make sure every channel name starts with a common channel prefix
+            let valid = true;
+            let bufferObjs = Misc.extractBuffers(this.currentChannel);
+            bufferObjs.forEach((bufferObj) => {
+                if ('#&'.indexOf(bufferObj.name[0]) === -1) {
+                    valid = false;
+                }
+            });
+            return valid;
+        },
+        nickLen() {
+            return this.probeLimit('NICKLEN');
+        },
+        userLen() {
+            return this.probeLimit('USERLEN');
+        },
+        nameLen() {
+            return this.probeLimit('NAMELEN');
+        },
+        isNickLengthValid() {
+            return withinLimit(this.effectiveNick, this.nickLen);
+        },
+        isUsernameValid() {
+            return withinLimit(this.fields.username, this.userLen);
+        },
+        isGecosValid() {
+            return withinLimit(this.fields.gecos, this.nameLen);
+        },
+        isServerPasswordValid() {
+            return isValidServerPassword(this.fields.serverPassword);
+        },
+        isNickValid() {
+            const nickPattern = compileNickPattern(
+                this.$state.setting('startupOptions.nick_format')
+            );
+            if (!nickPattern) {
+                log.error('Nick format error in startupOptions.nick_format');
+                return false;
             }
 
-            if (this.termsContent && !this.termsAccepted) {
-                ready = false;
+            return !!(this.effectiveNick || '').match(nickPattern);
+        },
+        bouncerDerivedNick() {
+            return this.derivedBouncerNick(this.bouncerFields.user);
+        },
+        bouncerNickValid() {
+            return this.isBouncerNickValid(this.bouncerFields.user);
+        },
+        bouncerNickLengthValid() {
+            return this.isBouncerNickLengthValid(this.bouncerFields.user);
+        },
+        bouncerUserLengthValid() {
+            return this.bouncerActiveTab !== 'bnc' ||
+                withinLimit(this.bouncerFields.user, this.userLen);
+        },
+        bouncerServerPasswordValid() {
+            return this.bouncerActiveTab !== 'account' ||
+                isValidServerPassword(this.bouncerFields.serverPassword);
+        },
+        readyBouncerBnc() {
+            const fields = this.bouncerTabs.bnc;
+            return !!fields.user.trim() && !!fields.password &&
+                this.isBouncerNickValid(fields.user) &&
+                this.isBouncerNickLengthValid(fields.user) &&
+                withinLimit(fields.user, this.userLen) &&
+                (!this.termsContent || this.termsAccepted);
+        },
+        readyBouncerAccount() {
+            const fields = this.bouncerTabs.account;
+            return !!fields.user.trim() && !!fields.password &&
+                this.isBouncerNickValid(fields.user) &&
+                this.isBouncerNickLengthValid(fields.user) &&
+                isValidServerPassword(fields.serverPassword) &&
+                (!this.termsContent || this.termsAccepted);
+        },
+        readyAnonymous() {
+            return !!this.fields.nick && this.channelReady && !!this.isNickValid &&
+                !!this.isNickLengthValid && this.isUsernameValid && this.isGecosValid &&
+                this.isServerPasswordValid &&
+                (!this.termsContent || this.termsAccepted);
+        },
+        readyAccount() {
+            return !!this.effectiveNick && !!this.fields.account.trim() &&
+                !!this.fields.password && this.channelReady && !!this.isNickValid &&
+                !!this.isNickLengthValid && this.isUsernameValid && this.isGecosValid &&
+                this.isServerPasswordValid &&
+                (!this.termsContent || this.termsAccepted);
+        },
+        readyBouncer() {
+            return !!this.connection.server && !!this.connection.account &&
+                (!this.termsContent || this.termsAccepted);
+        },
+        formReady() {
+            if (this.connection.type === 'bnc') {
+                if (!this.isBouncerPreset) {
+                    return this.readyBouncer;
+                }
+                if (this.bouncerUnsupported || this.probePending) {
+                    return false;
+                }
+                if (this.bouncerActiveTab === 'bnc' && this.showBouncerBncTab) {
+                    return this.readyBouncerBnc;
+                }
+                return this.showBouncerAccountTab && this.readyBouncerAccount;
             }
-
-            return ready;
+            if (this.activeTab === 'account' && this.showAccountTab) {
+                return this.readyAccount;
+            }
+            return this.readyAnonymous;
+        },
+    },
+    watch: {
+        showAccountTab() {
+            this.ensureValidTab();
+        },
+        showAnonymousTab() {
+            this.ensureValidTab();
+        },
+        showBouncerBncTab() {
+            this.ensureValidBouncerTab();
+        },
+        showBouncerAccountTab() {
+            this.ensureValidBouncerTab();
+        },
+        presetSelected() {
+            this.onPresetChanged();
         },
     },
     created() {
@@ -251,6 +689,23 @@ export default {
         }
 
         this.nick = Misc.processNickRandomNumber(this.nick);
+        this.tabs.anonymous.nick = this.nick;
+        this.tabs.account.account = options.account || '';
+        this.tabs.account.password = options.password || '';
+        this.bouncerTabs.account.user = options.account || '';
+        this.bouncerTabs.account.password = options.password || '';
+        this.tabs.anonymous.channel = options.channel || '';
+        this.tabs.account.channel = options.channel || '';
+
+        this.showChannel = typeof options.showChannel === 'boolean' ?
+            options.showChannel :
+            true;
+        this.connectWithoutChannel = typeof options.allowNoChannel === 'boolean' ?
+            options.allowNoChannel :
+            true;
+        if (!this.showChannel) {
+            this.connectWithoutChannel = true;
+        }
 
         if (options.bouncer) {
             this.connection.type = 'bnc';
@@ -289,6 +744,8 @@ export default {
                 saveThisSessionsState = false;
                 this.isFragment = true;
                 Object.assign(this.connection, connections[0]);
+                this.tabs.anonymous.channel = this.connection.channels || '';
+                this.tabs.account.channel = this.connection.channels || '';
             } else if (connections.length > 1) {
                 saveThisSessionsState = false;
                 connections.forEach((conn, idx) => {
@@ -321,9 +778,176 @@ export default {
             this.$state.persistence.watchStateForChanges();
         }
     },
+    mounted() {
+        // The selector may have picked a matching preset during its own
+        // creation, before this component's watcher could observe it.
+        this.onPresetChanged();
+    },
     methods: {
         readableStateError(err) {
             return Misc.networkErrorMessage(err);
+        },
+        // ISUPPORT length tokens are optional; 0 means "no known limit".
+        probeLimit(token) {
+            const tokens = this.probeIsupport || {};
+            const limit = parseInt(tokens[token], 10);
+            return limit > 0 ? limit : 0;
+        },
+        probeHasCap(name) {
+            return !!this.probeCaps &&
+                Object.prototype.hasOwnProperty.call(this.probeCaps, name);
+        },
+        derivedBouncerNick(user) {
+            return stripAccountSuffix((user || '').trim());
+        },
+        isBouncerNickValid(user) {
+            const nickPattern = compileNickPattern(
+                this.$state.setting('startupOptions.nick_format')
+            );
+            if (!nickPattern) {
+                log.error('Nick format error in startupOptions.nick_format');
+                return false;
+            }
+
+            return !!this.derivedBouncerNick(user).match(nickPattern);
+        },
+        isBouncerNickLengthValid(user) {
+            return withinLimit(this.derivedBouncerNick(user), this.nickLen);
+        },
+        // Keep the active identity tab on one the server actually offers.
+        ensureValidTab() {
+            if (this.isBouncerPreset) {
+                this.ensureValidBouncerTab();
+                return;
+            }
+
+            const available = [];
+            if (this.showAccountTab) {
+                available.push('account');
+            }
+            if (this.showAnonymousTab) {
+                available.push('anonymous');
+            }
+            if (available.length > 0 && !available.includes(this.activeTab)) {
+                this.activeTab = available[0];
+            }
+        },
+        ensureValidBouncerTab() {
+            if (this.bouncerUnsupported) {
+                return;
+            }
+
+            const available = [];
+            if (this.showBouncerAccountTab) {
+                available.push('account');
+            }
+            if (this.showBouncerBncTab) {
+                available.push('bnc');
+            }
+            if (available.length > 0 &&
+                !available.includes(this.bouncerActiveTab)
+            ) {
+                this.bouncerActiveTab = available[0];
+            }
+        },
+        onPresetChanged() {
+            const preset = this.selectedPreset;
+            if (!preset) {
+                this.serverInfo = null;
+                this.probeKey = '';
+                this.probePending = false;
+                this.tabs.anonymous.channel = this.startupOptions.channel || '';
+                this.tabs.account.channel = this.startupOptions.channel || '';
+                return;
+            }
+            if (preset.type === 'bnc') {
+                this.serverInfo = null;
+                this.probeKey = '';
+                this.probePending = false;
+                this.ensureValidBouncerTab();
+                this.maybeProbePreset(preset);
+                return;
+            }
+
+            this.tabs.anonymous.channel = preset.channels || '';
+            this.tabs.account.channel = preset.channels || '';
+
+            this.maybeProbePreset(preset);
+        },
+        // Only presets are probed. Custom endpoints keep the unproven default
+        // (both tabs visible, no server-advertised limits). The cache stores
+        // the promise itself so an in-flight probe is reused as well, making
+        // A -> B -> A in the dropdown a single probe for A.
+        maybeProbePreset(preset) {
+            if (this.startupOptions.probeServerCaps !== true || !preset.server) {
+                this.serverInfo = null;
+                this.probeKey = '';
+                this.probePending = false;
+                return;
+            }
+
+            // ServerSelector may have converted a gateway preset to a direct
+            // websocket when this deployment has no gateway. Probe the
+            // endpoint actually shown in the form.
+            const server = this.connection.server || preset.server;
+            const tls = !!this.connection.tls;
+            const port = this.connection.port || (tls ? 6697 : 6667);
+            const direct = !!this.connection.direct;
+            const path = this.connection.path || '';
+            const key = [
+                server,
+                port,
+                tls ? 'tls' : 'plain',
+                direct ? 'direct' : 'gateway',
+                path,
+            ].join('|');
+
+            this.serverInfo = null;
+            this.probeKey = key;
+            this.probePending = true;
+
+            if (!this.probeCache[key]) {
+                this.probeCache[key] = probeServerCaps({
+                    createTransport: () => createProbeTransport({
+                        direct: direct,
+                        kiwiServer: this.$state.settings.kiwiServer,
+                        sessionId: (window.location.hash || '').substr(1),
+                        host: server,
+                        port: port,
+                        tls: tls,
+                        path: path,
+                    }),
+                    transportOptions: {
+                        direct: direct,
+                        host: server,
+                        port: port,
+                    },
+                });
+            }
+
+            this.probeCache[key].then((info) => {
+                if (this.probeKey === key) {
+                    this.applyServerInfo(info);
+                }
+            }).catch((err) => {
+                log.error('Server probe failed:', err);
+                if (this.probeKey === key) {
+                    this.applyServerInfo({
+                        caps: {},
+                        isupport: {},
+                        extendedIsupport: false,
+                        capsComplete: false,
+                    });
+                }
+            });
+        },
+        applyServerInfo(info) {
+            this.probePending = false;
+            if (!info) {
+                return;
+            }
+            this.serverInfo = info;
+            this.ensureValidTab();
         },
         createNetwork(conn, nick, password) {
             const options = this.startupOptions;
@@ -345,8 +969,8 @@ export default {
                     tls: conn.tls,
                     direct: conn.direct,
                     path: conn.path,
-                    password: password,
-                    account: conn.account || '',
+                    password: '',
+                    account: conn.type === 'bnc' ? (conn.account || '') : '',
 
                     encoding: (options.encoding || 'utf-8').trim(),
                     gecos: options.gecos,
@@ -354,10 +978,10 @@ export default {
                 });
             }
 
-            // The password is the network's SASL secret; the server PASS is
-            // never used. For a bouncer it is the bouncer password, alongside
-            // connection.account as the bouncer username. BouncerProvider reads
-            // those back off this network once it is marked is_bnc.
+            // network.password carries the SASL secret for a direct connection
+            // and the bouncer password for a control connection. The server
+            // PASS is assigned separately in startUp(); BouncerProvider reads
+            // the control connection's credentials from here.
             net.connection.password = '';
             net.password = password;
             if (conn.type === 'bnc') {
@@ -376,14 +1000,46 @@ export default {
             return net;
         },
         startUp() {
+            if (!this.formReady) {
+                return;
+            }
+
+            this.connectErrors = [];
             const conn = this.connection;
 
             if (conn.type === 'irc') {
-                this.network = this.createNetwork(conn, this.nick, this.password);
+                // A quick submit can race the tab-availability watcher, so
+                // never use credentials from a tab the server did not offer.
+                let mode = this.activeTab;
+                if (mode === 'account' && !this.showAccountTab) {
+                    mode = 'anonymous';
+                }
+                if (mode === 'anonymous' && !this.showAnonymousTab) {
+                    mode = 'account';
+                }
+                const fields = this.tabs[mode];
+                const isAnonymous = mode === 'anonymous';
+                const password = isAnonymous ? '' : fields.password;
+                const loginAccount = isAnonymous ? '' : fields.account;
+                let modeNick = fields.nick;
+                if (mode === 'account') {
+                    modeNick = fields.nick || stripAccountSuffix(fields.account.trim());
+                }
+
+                this.network = this.createNetwork(conn, modeNick, password);
+                this.network.connection.account = loginAccount;
+                this.network.connection.password = fields.serverPassword || '';
+                this.network.password = password;
+                if (fields.username) {
+                    this.network.username = fields.username;
+                }
+                if (fields.gecos) {
+                    this.network.gecos = fields.gecos;
+                }
 
                 // Only switch to the first channel we join if multiple are being joined
                 let hasSwitchedActiveBuffer = false;
-                let bufferObjs = Misc.extractBuffers(conn.channels);
+                let bufferObjs = Misc.extractBuffers(fields.channel);
                 bufferObjs.forEach((bufferObj) => {
                     let newBuffer = this.$state.addBuffer(this.network.id, bufferObj.name);
                     newBuffer.enabled = true;
@@ -401,12 +1057,48 @@ export default {
                 if (!hasSwitchedActiveBuffer) {
                     this.$state.setActiveBuffer(this.network.id, this.network.serverBuffer().name);
                 }
-            } else {
-                // conn.type === 'bnc'
-                this.network = this.createNetwork(conn, conn.account || this.nick, this.password);
+            } else if (this.isBouncerPreset) {
+                let mode = this.bouncerActiveTab;
+                if (mode === 'account' && !this.showBouncerAccountTab) {
+                    mode = 'bnc';
+                }
+                if (mode === 'bnc' && !this.showBouncerBncTab) {
+                    mode = 'account';
+                }
+
+                const fields = this.bouncerTabs[mode];
+                const user = (fields.user || '').trim();
+                const nick = stripAccountSuffix(user);
+                const password = mode === 'account' ? fields.password : '';
+
+                this.network = this.createNetwork(conn, nick, password);
+                this.network.connection.nick = nick;
+                this.network.connection.account = '';
+                this.network.connection.password = '';
+                this.network.password = '';
+                this.network.username = '';
+
+                if (mode === 'bnc') {
+                    this.network.username = user;
+                    this.network.connection.password = fields.password;
+                } else {
+                    this.network.connection.account = user;
+                    this.network.password = fields.password;
+                    this.network.connection.password = fields.serverPassword || '';
+                }
 
                 // Route every connection through the bouncer and let it manage
                 // the bouncer's own networks from here on.
+                let bouncer = new BouncerProvider(this.$state);
+                bouncer.enable(conn.server, conn.port, conn.tls, conn.direct, conn.path);
+            } else {
+                // Manual Bouncer tab for a custom endpoint.
+                this.network = this.createNetwork(
+                    conn,
+                    conn.account || this.nick,
+                    this.bouncerPassword
+                );
+
                 let bouncer = new BouncerProvider(this.$state);
                 bouncer.enable(conn.server, conn.port, conn.tls, conn.direct, conn.path);
             }
@@ -520,8 +1212,12 @@ export default {
 }
 
 .kiwi-customserver .u-input-text,
-.kiwi-customserver .kiwi-customserver-have-password,
 .kiwi-customserver-terms {
+    margin-bottom: 1em;
+}
+
+.kiwi-customserver-identity-tabs,
+.kiwi-customserver-bouncer-tabs {
     margin-bottom: 1em;
 }
 

@@ -45,6 +45,16 @@ and this project adheres to
   User", "Real Name", "SASL Account", "SASL Password", "Channel Key"), and a
   saved anonymous network starts on the Anonymous tab while first-time and
   account networks start on Account.
+- **Custom Server**: The preset picker is labelled Network, and normal IRC
+  connections now use the Welcome-style Anonymous and Account tabs with the same
+  Advanced fields and validation. Preset endpoints are probed once per endpoint
+  to choose which tabs to show; custom endpoints skip the probe and keep the
+  manual Bouncer tab. Bouncer presets use the Bouncer page's BNC and Account
+  tabs, validation, and probe-driven availability, but never offer Register.
+- **Connection picker**: When no `kiwiServer` gateway is configured, `IRC` and
+  `IRCS` are no longer offered. Custom endpoints, presets, and pasted gateway
+  URIs use direct `WS`/`WSS` instead. Bouncer-managed network settings keep
+  their IRC/IRCS TLS labels.
 - **Network settings**: Server Details now groups credentials into IRC Auth and
   SASL Auth, allows live edits where the server supports them, locks fields that
   require a reconnect, and limits restricted mode to the server endpoint.
