@@ -198,6 +198,14 @@ export default {
                 });
             }
 
+            // A saved network may still carry transport settings from an
+            // older deployment. The current connection attempt wins.
+            network.connection.server = con.server;
+            network.connection.port = con.port;
+            network.connection.tls = con.tls;
+            network.connection.direct = !!con.direct;
+            network.connection.path = con.path || '';
+
             window.location.hash = '';
             network.showServerBuffer('settings');
 

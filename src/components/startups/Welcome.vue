@@ -1175,6 +1175,17 @@ export default {
                 username: fields.username || options.username,
             });
 
+            // A network restored from saved state may still carry transport
+            // settings from an older deployment. The startup form is
+            // authoritative, otherwise switching from a webirc gateway to a
+            // direct websocket reuses the old direct flag and sends SockJS to
+            // /info at the site root.
+            net.connection.server = netAddress;
+            net.connection.port = connectOptions.port;
+            net.connection.tls = connectOptions.tls;
+            net.connection.direct = connectOptions.direct;
+            net.connection.path = connectOptions.direct_path || '';
+
             // Clear the server buffer in case it already existed and contains messages relating to
             // the previous connection, such as errors. They are now redundant since this is a
             // new connection.

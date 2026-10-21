@@ -199,6 +199,29 @@ describe('Welcome account tabs', () => {
         expect(net.ircClient.connect).toHaveBeenCalledTimes(1);
     });
 
+    it('updates a reused network with the current transport settings', () => {
+        const existing = s.addNetwork('Network', 'OldNick', {
+            server: 'irc.example',
+            port: 6697,
+            tls: true,
+            direct: false,
+        });
+
+        s.settings.startupOptions = {
+            websocket: 'https://irc.example/webirc',
+            probeServerCaps: false,
+        };
+
+        comp.startUp('anonymous');
+
+        expect(comp.network).toBe(existing);
+        expect(existing.connection.server).toBe('irc.example');
+        expect(existing.connection.port).toBe(443);
+        expect(existing.connection.tls).toBe(true);
+        expect(existing.connection.direct).toBe(true);
+        expect(existing.connection.path).toBe('/webirc');
+    });
+
     it('starts the account tab with SASL credentials', () => {
         comp.tabs.account.account = 'TestAccount';
         comp.tabs.account.password = 'secret';
