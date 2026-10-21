@@ -64,7 +64,7 @@ export default {
     computed: {
         sortedUsers() {
             // Get a list of network prefixes and give them a rank number
-            const netPrefixes = this.network.supports('PREFIX');
+            const netPrefixes = this.buffer.userPrefixes();
             const prefixOrders = Object.create(null);
             netPrefixes.forEach((prefix, idx) => {
                 prefixOrders[prefix.mode] = idx;
@@ -104,8 +104,8 @@ export default {
                     return 1;
                 }
 
-                const modesA = bufferA.modes;
-                const modesB = bufferB.modes;
+                const modesA = this.buffer.userModes(a);
+                const modesB = this.buffer.userModes(b);
 
                 // Neither user has a prefix, compare text
                 if (modesA.length === 0 && modesB.length === 0) {

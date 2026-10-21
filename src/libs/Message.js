@@ -232,6 +232,10 @@ export default class Message {
 }
 
 function extractMessageId(message) {
+    if (message.irc_id) {
+        return message.irc_id;
+    }
+
     if (!message.tags) {
         return undefined;
     }
@@ -244,5 +248,9 @@ function extractReplyId(message) {
         return undefined;
     }
 
-    return message.tags['+reply'] || message.tags['+draft/reply'] || message.tags.reply || undefined;
+    return message.tags['+reply'] ||
+        message.tags['+draft/reply'] ||
+        message.tags['reply-parent-msg-id'] ||
+        message.tags.reply ||
+        undefined;
 }

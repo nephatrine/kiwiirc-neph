@@ -674,9 +674,9 @@ function createNewState() {
                 // If this is an echo of our own message, try to find the local version
                 // and update it with the authoritative tags/msgid from the server
                 let isEcho = message.nick === network.nick;
-                let msgid = message.tags ?
+                let msgid = message.irc_id || (message.tags ?
                     (message.tags.msgid || message.tags['draft/msgid']) :
-                    null;
+                    null);
                 let label = message.tags ? message.tags.label : null;
                 if (isEcho && label) {
                     let m = buffer.messagesObj.messageLabels[label];

@@ -60,6 +60,27 @@ describe('ThreadedReplies', () => {
         expect(saySpy).toHaveBeenCalledWith('#test', 'my reply', { '+draft/reply': msgId });
     });
 
+    it('should use reply-parent-msg-id for Twitch replies', () => {
+        network.connection.server = 'irc.chat.twitch.tv';
+        network.enabled_caps = ['twitch.tv/tags'];
+
+        const originalMsg = new Message({
+            nick: 'sender',
+            message: 'hello',
+            irc_id: 'twitch-msg-id',
+        });
+
+        buffer.replying_to = originalMsg;
+
+        const saySpy = jest.spyOn(network.ircClient, 'say').mockImplementation(() => {});
+
+        s.$emit('input.raw', 'my reply', { network, buffer });
+
+        expect(saySpy).toHaveBeenCalledWith('#test', 'my reply', {
+            'reply-parent-msg-id': 'twitch-msg-id',
+        });
+    });
+
     it('should NOT send reply tag if irc_id is missing (pending message)', () => {
         const originalMsg = new Message({
             nick: 'TestNick',

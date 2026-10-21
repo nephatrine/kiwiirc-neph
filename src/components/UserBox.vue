@@ -308,7 +308,7 @@
                 {{ $t('send_a_message') }}
             </a>
             <a
-                v-if="!whoisRequested && !user.relayed_by"
+                v-if="showWhoisButton"
                 class="kiwi-userbox-action"
                 @click="updateWhoisData"
             >
@@ -628,6 +628,11 @@ export default {
 
             return availableModes;
         },
+        showWhoisButton() {
+            return !this.whoisRequested &&
+                !this.user.relayed_by &&
+                !this.network.isTwitch();
+        },
         areWeAnOp() {
             if (!this.buffer) {
                 return false;
@@ -661,16 +666,7 @@ export default {
                     return '';
                 }
 
-                let userBufferInfo = this.user.buffers[this.buffer.id];
-                if (!userBufferInfo) {
-                    // Probably switched buffer while the userbox was open
-                    return '';
-                }
-
-                let modes = userBufferInfo.modes;
-                return modes.length > 0 ?
-                    modes[0] :
-                    '';
+                return this.buffer.userMode(this.user);
             },
             // Switch the current user mode for the new one
             set(newVal) {
@@ -954,6 +950,10 @@ export default {
             }
         },
         updateWhoisData() {
+            if (this.network.isTwitch()) {
+                return;
+            }
+
             this.whoisRequested = true;
             this.whoisLoading = true;
             this.network.ircClient.whois(this.user.nick, () => {

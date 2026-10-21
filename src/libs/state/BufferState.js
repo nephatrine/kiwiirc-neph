@@ -7,6 +7,7 @@ import * as bufferTools from '../bufferTools';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import * as Reactions from '@/helpers/Reactions';
 import * as Misc from '@/helpers/Misc';
+import { TWITCH_PREFIXES, twitchChannelUrl, twitchUserModes } from '@/helpers/Twitch';
 import { each, find } from '@/helpers/Utils';
 
 let nextBufferId = 0;
@@ -194,7 +195,7 @@ export default class BufferState {
 
     initUserStatus() {
         const network = this.getNetwork();
-        if (!network || !this.isQuery()) {
+        if (!network || !this.isQuery() || network.isTwitch()) {
             return;
         }
 
@@ -203,7 +204,16 @@ export default class BufferState {
     }
 
     get topic() {
-        return this.topics[0] ?? '';
+        if (this.topics[0]) {
+            return this.topics[0];
+        }
+
+        const network = this.getNetwork();
+        if (network && this.isChannel() && network.isTwitch()) {
+            return twitchChannelUrl(this.name);
+        }
+
+        return '';
     }
 
     set topic(newVal) {
@@ -352,26 +362,49 @@ export default class BufferState {
         return !!hasOp;
     }
 
+    userModes(user) {
+        const info = user && user.buffers ? user.buffers[this.id] : undefined;
+        let modes = info ?
+            (info.modes || []).concat(info.twitch_modes || []) :
+            [];
+
+        const network = this.getNetwork();
+        if (user && this.isChannel() &&
+            network && network.isTwitch && network.isTwitch()
+        ) {
+            twitchUserModes(user.nick, this.name, {}).forEach((mode) => {
+                if (!modes.includes(mode)) {
+                    modes.push(mode);
+                }
+            });
+        }
+
+        return modes;
+    }
+
+    userPrefixes() {
+        const network = this.getNetwork();
+        if (network && network.isTwitch && network.isTwitch()) {
+            return TWITCH_PREFIXES;
+        }
+
+        return (network && network.supports('PREFIX')) || [];
+    }
+
     /**
      * Get a users prefix symbol on a buffer from its modes
      * @param {Object} user The user object
      */
     userModePrefix(user) {
-        // The user may not be on the buffer
-        if (!user.buffers[this.id]) {
-            return '';
-        }
-
-        let modes = user.buffers[this.id].modes;
+        let modes = this.userModes(user);
         if (modes.length === 0) {
             return '';
         }
 
-        let network = this.getNetwork();
-        let netPrefixes = network.supports('PREFIX');
-        // Filter and map all netPrefixes found in the users buffer modes, maintaining rank order
+        let prefixes = this.userPrefixes();
+        // Filter and map all prefixes found in the users buffer modes, maintaining rank order
         let symbols = [];
-        netPrefixes.forEach((p) => {
+        prefixes.forEach((p) => {
             if (modes.indexOf(p.mode) > -1) {
                 symbols.push(p.symbol);
             }
@@ -385,12 +418,7 @@ export default class BufferState {
      * @param user {Object} The user object
      */
     userMode(user) {
-        // The user may not be on the buffer
-        if (!user.buffers[this.id]) {
-            return '';
-        }
-
-        let modes = user.buffers[this.id].modes;
+        let modes = this.userModes(user);
         if (modes.length === 0) {
             return '';
         }
@@ -400,10 +428,8 @@ export default class BufferState {
             return modes[0];
         }
 
-        let network = this.getNetwork();
-        let netPrefixes = network.supports('PREFIX');
-        // Find the first (highest) netPrefix in the users buffer modes
-        let prefix = find(netPrefixes, (p) => modes.indexOf(p.mode) > -1);
+        // Find the first (highest) prefix in the users buffer modes
+        let prefix = find(this.userPrefixes(), (p) => modes.indexOf(p.mode) > -1);
 
         return prefix ?
             prefix.mode :
@@ -703,18 +729,21 @@ export default class BufferState {
         let tags = opts.tags || {};
         let outgoingTarget = this.name;
 
-        if (this.replying_to && this.replying_to.irc_id && network.hasCap('message-tags')) {
-            if (network.supportsTag('+reply')) {
-                tags['+reply'] = this.replying_to.irc_id;
-            } else if (network.supportsTag('+draft/reply')) {
-                tags['+draft/reply'] = this.replying_to.irc_id;
-            }
+        const replyTag = network.replyTagName();
+        if (this.replying_to && this.replying_to.irc_id && replyTag) {
+            tags[replyTag] = this.replying_to.irc_id;
 
             // If replying to a rerouted message, we must target the protocol_target
             // and include the +channel-context tag to maintain the thread
-            if (this.replying_to.is_rerouted && this.replying_to.protocol_target) {
+            if (
+                this.replying_to.is_rerouted &&
+                this.replying_to.protocol_target &&
+                !network.isTwitch()
+            ) {
                 outgoingTarget = this.replying_to.protocol_target;
-                tags['+channel-context'] = this.name;
+                if (network.supportsTag('+channel-context')) {
+                    tags['+channel-context'] = this.name;
+                }
             }
         }
 
@@ -1036,6 +1065,10 @@ function createMessageBatch(bufferState) {
 function maybeStartWhoLoop(bufferState) {
     let network = bufferState.state.getNetwork(bufferState.networkid);
 
+    if (!network || network.isTwitch()) {
+        return;
+    }
+
     if (network.state === 'connected') {
         // network is connected start the loop if its needed
         nextLoop();
@@ -1058,7 +1091,7 @@ function maybeStartWhoLoop(bufferState) {
         network = bufferState.state.getNetwork(bufferState.networkid);
 
         // Make sure the network still exists
-        if (!network) {
+        if (!network || network.isTwitch()) {
             return;
         }
 

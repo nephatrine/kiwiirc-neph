@@ -483,7 +483,7 @@ export default class BouncerProvider {
         });
         state.$on('irc.motd', (event, network) => {
             network.buffers.forEach((buffer) => {
-                if (buffer.isChannel() && buffer.enabled && buffer.joined) {
+                if (buffer.isChannel() && buffer.enabled && buffer.joined && !network.isTwitch()) {
                     network.ircClient.who(buffer.name);
                 }
             });

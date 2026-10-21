@@ -5,6 +5,7 @@ import * as Misc from '@/helpers/Misc';
 import { rollDice, formatRoll } from '@/helpers/Dice';
 import { each } from '@/helpers/Utils';
 import AliasRewriter from './AliasRewriter';
+import { addTwitchUserNotice } from './TwitchMiddleware';
 
 // Map of commandName=commandHandlerFn
 const inputCommands = {};
@@ -207,18 +208,21 @@ function handleMessage(type, event, command, line, context) {
         let tags = {};
         let outgoingTarget = bufferName;
 
-        if (buffer.replying_to && buffer.replying_to.irc_id && network.hasCap('message-tags')) {
-            if (network.supportsTag('+reply')) {
-                tags['+reply'] = buffer.replying_to.irc_id;
-            } else if (network.supportsTag('+draft/reply')) {
-                tags['+draft/reply'] = buffer.replying_to.irc_id;
-            }
+        const replyTag = network.replyTagName();
+        if (buffer.replying_to && buffer.replying_to.irc_id && replyTag) {
+            tags[replyTag] = buffer.replying_to.irc_id;
 
             // If replying to a rerouted message, we must target the protocol_target
             // and include the +channel-context tag to maintain the thread
-            if (buffer.replying_to.is_rerouted && buffer.replying_to.protocol_target) {
+            if (
+                buffer.replying_to.is_rerouted &&
+                buffer.replying_to.protocol_target &&
+                !network.isTwitch()
+            ) {
                 outgoingTarget = buffer.replying_to.protocol_target;
-                tags['+channel-context'] = buffer.name;
+                if (network.supportsTag('+channel-context')) {
+                    tags['+channel-context'] = buffer.name;
+                }
             }
         }
 
@@ -982,7 +986,7 @@ inputCommands.list = function inputCommandList(event, command, line, context) {
         return;
     }
 
-    if (line) {
+    if (line && !network.isTwitch()) {
         const listInFlight = ['requested', 'updating'].includes(network.channel_list_state);
         if (!listInFlight && network.channelListConnectRemaining() === 0) {
             network.channel_list_state = 'requested';
@@ -1033,6 +1037,45 @@ inputCommands.beep = function inputCommandBeep(event, command, line, context) {
 inputCommands.notify = function inputCommandNotify(event, command, line, context) {
     event.handled = true;
     this.state.$emit('notification.show', line || 'Test Notification', { force: true });
+};
+
+inputCommands.fakesub = function inputCommandFakeSub(event, command, line, context) {
+    event.handled = true;
+    const { network, buffer } = context;
+
+    if (!buffer.isChannel()) {
+        return;
+    }
+
+    const user = network.currentUser && network.currentUser();
+    const nick = network.nick || (user && user.nick) || 'streamer';
+    const displayName = user && typeof user.displayName === 'function' ?
+        user.displayName() :
+        nick;
+    const metadata = (user && user.metadata) || {};
+    const tags = {
+        'msg-id': 'resub',
+        'login': nick,
+        'display-name': displayName,
+        'color': metadata.color || '',
+        'user-id': metadata['user-id'] || '',
+        'id': Misc.generateLabel(),
+        'tmi-sent-ts': String(Date.now()),
+        'system-msg': `${displayName} subscribed at Tier 1. They've subscribed for 12 months, and shared a 3 month streak!`,
+        'msg-param-sub-plan': '1000',
+        'msg-param-sub-plan-name': 'Tier 1',
+        'msg-param-cumulative-months': '12',
+        'msg-param-should-share-streak': '1',
+        'msg-param-streak-months': '3',
+        'subscriber': '1',
+    };
+
+    addTwitchUserNotice(
+        network,
+        buffer,
+        tags,
+        line.trim() || 'Nice stream!'
+    );
 };
 
 inputCommands.setname = function inputCommandSetname(event, command, line, context) {

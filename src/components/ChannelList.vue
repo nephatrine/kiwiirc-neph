@@ -24,7 +24,7 @@
                     <a :title="$t('next_page')" @click="nextPage"><i class="fa fa-step-forward" aria-hidden="true" /></a>
                 </div>
             </div>
-            <div v-if="!isLoading && !noResults" class="kiwi-channellist-table">
+            <div v-if="!isLoading && !noResults && !isUnsupported" class="kiwi-channellist-table">
                 <div
                     v-for="channel in paginated"
                     :key="channel.channel"
@@ -51,6 +51,9 @@
             </div>
             <div v-else-if="noResults" class="kiwi-channellist-info">
                 <p>{{ $t('channel_list_nonefound') }}</p>
+            </div>
+            <div v-else-if="isUnsupported" class="kiwi-channellist-info">
+                <p>{{ $t('channel_list_unsupported') }}</p>
             </div>
             <div v-else class="kiwi-channellist-info">{{ $t('channel_list_fetch') }}</div>
             <div class="kiwi-channellist-nav">
@@ -90,7 +93,13 @@ export default {
         isLoading() {
             return this.listState === 'requested' || this.listState === 'updating';
         },
+        isUnsupported() {
+            return this.listState === 'unsupported';
+        },
         canRefresh() {
+            if (this.isUnsupported) {
+                return false;
+            }
             if (!this.network || this.network.channelListConnectRemaining(this.now) > 0) {
                 return false;
             }
@@ -98,6 +107,9 @@ export default {
             return this.now - this.network.channel_list_last_updated >= cooldown;
         },
         refreshTitle() {
+            if (this.isUnsupported) {
+                return this.$t('channel_list_unsupported');
+            }
             if (this.isLoading) {
                 return this.$t('refresh');
             }
@@ -207,7 +219,7 @@ export default {
             }
         },
         maybeUpdateList() {
-            if (!this.network || !this.canRefresh || this.isLoading) {
+            if (!this.network || !this.canRefresh || this.isLoading || this.isUnsupported) {
                 return;
             }
             this.network.maybeUpdateChannelList(true);

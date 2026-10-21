@@ -2,6 +2,7 @@
 
 import Vue from 'vue';
 import * as Misc from '@/helpers/Misc';
+import { isTwitchHost, twitchUserModes } from '@/helpers/Twitch';
 import { parseAccountRegistrationCap } from '@/libs/accountRegistration';
 import { def } from './common';
 import * as IrcClient from '../IrcClient';
@@ -123,6 +124,8 @@ export default class NetworkState {
 
         // Map of msgid -> Buffer object for rerouted messages
         def(this, 'reroute_map', new Map(), false);
+        // Twitch user-id -> nick, used to map Twitch state tags to users.
+        def(this, 'twitch_user_ids', Object.create(null), false);
         def(this, 'channel_list_connect_timer', null, true);
         def(this, 'channel_list_connect_force', false, true);
         def(this, 'channel_list_connect_pending', false, true);
@@ -167,6 +170,10 @@ export default class NetworkState {
             return sanitized.replace('{size}', '64');
         }
 
+        if (this.isTwitch()) {
+            return '/static/twitch.svg';
+        }
+
         // Fallback for Ergo IRCd
         const ircd = this.supports('IRCD') || this.ircd || '';
         if (ircd.toLowerCase().includes('ergo')) {
@@ -174,6 +181,14 @@ export default class NetworkState {
         }
 
         return '';
+    }
+
+    get ircdType() {
+        if (this.isTwitch()) {
+            return 'Twitch';
+        }
+
+        return this.ircd;
     }
 
     get ircClient() {
@@ -225,6 +240,10 @@ export default class NetworkState {
     }
 
     scheduleChannelListAfterConnect(force = false) {
+        if (this.isTwitch()) {
+            this.channel_list_state = 'unsupported';
+            return;
+        }
         if (force) {
             this.channel_list_connect_force = true;
         }
@@ -245,6 +264,10 @@ export default class NetworkState {
     }
 
     maybeUpdateChannelList(force = false) {
+        if (this.isTwitch()) {
+            this.channel_list_state = 'unsupported';
+            return;
+        }
         if (['requested', 'updating'].includes(this.channel_list_state)) {
             return;
         }
@@ -363,8 +386,103 @@ export default class NetworkState {
         return (this.advertised_caps || []).includes(name.toLowerCase());
     }
 
+    hasTwitchCommands() {
+        return this.hasCap('twitch.tv/commands');
+    }
+
+    hasTwitchTags() {
+        return this.hasCap('twitch.tv/tags');
+    }
+
     capValue(name) {
         return this.cap_values[name.toLowerCase()] || '';
+    }
+
+    isTwitch() {
+        return isTwitchHost(this.connection && this.connection.server) ||
+            this.hasAdvertisedCap('twitch.tv/commands');
+    }
+
+    rememberTwitchUserId(userId, nick) {
+        if (!userId || !nick) {
+            return;
+        }
+        this.twitch_user_ids[userId] = nick;
+    }
+
+    userByTwitchId(userId) {
+        if (!userId) {
+            return undefined;
+        }
+        const nick = this.twitch_user_ids[userId];
+        return nick ? this.userByName(nick) : undefined;
+    }
+
+    applyTwitchUserTags(user, tags) {
+        if (!user || !tags) {
+            return user;
+        }
+
+        if (tags['user-id']) {
+            this.rememberTwitchUserId(tags['user-id'], user.nick);
+        }
+        if (tags['display-name']) {
+            Vue.set(user.metadata, 'display-name', tags['display-name']);
+        }
+        if (tags.color) {
+            Vue.set(user.metadata, 'color', tags.color);
+        }
+
+        return user;
+    }
+
+    applyTwitchUserModes(buffer, user, tags, merge = false) {
+        if (!buffer || !user || !tags) {
+            return;
+        }
+
+        const computedModes = twitchUserModes(user.nick, buffer.name, tags);
+        const info = user.buffers[buffer.id];
+        let modes = computedModes;
+
+        if (merge && info) {
+            modes = (info.twitch_modes || []).slice();
+            computedModes.forEach((mode) => {
+                if (!modes.includes(mode)) {
+                    modes.push(mode);
+                }
+            });
+        }
+
+        if (!info) {
+            if (modes.length > 0) {
+                Vue.set(user.buffers, buffer.id, {
+                    modes: [],
+                    twitch_modes: modes,
+                    buffer,
+                });
+            }
+            return;
+        }
+
+        Vue.set(info, 'twitch_modes', modes);
+    }
+
+    ensureTwitchUser(nick, username, host, tags) {
+        if (!nick) {
+            return undefined;
+        }
+
+        let user = this.userByName(nick);
+        if (!user) {
+            user = this.appState.addUser(this, {
+                nick,
+                username: username || '',
+                host: host || '',
+            });
+        }
+
+        return this.applyTwitchUserTags(user, tags);
     }
 
     // True when the server identifies as Ergo in 002 (network.ircd holds the
@@ -714,6 +832,20 @@ export default class NetworkState {
         }
 
         return deny.some((tag) => tag === `-${name}`);
+    }
+
+    replyTagName() {
+        if (this.hasTwitchTags()) {
+            return 'reply-parent-msg-id';
+        }
+        if (this.supportsTag('+reply')) {
+            return '+reply';
+        }
+        if (this.supportsTag('+draft/reply')) {
+            return '+draft/reply';
+        }
+
+        return '';
     }
 
     timeToLocal(serverTimeMs) {

@@ -26,6 +26,13 @@ describe('ReplySupport', () => {
             tags: { '+draft/reply': 'msg456' },
         });
         expect(msg2.reply).toBe('msg456');
+
+        const msg3 = new Message({
+            nick: 'user3',
+            message: 'twitch',
+            tags: { 'reply-parent-msg-id': 'msg789' },
+        });
+        expect(msg3.reply).toBe('msg789');
     });
 
     it('should include +reply tag in buffer.say() when replying_to is set, but NOT modify body', () => {
@@ -48,6 +55,27 @@ describe('ReplySupport', () => {
 
         expect(saySpy).toHaveBeenCalledWith('#channel', 'reply message', { '+reply': 'msg123' });
         expect(buffer.replying_to).toBeNull();
+    });
+
+    it('should use reply-parent-msg-id for Twitch replies', () => {
+        network.connection.server = 'irc.chat.twitch.tv';
+        network.enabled_caps = ['twitch.tv/tags'];
+
+        const originalMsg = new Message({
+            nick: 'user1',
+            message: 'original',
+            irc_id: 'msg123',
+        });
+
+        buffer.replying_to = originalMsg;
+
+        const saySpy = jest.spyOn(network.ircClient, 'say').mockImplementation(() => {});
+
+        buffer.say('reply message');
+
+        expect(saySpy).toHaveBeenCalledWith('#channel', 'reply message', {
+            'reply-parent-msg-id': 'msg123',
+        });
     });
 
     it('should NOT include +reply tag if server does not support it, and NOT modify body', () => {

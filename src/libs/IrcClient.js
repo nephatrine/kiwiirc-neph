@@ -7,6 +7,15 @@ import { each, find } from '@/helpers/Utils';
 import typingMiddleware from './TypingMiddleware';
 import reactionMiddleware from './ReactionMiddleware';
 import redactionMiddleware from './RedactionMiddleware';
+import twitchMiddleware, { isTwitchNoticeError } from './TwitchMiddleware';
+import {
+    formatTwitchMessage,
+    twitchMessageTime,
+    isTwitchRerouted,
+    isTwitchUserMessage,
+    isTwitchHost,
+    twitchChannelUrl
+} from '@/helpers/Twitch';
 import readMarkerMiddleware from './ReadMarkerMiddleware';
 import saslMiddleware from './SaslMiddleware';
 import registrationMiddleware from './RegistrationMiddleware';
@@ -46,6 +55,9 @@ const DESIRED_CAPS = [
     'standard-replies',
     'draft/account-registration',
     'draft/persistence',
+    'twitch.tv/commands',
+    'twitch.tv/membership',
+    'twitch.tv/tags',
 ];
 
 // The control connection of a bouncer only ever talks to the bouncer itself.
@@ -72,6 +84,12 @@ const CONTROL_CAPS = [
 const METADATA_CAPS = ['draft/metadata-3', 'draft/metadata-2'];
 const WEBPUSH_CAPS = ['draft/webpush', 'soju.im/webpush'];
 
+export function installTwitchAction(ircClient) {
+    ircClient.action = function twitchAction(target, message, tags) {
+        ircClient.say(target, `/me ${message}`, tags);
+    };
+}
+
 export function create(state, network) {
     let networkid = network.id;
 
@@ -92,6 +110,7 @@ export function create(state, network) {
     ircClient.use(typingMiddleware(network));
     ircClient.use(reactionMiddleware(network));
     ircClient.use(redactionMiddleware(network));
+    ircClient.use(twitchMiddleware(network));
     ircClient.use(readMarkerMiddleware(network));
     ircClient.use(metadataMiddleware(network));
     ircClient.use(persistenceMiddleware(network));
@@ -129,6 +148,15 @@ export function create(state, network) {
         ircClient.options.username = network.username || network.connection.nick;
         ircClient.options.gecos = network.gecos || 'Using KiwiIRC';
         ircClient.options.encoding = network.connection.encoding;
+        // Twitch sends its own PING every few minutes. Avoid the framework's
+        // 30-second timestamped keepalive, but keep a timeout long enough to
+        // cover the server's PING interval.
+        const isTwitch = isTwitchHost(network.connection.server);
+        ircClient.options.ping_interval = isTwitch ? 0 : 30;
+        ircClient.options.ping_timeout = isTwitch ? 360 : 120;
+        if (isTwitch) {
+            installTwitchAction(ircClient);
+        }
         ircClient.options.sasl_mechanism = network.connection.sasl_mechanism || state.setting('defaultSaslMechanism') || 'AUTO';
         ircClient.options.auto_reconnect = !!state.setting('autoReconnect');
         ircClient.options.auto_reconnect_max_wait = state.setting('autoReconnectMaxWait') || 30000;
@@ -1052,8 +1080,10 @@ function clientMiddleware(state, network) {
                 });
             }
 
-            // Get some extra info about ourselves
-            client.raw('WHO ' + event.nick);
+            // Get some extra info about ourselves. Twitch does not support WHO.
+            if (!network.isTwitch()) {
+                client.raw('WHO ' + event.nick);
+            }
 
             if (network.auto_commands) {
                 network.auto_commands.split('\n').forEach((line) => {
@@ -1313,29 +1343,55 @@ function clientMiddleware(state, network) {
                 textFormatType = 'notice';
             }
 
+            const isTwitch = network.isTwitch();
+            const twitchTags = event.tags || {};
+            const twitchNoticeId = isTwitch && event.type === 'notice'
+                ? twitchTags['msg-id']
+                : undefined;
+            const twitchTime = isTwitch ? twitchMessageTime(twitchTags) : null;
+            const twitchText = isTwitch
+                ? formatTwitchMessage(event.message, twitchTags)
+                : event.message;
+            const messageTags = isTwitch ? Object.assign({}, twitchTags) : twitchTags;
+
+            if (messageTags['reply-parent-msg-id'] && !messageTags['+reply']) {
+                messageTags['+reply'] = messageTags['reply-parent-msg-id'];
+            }
+
             let messageBody = TextFormatting.formatText(textFormatType, {
                 nick: event.nick,
                 username: event.ident,
                 host: event.hostname,
-                text: event.message,
+                text: twitchText,
             });
 
             let message = {
-                time: eventTime,
-                server_time: serverTime,
+                time: twitchTime || eventTime,
+                server_time: twitchTime || serverTime,
                 nick: event.nick,
                 message: messageBody,
                 raw_text: event.message,
-                type: event.type,
-                tags: event.tags || {},
-                is_rerouted: isRerouted,
+                type: isTwitchNoticeError(twitchNoticeId) ? 'error' : event.type,
+                tags: messageTags,
+                irc_id: isTwitch ? twitchTags.id : undefined,
+                is_rerouted: isRerouted || (isTwitch && isTwitchRerouted(twitchTags)),
                 protocol_target: protocolTarget,
             };
 
             // If ignore_bots is enabled and the user is a known bot or the message has a bot tag,
             // ignore the message
             const ignoreBots = state.setting('buffers.ignore_bots');
-            const messageUser = state.getUser(network.id, event.nick);
+            let messageUser = state.getUser(network.id, event.nick);
+            if (isTwitch && isTwitchUserMessage(event)) {
+                messageUser = network.ensureTwitchUser(
+                    event.nick,
+                    event.ident,
+                    event.hostname,
+                    message.tags
+                );
+            } else if (messageUser && isTwitch) {
+                network.applyTwitchUserTags(messageUser, message.tags);
+            }
             const isBot = (messageUser && messageUser.is_bot) ||
                 (event.tags && typeof event.tags.bot !== 'undefined');
             if (ignoreBots && isBot) {
@@ -1395,9 +1451,19 @@ function clientMiddleware(state, network) {
                 buffer.enabled = true;
             }
 
+            if (isTwitch &&
+                messageUser &&
+                buffer.isChannel() &&
+                network.hasCap('twitch.tv/tags') &&
+                isTwitchUserMessage(event)
+            ) {
+                network.applyTwitchUserModes(buffer, messageUser, message.tags);
+            }
+
             const isHandledBatch = event.batch && ['netsplit', 'netjoin'].includes(event.batch.type);
+            let bufferMessage;
             if (!isHandledBatch) {
-                let bufferMessage = state.addMessage(buffer, message);
+                bufferMessage = state.addMessage(buffer, message);
                 if (bufferMessage && isRerouted) {
                     // Rerouted messages should always be treated as highlights in the channel
                     bufferMessage.isHighlight = true;
@@ -1407,6 +1473,17 @@ function clientMiddleware(state, network) {
                         network.reroute_map.set(bufferMessage.irc_id, buffer);
                     }
                 }
+            }
+
+            if (twitchNoticeId) {
+                network.appState.$emit('twitch.notice', {
+                    network,
+                    buffer,
+                    msgId: twitchNoticeId,
+                    target: event.target || (event.params || [])[0],
+                    tags: message.tags,
+                    message: bufferMessage || message,
+                });
             }
         }
 
@@ -1468,10 +1545,31 @@ function clientMiddleware(state, network) {
                     buffer.joined = true;
                     buffer.flags.channel_badkey = false;
                     network.ircClient.raw('MODE', event.channel);
-                    if (!(numConnects > 1 && buffer.flags.reconnect_known)) {
+                    if (!network.isTwitch() && !(numConnects > 1 && buffer.flags.reconnect_known)) {
                         network.ircClient.who(event.channel);
                     }
                     state.$delete(buffer.flags, 'reconnect_known');
+
+                    // Twitch channels have no topics, so show their channel
+                    // URL once when we first join, using the same message type
+                    // as a normal server-sent join topic.
+                    if (network.isTwitch() &&
+                        buffer.isChannel() &&
+                        !buffer.flags.twitch_topic_shown
+                    ) {
+                        buffer.flags.twitch_topic_shown = true;
+                        state.addMessage(buffer, {
+                            time: eventTime,
+                            server_time: serverTime,
+                            nick: '',
+                            message: TextFormatting.formatText(
+                                'channel_topic',
+                                twitchChannelUrl(buffer.name)
+                            ),
+                            type: 'topic',
+                            type_extra: 'topic_join',
+                        });
+                    }
                 }
             }
 
@@ -2035,6 +2133,17 @@ function clientMiddleware(state, network) {
 
             if (!isHistory) {
                 state.addMultipleUsersToBuffer(buffer, users);
+
+                if (network.isTwitch()) {
+                    users.forEach((entry) => {
+                        const user = network.userByName(entry.user.nick);
+                        if (user) {
+                            // NAMES carries no Twitch tags, but the channel
+                            // owner can still be identified by nick.
+                            network.applyTwitchUserModes(buffer, user, {}, true);
+                        }
+                    });
+                }
             }
 
             if (!isHistory) {

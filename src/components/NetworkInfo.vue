@@ -16,7 +16,7 @@
             </div>
             <div class="kiwi-network-info-item">
                 <span class="kiwi-network-info-label">{{ $t('info_ircd') }}:</span>
-                <span class="kiwi-network-info-value">{{ network.ircd || 'Unknown' }}</span>
+                <span class="kiwi-network-info-value">{{ network.ircdType || 'Unknown' }}</span>
             </div>
         </div>
 
