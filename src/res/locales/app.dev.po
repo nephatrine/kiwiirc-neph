@@ -687,6 +687,174 @@ msgstr "Please wait 5 minutes between refreshes"
 msgid "channel_list_connect_wait"
 msgstr "Please wait 30 seconds after connecting"
 
+#: Channel lists are not supported by this network
+msgid "channel_list_unsupported"
+msgstr "This network does not support channel lists."
+
+#: Twitch channel modes summary
+msgid "twitch_roomstate"
+msgstr "Channel modes: {{modes}}"
+
+#: Twitch channel has no restrictions
+msgid "twitch_roomstate_none"
+msgstr "No channel restrictions"
+
+#: Twitch emote-only mode
+msgid "twitch_roomstate_emote_only"
+msgstr "emote-only"
+
+#: Twitch followers-only mode
+msgid "twitch_roomstate_followers_only"
+msgstr "followers-only"
+
+#: Twitch followers-only mode with a minimum follow time
+msgid "twitch_roomstate_followers_only_minutes"
+msgstr "followers-only ({{minutes}} minutes)"
+
+#: Twitch slow mode
+msgid "twitch_roomstate_slow"
+msgstr "slow mode ({{seconds}} seconds)"
+
+#: Twitch subscribers-only mode
+msgid "twitch_roomstate_subs_only"
+msgstr "subscribers-only"
+
+#: Twitch unique-chat mode
+msgid "twitch_roomstate_r9k"
+msgstr "unique-chat"
+
+#: Twitch USERNOTICE subscription
+msgid "twitch_usernotice_sub"
+msgstr "Subscription"
+
+#: Twitch USERNOTICE resubscription
+msgid "twitch_usernotice_resub"
+msgstr "Resubscription"
+
+#: Twitch USERNOTICE gift subscription
+msgid "twitch_usernotice_subgift"
+msgstr "Gift subscription"
+
+#: Twitch USERNOTICE mass gift subscriptions
+msgid "twitch_usernotice_submysterygift"
+msgstr "Gift subscriptions"
+
+#: Twitch USERNOTICE gift upgrade
+msgid "twitch_usernotice_giftpaidupgrade"
+msgstr "Gift upgrade"
+
+#: Twitch USERNOTICE reward gift
+msgid "twitch_usernotice_rewardgift"
+msgstr "Reward gift"
+
+#: Twitch USERNOTICE anonymous gift upgrade
+msgid "twitch_usernotice_anongiftpaidupgrade"
+msgstr "Anonymous gift upgrade"
+
+#: Twitch USERNOTICE raid
+msgid "twitch_usernotice_raid"
+msgstr "Raid"
+
+#: Twitch USERNOTICE raid ended
+msgid "twitch_usernotice_unraid"
+msgstr "Raid ended"
+
+#: Twitch USERNOTICE bits badge tier
+msgid "twitch_usernotice_bitsbadgetier"
+msgstr "Bits badge"
+
+#: Twitch USERNOTICE shared chat
+msgid "twitch_usernotice_sharedchatnotice"
+msgstr "Shared chat"
+
+#: Twitch USERNOTICE moderator anniversary
+msgid "twitch_usernotice_modiversary"
+msgstr "Modiversary"
+
+#: Twitch USERNOTICE viewer milestone
+msgid "twitch_usernotice_viewermilestone"
+msgstr "Viewer milestone"
+
+#: Twitch USERNOTICE channel event
+msgid "twitch_usernotice_event"
+msgstr "Channel event"
+
+#: Twitch USERNOTICE subscription plan
+msgid "twitch_usernotice_plan"
+msgstr "Plan"
+
+#: Twitch Prime subscription plan
+msgid "twitch_usernotice_prime"
+msgstr "Prime"
+
+#: Twitch subscription tier
+msgid "twitch_usernotice_tier"
+msgstr "Tier"
+
+#: Twitch subscription tier value
+msgid "twitch_usernotice_tier_value"
+msgstr "Tier {{tier}}"
+
+#: Twitch USERNOTICE total subscribed months
+msgid "twitch_usernotice_total_months"
+msgstr "Total months"
+
+#: Twitch USERNOTICE months
+msgid "twitch_usernotice_months"
+msgstr "Months"
+
+#: Twitch USERNOTICE subscription streak
+msgid "twitch_usernotice_streak"
+msgstr "Streak"
+
+#: Twitch USERNOTICE gift recipient
+msgid "twitch_usernotice_recipient"
+msgstr "Recipient"
+
+#: Twitch USERNOTICE gift sender
+msgid "twitch_usernotice_sender"
+msgstr "Sender"
+
+#: Twitch USERNOTICE raid viewer count
+msgid "twitch_usernotice_viewers"
+msgstr "Viewers"
+
+#: Twitch USERNOTICE bits threshold
+msgid "twitch_usernotice_bits"
+msgstr "Bits"
+
+#: Twitch USERNOTICE gifted months
+msgid "twitch_usernotice_gift_months"
+msgstr "Gift months"
+
+#: Twitch USERNOTICE mass gift count
+msgid "twitch_usernotice_gift_count"
+msgstr "Gift count"
+
+#: Twitch USERNOTICE total gifts sent
+msgid "twitch_usernotice_gifts_sent"
+msgstr "Gifts sent"
+
+#: Twitch USERNOTICE promotion name
+msgid "twitch_usernotice_promo"
+msgstr "Promo"
+
+#: Twitch USERNOTICE promotion gift total
+msgid "twitch_usernotice_gift_total"
+msgstr "Gift total"
+
+#: Twitch USERNOTICE category
+msgid "twitch_usernotice_category"
+msgstr "Category"
+
+#: Twitch USERNOTICE value
+msgid "twitch_usernotice_value"
+msgstr "Value"
+
+#: Twitch USERNOTICE watch streak
+msgid "twitch_usernotice_watch_streak"
+msgstr "Watch streak"
+
 
 
 #: Container $t('container_')
