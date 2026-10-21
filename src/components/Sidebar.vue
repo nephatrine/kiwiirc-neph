@@ -2,6 +2,7 @@
     <div
         :class="[`kiwi-sidebar-section-${section}`]"
         class="kiwi-sidebar kiwi-theme-bg"
+        @click.capture="onSidebarClick"
     >
         <span v-if="!sidebarState.isOpen" class="kiwi-sidebar-options">
             <div class="kiwi-sidebar-close" :title="$t('close')" @click="sidebarState.close()">
@@ -111,6 +112,22 @@ export default {
     methods: {
         showTab(tabName) {
             this.$refs.tabs.setActiveByName(tabName);
+        },
+        onSidebarClick(event) {
+            let target = event.target;
+            let handle = target && target.closest ? target.closest('a[data-url]') : null;
+            if (!handle) {
+                return;
+            }
+
+            let url = handle.getAttribute('data-url');
+            if (!url) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+            this.$state.$emit('mediaviewer.show', url);
         },
     },
 };
