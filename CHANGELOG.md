@@ -10,37 +10,41 @@ and this project adheres to
 
 ### Added
 
-- **Bouncer**: Added support for the IRCv3 `bouncer-networks` extension
-  (`draft/bouncer-networks`, else `soju.im/bouncer-networks`) for modern
-  bouncers such as Soju, replacing the previous KiwiBNC-specific support. The
-  control connection appears as an always-visible "BNC" network, so
-  `/msg BouncerServ` and `/quote BOUNCER ...` work directly, and its errors are
-  shown in that buffer. Bouncer-managed networks use explicit Save and
-  Connect/Reconnect buttons that send only changed attributes. The startup
-  screen uses BNC, Account, and Register tabs chosen by the capability probe,
-  with per-tab remembered credentials and field-name hover hints. SASL
-  credentials can be turned into a reviewable `sasl set-plain` command for
-  `BouncerServ`.
-- **Bouncer**: `draft/persistence` and webpush are requested and configured on
-  the bouncer control connection, and `soju.im/FILEHOST` uploads use the bouncer
-  account. Features the bouncer did not advertise continue to use the upstream
-  account.
-- **Metadata**: When a server advertises `max-keys=0`, Kiwi IRC no longer sends
-  `GET`, `SUB`, or `SET` for its own metadata keys. Soju's `soju.im/pinned`,
-  `soju.im/muted`, and `soju.im/blocked` keys are still subscribed and mapped to
-  the Favorite Channel, Never notify plus Mute Sounds, and Ignore User settings.
-- **Accounts and login**: The welcome screen's Anonymous, Account, and Register
-  tabs now have independent Advanced fields: nick, username (IRC ident), real
-  name (GECOS), server password, and channel list. Lengths follow the server's
-  `NICKLEN`, `USERLEN`, and `NAMELEN`, server passwords reject whitespace, and
-  the Register tab shows a password-strength meter and account-registration
-  length hints. Account names are stripped at the first `@` or `/` to suggest
-  the nick. The user box registration form now places email after password,
-  shows the same strength meter, uses `new-password` and `email` autocomplete
-  hints, and enforces the server's password length limits.
+- **Twitch**: Added Twitch IRC support, requesting `twitch.tv/commands`,
+  `twitch.tv/tags`, and `twitch.tv/membership` when advertised. Twitch tags
+  drive message IDs, display names, colors, timestamps, replies, reroute
+  markers, emotes/GIFs, and room/user state, and unknown chatters are created on
+  their first message. Twitch commands are handled instead of shown as unknown
+  lines: `CLEARCHAT`/`CLEARMSG` redact messages, `ROOMSTATE` posts mode changes,
+  `USERNOTICE` renders rich event cards, `RECONNECT` allows one reconnect, and
+  notices are classified where appropriate. Twitch connections also suppress
+  client PING, `LIST`, `WHO`, and `WHOIS`, show the Twitch icon and channel
+  topic, display owner/mod/VIP/subscriber prefixes, and send `/me` and replies
+  in Twitch's format.
+- **Bouncer**: Added IRCv3 `bouncer-networks` support (`draft/bouncer-networks`,
+  else `soju.im/bouncer-networks`) for modern bouncers such as Soju. The control
+  connection appears as an always-visible "BNC" network, managed networks use
+  explicit Save and Connect/Reconnect actions, and the startup screen offers
+  BNC, Account, and Register tabs based on the capability probe. Persistence,
+  webpush, and FILEHOST uploads use the bouncer account when advertised.
+- **Metadata**: Servers advertising `max-keys=0` no longer receive Kiwi's own
+  metadata requests, while Soju's pinned, muted, and blocked keys remain mapped
+  to their settings.
+- **Plugins**: Added an app-level `addUi('app', ...)` mount point, an
+  `input.activity` event, and a generic media playback registry. The bundled
+  Bongo Cat plugin uses them for its companion UI, care loop, reactions, and
+  radio behavior, and is enabled in the default config template for testing.
+- **Accounts and login**: The Welcome screen's Anonymous, Account, and Register
+  tabs now have independent Advanced fields, with server-advertised length
+  limits, SASL/server-password validation, a password-strength meter, and nick
+  suggestions. The user box registration form uses the same password rules and
+  autocomplete hints.
 
 ### Changed
 
+- **Plugins**: Renamed the bundled channels sidebar file to
+  `static/plugins/channels-sidebar.html`; update custom `plugins` URLs that used
+  the old `plugin-channels-sidebar.html` name.
 - **Login**: Field labels now describe the underlying value ("IRC Nick", "IRC
   User", "Real Name", "SASL Account", "SASL Password", "Channel Key"), and a
   saved anonymous network starts on the Anonymous tab while first-time and
@@ -79,6 +83,11 @@ and this project adheres to
 
 ### Fixed
 
+- **Sidebar**: Link preview handles in sidebar topic, description, and realname
+  text now open the URL in the pinned media viewer instead of doing nothing.
+- **Login**: Reusing a saved network now adopts the current startup transport
+  settings, so switching a deployment from a gateway to a direct websocket no
+  longer keeps trying the old gateway and requesting `/info`.
 - Servers that echo messages without a `msgid` no longer show duplicate sends or
   report them as unconfirmed. History echoes never confirm a send, and rewritten
   text is matched when exactly one message is pending.

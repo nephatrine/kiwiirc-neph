@@ -58,6 +58,9 @@ gateway, gateway presets are switched to their direct websocket equivalent.
 loads none. HTML plugins are injected with `innerHTML`. `<i />` is not
 self-closing there.
 
+See [PLUGINS.md](PLUGINS.md) for plugin authoring, UI hooks, events,
+translations, and the media playback API.
+
 ## File uploads
 
 ```json
