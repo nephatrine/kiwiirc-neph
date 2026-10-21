@@ -193,4 +193,31 @@ describe('GlobalApi plugin surface', () => {
         expect(seen).toContain('all:custom.event');
         expect(seen).toContain('direct');
     });
+
+    it('tracks media playback across multiple plugin sources', () => {
+        let events = [];
+        api.on('media.playing', (event) => events.push(event));
+
+        api.setMediaPlaying('radio', true, { title: 'Song' });
+        expect(api.isMediaPlaying()).toBe(true);
+        expect(api.getMediaSource('radio')).toEqual({
+            title: 'Song',
+            playing: true,
+        });
+
+        api.setMediaPlaying('theme-player', true);
+        api.setMediaPlaying('radio', false);
+        expect(api.isMediaPlaying()).toBe(true);
+        expect(api.getMediaSource('radio')).toBeNull();
+
+        api.clearMediaSource('theme-player');
+        expect(api.isMediaPlaying()).toBe(false);
+        expect(events.map((event) => event.playing)).toEqual([true, false]);
+    });
+
+    it('ignores media updates without a source id', () => {
+        api.setMediaPlaying('', true);
+        expect(api.isMediaPlaying()).toBe(false);
+        expect(api.getMediaSources()).toEqual({});
+    });
 });

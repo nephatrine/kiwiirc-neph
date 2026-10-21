@@ -50,6 +50,11 @@ export default class GlobalApi extends EventEmitter {
         this.messageInfoPlugins = [];
         this.tabs = Object.create(null);
         this.isReady = false;
+        /** Reactive media playback state reported by plugins */
+        this.media = Vue.observable({
+            playing: false,
+            sources: {},
+        });
         /* eslint-disable no-underscore-dangle */
         this.exports = window._kiwi_exports || {};
 
@@ -141,6 +146,60 @@ export default class GlobalApi extends EventEmitter {
             stateEmit.call(this.state, ...args);
             thisEmit.call(this, ...args);
         };
+    }
+
+    /**
+     * Report whether a plugin is currently playing media.
+     *
+     * Multiple sources may report playback at once. The aggregate
+     * `kiwi.media.playing` flag stays true until every source has stopped.
+     * @param {String} source Stable plugin identifier, eg. 'radio'
+     * @param {Boolean} playing Whether this source is playing
+     * @param {Object} metadata Optional details such as title, station, or url
+     */
+    setMediaPlaying(source, playing, metadata = {}) {
+        if (!source) {
+            return;
+        }
+
+        let wasPlaying = this.media.playing;
+        if (playing) {
+            Vue.set(this.media.sources, source, Object.assign({}, metadata, {
+                playing: true,
+            }));
+        } else {
+            Vue.delete(this.media.sources, source);
+        }
+
+        this.media.playing = Object.keys(this.media.sources).length > 0;
+        if (wasPlaying !== this.media.playing) {
+            let event = {
+                playing: this.media.playing,
+                source,
+                metadata,
+            };
+            if (this.state) {
+                this.state.$emit('media.playing', event);
+            } else {
+                super.emit('media.playing', event);
+            }
+        }
+    }
+
+    isMediaPlaying() {
+        return this.media.playing;
+    }
+
+    getMediaSource(source) {
+        return this.media.sources[source] || null;
+    }
+
+    getMediaSources() {
+        return this.media.sources;
+    }
+
+    clearMediaSource(source) {
+        this.setMediaPlaying(source, false);
     }
 
     setThemeManager(themeManager) {

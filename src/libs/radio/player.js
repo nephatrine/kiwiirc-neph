@@ -1,4 +1,5 @@
 import Vue from 'vue';
+import GlobalApi from '@/libs/GlobalApi';
 import getState from '@/libs/state';
 import { def } from '@/libs/state/common';
 import { fetchStationList } from './stations';
@@ -72,9 +73,17 @@ function createRadio() {
         ui.audio.volume = ui.muted ? 0 : volume();
     }
 
+    function setPlaying(playing) {
+        ui.playing = playing;
+        GlobalApi.singleton().setMediaPlaying('radio', playing, {
+            station: ui.currentName,
+            title: ui.trackTitle,
+        });
+    }
+
     function markFailed(name) {
         Vue.set(ui.failed, name, true);
-        ui.playing = false;
+        setPlaying(false);
         stopTrackPoll();
         stopStallWatch();
         clearSession();
@@ -112,7 +121,7 @@ function createRadio() {
             }
         });
         audio.addEventListener('pause', () => {
-            ui.playing = false;
+            setPlaying(false);
             clearSession();
         });
         document.body.appendChild(audio);
@@ -159,7 +168,7 @@ function createRadio() {
         if (started && started.then) {
             started.then(() => {
                 recovering = false;
-                ui.playing = true;
+                setPlaying(true);
                 if (name) {
                     Vue.delete(ui.failed, name);
                 }
@@ -304,7 +313,7 @@ function createRadio() {
         let started = audio.play();
         if (started && started.then) {
             started.then(() => {
-                ui.playing = true;
+                setPlaying(true);
                 if (useWave) {
                     attachWave();
                 }
@@ -363,6 +372,7 @@ function createRadio() {
                 if (title !== ui.trackTitle) {
                     ui.trackTitle = title || '';
                     setSession(station);
+                    setPlaying(true);
                 }
             }).catch(() => {
                 // A single network hiccup is transient, but an endpoint
@@ -424,7 +434,7 @@ function createRadio() {
         let restarted = audio.play();
         if (restarted && restarted.then) {
             restarted.then(() => {
-                ui.playing = true;
+                setPlaying(true);
                 setSession(station);
                 startStallWatch();
             }).catch(() => {
@@ -437,7 +447,7 @@ function createRadio() {
         if (ui.audio) {
             ui.audio.pause();
         }
-        ui.playing = false;
+        setPlaying(false);
         stopTrackPoll();
         stopStallWatch();
         stopWave();
