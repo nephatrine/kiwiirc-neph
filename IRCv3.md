@@ -126,10 +126,9 @@ the tag.
 
 Kiwi IRC uses one of three paths for outgoing messages:
 
-1. **No echo**: The UI updates immediately.
-1. **Echo without labels**: Matches the echo by nick, text, and a time window,
-   or by `msgid`.
-1. **Labeled echo**: Matches the echo with the label from `labeled-response`.
+1. **none**: The UI updates immediately.
+1. **echo-message**: Matches the echo by nick, text, and a time window.
+1. **labeled-response**: Matches the echo or ACK with the label tag.
 
 The seen boundary includes the server read-marker time. Traffic replayed at that
 exact time does not notify. Pending messages revert and log an error after 60
@@ -202,7 +201,7 @@ capability is gone. `-notify` (`draft/bouncer-networks-notify` or
 changes are read from a `LISTNETWORKS` snapshot and can be stale on a modern
 bouncer until reconnect.
 
-### Authentication and BIND
+### Authentication & BIND
 
 The bouncer connection authenticates with SASL using the bouncer account:
 `connection.account` is the SASL username and `network.password` is the SASL
@@ -219,7 +218,7 @@ BIND is fire-and-forget, since the server only replies on failure, and is sent
 at most once per connection. The bound netid is read back from the
 `BOUNCER_NETID` ISUPPORT token.
 
-### The control connection
+### The Control Connection
 
 A connection that finishes registration without binding to a netid is the
 bouncer **control connection**: it is the unbound session used to talk to the
@@ -248,7 +247,7 @@ own replies, so everything else is dropped from the request. Messages to
 of hanging until the confirm timeout. Connections bound to a netid still request
 the full set.
 
-### Bouncer and upstream features
+### Bouncer & Upstream Features
 
 A bound connection's `CAP LS` arrives before `BOUNCER BIND`, so it is the
 bouncer's own advertisement. Its pre-BIND `ISUPPORT` reply and the control

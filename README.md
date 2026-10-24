@@ -31,7 +31,7 @@ For help, join `#support` on `irc.nephatrine.net`.
 
 To install on your own server, build from source below.
 
-## Building from source
+## Building Kiwi IRC
 
 ### Dependencies
 
@@ -41,7 +41,7 @@ following installed on your system:
 - [Node.js](https://nodejs.org/) (>= 22.0.0)
 - [npm](https://www.npmjs.com/)
 
-### Building for production
+### Building for Production
 
 ```bash
 # Install dependencies
@@ -54,7 +54,7 @@ $ npm run build
 ***Note:*** *Be sure to copy the files from the `dist/` folder to your
 webserver! This folder will be overwritten each time it is built.*
 
-### Development environment
+### Development Environment
 
 Kiwi IRC is built with Vue.js, webpack, and Babel.
 
@@ -78,7 +78,7 @@ The client loads [static/config.json](static/config.json) on startup. The
 browser fetches it, so do not put secrets in it. Options, defaults, and the keys
 an admin must set are in [CONFIGURATION.md](CONFIGURATION.md).
 
-## Browser support
+## Browser Support
 
 Kiwi IRC is tested on all modern browsers.
 
@@ -97,3 +97,5 @@ repository:
 - **[IRCv3.md](IRCv3.md)**: Supported capabilities, client tags, and
   synchronization behaviour.
 - **[CHANGELOG.md](CHANGELOG.md)**: Features, changes, and security updates.
+- **[PLUGINS.md](PLUGINS.md)**: Plugin authoring, UI hooks, events,
+  translations, and media playback.

@@ -31,10 +31,8 @@ and this project adheres to
   metadata requests, while Soju's pinned, muted, and blocked keys remain mapped
   to their settings.
 - **Plugins**: Added an app-level `addUi('app', ...)` mount point, an
-  `input.activity` event, and a generic media playback registry. The bundled
-  Bongo Cat plugin uses them for its companion UI, care loop, reactions, and
-  radio behavior, and is enabled in the default config template for testing.
-- **Accounts and login**: The Welcome screen's Anonymous, Account, and Register
+  `input.activity` event, and a generic media playback registry.
+- **Accounts & Login**: The Welcome screen's Anonymous, Account, and Register
   tabs now have independent Advanced fields, with server-advertised length
   limits, SASL/server-password validation, a password-strength meter, and nick
   suggestions. The user box registration form uses the same password rules and
@@ -55,16 +53,16 @@ and this project adheres to
   to choose which tabs to show; custom endpoints skip the probe and keep the
   manual Bouncer tab. Bouncer presets use the Bouncer page's BNC and Account
   tabs, validation, and probe-driven availability, but never offer Register.
-- **Connection picker**: When no `kiwiServer` gateway is configured, `IRC` and
+- **Connection Picker**: When no `kiwiServer` gateway is configured, `IRC` and
   `IRCS` are no longer offered. Custom endpoints, presets, and pasted gateway
   URIs use direct `WS`/`WSS` instead. Bouncer-managed network settings keep
   their IRC/IRCS TLS labels.
-- **Network settings**: Server Details now groups credentials into IRC Auth and
+- **Network Settings**: Server Details now groups credentials into IRC Auth and
   SASL Auth, allows live edits where the server supports them, locks fields that
   require a reconnect, and limits restricted mode to the server endpoint.
   Bouncer-managed networks use IRC/IRCS, default a missing port to 6697 or 6667,
   and keep the IRC user and real name separate from SASL credentials.
-- **Network settings**: The Advanced section now orders Auto Commands (On
+- **Network Settings**: The Advanced section now orders Auto Commands (On
   Connect), Raw Buffer (Requires Reload), Direct Websocket, Protocol Encoding,
   and SASL Mechanism. Raw scrollback and the Direct Websocket URL appear only
   when their option is enabled.
@@ -91,7 +89,7 @@ and this project adheres to
 - Servers that echo messages without a `msgid` no longer show duplicate sends or
   report them as unconfirmed. History echoes never confirm a send, and rewritten
   text is matched when exactly one message is pending.
-- **Network settings**: Disconnecting a live network now updates the network and
+- **Network Settings**: Disconnecting a live network now updates the network and
   channel state immediately, so channels show as disconnected and the Connect
   button returns. Stale socket closes during a reconnect attempt are ignored.
 - The Information tab shows the server software from the `004` reply when the
@@ -104,7 +102,7 @@ and this project adheres to
 
 ### Added
 
-- **Themes and formatting**: Added a theme system with 39 built-in themes and a
+- **Themes & Formatting**: Added a theme system with 39 built-in themes and a
   custom theme URL. Markdown-style formatting, IRC colours (0-99 and hex),
   spoilers, and a formatting toolbar with colour and emoji pickers. Emoji
   shortcodes convert while typing and on incoming messages.
@@ -113,11 +111,11 @@ and this project adheres to
   (`+typing`), long messages sent as one `draft/multiline` batch, and redaction
   (`draft/message-redaction`) with a confirmation prompt and click-to-reveal.
   Messages rerouted with `+channel-context` appear in the correct buffer.
-- **History and read state**: Added `draft/chathistory` and
-  `draft/event-playback` for gap-filling, including replayed joins, parts, and
-  modes. `draft/read-marker` keeps read state in sync across sessions, and
+- **History & Read State**: Added `draft/chathistory` and `draft/event-playback`
+  for gap-filling, including replayed joins, parts, and modes.
+  `draft/read-marker` keeps read state in sync across sessions, and
   `echo-message` with `labeled-response` confirms outgoing messages.
-- **Accounts and login**: Added SASL login, preferring `SCRAM-SHA-256` over
+- **Accounts & Login**: Added SASL login, preferring `SCRAM-SHA-256` over
   `PLAIN`, with a "Remember me" toggle that can purge saved state and a separate
   "Remember password" toggle beneath it. The login page offers Anonymous,
   Account, and Register tabs driven by a pre-login server probe.
@@ -125,21 +123,21 @@ and this project adheres to
   guests and a Register tab when the probe sees `before-connect`, with an inline
   `VERIFY` step. `draft/persistence` adds a Preferred Persistence setting (Keep
   As-Is by default).
-- **Profiles and branding**: Added `draft/metadata-2` and `draft/metadata-3` for
+- **Profiles & Branding**: Added `draft/metadata-2` and `draft/metadata-3` for
   display names, pronouns, descriptions, homepages, status, and
   contrast-adjusted colours, with a fallback avatar. `NETWORK` and `draft/ICON`
   brand the network, with an Ergo icon fallback and channel avatars.
-- **Media and uploads**: Added image, audio, and video embeds, with iframe
+- **Media & Uploads**: Added image, audio, and video embeds, with iframe
   previews for YouTube, Twitch, SoundCloud, Spotify, Streamable, RedGifs, and
   Giphy. Imgur single images are shown as images. Uploads work from the input
   bar, file picker, drag-drop, and paste, through Litterbox or the server
   `FILEHOST` (`draft/FILEHOST`, then `soju.im/FILEHOST`), with per-user service
   and retention overrides.
-- **Buffers and notifications**: Added favourite pinning and mute, plain-text
+- **Buffers & Notifications**: Added favourite pinning and mute, plain-text
   buffer export, and desktop notifications independent of synthesized sounds.
 - **Radio**: Added a built-in station player in the sidebar with a station list,
   starred stations, volume control, and a theme-coloured waveform.
-- **Bridging and relays**: Bot messages prefixed with `<Name>` are attributed to
+- **Bridging & Relays**: Bot messages prefixed with `<Name>` are attributed to
   the bridged user, with their own nick colour and avatar. `draft/relaymsg`
   relays give those users a limited profile panel, and bots advertising
   `RELAYMETA` are queried over CTCP for display names and avatars.
@@ -165,5 +163,5 @@ and this project adheres to
 
 - **Security**: Updated dependencies, including PostCSS, to address known
   vulnerabilities.
-- **Same-origin links**: Same-origin document links, including `.svg`, now
+- **Same-Origin Links**: Same-origin document links, including `.svg`, now
   download instead of opening. Same-origin iframes are not rendered.
