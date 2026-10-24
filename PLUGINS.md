@@ -1,10 +1,10 @@
-# Plugin authoring
+# Plugin Authoring
 
 Kiwi IRC plugins are small HTML files that extend the running client through the
 global `kiwi` API. They are loaded from configuration and injected into the page
 at runtime.
 
-## Loading a plugin
+## Plugin Loading
 
 Add the plugin to the `plugins` array in `config.json`:
 
@@ -17,7 +17,7 @@ Add the plugin to the `plugins` array in `config.json`:
 An empty array loads no plugins. `name` is a label; `url` points at the HTML
 file. The default config template includes a few bundled plugins for testing.
 
-## Plugin file structure
+## Plugin File Structure
 
 A plugin is a normal HTML fragment with optional template, script, and style
 blocks:
@@ -54,7 +54,7 @@ not rely on bundler-only features.
 
 The browser does not treat `<i />` as self-closing. Use `<i></i>`.
 
-## Importing application modules
+## Importing Modules
 
 A source module is only available to `kiwi.require()` when its first statement
 is:
@@ -73,7 +73,7 @@ var ChannelList = kiwi.require('components/ChannelList');
 `kiwi.require()` logs an error and returns `undefined` when a module is not
 exported.
 
-## Core objects
+## Core Objects
 
 - `kiwi.Vue` — the Vue 2 constructor and helpers such as `Vue.extend` and
   `Vue.observable`.
@@ -85,7 +85,7 @@ exported.
 - `kiwi.JSON5` — the JSON5 parser used by configuration.
 - `kiwi.log` — the shared logger.
 
-## UI hooks
+## UI Hooks
 
 ### `addUi(type, component, args)`
 
@@ -187,7 +187,7 @@ kiwi.addTranslationFiles(
 
 The URL must contain `{{lng}}`; `{{ns}}` is also supported.
 
-## Media playback
+## Media Playback
 
 Plugins that play audio can report it centrally:
 
@@ -241,8 +241,9 @@ that is not forwarded through `kiwi`.
 - Do not add dependencies for a static plugin; use browser APIs and the in-house
   helpers exposed through `kiwi.require()`.
 
-## Bundled plugins
+## Bundled Plugins
 
+- [bongo-cat](static/plugins/bongo-cat.md)
 - [channels-sidebar](static/plugins/channels-sidebar.md)
 - [nephnet-cyberdeck](static/plugins/nephnet-cyberdeck.md)
 - [customise starter](static/plugins/customise.md)

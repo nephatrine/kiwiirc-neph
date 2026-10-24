@@ -1,0 +1,61 @@
+{
+  "name": "Crabstacean",
+  "assets": {
+    "body": "body.png",
+    "head": "head.png",
+    "hands": {
+      "left": {
+        "up1": "hand_l_up1.png",
+        "up2": "hand_l_up2.png",
+        "down": "hand_l_down.png"
+      },
+      "right": {
+        "up1": "hand_r_up1.png",
+        "up2": "hand_r_up2.png",
+        "down": "hand_r_down.png"
+      }
+    },
+    "legs": {
+      "idle1": "legs_idle1.png",
+      "idle2": "legs_idle2.png",
+      "sleep": "legs_sleep.png"
+    },
+    "ears": {
+      "neutral": "ears.png",
+      "perked": "ears_perked.png",
+      "tucked": "ears_tucked.png"
+    },
+    "eyes": {
+      "open": "eyes.png",
+      "blink": "eyes_blink.png",
+      "tired": "eyes_tired.png",
+      "happy": "eyes_happy.png",
+      "worried": "eyes_worried.png",
+      "sleep": "eyes_sleep.png",
+      "grumpy": "eyes_grumpy.png"
+    },
+    "mouth": {
+      "neutral": "mouth.png",
+      "smile": "mouth_smile.png",
+      "frown": "mouth_frown.png",
+      "yawn": "mouth_yawn.png",
+      "open": "mouth_open.png"
+    }
+  },
+  "features": {
+    "tail": false,
+    "legs": true,
+    "ears": true,
+    "earsInFront": false
+  },
+  "pivots": {
+    "head": { "x": 80, "y": 80 },
+    "tail": { "x": 112, "y": 99 },
+    "arms": {
+      "left": { "x": 50, "y": 103 },
+      "right": { "x": 110, "y": 103 }
+    }
+  },
+  "hatOffset": 0,
+  "sounds": {}
+}

@@ -1,0 +1,19 @@
+{
+  "hats": [
+    { "name": "Cap", "id": "cap", "file": "cap.png" },
+    { "name": "Beanie", "id": "beanie", "file": "beanie.png" },
+    { "name": "Beret", "id": "beret", "file": "beret.png" },
+    { "name": "Striped", "id": "striped", "file": "striped.png" },
+    { "name": "Chef", "id": "chef", "file": "chef.png" },
+    { "name": "Cowboy", "id": "cowboy", "file": "cowboy.png" },
+    { "name": "Crown", "id": "crown", "file": "crown.png" },
+    { "name": "Sherlock", "id": "sherlock", "file": "sherlock.png" },
+    { "name": "Dwarf", "id": "dwarf", "file": "dwarf.png" },
+    { "name": "Nurse", "id": "nurse", "file": "nurse.png" },
+    { "name": "Pirate", "id": "pirate", "file": "pirate.png" },
+    { "name": "Propeller", "id": "propeller", "file": "propeller.png" },
+    { "name": "Graham", "id": "graham", "file": "graham.png" },
+    { "name": "Straw Hat", "id": "straw", "file": "straw.png" },
+    { "name": "Top Hat", "id": "tophat", "file": "tophat.png" }
+  ]
+}

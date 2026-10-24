@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bongo Crabstacean Artboard</title>
+<style>
+    :root {
+        color-scheme: dark;
+        font-family: system-ui, sans-serif;
+    }
+
+    body {
+        margin: 0;
+        background: #15171d;
+        color: #f7efe4;
+    }
+
+    header {
+        padding: 18px 22px 8px;
+    }
+
+    h1 {
+        margin: 0 0 4px;
+        font-size: 20px;
+    }
+
+    p {
+        margin: 0;
+        color: #b8c0d0;
+        font-size: 13px;
+    }
+
+    .layout {
+        display: grid;
+        grid-template-columns: minmax(320px, 1fr) 260px;
+        gap: 22px;
+        padding: 18px 22px 28px;
+        align-items: start;
+    }
+
+    .stage {
+        display: flex;
+        justify-content: center;
+        padding: 22px;
+        border: 1px solid #3d4557;
+        border-radius: 14px;
+        background-color: #20242d;
+        background-image:
+            linear-gradient(45deg, #2a2f3a 25%, transparent 25%),
+            linear-gradient(-45deg, #2a2f3a 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, #2a2f3a 75%),
+            linear-gradient(-45deg, transparent 75%, #2a2f3a 75%);
+        background-size: 24px 24px;
+        background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+    }
+
+    .stage svg {
+        display: block;
+        width: min(100%, 640px);
+        height: auto;
+        filter: drop-shadow(0 12px 18px rgb(0 0 0 / 0.3));
+    }
+
+    .controls {
+        position: sticky;
+        top: 18px;
+        padding: 14px;
+        border: 1px solid #3d4557;
+        border-radius: 12px;
+        background: #20242d;
+    }
+
+    h2 {
+        margin: 0 0 10px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .layers {
+        display: block;
+    }
+
+    .layer-list {
+        display: grid;
+        gap: 7px;
+        margin: 0;
+        padding-left: 16px;
+        list-style: none;
+    }
+
+    .layers > .layer-list {
+        padding-left: 0;
+    }
+
+    label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+    }
+
+    .buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+    }
+
+    button {
+        padding: 7px 10px;
+        border: 1px solid #596273;
+        border-radius: 7px;
+        background: #2b3240;
+        color: inherit;
+        cursor: pointer;
+        font: inherit;
+        font-size: 12px;
+    }
+
+    button:hover {
+        border-color: #e0a458;
+    }
+
+    @media (max-width: 760px) {
+        .layout {
+            grid-template-columns: 1fr;
+        }
+
+        .controls {
+            position: static;
+        }
+    }
+</style>
+</head>
+<body>
+<header>
+    <h1>Bongo Crabstacean Artboard</h1>
+    <p>Toggle layers and pivot markers. Hidden alternatives start unchecked.
+        Tail layers load from <code>bongo-cat/crabstacean/</code> when present.</p>
+</header>
+<div class="layout">
+    <div class="stage">
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="680" viewBox="0 -15 160 170" role="img" aria-labelledby="bongo-title bongo-desc">
+    <title id="bongo-title">Crabstacean Layers</title>
+    <desc id="bongo-desc">Layered crabstacean art with named body, head, hand, eye, mouth, and cosmetic layers.</desc>
+                <ellipse
+                    id="shadow"
+                    class="kiwi-bongo-cat__shadow"
+                    cx="80"
+                    cy="124"
+                    rx="50"
+                    ry="7"
+                    fill="rgba(20, 18, 16, 0.22)"
+                />
+
+                <g id="tail" style="display:none" class="kiwi-bongo-cat__tail">
+                    <image
+                        id="tail-layer"
+                        class="kiwi-bongo-cat__tail-layer"
+                        href="bongo-cat/crabstacean/tail.png"
+                        x="0"
+                        y="0"
+                        width="160"
+                        height="155"
+                    />
+                </g>
+
+                <g id="body" class="kiwi-bongo-cat__body">
+                    <g id="legs" class="kiwi-bongo-cat__legs">
+                        <image
+                            id="legs-layer"
+                            class="kiwi-bongo-cat__legs-layer"
+                            href="bongo-cat/crabstacean/legs_idle1.png"
+                            x="0"
+                            y="0"
+                            width="160"
+                            height="155"
+                        />
+                    </g>
+
+                    <image
+                        id="skin-body-layer"
+                        class="kiwi-bongo-cat__skin kiwi-bongo-cat__skin--body"
+                        href="bongo-cat/crabstacean/body.png"
+                        x="0"
+                        y="0"
+                        width="160"
+                        height="155"
+                    />
+
+                    <g id="head" class="kiwi-bongo-cat__head">
+                        <image
+                            id="ear-layer"
+                            class="kiwi-bongo-cat__ear-layer"
+                            href="bongo-cat/crabstacean/ears.png"
+                            x="0"
+                            y="0"
+                            width="160"
+                            height="155"
+                        />
+
+                        <image
+                            id="skin-head-layer"
+                            class="kiwi-bongo-cat__skin kiwi-bongo-cat__skin--head"
+                            href="bongo-cat/crabstacean/head.png"
+                            x="0"
+                            y="0"
+                            width="160"
+                            height="155"
+                        />
+
+                        <g id="hat" style="display:none" class="kiwi-bongo-cat__hat">
+                            <image
+                                id="hat-layer"
+                                class="kiwi-bongo-cat__hat-layer"
+                                href="bongo-cat/hats/cap.png"
+                                x="0"
+                                y="-15"
+                                width="160"
+                                height="60"
+                            />
+                        </g>
+
+                        <image
+                            id="eyes-layer"
+                            href="bongo-cat/crabstacean/eyes.png"
+                            x="0"
+                            y="0"
+                            width="160"
+                            height="155"
+                        />
+
+                        <image
+                            id="mouth-layer"
+                            href="bongo-cat/crabstacean/mouth.png"
+                            x="0"
+                            y="0"
+                            width="160"
+                            height="155"
+                        />
+
+                    </g>
+                </g>
+
+                <g id="hand-left" class="kiwi-bongo-cat__paw kiwi-bongo-cat__paw--left">
+                    <image
+                        id="hand-left-layer"
+                        class="kiwi-bongo-cat__hand"
+                        href="bongo-cat/crabstacean/hand_l_up1.png"
+                        x="0"
+                        y="0"
+                        width="160"
+                        height="155"
+                    />
+                </g>
+
+                <g id="hand-right" class="kiwi-bongo-cat__paw kiwi-bongo-cat__paw--right">
+                    <image
+                        id="hand-right-layer"
+                        class="kiwi-bongo-cat__hand"
+                        href="bongo-cat/crabstacean/hand_r_up2.png"
+                        x="0"
+                        y="0"
+                        width="160"
+                        height="155"
+                    />
+                </g>
+
+                <g id="heart-wrap" style="display:none" class="kiwi-bongo-cat__heart-wrap">
+                    <text x="80" y="28" text-anchor="middle" class="kiwi-bongo-cat__heart">&#9829;</text>
+                </g>
+
+                <g id="notes" style="display:none" class="kiwi-bongo-cat__notes">
+                    <text x="124" y="42">&#9834;</text>
+                    <text x="136" y="26">&#9835;</text>
+                    <text x="146" y="12">&#9834;</text>
+                </g>
+
+                <g id="zzz" style="display:none" class="kiwi-bongo-cat__zzz">
+                    <text x="128" y="42">z</text>
+                    <text x="136" y="28">z</text>
+                    <text x="145" y="16">z</text>
+                </g>
+
+                <g id="snack" style="display:none" class="kiwi-bongo-cat__snack">
+                    <image
+                        id="snack-layer"
+                        class="kiwi-bongo-cat__snack-layer"
+                        href="bongo-cat/snacks/taco_rain.png"
+                        x="0"
+                        y="0"
+                        width="160"
+                        height="77.5"
+                    />
+                </g>
+
+    <g id="pivot-markers" style="display:none">
+        <g fill="#ff4d7d" stroke="#ffffff" stroke-width="0.7">
+            <circle cx="44" cy="117" r="2.2" />
+            <circle cx="116" cy="117" r="2.2" />
+            <circle cx="80" cy="123" r="2.2" />
+            <circle cx="80" cy="80" r="2.2" />
+            <circle cx="80" cy="47" r="2.2" />
+            <circle cx="80" cy="63" r="2.2" />
+            <circle cx="80" cy="20" r="2.2" />
+            <circle cx="112" cy="99" r="2.2" />
+        </g>
+        <g fill="#ff4d7d" stroke="#ffffff" stroke-width="0.5" font-family="monospace" font-size="4.2">
+            <text x="24" y="114">L hand</text>
+            <text x="119" y="114">R hand</text>
+            <text x="83" y="121">body</text>
+            <text x="83" y="78">neck</text>
+            <text x="83" y="45">eyes</text>
+            <text x="83" y="61">mouth</text>
+            <text x="83" y="18">hat</text>
+            <text x="115" y="101">tail</text>
+        </g>
+    </g>
+</svg>
+    </div>
+    <aside class="controls">
+        <h2>Layers</h2>
+        <div id="layers" class="layers"></div>
+        <h2 style="margin-top:16px;">Eye Pose</h2>
+        <select id="eye-pose" autocomplete="off">
+            <option value="open" selected>Open</option>
+            <option value="closed">Closed</option>
+            <option value="tired">Tired</option>
+            <option value="happy">Happy</option>
+            <option value="worry">Worried</option>
+            <option value="sleepy">Sleeping</option>
+            <option value="grumpy">Grumpy</option>
+        </select>
+        <h2 style="margin-top:16px;">Mouth Pose</h2>
+        <select id="mouth-pose" autocomplete="off">
+            <option value="neutral" selected>Neutral</option>
+            <option value="smile">Smile</option>
+            <option value="frown">Frown</option>
+            <option value="yawn">Yawn</option>
+            <option value="open">Laugh</option>
+        </select>
+        <h2 style="margin-top:16px;">Ear Pose</h2>
+        <select id="ear-pose" autocomplete="off">
+            <option value="neutral" selected>Neutral</option>
+            <option value="perk">Perked Up</option>
+            <option value="grumpy">Flattened</option>
+        </select>
+        <h2 style="margin-top:16px;">Left Hand</h2>
+        <select id="left-hand-pose" autocomplete="off">
+            <option value="idle1" selected>Idle 1</option>
+            <option value="idle2">Idle 2</option>
+            <option value="down">Down</option>
+        </select>
+        <h2 style="margin-top:16px;">Right Hand</h2>
+        <select id="right-hand-pose" autocomplete="off">
+            <option value="idle1">Idle 1</option>
+            <option value="idle2" selected>Idle 2</option>
+            <option value="down">Down</option>
+        </select>
+        <h2 style="margin-top:16px;">Legs</h2>
+        <select id="legs-pose" autocomplete="off">
+            <option value="idle1" selected>Idle 1</option>
+            <option value="idle2">Idle 2</option>
+            <option value="sleep">Sleeping</option>
+        </select>
+        <h2 style="margin-top:16px;">Tail Pose</h2>
+        <select id="tail-pose" autocomplete="off">
+            <option value="normal" selected>Normal</option>
+            <option value="happy">Happy</option>
+            <option value="tired">Tired</option>
+            <option value="grumpy">Grumpy</option>
+            <option value="tucked">Tucked</option>
+        </select>
+        <h2 style="margin-top:16px;">Snack</h2>
+        <select id="snack-choice" autocomplete="off">
+            <option value="">None</option>
+        </select>
+        <div id="snack-bite-wrap" style="display:none">
+            <h2 style="margin-top:16px;">Bite State</h2>
+            <select id="snack-bite" autocomplete="off">
+                <option value="whole" selected>Whole</option>
+                <option value="bitten">Bitten</option>
+            </select>
+        </div>
+        <h2 style="margin-top:16px;">Hat</h2>
+        <select id="hat-choice" autocomplete="off">
+            <option value="cap" selected>Reverse Ballcap</option>
+            <option value="beanie">Beanie</option>
+            <option value="beret">Beret</option>
+            <option value="striped">Candy Cane Wizard Hat</option>
+            <option value="chef">Chef Hat</option>
+            <option value="cowboy">Cowboy Hat</option>
+            <option value="crown">Crown</option>
+            <option value="sherlock">Sherlock's Hat</option>
+            <option value="dwarf">Dwarf Helmet</option>
+            <option value="nurse">Nurse Hat</option>
+            <option value="pirate">Pirate Hat</option>
+            <option value="propeller">Propeller Hat</option>
+            <option value="graham">King Graham's Hat</option>
+            <option value="straw">Straw Hat</option>
+            <option value="tophat">Top Hat</option>
+        </select>
+        <h2 style="margin-top:16px;">Reference</h2>
+        <label><input id="pivots-toggle" type="checkbox"> Pivot Markers</label>
+        <div class="buttons">
+            <button type="button" id="show-all">Show All Layers</button>
+            <button type="button" id="base-only">Base Only</button>
+        </div>
+    </aside>
+</div>
+<script>
+    var layerTree = [
+        { id: 'shadow', label: 'Shadow' },
+        { id: 'tail', label: 'Tail' },
+        {
+            id: 'body',
+            label: 'Body',
+            children: [
+                { id: 'legs', label: 'Legs' },
+                {
+                    id: 'head',
+                    label: 'Head',
+                    children: [
+                        { id: 'ear-layer', label: 'Ears' },
+                        { id: 'hat', label: 'Hat' },
+                        { id: 'eyes-layer', label: 'Eyes' },
+                        { id: 'mouth-layer', label: 'Mouth' }
+                    ]
+                }
+            ]
+        },
+        { id: 'hand-left', label: 'Left Hand' },
+        { id: 'hand-right', label: 'Right Hand' },
+        { id: 'heart-wrap', label: 'Heart' },
+        { id: 'notes', label: 'Music Notes' },
+        { id: 'zzz', label: 'Zzz' },
+        { id: 'snack', label: 'Snack' }
+    ];
+
+    var layerIds = [];
+
+    function collectLayerIds(nodes) {
+        nodes.forEach(function(node) {
+            layerIds.push(node.id);
+            if (node.children) {
+                collectLayerIds(node.children);
+            }
+        });
+    }
+
+    collectLayerIds(layerTree);
+
+    var layerInputs = {};
+    var layers = document.getElementById('layers');
+
+    function buildLayerList(nodes) {
+        var list = document.createElement('ul');
+        list.className = 'layer-list';
+
+        nodes.forEach(function(node) {
+            var element = document.getElementById(node.id);
+            var item = document.createElement('li');
+            var label = document.createElement('label');
+            var input = document.createElement('input');
+
+            input.type = 'checkbox';
+            input.checked = !!element && element.style.display !== 'none';
+            input.addEventListener('change', function () {
+                if (element) {
+                    element.style.display = input.checked ? '' : 'none';
+                }
+            });
+
+            label.appendChild(input);
+            label.appendChild(document.createTextNode(node.label));
+            item.appendChild(label);
+
+            if (node.children) {
+                item.appendChild(buildLayerList(node.children));
+            }
+
+            list.appendChild(item);
+            layerInputs[node.id] = input;
+        });
+
+        return list;
+    }
+
+    layers.appendChild(buildLayerList(layerTree));
+
+    var eyeFiles = {
+        'open': 'bongo-cat/crabstacean/eyes.png',
+        'closed': 'bongo-cat/crabstacean/eyes_blink.png',
+        'tired': 'bongo-cat/crabstacean/eyes_tired.png',
+        'happy': 'bongo-cat/crabstacean/eyes_happy.png',
+        'worry': 'bongo-cat/crabstacean/eyes_worried.png',
+        'sleepy': 'bongo-cat/crabstacean/eyes_sleep.png',
+        'grumpy': 'bongo-cat/crabstacean/eyes_grumpy.png'
+    };
+
+    document.getElementById('eye-pose').addEventListener('change', function (event) {
+        var eyeLayer = document.getElementById('eyes-layer');
+        if (eyeLayer) {
+            eyeLayer.setAttribute('href', eyeFiles[event.target.value]);
+        }
+    });
+
+    var mouthFiles = {
+        'neutral': 'bongo-cat/crabstacean/mouth.png',
+        'smile': 'bongo-cat/crabstacean/mouth_smile.png',
+        'frown': 'bongo-cat/crabstacean/mouth_frown.png',
+        'yawn': 'bongo-cat/crabstacean/mouth_yawn.png',
+        'open': 'bongo-cat/crabstacean/mouth_open.png'
+    };
+
+    document.getElementById('mouth-pose').addEventListener('change', function (event) {
+        var mouthLayer = document.getElementById('mouth-layer');
+        if (mouthLayer) {
+            mouthLayer.setAttribute('href', mouthFiles[event.target.value]);
+        }
+    });
+
+    var earFiles = {
+        'neutral': 'bongo-cat/crabstacean/ears.png',
+        'perk': 'bongo-cat/crabstacean/ears_perked.png',
+        'grumpy': 'bongo-cat/crabstacean/ears_tucked.png'
+    };
+
+    document.getElementById('ear-pose').addEventListener('change', function (event) {
+        var earLayer = document.getElementById('ear-layer');
+        if (earLayer) {
+            earLayer.setAttribute('href', earFiles[event.target.value]);
+        }
+    });
+
+    var handFiles = {
+        'left': {
+            'idle1': 'bongo-cat/crabstacean/hand_l_up1.png',
+            'idle2': 'bongo-cat/crabstacean/hand_l_up2.png',
+            'down': 'bongo-cat/crabstacean/hand_l_down.png'
+        },
+        'right': {
+            'idle1': 'bongo-cat/crabstacean/hand_r_up1.png',
+            'idle2': 'bongo-cat/crabstacean/hand_r_up2.png',
+            'down': 'bongo-cat/crabstacean/hand_r_down.png'
+        }
+    };
+
+    document.getElementById('left-hand-pose').addEventListener('change', function (event) {
+        var handLayer = document.getElementById('hand-left-layer');
+        if (handLayer) {
+            handLayer.setAttribute('href', handFiles.left[event.target.value]);
+        }
+    });
+
+    document.getElementById('right-hand-pose').addEventListener('change', function (event) {
+        var handLayer = document.getElementById('hand-right-layer');
+        if (handLayer) {
+            handLayer.setAttribute('href', handFiles.right[event.target.value]);
+        }
+    });
+
+    var legFiles = {
+        'idle1': 'bongo-cat/crabstacean/legs_idle1.png',
+        'idle2': 'bongo-cat/crabstacean/legs_idle2.png',
+        'sleep': 'bongo-cat/crabstacean/legs_sleep.png'
+    };
+
+    document.getElementById('legs-pose').addEventListener('change', function (event) {
+        var legLayer = document.getElementById('legs-layer');
+        if (legLayer) {
+            legLayer.setAttribute('href', legFiles[event.target.value]);
+        }
+    });
+
+    var tailFiles = {
+        'normal': 'bongo-cat/crabstacean/tail.png',
+        'happy': 'bongo-cat/crabstacean/tail_happy.png',
+        'tired': 'bongo-cat/crabstacean/tail_tired.png',
+        'grumpy': 'bongo-cat/crabstacean/tail_grumpy.png',
+        'tucked': 'bongo-cat/crabstacean/tail_tucked.png'
+    };
+
+    document.getElementById('tail-pose').addEventListener('change', function (event) {
+        var tailLayer = document.getElementById('tail-layer');
+        if (tailLayer) {
+            tailLayer.setAttribute('href', tailFiles[event.target.value]);
+        }
+    });
+
+    // The artboard is often opened directly from the filesystem, where browser
+    // fetch requests cannot read sibling files. Keep this list in sync with
+    // snacks.json.
+    var artboardSnacks = [
+        {
+            id: 'bajablast',
+            name: 'Baja Blast',
+            type: 'drink',
+            render: 'overlay',
+            image: 'bongo-cat/snacks/bajablast.png',
+            bitten: ''
+        },
+        {
+            id: 'taco_rain',
+            name: 'Taco Rain',
+            type: 'food',
+            render: 'rain',
+            image: 'bongo-cat/snacks/taco_rain.png',
+            bitten: ''
+        },
+        {
+            id: 'gordita',
+            name: 'Baja Gordita',
+            type: 'food',
+            render: 'overlay',
+            image: 'bongo-cat/snacks/gordita.png',
+            bitten: 'bongo-cat/snacks/gordita_bite.png'
+        }
+    ];
+    var snackChoice = document.getElementById('snack-choice');
+    var snackBiteWrap = document.getElementById('snack-bite-wrap');
+    var snackBite = document.getElementById('snack-bite');
+
+    artboardSnacks.forEach(function(snack) {
+        var option = document.createElement('option');
+        option.value = snack.id;
+        option.textContent = snack.name;
+        snackChoice.appendChild(option);
+    });
+
+    function findSnack(id) {
+        for (var i = 0; i < artboardSnacks.length; i += 1) {
+            if (artboardSnacks[i].id === id) {
+                return artboardSnacks[i];
+            }
+        }
+        return null;
+    }
+
+    function applyBite() {
+        var snack = findSnack(snackChoice.value);
+        var layer = document.getElementById('snack-layer');
+        if (!snack || !layer) {
+            return;
+        }
+        layer.setAttribute(
+            'href',
+            snackBite.value === 'bitten' && snack.bitten
+                ? snack.bitten
+                : snack.image
+        );
+    }
+
+    function applySnack() {
+        var snack = findSnack(snackChoice.value);
+        var group = document.getElementById('snack');
+        var layer = document.getElementById('snack-layer');
+        var input = layerInputs.snack;
+
+        if (!snack) {
+            if (group) {
+                group.style.display = 'none';
+            }
+            if (input) {
+                input.checked = false;
+            }
+            snackBiteWrap.style.display = 'none';
+            return;
+        }
+
+        if (group) {
+            group.style.display = '';
+        }
+        if (input) {
+            input.checked = true;
+        }
+        layer.setAttribute('href', snack.image);
+        layer.setAttribute('height', snack.render === 'rain' ? '77.5' : '155');
+
+        if (snack.bitten) {
+            snackBiteWrap.style.display = '';
+            snackBite.disabled = false;
+            snackBite.value = 'whole';
+            applyBite();
+        } else {
+            snackBiteWrap.style.display = 'none';
+            snackBite.disabled = true;
+        }
+    }
+
+    snackChoice.addEventListener('change', applySnack);
+    snackBite.addEventListener('change', applyBite);
+
+    var hatFiles = {
+        'cap': 'bongo-cat/hats/cap.png',
+        'beanie': 'bongo-cat/hats/beanie.png',
+        'beret': 'bongo-cat/hats/beret.png',
+        'striped': 'bongo-cat/hats/striped.png',
+        'chef': 'bongo-cat/hats/chef.png',
+        'cowboy': 'bongo-cat/hats/cowboy.png',
+        'crown': 'bongo-cat/hats/crown.png',
+        'sherlock': 'bongo-cat/hats/sherlock.png',
+        'dwarf': 'bongo-cat/hats/dwarf.png',
+        'nurse': 'bongo-cat/hats/nurse.png',
+        'pirate': 'bongo-cat/hats/pirate.png',
+        'propeller': 'bongo-cat/hats/propeller.png',
+        'graham': 'bongo-cat/hats/graham.png',
+        'straw': 'bongo-cat/hats/straw.png',
+        'tophat': 'bongo-cat/hats/tophat.png'
+    };
+
+    document.getElementById('hat-choice').addEventListener('change', function (event) {
+        var hatLayer = document.getElementById('hat-layer');
+        if (hatLayer) {
+            hatLayer.setAttribute('href', hatFiles[event.target.value]);
+        }
+    });
+
+    document.getElementById('pivots-toggle').addEventListener('change', function (event) {
+        document.getElementById('pivot-markers').style.display = event.target.checked ? '' : 'none';
+    });
+
+    document.getElementById('show-all').addEventListener('click', function () {
+        layerIds.forEach(function (id) {
+            layerInputs[id].checked = true;
+            var element = document.getElementById(id);
+            if (element) {
+                element.style.display = '';
+            }
+        });
+    });
+
+    document.getElementById('base-only').addEventListener('click', function () {
+        var base = {
+            'shadow': true,
+            'legs': true,
+            'body': true,
+            'head': true,
+            'ear-layer': true,
+            'eyes-layer': true,
+            'mouth-layer': true,
+            'hand-left': true,
+            'hand-right': true
+        };
+        layerIds.forEach(function (id) {
+            var visible = !!base[id];
+            layerInputs[id].checked = visible;
+            var element = document.getElementById(id);
+            if (element) {
+                element.style.display = visible ? '' : 'none';
+            }
+        });
+    });
+
+    function setPose(selectId, value, layerId, files) {
+        var select = document.getElementById(selectId);
+        var layer = document.getElementById(layerId);
+        if (select) {
+            select.value = value;
+        }
+        if (layer && files[value]) {
+            layer.setAttribute('href', files[value]);
+        }
+    }
+
+    function setHandPose(selectId, side, value, layerId) {
+        var select = document.getElementById(selectId);
+        var layer = document.getElementById(layerId);
+        if (select) {
+            select.value = value;
+        }
+        if (layer && handFiles[side][value]) {
+            layer.setAttribute('href', handFiles[side][value]);
+        }
+    }
+
+    setPose('eye-pose', 'open', 'eyes-layer', eyeFiles);
+    setPose('mouth-pose', 'neutral', 'mouth-layer', mouthFiles);
+    setPose('ear-pose', 'neutral', 'ear-layer', earFiles);
+    setPose('legs-pose', 'idle1', 'legs-layer', legFiles);
+    setPose('tail-pose', 'normal', 'tail-layer', tailFiles);
+    setPose('hat-choice', 'cap', 'hat-layer', hatFiles);
+    setHandPose('left-hand-pose', 'left', 'idle1', 'hand-left-layer');
+    setHandPose('right-hand-pose', 'right', 'idle2', 'hand-right-layer');
+</script>
+</body>
+</html>

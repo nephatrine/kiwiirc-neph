@@ -20,6 +20,7 @@ export const configTemplates = {
         plugins: [
             { name: 'channels-sidebar', url: 'static/plugins/channels-sidebar.html' },
             { name: 'nephnet-cyberdeck', url: 'static/plugins/nephnet-cyberdeck.html' },
+            { name: 'bongo-cat', url: 'static/plugins/bongo-cat.html' },
         ],
         windowTitle: 'Kiwi IRC - The web IRC client',
         useMonospace: false,

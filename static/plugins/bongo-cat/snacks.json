@@ -1,0 +1,26 @@
+{
+  "snacks": [
+    {
+      "id": "bajablast",
+      "name": "Baja Blast",
+      "image": "bajablast.png",
+      "type": "drink",
+      "render": "overlay"
+    },
+    {
+      "id": "taco_rain",
+      "name": "Taco Rain",
+      "image": "taco_rain.png",
+      "type": "food",
+      "render": "rain"
+    },
+    {
+      "id": "gordita",
+      "name": "Baja Gordita",
+      "image": "gordita.png",
+      "type": "food",
+      "render": "overlay",
+      "bitten": "gordita_bite.png"
+    }
+  ]
+}
