@@ -71,8 +71,8 @@
                         @click="toggleTls"
                     >
                         <i
-                            class="fa fa-stack-1x fa-fw"
-                            :class="[connection.tls ? 'fa-lock' : 'fa-unlock']"
+                            class="bx bx-fw"
+                            :class="[connection.tls ? 'bx-lock' : 'bx-lock-open']"
                         />
                     </span>
                 </input-text>

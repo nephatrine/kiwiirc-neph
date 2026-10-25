@@ -11,7 +11,7 @@
                     class="u-button u-button-warning kiwi-lightbox-close"
                     @click="close"
                 >
-                    <i class="fa fa-times" aria-hidden="true" />
+                    <i class="bx bx-x" aria-hidden="true" />
                 </a>
             </div>
             <div class="kiwi-lightbox-content" @click.self="close">

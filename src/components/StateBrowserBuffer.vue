@@ -44,7 +44,7 @@
                     :title="$t('close')"
                     @click="maybePromptClose()"
                 >
-                    <i class="fa fa-times" aria-hidden="true" />
+                    <i class="bx bx-x" aria-hidden="true" />
                 </div>
             </div>
         </div>

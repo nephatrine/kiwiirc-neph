@@ -28,7 +28,7 @@
             <span
                 v-else-if="item.type === 'channel'"
                 class="kiwi-autocomplete-item-details"
-            ><i class="fa fa-user" aria-hidden="true" />{{ item.count }}</span>
+            ><i class="bx bx-user" aria-hidden="true" />{{ item.count }}</span>
         </div>
     </div>
 </template>
@@ -331,7 +331,7 @@ export default {
         width: 3em;
     }
 
-    .fa-user {
+    .bx-user {
         margin-right: 4px;
     }
 }

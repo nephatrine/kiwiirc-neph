@@ -36,12 +36,12 @@
                         :title="$t('channel_settings')"
                         @click="sidebarState.toggleBufferSettings()"
                     >
-                        <i class="fa fa-cog" aria-hidden="true" />
+                        <i class="bx bx-cog" aria-hidden="true" />
                     </a>
                 </div>
                 <div v-if="!isMobile" class="kiwi-header-option">
                     <a :title="$t('export_buffer')" @click="exportBuffer()">
-                        <i class="fa fa-download" aria-hidden="true" />
+                        <i class="bx bx-download" aria-hidden="true" />
                     </a>
                 </div>
                 <div
@@ -55,7 +55,7 @@
                         :title="$t(Object.keys(buffer.users).length === 1 ? 'person' : 'person_plural', { count: Object.keys(buffer.users).length })"
                         @click="sidebarState.toggleNicklist()"
                     >
-                        <i class="fa fa-users" aria-hidden="true" />
+                        <i class="bx bx-group" aria-hidden="true" />
                         <span>{{ Object.keys(buffer.users).length }}</span>
                     </a>
                 </div>
@@ -66,7 +66,7 @@
                     class="kiwi-header-option kiwi-header-option-about"
                 >
                     <a :title="$t('more_information')" @click="sidebarState.toggleAbout()">
-                        <i class="fa fa-info" aria-hidden="true" />
+                        <i class="bx bx-info-circle" aria-hidden="true" />
                     </a>
                 </div>
                 <component
@@ -108,7 +108,7 @@
             <div v-if="!isMobile" class="kiwi-header-options">
                 <div class="kiwi-header-option">
                     <a :title="$t('export_buffer')" @click="exportBuffer()">
-                        <i class="fa fa-download" aria-hidden="true" />
+                        <i class="bx bx-download" aria-hidden="true" />
                     </a>
                 </div>
             </div>
@@ -121,7 +121,7 @@
                     {{ $t('connect') }}
                 </a>
                 <span v-else-if="buffer.getNetwork().state === 'connecting'">
-                    <i class="fa fa-spin fa-spinner" aria-hidden="true" />
+                    <i class="bx bx-spin bx-loader-alt" aria-hidden="true" />
                     {{ $t('connecting') }}
                 </span>
             </div>
@@ -141,7 +141,7 @@
             <div :key="buffer.id" class="kiwi-header-options">
                 <div v-if="!isMobile" class="kiwi-header-option">
                     <a :title="$t('export_buffer')" @click="exportBuffer()">
-                        <i class="fa fa-download" aria-hidden="true" />
+                        <i class="bx bx-download" aria-hidden="true" />
                     </a>
                 </div>
                 <div
@@ -153,7 +153,7 @@
                     class="kiwi-header-option kiwi-header-option-user"
                 >
                     <a @click="toggleUser()">
-                        <i class="fa fa-user" aria-hidden="true" />
+                        <i class="bx bx-user" aria-hidden="true" />
                     </a>
                 </div>
                 <component
@@ -183,7 +183,7 @@
             <div v-if="!isMobile" class="kiwi-header-options">
                 <div class="kiwi-header-option">
                     <a :title="$t('export_buffer')" @click="exportBuffer()">
-                        <i class="fa fa-download" aria-hidden="true" />
+                        <i class="bx bx-download" aria-hidden="true" />
                     </a>
                 </div>
             </div>

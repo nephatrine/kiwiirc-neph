@@ -141,7 +141,7 @@ describe('Twitch USERNOTICE helpers', () => {
         expect(twitchUserNoticeType('RESUB').key).toBe('resub');
         expect(twitchUserNoticeType('raid')).toEqual({
             key: 'raid',
-            icon: 'fa-rocket',
+            icon: 'bx-rocket',
             labelKey: 'twitch_usernotice_raid',
             accent: '#ff6a00',
         });

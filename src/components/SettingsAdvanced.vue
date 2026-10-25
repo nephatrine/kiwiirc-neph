@@ -8,8 +8,8 @@
                     :placeholder="$t('settings_advanced_filter')"
                     class="u-input"
                 >
-                <i v-if="!filterString" class="fa fa-search" aria-hidden="true" />
-                <i v-else class="fa fa-times" aria-hidden="true" @click="filterString = ''" />
+                <i v-if="!filterString" class="bx bx-search" aria-hidden="true" />
+                <i v-else class="bx bx-x" aria-hidden="true" @click="filterString = ''" />
             </div>
             <div v-if="filteredSettings.length === 0" class="kiwi-settings-advanced-empty">
                 "{{ filterString }}" {{ $t('not_found') }}
@@ -30,7 +30,7 @@
                             <span class="kiwi-settings-advanced-reset-text">
                                 {{ $t('settings_advanced_reset') }}
                             </span>
-                            <i class="fa fa-undo" />
+                            <i class="bx bx-undo" />
                         </a>
                     </div>
                     <div :key="`value-${setting.key}`" class="kiwi-settings-advanced-value">
@@ -160,14 +160,14 @@ export default {
         width: 100%;
     }
 
-    .fa {
+    .bx {
         position: absolute;
         top: 8px;
         right: 10px;
         z-index: 10;
         cursor: default;
 
-        &.fa-times {
+        &.bx-x {
             cursor: pointer;
         }
     }

@@ -33,7 +33,7 @@
         <i
             v-else-if="user.statusMessage()"
             :title="user.statusMessage()"
-            class="fa fa-ellipsis-h kiwi-nicklist-user-status"
+            class="bx bx-dots-horizontal kiwi-nicklist-user-status"
             aria-hidden="true"
         />
 

@@ -711,11 +711,11 @@ body.nephwave-active .kiwi-personal {
     font-weight: 700;
 }
 
-.kiwi-serverselector-connection-tls i.fa-lock {
+.kiwi-serverselector-connection-tls i.bx-lock {
     color: var(--nw-online);
 }
 
-.kiwi-serverselector-connection-tls i.fa-unlock {
+.kiwi-serverselector-connection-tls i.bx-lock-open {
     color: var(--nw-warning);
 }
 
@@ -2065,7 +2065,7 @@ body.nephwave-active {
     background: var(--nw-selected);
 }
 
-.nephwave-menu-item .fa {
+.nephwave-menu-item .bx {
     width: 14px;
     text-align: center;
 }

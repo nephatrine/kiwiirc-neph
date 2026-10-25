@@ -57,7 +57,7 @@
         </div>
         <div class="kiwi-messagelist-modern-right">
             <div v-if="props.message.reply" class="kiwi-messagelist-reply-preview" @click="props.m().scrollToReply(props.message.reply)">
-                <i class="fa fa-reply" aria-hidden="true" />
+                <i class="bx bx-reply" aria-hidden="true" />
                 <span v-if="props.m().getReplyMessage(props.message.reply)" class="kiwi-messagelist-reply-preview-nick">
                     <emoji-text
                         :text="props.ml.displayNickFor(
@@ -468,7 +468,7 @@ export default {
         opacity: 1;
     }
 
-    .fa-reply {
+    .bx-reply {
         margin-right: 5px;
     }
 

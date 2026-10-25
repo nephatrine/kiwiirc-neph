@@ -27,7 +27,7 @@
                     v-if="showPlainText"
                     :class="{ 'u-input-text-plaintext--active': plainTextEnabled }"
                     :title="title || undefined"
-                    class="u-input-text-plaintext fa fa-eye"
+                    class="u-input-text-plaintext bx bx-show"
                     aria-hidden="true"
                     @click="plainTextEnabled = !plainTextEnabled"
                 />

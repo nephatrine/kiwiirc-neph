@@ -314,7 +314,7 @@
                 >
                     <div v-if="!network || network.state === 'disconnected'" v-html="buttonText" />
                     <template v-else>
-                        <i class="fa fa-spin fa-spinner" aria-hidden="true" />
+                        <i class="bx bx-spin bx-loader-alt" aria-hidden="true" />
                     </template>
                 </button>
 

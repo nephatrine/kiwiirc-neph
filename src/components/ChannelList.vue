@@ -14,14 +14,14 @@
                         class="u-button kiwi-channellist-refresh"
                         @click="maybeUpdateList"
                     >
-                        <i v-if="!isLoading" class="fa fa-refresh" aria-hidden="true" />
-                        <i v-else class="fa fa-refresh fa-spin" aria-hidden="true" />
+                        <i v-if="!isLoading" class="bx bx-refresh" aria-hidden="true" />
+                        <i v-else class="bx bx-refresh bx-spin" aria-hidden="true" />
                     </a>
                 </form>
                 <div v-if="list.length" class="kiwi-channellist-pagination">
-                    <a :title="$t('previous_page')" @click="prevPage"><i class="fa fa-step-backward" aria-hidden="true" /></a>
+                    <a :title="$t('previous_page')" @click="prevPage"><i class="bx bx-skip-previous" aria-hidden="true" /></a>
                     {{ page + 1 }} / {{ maxPages + 1 }}
-                    <a :title="$t('next_page')" @click="nextPage"><i class="fa fa-step-forward" aria-hidden="true" /></a>
+                    <a :title="$t('next_page')" @click="nextPage"><i class="bx bx-skip-next" aria-hidden="true" /></a>
                 </div>
             </div>
             <div v-if="!isLoading && !noResults && !isUnsupported" class="kiwi-channellist-table">
@@ -58,9 +58,9 @@
             <div v-else class="kiwi-channellist-info">{{ $t('channel_list_fetch') }}</div>
             <div class="kiwi-channellist-nav">
                 <div v-if="list.length" class="kiwi-channellist-pagination">
-                    <a :title="$t('previous_page')" @click="prevPage"><i class="fa fa-step-backward" aria-hidden="true" /></a>
+                    <a :title="$t('previous_page')" @click="prevPage"><i class="bx bx-skip-previous" aria-hidden="true" /></a>
                     {{ page + 1 }} / {{ maxPages + 1 }}
-                    <a :title="$t('next_page')" @click="nextPage"><i class="fa fa-step-forward" aria-hidden="true" /></a>
+                    <a :title="$t('next_page')" @click="nextPage"><i class="bx bx-skip-next" aria-hidden="true" /></a>
                 </div>
             </div>
         </div>
@@ -357,9 +357,9 @@ export default {
 }
 
 .kiwi-channellist-users::before {
-    font-family: fontAwesome, sans-serif;
+    font-family: boxicons, sans-serif;
     padding-right: 0.4em;
-    content: '\f007';
+    content: '\ec63';
 }
 
 .kiwi-channellist-name {

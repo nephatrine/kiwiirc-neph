@@ -4,11 +4,11 @@
             <span class="kiwi-selfuser-nick">
                 <away-status-indicator :network="network" :user="user" />
                 {{ network.nick }}
-                <i :title="$t('close')" class="fa fa-times" aria-hidden="true" @click="closeSelfUser()" />
-                <i :title="$t('change_nick')" class="fa fa-pencil" aria-hidden="true" @click="openSelfActions()" />
+                <i :title="$t('close')" class="bx bx-x" aria-hidden="true" @click="closeSelfUser()" />
+                <i :title="$t('change_nick')" class="bx bx-pencil" aria-hidden="true" @click="openSelfActions()" />
                 <i
                     :title="$t('state_account')"
-                    class="fa fa-user"
+                    class="bx bx-user"
                     aria-hidden="true"
                     @click="openProfile()"
                 />
@@ -21,7 +21,7 @@
             </span>
             <div v-if="hasMetadata" class="u-form kiwi-selfuser-status-form">
                 <div class="kiwi-selfuser-status-input-wrap">
-                    <i class="fa fa-comment-o" aria-hidden="true" />
+                    <i class="bx bx-comment" aria-hidden="true" />
                     <input
                         v-model.lazy="statusMessage"
                         :placeholder="$t('no_status_set')"
@@ -30,7 +30,7 @@
                     >
                     <i
                         v-if="statusMessage"
-                        class="fa fa-times kiwi-selfuser-status-clear"
+                        class="bx bx-x kiwi-selfuser-status-clear"
                         aria-hidden="true"
                         @click="statusMessage = ''"
                     />

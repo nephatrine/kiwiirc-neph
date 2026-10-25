@@ -12,42 +12,42 @@ export const categories = [
     {
         id: 'people',
         label: 'Smileys & People',
-        icon: 'fa-smile-o',
+        icon: 'bx-smile',
     },
     {
         id: 'nature',
         label: 'Animals & Nature',
-        icon: 'fa-leaf',
+        icon: 'bx-leaf',
     },
     {
         id: 'food',
         label: 'Food & Drink',
-        icon: 'fa-cutlery',
+        icon: 'bx-dish',
     },
     {
         id: 'activity',
         label: 'Activity',
-        icon: 'fa-soccer-ball-o',
+        icon: 'bx-football',
     },
     {
         id: 'travel',
         label: 'Travel & Places',
-        icon: 'fa-plane',
+        icon: 'bxs-plane',
     },
     {
         id: 'objects',
         label: 'Objects',
-        icon: 'fa-lightbulb-o',
+        icon: 'bx-bulb',
     },
     {
         id: 'symbols',
         label: 'Symbols',
-        icon: 'fa-heart-o',
+        icon: 'bx-heart',
     },
     {
         id: 'flags',
         label: 'Flags',
-        icon: 'fa-flag',
+        icon: 'bx-flag',
     },
 ];
 

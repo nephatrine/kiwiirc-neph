@@ -34,6 +34,16 @@ describe('JoyPixels emoji data', () => {
             'Symbols',
             'Flags',
         ]);
+        expect(categories.map((category) => category.icon)).toEqual([
+            'bx-smile',
+            'bx-leaf',
+            'bx-dish',
+            'bx-football',
+            'bxs-plane',
+            'bx-bulb',
+            'bx-heart',
+            'bx-flag',
+        ]);
         expect(Object.keys(emojiData)).toEqual(categories.map((category) => category.id));
     });
 

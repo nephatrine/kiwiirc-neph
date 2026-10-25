@@ -42,6 +42,9 @@ and this project adheres to
 
 ### Changed
 
+- **Icons**: Replaced Font Awesome 4.7 with a self-hosted Boxicons 2.1.4
+  webfont. Icons now use `bx` and `bxs` classes, and the build emits only the
+  woff2 font.
 - **Themes**: NephDeck is now one theme with Amber, Green, and Cyan presets.
   Preset, CRT, and sound preferences persist under `plugin-nephdeck.*` instead
   of switching between three separate themes.

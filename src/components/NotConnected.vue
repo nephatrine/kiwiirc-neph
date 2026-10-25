@@ -3,7 +3,7 @@
         <template v-if="!shouldShowLoading">
             <div class="kiwi-notconnected-caption">
                 <span>{{ $t('not_connected') }}</span>
-                <i v-if="!shouldShowLoading" class="fa fa-frown-o" aria-hidden="true" />
+                <i v-if="!shouldShowLoading" class="bx bx-sad" aria-hidden="true" />
             </div>
             <div class="kiwi-notconnected-buttons">
                 <template v-if="isChannel()">
@@ -12,7 +12,7 @@
                         class="kiwi-notconnected-button"
                         @click="reconnect"
                     >
-                        <i class="fa fa-arrow-circle-o-right" aria-hidden="true" />
+                        <i class="bx bx-right-arrow-circle" aria-hidden="true" />
                         {{ $t('reconnect_channel', { channel: buffer.name }) }}
                     </span>
                 </template>
@@ -22,7 +22,7 @@
                         class="kiwi-notconnected-button"
                         @click="reconnect"
                     >
-                        <i class="fa fa-arrow-circle-o-right" aria-hidden="true" />
+                        <i class="bx bx-right-arrow-circle" aria-hidden="true" />
                         {{ $t('reconnect_network', { network: buffer.getNetwork().name }) }}
                     </span>
                 </template>
@@ -32,7 +32,7 @@
                         class="kiwi-notconnected-button"
                         @click="reconnect"
                     >
-                        <i class="fa fa-arrow-circle-o-right" aria-hidden="true" />
+                        <i class="bx bx-right-arrow-circle" aria-hidden="true" />
                         {{ $t('reconnect_query', { user: buffer.name }) }}
                     </span>
                 </template>
@@ -42,14 +42,14 @@
                     class="kiwi-notconnected-button kiwi-notconnected-button-settings"
                     @click="showNetworkSettings"
                 >
-                    <i class="fa fa-cogs" aria-hidden="true" />
+                    <i class="bx bx-cog" aria-hidden="true" />
                 </a>
             </div>
         </template>
         <div v-else class="kiwi-notconnected-caption">
             {{ $t('connecting') }}
             <i
-                class="fa fa-refresh fa-spin kiwi-notconnected-bigicon"
+                class="bx bx-refresh bx-spin kiwi-notconnected-bigicon"
                 aria-hidden="true"
             />
         </div>

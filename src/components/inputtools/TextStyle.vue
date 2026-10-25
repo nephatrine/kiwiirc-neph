@@ -14,12 +14,12 @@
                 :title="$t('color_picker_hex')"
                 class="kiwi-inputtools-colours-colour kiwi-inputtools-colours-hex"
                 @click="onHexClick"
-            ><i class="fa fa-paint-brush" aria-hidden="true" /></div>
+            ><i class="bx bx-brush" aria-hidden="true" /></div>
             <div
                 :title="$t('clear_styles')"
                 class="kiwi-inputtools-colours-colour kiwi-inputtools-colours-reset"
                 @click="onResetClick"
-            ><i class="fa fa-eraser" aria-hidden="true" /></div>
+            ><i class="bx bx-eraser" aria-hidden="true" /></div>
         </template>
         <template v-else>
             <!-- Mobile: Two rows of (8 swatches + 10px + Utility) -->
@@ -36,7 +36,7 @@
                     :title="$t('color_picker_hex')"
                     class="kiwi-inputtools-colours-colour kiwi-inputtools-colours-hex"
                     @click="onHexClick"
-                ><i class="fa fa-paint-brush" aria-hidden="true" /></div>
+                ><i class="bx bx-brush" aria-hidden="true" /></div>
             </div>
             <div class="kiwi-inputtools-colours-row">
                 <div
@@ -52,7 +52,7 @@
                     class="kiwi-inputtools-colours-colour kiwi-inputtools-colours-reset"
                     style="margin-left: 10px;"
                     @click="onResetClick"
-                ><i class="fa fa-eraser" aria-hidden="true" /></div>
+                ><i class="bx bx-eraser" aria-hidden="true" /></div>
             </div>
         </template>
     </div>

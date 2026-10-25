@@ -26,7 +26,7 @@
                 <a class="u-link" :title="$t('state_forget')" @click="clickForget">{{ $t('state_forget') }}</a>
             </div>
             <div class="kiwi-statebrowser-usermenu-close" :title="$t('close')" @click="is_usermenu_open = false">
-                <i class="fa fa-times" aria-hidden="true" />
+                <i class="bx bx-x" aria-hidden="true" />
             </div>
         </div>
         <div v-else class="kiwi-statebrowser-usermenu-network">

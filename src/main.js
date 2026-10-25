@@ -5,6 +5,7 @@ import i18nextHTTP from 'i18next-http-backend';
 import VueI18Next from '@panter/vue-i18next';
 import VueVirtualScroller from 'vue-virtual-scroller';
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
+import '@/res/boxicons.css';
 
 import { each } from '@/helpers/Utils';
 import App from '@/components/App';

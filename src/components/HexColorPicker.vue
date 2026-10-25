@@ -3,7 +3,7 @@
         <div class="kiwi-hexcolorpicker kiwi-theme-bg">
             <div class="kiwi-hexcolorpicker-header">
                 <h3>{{ $t('color_picker_hex') }}</h3>
-                <i class="fa fa-times" aria-hidden="true" @click="close" />
+                <i class="bx bx-x" aria-hidden="true" @click="close" />
             </div>
             <div class="kiwi-hexcolorpicker-body">
                 <div class="u-form">

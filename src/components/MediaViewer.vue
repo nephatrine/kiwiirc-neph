@@ -7,14 +7,14 @@
                 class="u-button u-link kiwi-mediaviewer-controls-pin"
                 @click="$emit('pin')"
             >
-                <i class="fa fa-map-pin" aria-hidden="true" />
+                <i class="bx bx-map-pin" aria-hidden="true" />
             </a>
             <a
                 :title="$t('close')"
                 class="u-button u-button-warning kiwi-mediaviewer-controls-close"
                 @click="$emit('close');"
             >
-                <i class="fa fa-window-close" aria-hidden="true" />
+                <i class="bx bx-window-close" aria-hidden="true" />
             </a>
         </div>
         <div class="kiwi-mediaviewer-content">

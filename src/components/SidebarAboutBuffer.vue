@@ -17,7 +17,7 @@
             class="kiwi-aboutbuffer-section"
         >
             <h4 :title="$t('toggle_section')" @click="toggleSection('about')">
-                <i class="fa fa-angle-right" /> {{ $t('about') }}
+                <i class="bx bx-chevron-right" /> {{ $t('about') }}
             </h4>
             <div>
                 <div v-if="hasMetadata && b.metadata.description" class="kiwi-aboutbuffer-branding">
@@ -56,7 +56,7 @@
             class="kiwi-aboutbuffer-section"
         >
             <h4 :title="$t('toggle_section')" @click="toggleSection('highlights')">
-                <i class="fa fa-angle-right" /> {{ $t('highlights') }}
+                <i class="bx bx-chevron-right" /> {{ $t('highlights') }}
             </h4>
             <div>
                 <ul v-if="highlights.length > 0">
@@ -79,7 +79,7 @@
             class="kiwi-aboutbuffer-section"
         >
             <h4 :title="$t('toggle_section')" @click="toggleSection('invite')">
-                <i class="fa fa-angle-right" /> {{ $t('invite_user') }}
+                <i class="bx bx-chevron-right" /> {{ $t('invite_user') }}
             </h4>
             <div>
                 <div class="kiwi-aboutbuffer-invite u-form">
@@ -112,7 +112,7 @@
             class="kiwi-aboutbuffer-section"
         >
             <h4 :title="$t('toggle_section')" @click="toggleSection(plugin.id)">
-                <i class="fa fa-angle-right" /> {{ plugin.title() }}
+                <i class="bx bx-chevron-right" /> {{ plugin.title() }}
             </h4>
             <component
                 :is="plugin.component"

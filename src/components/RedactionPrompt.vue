@@ -3,7 +3,7 @@
         <div class="kiwi-redactionprompt">
             <div class="kiwi-redactionprompt-header">
                 <h3>{{ $t('confirm_redaction_title') }}</h3>
-                <i class="fa fa-times" aria-hidden="true" @click="cancel" />
+                <i class="bx bx-x" aria-hidden="true" @click="cancel" />
             </div>
             <div class="kiwi-redactionprompt-body">
                 <p class="kiwi-redactionprompt-warn">{{ $t('confirm_redaction_warn') }}</p>

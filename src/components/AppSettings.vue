@@ -3,7 +3,7 @@
 
         <div :title="$t('close')" class="kiwi-appsettings-close" @click="closeSettings">
             <span>{{ $t('close') }}</span>
-            <i class="fa fa-times" aria-hidden="true" />
+            <i class="bx bx-x" aria-hidden="true" />
         </div>
 
         <form class="u-form">
@@ -15,7 +15,7 @@
                         <div class="kiwi-appsettings-section kiwi-appsettings-general">
                             <label class="kiwi-appsettings-setting-language">
                                 <span>{{ $t('settings_language') }}</span>
-                                <div><i class="fa fa-globe" /></div>
+                                <div><i class="bx bx-globe" /></div>
                                 <select v-model="settingLanguage">
                                     <option value="">
                                         Auto
@@ -32,7 +32,7 @@
                                     class="kiwi-appsettings-theme-reload"
                                     @click="refreshTheme"
                                 >
-                                    <i class="fa fa-refresh" aria-hidden="true" />
+                                    <i class="bx bx-refresh" aria-hidden="true" />
                                 </a>
                                 <select v-model="theme">
                                     <option
@@ -718,7 +718,7 @@ export default {
     margin-right: 1em;
 }
 
-.kiwi-appsettings-setting-language .fa-globe {
+.kiwi-appsettings-setting-language .bx-globe {
     vertical-align: middle;
     font-size: 1.8em;
 }

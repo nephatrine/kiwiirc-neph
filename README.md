@@ -90,6 +90,18 @@ If JoyPixels adds or removes emoji, the generator intentionally fails until
 `EXPECTED_CATEGORY_COUNTS` in the script and `tests/unit/EmojiData.spec.js` are
 updated.
 
+### Icons
+
+Icons use the self-hosted [Boxicons](https://boxicons.com/) webfont.
+`src/res/boxicons.css` is generated from the `boxicons` package and references
+only `boxicons.woff2`; do not edit it by hand. After upgrading the package, run:
+
+```bash
+npm run generate:boxicons
+```
+
+Boxicons is licensed under CC BY 4.0, OFL 1.1, or MIT; see [NOTICE](NOTICE).
+
 ### Development Environment
 
 Kiwi IRC is built with Vue.js, webpack, and Babel.

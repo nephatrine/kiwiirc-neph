@@ -15,14 +15,14 @@ const fs = require('fs');
 const path = require('path');
 
 const CATEGORIES = [
-    { id: 'people', label: 'Smileys & People', icon: 'fa-smile-o' },
-    { id: 'nature', label: 'Animals & Nature', icon: 'fa-leaf' },
-    { id: 'food', label: 'Food & Drink', icon: 'fa-cutlery' },
-    { id: 'activity', label: 'Activity', icon: 'fa-soccer-ball-o' },
-    { id: 'travel', label: 'Travel & Places', icon: 'fa-plane' },
-    { id: 'objects', label: 'Objects', icon: 'fa-lightbulb-o' },
-    { id: 'symbols', label: 'Symbols', icon: 'fa-heart-o' },
-    { id: 'flags', label: 'Flags', icon: 'fa-flag' },
+    { id: 'people', label: 'Smileys & People', icon: 'bx-smile' },
+    { id: 'nature', label: 'Animals & Nature', icon: 'bx-leaf' },
+    { id: 'food', label: 'Food & Drink', icon: 'bx-dish' },
+    { id: 'activity', label: 'Activity', icon: 'bx-football' },
+    { id: 'travel', label: 'Travel & Places', icon: 'bxs-plane' },
+    { id: 'objects', label: 'Objects', icon: 'bx-bulb' },
+    { id: 'symbols', label: 'Symbols', icon: 'bx-heart' },
+    { id: 'flags', label: 'Flags', icon: 'bx-flag' },
 ];
 
 const CATEGORY_IDS = new Set(CATEGORIES.map((category) => category.id));

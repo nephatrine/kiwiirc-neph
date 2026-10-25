@@ -15,7 +15,7 @@
         @dblclick="ml.onMessageDblClick($event, message)"
     >
         <div class="kiwi-twitch-usernotice-icon" aria-hidden="true">
-            <i class="fa" :class="noticeType.icon" />
+            <i class="bx" :class="noticeType.icon" />
         </div>
         <div class="kiwi-twitch-usernotice-main">
             <div class="kiwi-twitch-usernotice-head">

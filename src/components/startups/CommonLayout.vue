@@ -18,8 +18,8 @@
                 v-html="infoContent"
             />
         </div>
-        <div class="kiwi-fontawesome-preload">
-            <i class="fa fa-spinner" aria-hidden="true" />
+        <div class="kiwi-boxicons-preload">
+            <i class="bx bx-loader-alt" aria-hidden="true" />
         </div>
     </div>
 </template>
@@ -158,7 +158,7 @@ export default {
     }
 }
 
-.kiwi-fontawesome-preload {
+.kiwi-boxicons-preload {
     position: absolute;
     top: 0;
     left: -50px;

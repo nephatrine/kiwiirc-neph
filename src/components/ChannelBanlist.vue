@@ -64,7 +64,7 @@
                 >
                     <i
                         :title="$t('remove')"
-                        class="fa fa-trash"
+                        class="bx bx-trash"
                         aria-hidden="true"
                         @click="removeBan(ban.banned)"
                     />

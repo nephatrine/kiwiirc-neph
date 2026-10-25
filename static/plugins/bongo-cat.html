@@ -48,7 +48,7 @@
                             :title="$t('bongo-cat:settings')"
                             @click="openSettings"
                         >
-                            <i class="fa fa-cog" aria-hidden="true"></i>
+                            <i class="bx bx-cog" aria-hidden="true"></i>
                         </button>
                         <button
                             type="button"
@@ -62,8 +62,8 @@
                             @click="toggleSound"
                         >
                             <i
-                                class="fa"
-                                :class="store.sound ? 'fa-volume-up' : 'fa-volume-off'"
+                                class="bx"
+                                :class="store.sound ? 'bx-volume-full' : 'bx-volume-mute'"
                                 aria-hidden="true"
                             ></i>
                         </button>
@@ -79,8 +79,8 @@
                             @click="togglePosition"
                         >
                             <i
-                                class="fa"
-                                :class="store.position === 'top' ? 'fa-arrow-down' : 'fa-arrow-up'"
+                                class="bx"
+                                :class="store.position === 'top' ? 'bx-down-arrow' : 'bx-up-arrow'"
                                 aria-hidden="true"
                             ></i>
                         </button>
@@ -91,7 +91,7 @@
                             :title="$t('bongo-cat:close')"
                             @click="cardOpen = false"
                         >
-                            <i class="fa fa-times" aria-hidden="true"></i>
+                            <i class="bx bx-x" aria-hidden="true"></i>
                         </button>
                     </div>
                 </div>

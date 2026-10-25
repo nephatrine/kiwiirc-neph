@@ -6,7 +6,7 @@ module.exports = {
         },
         schema: [],
     },
-    create: function (context) {
+    create: function(context) {
         let parserServices = context.sourceCode.parserServices;
         // The rule only inspects Vue template attributes, so it has nothing to
         // do for plain JS files where the template visitor is unavailable.
@@ -17,8 +17,9 @@ module.exports = {
             "VAttribute[key.name='class']"(node) {
                 let classes = node.value.value.split(' ');
                 classes.forEach((c) => {
-                    // Ignore empty and fontawesome classes
-                    if (!c || c === 'fa' || c.startsWith('fa-')) {
+                    // Ignore empty and icon font classes
+                    if (!c || c === 'bx' || c.startsWith('bx-') ||
+                        c.startsWith('bxs-') || c.startsWith('bxl-')) {
                         return;
                     }
                     if (!c.startsWith('kiwi-') &&

@@ -5,42 +5,42 @@
                 :title="$t('bold')"
                 class="kiwi-inputtools-formatting-item"
                 @click="onBoldClick"
-            ><i class="fa fa-bold" aria-hidden="true" /></div>
+            ><i class="bx bx-bold" aria-hidden="true" /></div>
             <div
                 :title="$t('italic')"
                 class="kiwi-inputtools-formatting-item"
                 @click="onItalicClick"
-            ><i class="fa fa-italic" aria-hidden="true" /></div>
+            ><i class="bx bx-italic" aria-hidden="true" /></div>
             <div
                 :title="$t('underline')"
                 class="kiwi-inputtools-formatting-item"
                 @click="onUnderlineClick"
-            ><i class="fa fa-underline" aria-hidden="true" /></div>
+            ><i class="bx bx-underline" aria-hidden="true" /></div>
             <div
                 :title="$t('strikethrough')"
                 class="kiwi-inputtools-formatting-item"
                 @click="onStrikethroughClick"
-            ><i class="fa fa-strikethrough" aria-hidden="true" /></div>
+            ><i class="bx bx-strikethrough" aria-hidden="true" /></div>
             <div
                 :title="$t('monospace')"
                 class="kiwi-inputtools-formatting-item"
                 @click="onMonospaceClick"
-            ><i class="fa fa-code" aria-hidden="true" /></div>
+            ><i class="bx bx-code" aria-hidden="true" /></div>
             <div
                 :title="$t('spoiler')"
                 class="kiwi-inputtools-formatting-item"
                 @click="onSpoilerClick"
-            ><i class="fa fa-eye-slash" aria-hidden="true" /></div>
+            ><i class="bx bx-hide" aria-hidden="true" /></div>
             <div
                 :title="$t('fancy')"
                 class="kiwi-inputtools-formatting-item"
                 @click="onFancyClick"
-            ><i class="fa fa-magic" aria-hidden="true" /></div>
+            ><i class="bx bxs-magic-wand" aria-hidden="true" /></div>
             <div
                 :title="$t('clear_formatting')"
                 class="kiwi-inputtools-formatting-item kiwi-inputtools-formatting-reset"
                 @click="onResetClick"
-            ><i class="fa fa-eraser" aria-hidden="true" /></div>
+            ><i class="bx bx-eraser" aria-hidden="true" /></div>
         </div>
     </div>
 </template>

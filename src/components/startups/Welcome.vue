@@ -328,7 +328,7 @@
                     class="u-button u-button-primary u-submit kiwi-welcome-simple-start"
                     disabled
                 >
-                    <i class="fa fa-spin fa-spinner" aria-hidden="true" />
+                    <i class="bx bx-spin bx-loader-alt" aria-hidden="true" />
                 </button>
 
                 <div v-html="footerText" />

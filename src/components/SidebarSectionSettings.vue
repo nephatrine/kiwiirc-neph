@@ -18,7 +18,7 @@
                         <h3>{{ $t('channel_branding') }}</h3>
                         <hr>
                         <p class="kiwi-sidebar-settings-warning">
-                            <i class="fa fa-exclamation-triangle" aria-hidden="true" />
+                            <i class="bx bx-error" aria-hidden="true" />
                             {{ $t('channel_metadata_warning') }}
                         </p>
                         <form class="u-form" @submit.prevent="">

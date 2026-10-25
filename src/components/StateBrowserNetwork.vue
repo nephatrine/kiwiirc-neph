@@ -46,7 +46,7 @@
                     class="kiwi-network-name-option kiwi-network-name-option-collapse"
                     @click="collapsed = !collapsed"
                 >
-                    <i :class="[collapsed ? 'fa-plus-square-o' : 'fa-minus-square-o']" class="fa" />
+                    <i :class="[collapsed ? 'bx-plus-circle' : 'bx-minus-circle']" class="bx" />
                 </div>
             </div>
         </div>
@@ -117,7 +117,7 @@
             <transition-expand>
                 <div v-if="network.state !== 'connected'" class="kiwi-statebrowser-network-status">
                     <template v-if="network.state_error">
-                        <i :title="$t('error_unexpected')" class="fa fa-exclamation-triangle" aria-hidden="true" />
+                        <i :title="$t('error_unexpected')" class="bx bx-error" aria-hidden="true" />
                         <a class="u-link" @click="showNetworkSettings(network)">
                             {{ $t('state_configure') }}
                         </a>
@@ -150,7 +150,7 @@
                         class="kiwi-statebrowser-network-option"
                         @click="toggleAddChannel()"
                     >
-                        <i class="fa fa-plus" aria-hidden="true" />
+                        <i class="bx bx-plus" aria-hidden="true" />
                     </div>
                     <div
                         :class="{ active: !!channel_filter_display }"
@@ -158,7 +158,7 @@
                         class="kiwi-statebrowser-network-option"
                         @click="onSearchChannelClick()"
                     >
-                        <i class="fa fa-search" aria-hidden="true" />
+                        <i class="bx bx-search" aria-hidden="true" />
                     </div>
                 </div>
             </transition-expand>
@@ -177,12 +177,12 @@
                 >
                     <div class="kiwi-statebrowser-buffertype" :title="$t('toggle_section')" @click="toggleSection(type)">
                         <i
-                            class="fa kiwi-statebrowser-channels-toggle"
+                            class="bx kiwi-statebrowser-channels-toggle"
                             :class="[
                                 (show_channels && type === 'channels')
                                     || (show_queries && type === 'queries')
-                                    ? 'fa-caret-down'
-                                    : 'fa-caret-right',
+                                    ? 'bx-caret-down'
+                                    : 'bx-caret-right',
                             ]"
                         />
                         {{ type === 'channels' ? $t('channels') : $t('messages') }}
@@ -195,7 +195,7 @@
                             class="kiwi-statebrowser-channels-option"
                             @click="toggleAddChannel()"
                         >
-                            <i class="fa fa-plus" aria-hidden="true" />
+                            <i class="bx bx-plus" aria-hidden="true" />
                         </div>
                         <div
                             :class="{ active: !!channel_filter_display }"
@@ -203,7 +203,7 @@
                             class="kiwi-statebrowser-channels-option"
                             @click="onSearchChannelClick()"
                         >
-                            <i class="fa fa-search" aria-hidden="true" />
+                            <i class="bx bx-search" aria-hidden="true" />
                         </div>
                     </div>
                     <div v-else-if="type === 'queries'" class="kiwi-statebrowser-channels-options">
@@ -214,7 +214,7 @@
                                 kiwi-statebrowser-queries-close"
                             @click.stop.prevent="promptClose()"
                         >
-                            <i class="fa fa-times" aria-hidden="true" />
+                            <i class="bx bx-x" aria-hidden="true" />
                         </div>
                     </div>
                     <div class="kiwi-statebrowser-buffer-actions">

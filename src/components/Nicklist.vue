@@ -21,7 +21,7 @@
                 @click.stop
                 @blur="onFilterBlur"
             >
-            <i class="fa fa-search" aria-hidden="true" />
+            <i class="bx bx-search" aria-hidden="true" />
             <div class="kiwi-nicklist-usercount-width">
                 {{ allUsersCount }}
             </div>
@@ -258,7 +258,7 @@ export default {
         }
     }
 
-    .fa-search {
+    .bx-search {
         font-size: 1.2em;
         opacity: 0.3;
         transition: opacity 0.3s;

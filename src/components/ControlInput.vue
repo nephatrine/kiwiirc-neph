@@ -43,8 +43,8 @@
             <div v-if="currentNick" :title="$t('state_account')" class="kiwi-controlinput-user" @click="toggleSelfUser">
                 <span class="kiwi-controlinput-user-nick">{{ currentNick }}</span>
                 <i
-                    :class="[selfuser_open ? 'fa-caret-down' : 'fa-caret-up']"
-                    class="fa"
+                    :class="[selfuser_open ? 'bx-caret-down' : 'bx-caret-up']"
+                    class="bx"
                     aria-hidden="true"
                 />
             </div>
@@ -52,7 +52,7 @@
                 <div class="kiwi-controlinput-reply-nick">{{ $t('replying_to') }} {{ buffer.replying_to.nick }}</div>
                 <div class="kiwi-controlinput-reply-message">{{ buffer.replying_to.message }}</div>
                 <div :title="$t('cancel')" class="kiwi-controlinput-reply-cancel" @click="buffer.replying_to = null">
-                    <i class="fa fa-times" aria-hidden="true" />
+                    <i class="bx bx-x" aria-hidden="true" />
                 </div>
             </div>
             <form
@@ -83,7 +83,7 @@
                         ref="sendButton"
                         :title="$t('send_message')"
                         type="submit"
-                        class="kiwi-controlinput-button kiwi-controlinput-send fa fa-paper-plane"
+                        class="kiwi-controlinput-button kiwi-controlinput-send bx bx-paper-plane"
                     />
                 </div>
             </form>
@@ -101,7 +101,7 @@
                     @click="showPlugins = !showPlugins"
                     @mousedown.prevent
                 >
-                    <i class="fa fa-bars" aria-hidden="true" />
+                    <i class="bx bx-menu" aria-hidden="true" />
                 </div>
                 <transition name="kiwi-plugin-ui-trans">
                     <div
@@ -115,7 +115,7 @@
                             @click.prevent="onToolClickStyling"
                             @mousedown.prevent
                         >
-                            <i class="fa fa-font" aria-hidden="true" />
+                            <i class="bx bx-font" aria-hidden="true" />
                         </div>
                         <template v-if="shouldShowColorPicker && !isWideEnough">
                             <div
@@ -124,7 +124,7 @@
                                 @click.prevent="onToolClickTextStyle"
                                 @mousedown.prevent
                             >
-                                <i class="fa fa-adjust" aria-hidden="true" />
+                                <i class="bx bx-adjust" aria-hidden="true" />
                             </div>
                             <div
                                 :title="$t('formatting_tools')"
@@ -132,7 +132,7 @@
                                 @click.prevent="onToolClickFormatting"
                                 @mousedown.prevent
                             >
-                                <i class="fa fa-font" aria-hidden="true" />
+                                <i class="bx bx-font" aria-hidden="true" />
                             </div>
                         </template>
                         <div
@@ -142,7 +142,7 @@
                             @click.prevent="onToolClickEmoji"
                             @mousedown.prevent
                         >
-                            <i class="fa fa-smile-o" aria-hidden="true" />
+                            <i class="bx bx-smile" aria-hidden="true" />
                         </div>
                         <div
                             v-if="shouldShowFileUpload"
@@ -153,8 +153,8 @@
                             @mousedown.prevent
                         >
                             <i
-                                :class="uploading ? 'fa-spinner fa-spin' : 'fa-upload'"
-                                class="fa"
+                                :class="uploading ? 'bx-loader-alt bx-spin' : 'bx-upload'"
+                                class="bx"
                                 aria-hidden="true"
                             />
                         </div>
@@ -1551,7 +1551,7 @@ export default {
         font-weight: 700;
     }
 
-    .fa-exclamation-triangle {
+    .bx-error {
         margin-right: 2px;
     }
 

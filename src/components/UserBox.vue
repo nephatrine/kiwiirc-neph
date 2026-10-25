@@ -58,7 +58,7 @@
                 <emoji-text :text="user.metadata.description" />
             </div>
             <div v-if="user.metadata.homepage && !isEditingProfile" class="kiwi-userbox-homepage">
-                <i class="fa fa-globe" aria-hidden="true" />
+                <i class="bx bx-globe" aria-hidden="true" />
                 <a
                     :href="user.metadata.homepage"
                     target="_blank"
@@ -151,7 +151,7 @@
             <div v-if="isSelf && isEditingProfile" class="kiwi-userbox-editprofile u-form">
                 <h3>{{ $t('public_profile') }}</h3>
                 <p class="kiwi-userbox-editprofile-warning">
-                    <i class="fa fa-exclamation-triangle" aria-hidden="true" />
+                    <i class="bx bx-error" aria-hidden="true" />
                     {{ $t('public_profile_warning') }}
                 </p>
                 <label :class="{ 'kiwi-userbox-editprofile--invalid': editProfileErrors.displayName }">
@@ -187,8 +187,8 @@
                             @click="$refs.avatarFile.click()"
                         >
                             <i
-                                class="fa"
-                                :class="avatarUploading ? 'fa-spinner fa-spin' : 'fa-upload'"
+                                class="bx"
+                                :class="avatarUploading ? 'bx-loader-alt bx-spin' : 'bx-upload'"
                                 aria-hidden="true"
                             />
                         </button>
@@ -251,7 +251,7 @@
                             :title="$t('ok')"
                             @click="confirmColor"
                         >
-                            <i class="fa fa-check" aria-hidden="true" />
+                            <i class="bx bx-check" aria-hidden="true" />
                         </button>
                         <button
                             v-if="editProfile.color"
@@ -260,7 +260,7 @@
                             :title="$t('reset')"
                             @click="editProfile.color = ''"
                         >
-                            <i class="fa fa-undo" aria-hidden="true" />
+                            <i class="bx bx-undo" aria-hidden="true" />
                         </button>
                     </div>
                 </div>
@@ -292,11 +292,11 @@
 
         <div class="kiwi-userbox-actions">
             <a v-if="showRegisterButton" class="kiwi-userbox-action" @click="startRegistration">
-                <i class="fa fa-user-plus" aria-hidden="true" />
+                <i class="bx bx-user-plus" aria-hidden="true" />
                 {{ $t('register_account') }}
             </a>
             <a v-if="isSelf && !isEditingProfile && network.metadataCap()" class="kiwi-userbox-action" @click="startEditProfile">
-                <i class="fa fa-pencil" aria-hidden="true" />
+                <i class="bx bx-pencil" aria-hidden="true" />
                 {{ $t('edit_profile') }}
             </a>
             <a
@@ -304,7 +304,7 @@
                 class="kiwi-userbox-action"
                 @click="openQuery"
             >
-                <i class="fa fa-comment-o" aria-hidden="true" />
+                <i class="bx bx-comment" aria-hidden="true" />
                 {{ $t('send_a_message') }}
             </a>
             <a
@@ -312,7 +312,7 @@
                 class="kiwi-userbox-action"
                 @click="updateWhoisData"
             >
-                <i class="fa fa-question-circle" aria-hidden="true" />
+                <i class="bx bx-help-circle" aria-hidden="true" />
                 {{ $t('more_information') }}
             </a>
             <div class="kiwi-userbox-actions kiwi-userbox-plugin-actions">
@@ -423,7 +423,7 @@
             class="kiwi-userbox-whois"
         >
             <template v-if="whoisLoading">
-                <i class="fa fa-spin fa-spinner" aria-hidden="true" />
+                <i class="bx bx-spin bx-loader-alt" aria-hidden="true" />
             </template>
             <template v-else-if="pluginUiWhoisElements.length">
                 <component
@@ -505,7 +505,7 @@
                                kiwi-userbox-opaction-kick kiwi-userbox-opaction"
                         @click="buffer.kickUser(user)"
                     >
-                        <i class="fa fa-sign-out" aria-hidden="true" />
+                        <i class="bx bx-log-out" aria-hidden="true" />
                         {{ $t('user_kick') }}
                     </button>
                 </label>
@@ -516,7 +516,7 @@
                                kiwi-userbox-opaction-ban kiwi-userbox-opaction"
                         @click="buffer.banUser(user)"
                     >
-                        <i class="fa fa-ban" aria-hidden="true" />
+                        <i class="bx bx-block" aria-hidden="true" />
                         {{ $t('user_ban') }}
                     </button>
                 </label>
@@ -527,7 +527,7 @@
                                kiwi-userbox-opaction-kickban kiwi-userbox-opaction"
                         @click="buffer.banKickUser(user)"
                     >
-                        <i class="fa fa-exclamation-triangle" aria-hidden="true" />
+                        <i class="bx bx-error" aria-hidden="true" />
                         {{ $t('user_kickban') }}
                     </button>
                 </label>
@@ -1186,7 +1186,7 @@ export default {
     opacity: 0.8;
 }
 
-.fa-user.kiwi-userbox-icon {
+.bx-user.kiwi-userbox-icon {
     display: inline-block;
     font-size: 2em;
 }

@@ -7,7 +7,7 @@
             class="kiwi-statebrowser-appsettings"
             @click="clickAppSettings"
         >
-            <i class="fa fa-cog" aria-hidden="true" />
+            <i class="bx bx-cog" aria-hidden="true" />
         </div>
 
         <div
@@ -16,7 +16,7 @@
             class="kiwi-statebrowser-logout"
             @click="clickLogout"
         >
-            <i class="fa fa-sign-out" aria-hidden="true" />
+            <i class="bx bx-log-out" aria-hidden="true" />
         </div>
 
         <state-browser-usermenu
@@ -54,7 +54,7 @@
         <div v-if="!isRestrictedServer" class="kiwi-statebrowser-newnetwork">
             <a class="u-button u-button-primary" @click="clickAddNetwork">
                 {{ $t('add_network') }}
-                <i class="fa fa-plus" aria-hidden="true" />
+                <i class="bx bx-plus" aria-hidden="true" />
             </a>
         </div>
     </div>
@@ -327,11 +327,11 @@ export default {
     opacity: 1;
 }
 
-.kiwi-statebrowser-usermenu .fa-caret-down {
+.kiwi-statebrowser-usermenu .bx-caret-down {
     transition: all 0.3s;
 }
 
-.kiwi-statebrowser-usermenu--open .fa-caret-down {
+.kiwi-statebrowser-usermenu--open .bx-caret-down {
     transform: rotate(-180deg);
 }
 

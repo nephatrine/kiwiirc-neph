@@ -163,8 +163,8 @@
                 >
                     {{ $t('settings_advanced') }}
                     <i
-                        :class="[`fa-caret-${show_advanced ? 'up' : 'down'}`]"
-                        class="fa"
+                        :class="[`bx-caret-${show_advanced ? 'up' : 'down'}`]"
+                        class="bx"
                         aria-hidden="true"
                     />
                 </h4>
@@ -245,7 +245,7 @@
             <div v-if="!restricted && !isBouncerController" class="kiwi-dangerzone">
                 <h3>{{ $t('settings_danger') }}</h3>
                 <a class="u-button u-button-warning" @click="removeNetwork">
-                    <i class="fa fa-times" aria-hidden="true" /> {{ $t('settings_remove') }}
+                    <i class="bx bx-x" aria-hidden="true" /> {{ $t('settings_remove') }}
                 </a>
             </div>
         </form>

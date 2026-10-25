@@ -516,7 +516,7 @@
     background-color: #07311a;
 }
 
-.kiwi-controlinput-command-warn .fa-exclamation-triangle {
+.kiwi-controlinput-command-warn .bx-error {
     color: #c54d53;
 }
 
@@ -1339,10 +1339,10 @@
 
 /*Icon before the network in network list */
 .kiwi-statebrowser-network-name::before {
-    content: '\f233';
-    font-family: fontAwesome;
+    content: '\ebfd';
+    font-family: boxicons;
     margin-right: 2px;
-    font-weight: 100;
+    font-weight: 400;
     text-decoration: none;
 }
 .kiwi-statebrowser-network-name--hasicon::before {
@@ -1352,13 +1352,13 @@
 
 /* Icons in the Channel List */
 .kiwi-statebrowser-channel[data-name^="*"]::before {
-    content: '\f006';
-    font-family: fontAwesome;
+    content: '\ec27';
+    font-family: boxicons;
 }
 
 .kiwi-statebrowser-channel[data-name="#help"]::before {
-    content: '\f059';
-    font-family: fontAwesome;
+    content: '\eb0d';
+    font-family: boxicons;
 }
 
 /* U table line breaks */

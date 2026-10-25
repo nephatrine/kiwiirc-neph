@@ -331,7 +331,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
     function makeIconButton(iconClass, handler) {
         var btn = makeEl('button', 'nephnet-btn nephnet-btn--icon', '');
         btn.type = 'button';
-        var icon = makeEl('i', 'fa ' + iconClass);
+        var icon = makeEl('i', 'bx ' + iconClass);
         icon.setAttribute('aria-hidden', 'true');
         btn.appendChild(icon);
         btn.addEventListener('click', handler);
@@ -385,7 +385,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
 
         controls.appendChild(makeEl('span', 'nephnet-controls-spacer', ''));
 
-        var crtBtn = makeIconButton('fa-desktop', function () {
+        var crtBtn = makeIconButton('bx-desktop', function () {
             initAudio();
             playClick(300, 0.03);
             crtOn = !crtOn;
@@ -394,7 +394,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         crtBtn.setAttribute('title', 'CRT effect');
         crtBtn.setAttribute('aria-label', 'Toggle CRT effect');
 
-        var audioBtn = makeIconButton('fa-volume-off', function () {
+        var audioBtn = makeIconButton('bx-volume-mute', function () {
             audioMuted = !audioMuted;
             initAudio();
             applyAudio(true);
@@ -410,7 +410,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
 
         controls.appendChild(makeEl('span', 'nephnet-controls-spacer nephnet-controls-spacer--wide', ''));
 
-        var powerBtn = makeIconButton('fa-power-off', function () {
+        var powerBtn = makeIconButton('bx-power-off', function () {
             initAudio();
             togglePower();
         });
@@ -555,7 +555,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         }
         var icon = chromeRoot._audioBtn.querySelector('i');
         if (icon) {
-            icon.className = 'fa ' + (audioMuted ? 'fa-volume-off' : 'fa-volume-up');
+            icon.className = 'bx ' + (audioMuted ? 'bx-volume-mute' : 'bx-volume-full');
         }
         chromeRoot._audioBtn.classList.toggle('nephnet-btn--active', !audioMuted);
     }

@@ -10,7 +10,7 @@
                         type="text"
                         @keydown.stop
                     >
-                    <i class="fa fa-search" aria-hidden="true" />
+                    <i class="bx bx-search" aria-hidden="true" />
                 </div>
                 <div class="kiwi-emojipicker-categories" @mousedown.prevent>
                     <div
@@ -21,11 +21,11 @@
                         class="kiwi-emojipicker-category"
                         @click="scrollToCategory(cat.id)"
                     >
-                        <i :class="['fa', cat.icon]" aria-hidden="true" />
+                        <i :class="['bx', cat.icon]" aria-hidden="true" />
                     </div>
                 </div>
                 <div :title="$t('close')" class="kiwi-emojipicker-close" @click="close">
-                    <i class="fa fa-times" aria-hidden="true" />
+                    <i class="bx bx-x" aria-hidden="true" />
                 </div>
             </div>
             <div ref="scroller" class="kiwi-emojipicker-emojis" @scroll="onScroll" @mousedown.prevent>

@@ -191,7 +191,7 @@
                     @click="onFallbackClick"
                     @auxclick="onFallbackClick"
                 >
-                    <i class="fa fa-external-link" aria-hidden="true" /> {{ url }}
+                    <i class="bx bx-link-external" aria-hidden="true" /> {{ url }}
                 </a>
             </div>
         </template>

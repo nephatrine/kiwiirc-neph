@@ -292,7 +292,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
             if (button) {
                 var icon = button.querySelector('i');
                 if (icon) {
-                    icon.className = 'fa ' + (sounds ? 'fa-volume-up' : 'fa-volume-off');
+                    icon.className = 'bx ' + (sounds ? 'bx-volume-full' : 'bx-volume-mute');
                 }
                 button.setAttribute('aria-pressed', sounds ? 'true' : 'false');
                 button.classList.toggle('nephwave-tray-btn--active', sounds);
@@ -842,11 +842,11 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
                 '<div class="nephwave-title-actions">' +
                     '<button type="button" class="nephwave-title-btn" ' +
                         'data-action="settings" title="Control Panel" ' +
-                        'aria-label="Open Control Panel"><i class="fa fa-cog"></i></button>' +
+                        'aria-label="Open Control Panel"><i class="bx bx-cog"></i></button>' +
                     '<button type="button" class="nephwave-title-btn nephwave-title-btn--minimize" ' +
                         'data-action="minimize-app" title="Minimize" ' +
                         'aria-label="Minimize NephWave Messenger">' +
-                        '<i class="fa fa-window-minimize"></i></button>' +
+                        '<i class="bx bx-minus"></i></button>' +
                 '</div>' +
             '</div>' +
             '<div class="nephwave-menubar">' +
@@ -873,22 +873,22 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
                         'nephwave-task--active" data-action="messenger" ' +
                         'title="Focus the message input" ' +
                         'aria-label="Focus the message input">' +
-                        '<i class="fa fa-comments"></i>' +
+                        '<i class="bx bx-conversation"></i>' +
                         '<span>NephWave Messenger</span></button>' +
                     '<button type="button" class="nephwave-task nephwave-task--radio" ' +
                         'data-action="radio" hidden title="Open radio stations">' +
-                        '<i class="fa fa-music"></i>' +
+                        '<i class="bx bx-music"></i>' +
                         '<span>NephWave FM</span></button>' +
                 '</div>' +
                 '<div class="nephwave-tray">' +
                     '<button type="button" class="nephwave-tray-btn nephwave-tray-btn--crt" ' +
                         'data-action="crt" title="Toggle CRT scanlines" ' +
                         'aria-label="Toggle CRT scanlines" aria-pressed="true">' +
-                        '<i class="fa fa-desktop"></i></button>' +
+                        '<i class="bx bx-desktop"></i></button>' +
                     '<button type="button" class="nephwave-tray-btn nephwave-tray-btn--sounds" ' +
                         'data-action="sounds" title="Toggle UI sounds" ' +
                         'aria-label="Toggle UI sounds" aria-pressed="false">' +
-                        '<i class="fa fa-volume-off"></i></button>' +
+                        '<i class="bx bx-volume-mute"></i></button>' +
                     '<span class="nephwave-nowplaying" hidden></span>' +
                     '<span class="nephwave-tray-status nephwave-status nephwave-status--offline">' +
                         '<span class="nephwave-status-dot"></span></span>' +
@@ -899,9 +899,9 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
                 '<div class="nephwave-startmenu-banner">NEPHWAVE</div>' +
                 '<div class="nephwave-startmenu-body">' +
                     '<button type="button" class="nephwave-menu-item" data-action="settings">' +
-                        '<i class="fa fa-cog"></i><span>Control Panel</span></button>' +
+                        '<i class="bx bx-cog"></i><span>Control Panel</span></button>' +
                     '<button type="button" class="nephwave-menu-item" data-action="radio">' +
-                        '<i class="fa fa-music"></i><span>Radio Stations</span></button>' +
+                        '<i class="bx bx-music"></i><span>Radio Stations</span></button>' +
                     '<div class="nephwave-menu-sep"></div>' +
                     '<div class="nephwave-menu-label">Theme Presets</div>' +
                     '<button type="button" class="nephwave-menu-item nephwave-preset-item" ' +
@@ -922,16 +922,16 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
                         '<span class="nephwave-preset-check">&#10003;</span></button>' +
                     '<div class="nephwave-menu-sep"></div>' +
                     '<button type="button" class="nephwave-menu-item" data-action="crt">' +
-                        '<i class="fa fa-desktop"></i><span>CRT Scanlines</span>' +
+                        '<i class="bx bx-desktop"></i><span>CRT Scanlines</span>' +
                         '<span class="nephwave-crt-menu-label">On</span></button>' +
                     '<button type="button" class="nephwave-menu-item" data-action="sounds">' +
-                        '<i class="fa fa-volume-up"></i><span>UI Sounds</span>' +
+                        '<i class="bx bx-volume-full"></i><span>UI Sounds</span>' +
                         '<span class="nephwave-sounds-menu-label">Off</span></button>' +
                     '<div class="nephwave-menu-sep"></div>' +
                     '<button type="button" class="nephwave-menu-item" data-action="about">' +
-                        '<i class="fa fa-info-circle"></i><span>About NephWave</span></button>' +
+                        '<i class="bx bx-info-circle"></i><span>About NephWave</span></button>' +
                     '<button type="button" class="nephwave-menu-item" data-action="shutdown">' +
-                        '<i class="fa fa-power-off"></i><span>Shut Down...</span></button>' +
+                        '<i class="bx bx-power-off"></i><span>Shut Down...</span></button>' +
                 '</div>' +
             '</div>' +
             '<div class="nephwave-modal nephwave-modal--about" hidden>' +

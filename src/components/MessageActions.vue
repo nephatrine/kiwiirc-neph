@@ -1,7 +1,7 @@
 <template>
     <div :class="[`kiwi-messageactions--${layout}`]" class="kiwi-messageactions" @click.stop>
         <div :title="$t('message_actions_title')" class="kiwi-messageactions-badge">
-            <i class="fa fa-ellipsis-h" aria-hidden="true" />
+            <i class="bx bx-dots-horizontal" aria-hidden="true" />
         </div>
         <div class="kiwi-messageactions-dropdown">
             <template v-if="isUtf8">
@@ -16,15 +16,15 @@
                     {{ emoji.char }}
                 </div>
                 <div :title="$t('emoji_picker')" class="kiwi-messageactions-item" @click="showPicker">
-                    <i class="fa fa-plus" aria-hidden="true" />
+                    <i class="bx bx-plus" aria-hidden="true" />
                 </div>
                 <div class="kiwi-messageactions-divider" />
             </template>
             <div :title="$t('reply')" class="kiwi-messageactions-item" @click="onReply">
-                <i class="fa fa-reply" aria-hidden="true" />
+                <i class="bx bx-reply" aria-hidden="true" />
             </div>
             <div v-if="canRedact" :title="$t('redact')" class="kiwi-messageactions-item" @click="onRedact">
-                <i class="fa fa-eraser" aria-hidden="true" />
+                <i class="bx bx-eraser" aria-hidden="true" />
             </div>
         </div>
     </div>

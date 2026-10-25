@@ -277,6 +277,8 @@ that is not forwarded through `kiwi`.
   `--brand-default-fg`, `--brand-midtone`, and `--brand-input-bg`.
 - Prefix classes to avoid collisions.
 - Respect `prefers-reduced-motion`.
+- Use the bundled Boxicons webfont for icons: `<i class="bx bx-cog"></i>` or
+  `<i class="bx bxs-star"></i>`. Font Awesome classes are no longer available.
 - Do not add dependencies for a static plugin; use browser APIs and the in-house
   helpers exposed through `kiwi.require()`.
 

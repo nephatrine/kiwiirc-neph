@@ -222,7 +222,7 @@
     background-color: var(--brand-default-bg);
 }
 
-.kiwi-controlinput-command-warn .fa-exclamation-triangle {
+.kiwi-controlinput-command-warn .bx-error {
     color: var(--brand-error);
 }
 
@@ -597,10 +597,10 @@
 
 /* Icon before the network in network list */
 .kiwi-statebrowser-network-name::before {
-    content: '\f233';
-    font-family: fontAwesome, Helvetica, Arial, Verdana, Tahoma, sans-serif;
+    content: '\ebfd';
+    font-family: boxicons, Helvetica, Arial, Verdana, Tahoma, sans-serif;
     margin-right: 2px;
-    font-weight: 100;
+    font-weight: 400;
     text-decoration: none;
 }
 .kiwi-statebrowser-network-name--hasicon::before {
@@ -610,17 +610,17 @@
 
 /* Icons in the Channel List */
 .kiwi-statebrowser-channel[data-name^="*"]::before {
-    content: '\f006';
+    content: '\ec27';
 }
 
 .kiwi-statebrowser-channel[data-name="#help"]::before {
-    content: '\f059';
+    content: '\eb0d';
 }
 
 .kiwi-statebrowser-channel::before {
-    font-family: fontAwesome, Helvetica, Arial, Verdana, Tahoma, sans-serif;
+    font-family: boxicons, Helvetica, Arial, Verdana, Tahoma, sans-serif;
     margin-right: 8px;
-    font-weight: 100;
+    font-weight: 400;
 }
 
 .kiwi-statebrowser-channel-label {
@@ -815,7 +815,7 @@
     color: var(--brand-primary);
 }
 
-.kiwi-serverselector-connection-tls i.fa-unlock {
+.kiwi-serverselector-connection-tls i.bx-lock-open {
     color: var(--brand-error);
 }
 

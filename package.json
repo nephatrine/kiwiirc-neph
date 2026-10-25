@@ -15,6 +15,7 @@
     "build": "vue-cli-service build --no-module",
     "postbuild": "node scripts/minify-static.js",
     "generate:emojis": "node scripts/generate-emojis.js",
+    "generate:boxicons": "node scripts/generate-boxicons-css.js",
     "test:unit": "jest",
     "lint": "npm-run-all lint:*",
     "lint:eslint": "eslint src tests scripts \"*.js\" \".*.js\"",
@@ -26,9 +27,9 @@
   "dependencies": {
     "@babel/runtime": "^8.0.5",
     "@panter/vue-i18next": "^0.15.2",
+    "boxicons": "^2.1.4",
     "buffer": "^6.0.3",
     "eventemitter3": "^5.0.1",
-    "font-awesome": "^4.7.0",
     "i18next": "^25.10.10",
     "i18next-http-backend": "^4.0.3",
     "irc-framework": "^4.14.0",

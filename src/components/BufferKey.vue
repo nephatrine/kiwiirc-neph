@@ -5,7 +5,7 @@
             <input v-model="buffer.key" v-focus type="password">
             <div class="kiwi-bufferkey-buttons">
                 <span class="kiwi-bufferkey-button" @click="joinChannel">
-                    <i class="fa fa-arrow-circle-o-right" aria-hidden="true" />
+                    <i class="bx bx-right-arrow-circle" aria-hidden="true" />
                     {{ $t('bufferkey_rejoin', { channel: buffer.name }) }}
                 </span>
             </div>
