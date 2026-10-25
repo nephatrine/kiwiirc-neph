@@ -49,6 +49,7 @@ export default class GlobalApi extends EventEmitter {
         this.aboutBufferPlugins = [];
         this.messageInfoPlugins = [];
         this.tabs = Object.create(null);
+        this.services = Object.create(null);
         this.isReady = false;
         /** Reactive media playback state reported by plugins */
         this.media = Vue.observable({
@@ -120,6 +121,27 @@ export default class GlobalApi extends EventEmitter {
         }
 
         return mod;
+    }
+
+    /**
+     * Register a named service that other plugins can consume.
+     * @param {String} name Stable service identifier, eg. 'radio'
+     * @param {Object} service Service object
+     */
+    registerService(name, service) {
+        if (!name || !service) {
+            return;
+        }
+        this.services[name] = service;
+    }
+
+    /**
+     * Get a named plugin service.
+     * @param {String} name Stable service identifier
+     * @returns {Object|null}
+     */
+    getService(name) {
+        return this.services[name] || null;
     }
 
     setState(state) {

@@ -409,12 +409,19 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
         nowPlayingEl.setAttribute('title', text);
     }
 
-    function radioEnabled() {
+    function radioService() {
         try {
-            return !!kiwi.state.setting('radio.url');
+            return typeof kiwi.getService === 'function'
+                ? kiwi.getService('radio')
+                : null;
         } catch (err) {
-            return false;
+            return null;
         }
+    }
+
+    function radioEnabled() {
+        var service = radioService();
+        return !!(service && typeof service.enabled === 'function' && service.enabled());
     }
 
     function updateAvailability() {
@@ -626,15 +633,9 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
             updateTaskStates();
             return;
         }
-        var RadioBrowser = null;
-        try {
-            RadioBrowser = kiwi.require('components/RadioBrowser');
-        } catch (err) {
-            RadioBrowser = null;
-        }
-        if (RadioBrowser) {
-            kiwi.state.$emit('active.component', RadioBrowser);
-            kiwi.state.$emit('statebrowser.hide');
+        var service = radioService();
+        if (service && typeof service.openBrowser === 'function') {
+            service.openBrowser();
             window.setTimeout(updateTaskStates, 0);
         }
     }

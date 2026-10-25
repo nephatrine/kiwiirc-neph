@@ -177,6 +177,17 @@ describe('GlobalApi plugin surface', () => {
         expect(window.console.error).toHaveBeenCalled();
     });
 
+    it('registers and resolves named plugin services', () => {
+        const service = { enabled: () => true };
+
+        api.registerService('radio', service);
+
+        expect(api.getService('radio')).toBe(service);
+        expect(api.getService('missing')).toBeNull();
+        api.registerService('', service);
+        expect(api.getService('')).toBeNull();
+    });
+
     it('versionMatches compares against the build version', () => {
         expect(api.versionMatches('2.0.0')).toBe(true);
         expect(api.versionMatches('1.5.0')).toBe(true);

@@ -10,7 +10,8 @@ and this project adheres to
 
 ### Added
 
-- **Themes**: Added NephWave, a standalone theme with the optional NephWave Desktop shell plugin.
+- **Themes**: Added NephWave, a standalone theme with the optional NephWave
+  Desktop shell plugin.
 - **Twitch**: Added Twitch IRC support, requesting `twitch.tv/commands`,
   `twitch.tv/tags`, and `twitch.tv/membership` when advertised. Twitch tags
   drive message IDs, display names, colors, timestamps, replies, reroute
@@ -82,6 +83,13 @@ and this project adheres to
   hover states, disabled form controls are visibly dimmed, and NephDeck no
   longer applies a background to the input wrapper or shows its power button on
   startup screens.
+- **Radio**: Moved the station player into the bundled
+  `static/plugins/radio.html` plugin, loaded by default. Its settings now use
+  `plugin-radio.*` instead of `radio.*`; rename existing config keys manually.
+  The default station file is `static/plugins/radio/stations.json`; a missing
+  file quietly disables the player. Plugins can expose and consume named
+  services with `kiwi.registerService()` and `kiwi.getService()`; NephWave uses
+  the new `radio` service.
 
 ### Fixed
 

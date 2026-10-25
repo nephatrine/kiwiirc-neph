@@ -81,50 +81,6 @@ the service and retention in settings. `none` does not lock out a user override.
 available only after SASL login. Plain `http` is refused when `connection.tls`
 is set.
 
-## Radio
-
-The player stays hidden until `radio.url` is a stations file the browser can
-fetch. A relative URL is resolved against the page, so `static/stations.json`
-works in a subdirectory install. See
-[static/stations.example.json](static/stations.example.json).
-
-| Key              | Default |                                                                                 |
-| ---------------- | ------- | ------------------------------------------------------------------------------- |
-| `url`            | `""`    | Stations JSON. Empty disables the player.                                       |
-| `volume`         | `0.4`   | `0` to `1`.                                                                     |
-| `starred`        | `[]`    | Station names. Users usually set this in the player.                            |
-| `active`         | `""`    | Last station name.                                                              |
-| `showWave`       | `true`  | Waveform. Playback does not require it.                                         |
-| `autoPlay`       | `false` | If true, waits for a click before playing.                                      |
-| `forceVolume`    | `false` | Start at the admin volume and do not save a user volume until the slider moves. |
-| `reloadOnOpen`   | `false` | Fetch the station list again when the list opens.                               |
-| `forceShowClose` | `false` | Reserved. The station list always has a close control.                          |
-
-Station playback is adapted from
-[kiwiirc-plugin-radio](https://github.com/ItsOnlyBinary/kiwiirc-plugin-radio)
-(Apache-2.0).
-
-A station object is `name`, `image`, `source`, `description`, and optional
-`channels` and `nowPlaying`. `source` must be `http` or `https`. On an HTTPS
-page, `http` streams are dropped. `image` may also be a root-relative path such
-as `/static/stations/logo.png`. `channels` is a string of channel names.
-Clicking one joins it.
-
-While a station is playing, Kiwi polls `https://<stream-host>/status-json.xsl`
-every 30 seconds and shows that mount's title under the station name. The same
-text becomes the lock-screen title, with the station name as the artist. Polling
-stops when playback stops. `nowPlaying` is an optional `http` or `https` URL
-that overrides that guess, or `false` to disable track polling for that station.
-If the status endpoint answers with an HTTP error such as 403 or 404, polling
-stops for the rest of that playback, so stations that block `status-json.xsl`
-are queried only once. A network error is retried, but polling stops after three
-consecutive failures, so an endpoint that blocks the request, such as a
-CORS-denied 403, is not polled forever.
-
-If a stream falls silent for more than 15 seconds while the player still reports
-it as playing, Kiwi reloads the stream automatically. After three silent stalls
-in a row the station is marked as failed so it can be retried.
-
 ## Embedly
 
 Cards are used only for links that are not already an image, audio, or video

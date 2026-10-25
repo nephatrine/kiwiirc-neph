@@ -215,6 +215,26 @@ Consumers should use `getMediaDisplay()`; it falls back to `title` and then
 Multiple plugins may report playback at once. The aggregate stays true until
 every source has stopped.
 
+## Services
+
+Plugins can expose a named service for other plugins to consume:
+
+```js
+kiwi.registerService('my-service', {
+    enabled: () => true,
+    open: () => {}
+});
+
+const service = kiwi.getService('my-service');
+if (service && service.enabled()) {
+    service.open();
+}
+```
+
+`getService()` returns `null` when the service is not loaded, so consumers
+should check for it at call time. The bundled radio plugin registers `radio`
+with `enabled()`, `getRadio()`, and `openBrowser()`.
+
 ## Events
 
 `kiwi` is an event emitter. Listen to application state events with `kiwi.on()`
@@ -254,4 +274,5 @@ that is not forwarded through `kiwi`.
 - [channels-sidebar](static/plugins/channels-sidebar.md)
 - [nephnet-cyberdeck](static/plugins/nephnet-cyberdeck.md)
 - [nephwave-desktop](static/plugins/nephwave-desktop.md)
+- [radio](static/plugins/radio.md)
 - [customise starter](static/plugins/customise.md)
