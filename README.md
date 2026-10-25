@@ -65,7 +65,7 @@ After the webpack build, `npm run build` runs `scripts/minify-static.js` to
 minify:
 
 - Theme CSS in `dist/static/themes/`.
-- Plugin HTML in `dist/static/plugins/`.
+- Plugin HTML, CSS, and JavaScript in `dist/static/plugins/`.
 - Locale JSON in `dist/static/locales/`.
 
 The source files in `static/` remain readable. Config files, station lists, and

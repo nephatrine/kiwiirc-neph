@@ -3,8 +3,9 @@
 /*
  * Minify static assets that webpack copies into dist/.
  *
- * - Themes: postcss + cssnano
+ * - Themes and plugin CSS: postcss + cssnano
  * - Plugin HTML: html-minifier-terser
+ * - Plugin JavaScript: terser
  * - Locales: compact JSON
  *
  * Config files, station lists, and other static data are left untouched.
@@ -15,12 +16,15 @@ const path = require('path');
 const postcss = require('postcss');
 const cssnano = require('cssnano');
 const { minify } = require('html-minifier-terser');
+const { minify: minifyJs } = require('terser');
 
 const ROOT = path.resolve(__dirname, '..');
 const DIST = path.join(ROOT, 'dist', 'static');
 const groups = {
     themes: [],
     plugins: [],
+    pluginStyles: [],
+    pluginScripts: [],
     locales: [],
 };
 
@@ -56,7 +60,7 @@ function record(group, file, before, after) {
     groups[group].push({ file, before, after });
 }
 
-async function minifyTheme(file) {
+async function minifyCss(file, group) {
     const before = fileSize(file);
     const css = fs.readFileSync(file, 'utf8');
     const result = await postcss([cssnano({ preset: 'default' })])
@@ -65,7 +69,19 @@ async function minifyTheme(file) {
         throw new Error(`cssnano produced no output for ${file}`);
     }
     fs.writeFileSync(file, result.css);
-    record('themes', file, before, fileSize(file));
+    record(group, file, before, fileSize(file));
+}
+
+function minifyPluginScript(file) {
+    const before = fileSize(file);
+    const code = fs.readFileSync(file, 'utf8');
+    return minifyJs(code, { compress: true, mangle: true }).then((result) => {
+        if (!result.code) {
+            throw new Error(`terser produced no output for ${file}`);
+        }
+        fs.writeFileSync(file, result.code);
+        record('pluginScripts', file, before, fileSize(file));
+    });
 }
 
 async function minifyPlugin(file) {
@@ -111,15 +127,21 @@ async function main() {
 
     const themes = walk(path.join(DIST, 'themes'), '.css');
     const plugins = walk(path.join(DIST, 'plugins'), '.html');
+    const pluginStyles = walk(path.join(DIST, 'plugins'), '.css');
+    const pluginScripts = walk(path.join(DIST, 'plugins'), '.js');
     const locales = walk(path.join(DIST, 'locales'), '.json');
 
-    await Promise.all(themes.map((file) => minifyTheme(file)));
+    await Promise.all(themes.map((file) => minifyCss(file, 'themes')));
+    await Promise.all(pluginStyles.map((file) => minifyCss(file, 'pluginStyles')));
     await Promise.all(plugins.map((file) => minifyPlugin(file)));
+    await Promise.all(pluginScripts.map((file) => minifyPluginScript(file)));
     locales.forEach((file) => minifyLocale(file));
 
     console.log('Static asset minification:');
     reportGroup('themes', groups.themes);
-    reportGroup('plugins', groups.plugins);
+    reportGroup('plugin html', groups.plugins);
+    reportGroup('plugin css', groups.pluginStyles);
+    reportGroup('plugin js', groups.pluginScripts);
     reportGroup('locales', groups.locales);
 }
 

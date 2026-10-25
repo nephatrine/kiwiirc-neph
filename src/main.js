@@ -325,17 +325,55 @@ function applyConfigObj(obj, target) {
 }
 
 function loadPlugins() {
-    return new Promise((resolve, reject) => {
+    return new Promise((_resolve, reject) => {
         let plugins = getState().settings.plugins || [];
         let pluginIdx = -1;
 
         loadNextScript();
 
+        function pluginAssetUrl(plugin, assetUrl) {
+            return new URL(assetUrl, new URL(plugin.url, window.location.href)).href;
+        }
+
+        function loadHtmlPluginScripts(el, plugin) {
+            const scripts = [...el.querySelectorAll('script')];
+            scripts.forEach((limitedScr) => {
+                limitedScr.parentElement.removeChild(limitedScr);
+            });
+
+            document.body.appendChild(el);
+
+            return scripts.reduce((chain, limitedScr) => chain.then(() => new Promise((resolve) => {
+                const src = limitedScr.getAttribute('src');
+                const scr = document.createElement('script');
+                if (limitedScr.type) {
+                    scr.type = limitedScr.type;
+                }
+                if (src) {
+                    scr.src = pluginAssetUrl(plugin, src);
+                    scr.async = false;
+                    scr.onload = () => resolve();
+                    scr.onerror = () => {
+                        log.error(
+                            `Error loading plugin script '${src}' from '${plugin.url}'`
+                        );
+                        resolve();
+                    };
+                } else {
+                    scr.text = limitedScr.text;
+                }
+                el.appendChild(scr);
+                if (!src) {
+                    resolve();
+                }
+            })), Promise.resolve());
+        }
+
         function loadNextScript(sSrc, fOnload) {
             let plugin = plugins[++pluginIdx];
 
             if (!plugin) {
-                resolve();
+                _resolve();
                 return;
             }
 
@@ -367,19 +405,15 @@ function loadPlugins() {
                         el.style.display = 'none';
                         el.innerHTML = pluginRaw;
 
-                        // The browser won't execute any script elements so we need to extract them
-                        // and place them into the DOM using our own script elements
-                        let scripts = [...el.querySelectorAll('script')];
+                        [...el.querySelectorAll('link[rel="stylesheet"][href]')]
+                            .forEach((link) => {
+                                link.href = pluginAssetUrl(plugin, link.getAttribute('href'));
+                            });
 
-                        scripts.forEach((limitedScr) => {
-                            limitedScr.parentElement.removeChild(limitedScr);
-                            let scr = document.createElement('script');
-                            scr.text = limitedScr.text;
-                            el.appendChild(scr);
-                        });
-
-                        document.body.appendChild(el);
-                        loadNextScript();
+                        // The browser won't execute scripts inserted with innerHTML, so
+                        // move them into live script elements. External scripts are
+                        // resolved relative to the plugin HTML and loaded in order.
+                        loadHtmlPluginScripts(el, plugin).then(loadNextScript);
                     }).catch(() => {
                         log.error(`Error loading plugin '${plugin.name}' from '${plugin.url}'`);
                         loadNextScript();

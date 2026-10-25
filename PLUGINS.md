@@ -54,6 +54,18 @@ not rely on bundler-only features.
 
 The browser does not treat `<i />` as self-closing. Use `<i></i>`.
 
+HTML plugins may also load external stylesheets and scripts:
+
+```html
+<link href="my-plugin.css" rel="stylesheet"/>
+<script src="my-plugin.js">
+</script>
+```
+
+Asset URLs are resolved relative to the plugin HTML file. External scripts are
+loaded in document order and must finish before the next plugin is loaded.
+External scripts are not transpiled or linted as application modules.
+
 ## Importing Modules
 
 A source module is only available to `kiwi.require()` when its first statement
