@@ -1,0 +1,2483 @@
+/*
+ * NephWave — standalone KiwiIRC theme
+ *
+ * A Windows 98 / Mac OS Platinum / BeOS / vaporwave hybrid. This file deliberately
+ * does not import ../common/base.css; it provides the complete application
+ * styling and the optional NephWave Desktop shell chrome.
+ */
+
+/* Kiwi core uses legacy double-hyphen variable names. */
+/* stylelint-disable custom-property-pattern */
+
+/* Safari 15 supports only the legacy min/max media query syntax. */
+/* stylelint-disable media-feature-range-notation */
+
+/* ==================================================================== *
+ * Tokens and presets
+ * ==================================================================== */
+:root,
+body {
+    --nw-font-ui: 'Pixelify Sans', 'MS Sans Serif', tahoma, sans-serif;
+    --nw-font-mono: 'Chivo Mono', 'Courier New', monospace;
+    --nw-font-lcd: 'VT323', 'Courier New', monospace;
+    --nw-desktop: #120722;
+    --nw-desktop-glow: #42145f;
+    --nw-grid: rgb(255 113 206 / 16%);
+    --nw-grid-alt: rgb(1 205 254 / 13%);
+    --nw-panel: #c0c0c0;
+    --nw-panel-light: #dfdfdf;
+    --nw-panel-hi: #fff;
+    --nw-panel-dark: #808080;
+    --nw-panel-shadow: #404040;
+    --nw-ink: #111;
+    --nw-ink-soft: #3b3b3b;
+    --nw-content: #fffdf4;
+    --nw-content-alt: #f5eedc;
+    --nw-title-a: #2b0b4f;
+    --nw-title-b: #7b2cbf;
+    --nw-title-c: #ff4fb8;
+    --nw-title-fg: #fff;
+    --nw-title-edge: #ffb7e5;
+    --nw-accent: #ff5f00;
+    --nw-accent-hi: #ff9100;
+    --nw-pink: #ff71ce;
+    --nw-cyan: #01cdfe;
+    --nw-purple: #b967ff;
+    --nw-yellow: #fffb96;
+    --nw-green: #05ffa1;
+    --nw-link: #0000b8;
+    --nw-link-hover: #b80078;
+    --nw-highlight: #fff0a8;
+    --nw-highlight-alt: #ffd9f2;
+    --nw-selected: #000080;
+    --nw-selected-fg: #fff;
+    --nw-error: #a00020;
+    --nw-warning: #7a4a00;
+    --nw-online: #006b36;
+    --nw-lcd-bg: #030705;
+    --nw-lcd-green: #72ff9f;
+    --nw-lcd-amber: #ffb347;
+    --nw-lcd-dim: #2f6b47;
+    --nw-radio-face: #1b1f24;
+    --nw-radio-edge: #40464f;
+    --nw-radio-screen: #030705;
+    --nw-radio-track-bg: #050805;
+    --nw-radio-wave-bg: #000;
+    --nw-radio-text: #72ff9f;
+    --nw-radio-text-alt: #ffb347;
+    --nw-radio-hover: #fffb96;
+    --nw-radio-button: #c0c0c0;
+    --nw-radio-button-text: #111;
+    --nw-radio-thumb: #1b1f24;
+    --nw-radio-volume: #ff71ce;
+    --nw-radio-wave-top: #ff9100;
+    --nw-radio-wave-bottom: #ff5f00;
+    --nw-radio-text-shadow: 0 0 4px var(--nw-radio-text);
+    --nw-radio-track-shadow: 0 0 4px var(--nw-radio-text-alt);
+    --nw-bevel-light: #fff;
+    --nw-bevel-mid: #808080;
+    --nw-bevel-dark: #000;
+    --nw-shadow: rgb(0 0 0 / 35%);
+    --nw-scanline: rgb(0 0 0 / 14%);
+    --nw-vignette: rgb(0 0 0 / 28%);
+    --nw-titlebar-h: 24px;
+    --nw-menubar-h: 22px;
+    --nw-top-h: 46px;
+    --nw-taskbar-h: 30px;
+    --nw-gutter: 10px;
+    --nw-frame-top: calc(var(--nw-top-h) + var(--nw-gutter));
+    --nw-frame-bottom: calc(var(--nw-taskbar-h) + var(--nw-gutter));
+    --nw-frame-left: var(--nw-gutter);
+    --nw-frame-right: var(--nw-gutter);
+
+    color-scheme: dark;
+}
+
+body.nephwave-preset-teal {
+    --nw-desktop: #007a7a;
+    --nw-desktop-glow: #004f4f;
+    --nw-grid: rgb(255 255 255 / 7%);
+    --nw-grid-alt: rgb(0 0 0 / 7%);
+    --nw-title-a: #000060;
+    --nw-title-b: #000080;
+    --nw-title-c: #1084d0;
+    --nw-title-fg: #fff;
+    --nw-title-edge: #7fd7ff;
+    --nw-accent: #ff5f00;
+    --nw-accent-hi: #ff9100;
+    --nw-link: #0000a8;
+    --nw-radio-face: #242424;
+    --nw-radio-edge: #5a5a5a;
+    --nw-radio-screen: #050805;
+    --nw-radio-track-bg: #050805;
+    --nw-radio-wave-bg: #000;
+    --nw-radio-text: #45ff7a;
+    --nw-radio-text-alt: #b7ff45;
+    --nw-radio-hover: #fffb96;
+    --nw-radio-button: #b8b8b8;
+    --nw-radio-button-text: #111;
+    --nw-radio-thumb: #1b1f24;
+    --nw-radio-volume: #45ff7a;
+    --nw-radio-wave-top: #b7ff45;
+    --nw-radio-wave-bottom: #00a83a;
+    --nw-radio-text-shadow: 0 0 4px var(--nw-radio-text);
+    --nw-radio-track-shadow: 0 0 4px var(--nw-radio-text-alt);
+}
+
+body.nephwave-preset-platinum {
+    --nw-desktop: #b9b9b9;
+    --nw-desktop-glow: #e7e7e7;
+    --nw-grid: rgb(0 0 0 / 5%);
+    --nw-grid-alt: rgb(255 255 255 / 12%);
+    --nw-panel: #d6d6d6;
+    --nw-panel-light: #efefef;
+    --nw-panel-dark: #777;
+    --nw-panel-shadow: #444;
+    --nw-content: #fff;
+    --nw-content-alt: #f3f3f3;
+    --nw-title-a: #efefef;
+    --nw-title-b: #d2d2d2;
+    --nw-title-c: #b3b3b3;
+    --nw-title-fg: #111;
+    --nw-title-edge: #fff;
+    --nw-accent: #6b2f91;
+    --nw-accent-hi: #8b4bb5;
+    --nw-pink: #a72f86;
+    --nw-cyan: #006b86;
+    --nw-purple: #6b2f91;
+    --nw-link: #000090;
+    --nw-link-hover: #7a0060;
+    --nw-lcd-green: #166b2f;
+    --nw-lcd-amber: #7a4a00;
+    --nw-radio-face: #d6d6d6;
+    --nw-radio-edge: #fff;
+    --nw-radio-screen: #eaf7ff;
+    --nw-radio-track-bg: #dff3ff;
+    --nw-radio-wave-bg: #eaf7ff;
+    --nw-radio-text: #003b5c;
+    --nw-radio-text-alt: #005f8a;
+    --nw-radio-hover: #6b2f91;
+    --nw-radio-button: #e8e8e8;
+    --nw-radio-button-text: #111;
+    --nw-radio-thumb: #e8e8e8;
+    --nw-radio-volume: #6b2f91;
+    --nw-radio-wave-top: #36a9e1;
+    --nw-radio-wave-bottom: #005f8a;
+    --nw-radio-text-shadow: none;
+    --nw-radio-track-shadow: none;
+}
+
+body.nephwave-preset-be {
+    --nw-desktop: #2b5f8f;
+    --nw-desktop-glow: #5b8fbd;
+    --nw-grid: rgb(255 255 255 / 6%);
+    --nw-grid-alt: rgb(0 0 0 / 8%);
+    --nw-panel: #d6d6d6;
+    --nw-panel-light: #efefef;
+    --nw-panel-dark: #777;
+    --nw-panel-shadow: #444;
+    --nw-content: #fff;
+    --nw-content-alt: #f3f3f3;
+    --nw-title-a: #f2c94c;
+    --nw-title-b: #f2c94c;
+    --nw-title-c: #e0b63a;
+    --nw-title-fg: #111;
+    --nw-title-edge: #fff2b0;
+    --nw-accent: #d94f2b;
+    --nw-accent-hi: #f06a3a;
+    --nw-pink: #a3321a;
+    --nw-cyan: #2f8fbf;
+    --nw-purple: #6d4c9f;
+    --nw-link: #004f9f;
+    --nw-link-hover: #a3321a;
+    --nw-selected: #05a;
+    --nw-selected-fg: #fff;
+    --nw-radio-face: #d6d6d6;
+    --nw-radio-edge: #f2c94c;
+    --nw-radio-screen: #fff7d6;
+    --nw-radio-track-bg: #f7e7a8;
+    --nw-radio-wave-bg: #fff7d6;
+    --nw-radio-text: #004f9f;
+    --nw-radio-text-alt: #a3321a;
+    --nw-radio-hover: #d94f2b;
+    --nw-radio-button: #e8e8e8;
+    --nw-radio-button-text: #111;
+    --nw-radio-thumb: #e8e8e8;
+    --nw-radio-volume: #d94f2b;
+    --nw-radio-wave-top: #f06a3a;
+    --nw-radio-wave-bottom: #d94f2b;
+    --nw-radio-text-shadow: none;
+    --nw-radio-track-shadow: none;
+}
+
+/* ==================================================================== *
+ * App-wide base and Kiwi variable mapping
+ * ==================================================================== */
+html,
+body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    font-family: var(--nw-font-ui);
+    color: var(--nw-ink);
+    background-color: var(--nw-desktop);
+    background-image:
+        radial-gradient(circle at 50% 28%, var(--nw-desktop-glow) 0, transparent 58%),
+        linear-gradient(var(--nw-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--nw-grid-alt) 1px, transparent 1px);
+    background-size: 100% 100%, 32px 32px, 32px 32px;
+    overflow: hidden;
+}
+
+#app {
+    height: 100%;
+}
+
+.kiwi-wrap {
+    --brand-primary: var(--nw-accent);
+    --brand-primary-hover: var(--nw-accent-hi);
+    --brand-midtone: #9c9c9c;
+    --brand-darktone: var(--nw-panel-dark);
+    --brand-default-bg: var(--nw-panel);
+    --brand-default-fg: var(--nw-ink);
+    --brand-notice: var(--nw-warning);
+    --brand-warning: var(--nw-accent);
+    --brand-error: var(--nw-error);
+    --brand-online: var(--nw-online);
+    --brand-input-border: var(--nw-panel-dark);
+    --brand-input-fg: var(--nw-ink);
+    --brand-input-bg: #fff;
+    --brand-link-normal: var(--nw-link);
+    --brand-link--hover: var(--nw-link-hover);
+    --brand-shadow: var(--nw-shadow);
+    --brand-selected: var(--nw-selected);
+    --comp-workspace-before-bg: var(--nw-cyan);
+    --comp-bg-kiwi-workspace--disconnected-after-bg: var(--nw-error);
+    --comp-header-bg: var(--nw-panel);
+    --comp-header-name-fg: var(--nw-ink);
+    --comp-header-option-active-fg: var(--nw-selected-fg);
+    --comp-header-option-active-bg: var(--nw-selected);
+    --comp-statebrowser-fg: var(--nw-ink);
+    --comp-statebrowser-bg: var(--nw-panel);
+    --comp-statebrowser-bg-networkname: #b7b7b7;
+    --comp-statebrowser-channel-active-bg: var(--nw-selected);
+    --comp-statebrowser-channel-active-fg: var(--nw-selected-fg);
+    --comp-usermenu-open-bg: #e8e8e8;
+    --comp-statebrowser-network-border: var(--nw-panel-dark);
+    --comp-sidebar-bg: var(--nw-panel);
+    --comp-sidebar-fg: var(--nw-ink);
+    --comp-scroller-bg: var(--nw-panel-light);
+    --comp-scroller-fg: var(--nw-panel-dark);
+    --comp-aboutbuffer-bg: var(--nw-content);
+    --comp-aboutbuffer-header-bg: var(--nw-accent);
+    --comp-border: var(--nw-panel-dark);
+    --kiwi-font: var(--nw-font-ui);
+    --kiwi-font-mono: var(--nw-font-mono);
+    --kiwi-nickcolour-saturation: 68;
+    --kiwi-nickcolour-lightness: 34;
+    --kiwi-supports-monospace: 1;
+
+    color-scheme: light;
+    color: var(--nw-ink);
+    background-color: var(--nw-panel);
+    scrollbar-color: var(--nw-panel-dark) var(--nw-panel-light);
+}
+
+.kiwi-theme-bg,
+.kiwi-workspace,
+.kiwi-container {
+    background-color: var(--nw-panel);
+}
+
+body.nephwave-active .kiwi-wrap {
+    background-color: var(--nw-desktop);
+    background-image:
+        radial-gradient(circle at 50% 28%, var(--nw-desktop-glow) 0, transparent 58%),
+        linear-gradient(var(--nw-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--nw-grid-alt) 1px, transparent 1px);
+    background-size: 100% 100%, 32px 32px, 32px 32px;
+}
+
+::selection {
+    color: var(--nw-selected-fg);
+    background: var(--nw-selected);
+}
+
+.kiwi-wrap select option {
+    color: var(--nw-ink);
+    background: #fff;
+}
+
+.kiwi-wrap a,
+.kiwi-wrap .u-link {
+    color: var(--nw-link);
+}
+
+.kiwi-wrap a:hover,
+.kiwi-wrap .u-link:hover {
+    color: var(--nw-link-hover);
+}
+
+.kiwi-wrap :focus-visible,
+.nephwave-chrome button:focus-visible,
+.nephwave-chrome input:focus-visible {
+    outline: 1px dotted currentcolor;
+    outline-offset: 1px;
+}
+
+/* Classic beveled scrollbars */
+.kiwi-wrap ::-webkit-scrollbar,
+.nephwave-chrome ::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+}
+
+.kiwi-wrap ::-webkit-scrollbar-track,
+.nephwave-chrome ::-webkit-scrollbar-track {
+    background: var(--nw-panel-light);
+    border: 1px solid var(--nw-panel-dark);
+}
+
+.kiwi-wrap ::-webkit-scrollbar-thumb,
+.nephwave-chrome ::-webkit-scrollbar-thumb {
+    background: var(--nw-panel);
+    border-top: 2px solid var(--nw-bevel-light);
+    border-left: 2px solid var(--nw-bevel-light);
+    border-right: 2px solid var(--nw-bevel-dark);
+    border-bottom: 2px solid var(--nw-bevel-dark);
+}
+
+.kiwi-wrap ::-webkit-scrollbar-button,
+.nephwave-chrome ::-webkit-scrollbar-button {
+    background: var(--nw-panel);
+    border: 1px solid var(--nw-panel-dark);
+}
+
+/* ==================================================================== *
+ * Shared controls
+ * ==================================================================== */
+.u-form label,
+.u-checkbox-wrapper,
+.u-form {
+    color: var(--nw-ink);
+    font-family: var(--nw-font-ui);
+}
+
+.u-form .u-input,
+.u-form textarea,
+.u-form input[type='text'],
+.u-form input[type='password'],
+.u-form input[type='email'],
+.u-input,
+.u-input-text input,
+textarea,
+select {
+    outline: none;
+    border-top: 2px solid var(--nw-panel-dark);
+    border-left: 2px solid var(--nw-panel-dark);
+    border-right: 2px solid var(--nw-bevel-light);
+    border-bottom: 2px solid var(--nw-bevel-light);
+    color: var(--nw-ink);
+    background-color: #fff;
+    font-family: var(--nw-font-mono);
+    box-shadow: inset 1px 1px 0 var(--nw-bevel-dark);
+}
+
+.u-form .u-input:focus,
+.u-form textarea:focus,
+.u-form input[type='text']:focus,
+.u-form input[type='password']:focus,
+.u-form input[type='email']:focus,
+.u-input-text input:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--nw-selected);
+    box-shadow: inset 1px 1px 0 var(--nw-bevel-dark), 0 0 0 1px var(--nw-cyan);
+}
+
+.u-form input::placeholder,
+.u-input::placeholder,
+textarea::placeholder {
+    color: #666;
+}
+
+.u-button,
+.u-button-primary,
+.u-button-secondary,
+.u-button-online,
+.u-button-warning {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    padding: 3px 10px;
+    border-top: 2px solid var(--nw-bevel-light);
+    border-left: 2px solid var(--nw-bevel-light);
+    border-right: 2px solid var(--nw-bevel-dark);
+    border-bottom: 2px solid var(--nw-bevel-dark);
+    border-radius: 0;
+    color: var(--nw-ink);
+    background-color: var(--nw-panel);
+    box-shadow: inset 1px 1px 0 var(--nw-panel-light), inset -1px -1px 0 var(--nw-panel-dark);
+    font-family: var(--nw-font-ui);
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.u-button:hover,
+.u-button-secondary:hover {
+    background-color: var(--nw-panel-light);
+}
+
+.u-button:active,
+.u-button-primary:active,
+.u-button-secondary:active,
+.u-button-online:active,
+.u-button-warning:active {
+    border-color: var(--nw-bevel-dark) var(--nw-bevel-light) var(--nw-bevel-light) var(--nw-bevel-dark);
+    box-shadow: inset 1px 1px 0 var(--nw-panel-dark);
+    transform: translate(1px, 1px);
+}
+
+.u-button-primary {
+    color: #111;
+    background-color: var(--nw-accent);
+    box-shadow: inset 1px 1px 0 #ffd0a8, inset -1px -1px 0 #a33b00;
+}
+
+.u-button-primary:hover {
+    background-color: var(--nw-accent-hi);
+}
+
+.u-button-online {
+    color: #fff;
+    background-color: var(--nw-online);
+}
+
+.u-button-warning {
+    color: #fff;
+    background-color: var(--nw-error);
+}
+
+.u-form input[type='checkbox'],
+.u-form input[type='radio'],
+.u-checkbox-wrapper input[type='checkbox'] {
+    width: 14px;
+    height: 14px;
+    appearance: none;
+    border-top: 2px solid var(--nw-panel-dark);
+    border-left: 2px solid var(--nw-panel-dark);
+    border-right: 2px solid var(--nw-bevel-light);
+    border-bottom: 2px solid var(--nw-bevel-light);
+    border-radius: 0;
+    background: #fff;
+}
+
+.u-form input[type='checkbox']:checked,
+.u-checkbox-wrapper input[type='checkbox']:checked {
+    background:
+        linear-gradient(135deg, transparent 44%, var(--nw-selected) 44% 54%, transparent 54%),
+        linear-gradient(45deg, transparent 56%, var(--nw-selected) 56% 66%, transparent 66%),
+        #fff;
+}
+
+.u-form input[type='radio'] {
+    border-radius: 50%;
+}
+
+.u-form input[type='radio']:checked {
+    box-shadow: inset 0 0 0 3px #fff;
+    background: var(--nw-selected);
+}
+
+input[type='range'] {
+    height: 18px;
+    appearance: none;
+    background: transparent;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+    height: 8px;
+    border-top: 2px solid var(--nw-panel-dark);
+    border-left: 2px solid var(--nw-panel-dark);
+    border-right: 2px solid var(--nw-bevel-light);
+    border-bottom: 2px solid var(--nw-bevel-light);
+    background: var(--nw-panel-light);
+}
+
+input[type='range']::-webkit-slider-thumb {
+    width: 14px;
+    height: 18px;
+    margin-top: -7px;
+    appearance: none;
+    border-top: 2px solid var(--nw-bevel-light);
+    border-left: 2px solid var(--nw-bevel-light);
+    border-right: 2px solid var(--nw-bevel-dark);
+    border-bottom: 2px solid var(--nw-bevel-dark);
+    border-radius: 0;
+    background: var(--nw-panel);
+}
+
+.u-tabbed-view-tabs {
+    background: var(--nw-panel);
+    border-bottom: 2px solid var(--nw-panel-dark);
+}
+
+.u-tabbed-view-tab {
+    border: 2px solid var(--nw-panel-dark);
+    border-bottom: 0;
+    border-radius: 0;
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    font-family: var(--nw-font-ui);
+}
+
+.u-tabbed-view-tab:hover,
+.u-tabbed-view-tab.u-tabbed-view-tab--active {
+    color: var(--nw-ink);
+    background: var(--nw-panel-light);
+    border-color: var(--nw-panel-dark);
+}
+
+.u-tabbed-view-tab--active {
+    padding-top: 4px;
+    font-weight: 700;
+}
+
+.kiwi-autocomplete,
+.kiwi-autocomplete-item {
+    border: 2px outset var(--nw-panel);
+    color: var(--nw-ink);
+    background: #fff;
+    font-family: var(--nw-font-mono);
+}
+
+.kiwi-autocomplete-item:hover,
+.kiwi-autocomplete-item--selected {
+    color: var(--nw-selected-fg);
+    background: var(--nw-selected);
+}
+
+.kiwi-close-icon,
+.kiwi-appsettings-close {
+    color: #fff;
+    background: var(--nw-error);
+    border: 2px outset var(--nw-panel);
+}
+
+/* ==================================================================== *
+ * Startup screens
+ * ==================================================================== */
+.kiwi-startup-common {
+    background-color: var(--nw-desktop);
+    background-image:
+        linear-gradient(var(--nw-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--nw-grid-alt) 1px, transparent 1px);
+    background-size: 32px 32px, 32px 32px;
+    color: var(--nw-ink);
+    font-family: var(--nw-font-ui);
+}
+
+body.nephwave-active .kiwi-startup-common {
+    box-sizing: border-box;
+    padding: var(--nw-frame-top) var(--nw-frame-right) var(--nw-frame-bottom) var(--nw-frame-left);
+}
+
+.kiwi-startup-common-section-connection,
+.kiwi-startup-common-section-info {
+    box-sizing: border-box;
+}
+
+.kiwi-welcome-simple-form,
+.kiwi-customserver-form,
+.kiwi-startbouncer form {
+    border-top: 2px solid var(--nw-bevel-light);
+    border-left: 2px solid var(--nw-bevel-light);
+    border-right: 2px solid var(--nw-bevel-dark);
+    border-bottom: 2px solid var(--nw-bevel-dark);
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    box-shadow: 4px 4px 0 var(--nw-shadow);
+    padding: 22px;
+}
+
+.kiwi-welcome-simple-form h2,
+.kiwi-customserver-form h2,
+.kiwi-startbouncer form h2,
+.kiwi-personal h1 {
+    margin: 0 0 18px;
+    color: var(--nw-ink);
+    font-family: var(--nw-font-ui);
+    font-size: 1.55em;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-shadow: 1px 1px 0 #fff;
+}
+
+.kiwi-welcome-server-icon {
+    height: 1.1em;
+    vertical-align: -0.15em;
+}
+
+.kiwi-welcome-tabs,
+.kiwi-customserver-identity-tabs,
+.kiwi-customserver-bouncer-tabs {
+    display: flex;
+    gap: 2px;
+    border-bottom: 2px solid var(--nw-panel-dark);
+}
+
+.kiwi-welcome-tab,
+.kiwi-customserver .kiwi-welcome-tab {
+    padding: 4px 9px;
+    border-top: 2px solid var(--nw-bevel-light);
+    border-left: 2px solid var(--nw-bevel-light);
+    border-right: 2px solid var(--nw-bevel-dark);
+    border-bottom: 0;
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    font-family: var(--nw-font-ui);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.kiwi-welcome-tab--active,
+.kiwi-customserver .kiwi-welcome-tab--active {
+    color: var(--nw-selected-fg);
+    background: var(--nw-selected);
+    text-shadow: 1px 1px 0 #000;
+}
+
+.kiwi-welcome-simple-input-container,
+.kiwi-customserver .u-form,
+.kiwi-startbouncer .u-form {
+    margin: 8px 0;
+}
+
+.kiwi-welcome-simple .help,
+.kiwi-welcome-simple .help a,
+.kiwi-startup-common-footer {
+    color: var(--nw-ink-soft);
+}
+
+.kiwi-welcome-simple-error,
+.kiwi-customserver-error,
+.kiwi-welcome-znc-error {
+    margin: 8px 0;
+    padding: 8px;
+    border: 2px inset var(--nw-panel);
+    color: var(--nw-error);
+    background: #fff0f0;
+    font-family: var(--nw-font-mono);
+    font-weight: 700;
+}
+
+body.nephwave-active .kiwi-startup-common-section-info {
+    border-left: 6px solid var(--nw-accent);
+    background-color: var(--nw-content-alt);
+}
+
+.kiwi-startup-common-section-info-content {
+    padding: 16px;
+    color: var(--nw-ink);
+    background: var(--nw-content);
+    border: 2px inset var(--nw-panel);
+}
+
+.kiwi-startup-common-section-info-content h2,
+.kiwi-startup-common-section-info-content h3 {
+    color: var(--nw-accent);
+}
+
+.kiwi-personal {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+}
+
+body.nephwave-active .kiwi-personal {
+    box-sizing: border-box;
+    padding: var(--nw-frame-top) var(--nw-frame-right) var(--nw-frame-bottom) var(--nw-frame-left);
+}
+
+.kiwi-personal .u-button {
+    margin: 4px 0;
+}
+
+.kiwi-personal-existing-networks {
+    color: var(--nw-link);
+    font-weight: 700;
+}
+
+.kiwi-serverselector-connection-tls i.fa-lock {
+    color: var(--nw-online);
+}
+
+.kiwi-serverselector-connection-tls i.fa-unlock {
+    color: var(--nw-warning);
+}
+
+/* ==================================================================== *
+ * Container header
+ * ==================================================================== */
+.kiwi-header {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border-bottom: 2px solid var(--nw-panel-dark);
+    box-shadow: inset 0 1px 0 var(--nw-bevel-light);
+    font-family: var(--nw-font-ui);
+}
+
+.kiwi-header-name-container {
+    color: var(--nw-ink);
+    background: var(--nw-panel-light);
+    border-right: 2px solid var(--nw-panel-dark);
+}
+
+.kiwi-header-name {
+    color: var(--nw-ink);
+    font-family: var(--nw-font-ui);
+    font-weight: 700;
+}
+
+.kiwi-header-topic {
+    color: var(--nw-ink-soft);
+    background: var(--nw-content);
+    border: 2px inset var(--nw-panel);
+    font-family: var(--nw-font-mono);
+}
+
+.kiwi-header-topic:hover {
+    background-color: var(--nw-content-alt);
+}
+
+.kiwi-header-option a,
+.kiwi-header-option {
+    color: var(--nw-ink);
+    font-family: var(--nw-font-ui);
+}
+
+.kiwi-header-option a:hover,
+.kiwi-header-option--active,
+.kiwi-header-option--active:hover a {
+    color: var(--nw-selected-fg);
+    background: var(--nw-selected);
+}
+
+.kiwi-header-option--active a,
+.kiwi-header-option--active a:hover {
+    color: var(--nw-selected-fg);
+}
+
+.kiwi-header-join-channel-button,
+.kiwi-header .kiwi-header-notjoined .u-link,
+.kiwi-header-server-connection .u-button {
+    color: #111;
+    background: var(--nw-accent);
+    border: 2px outset var(--nw-panel);
+    font-weight: 700;
+}
+
+.kiwi-header-join-channel-button:hover,
+.kiwi-header .kiwi-header-notjoined .u-link:hover,
+.kiwi-header-server-connection .u-button:hover {
+    background: var(--nw-accent-hi);
+}
+
+.kiwi-header-buffersettings {
+    border-top: 2px solid var(--nw-panel-dark);
+    background: var(--nw-panel);
+}
+
+.kiwi-network-name-options {
+    background: var(--nw-panel);
+}
+
+.kiwi-network-name-option {
+    color: var(--nw-ink);
+}
+
+.kiwi-network-name-option:hover,
+.kiwi-network-name-option.active,
+.kiwi-network-name-option-chanfilter.active {
+    color: var(--nw-selected-fg);
+    background: var(--nw-selected);
+}
+
+/* ==================================================================== *
+ * State browser
+ * ==================================================================== */
+.kiwi-statebrowser {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border-right: 2px solid var(--nw-panel-dark);
+    font-family: var(--nw-font-ui);
+}
+
+.kiwi-statebrowser-network .kiwi-statebrowser-network-header {
+    color: var(--nw-ink);
+    background: var(--nw-panel-light);
+    border-top: 1px solid var(--nw-bevel-light);
+    border-bottom: 1px solid var(--nw-panel-dark);
+    font-weight: 700;
+}
+
+.kiwi-statebrowser-network .kiwi-statebrowser-network-header a {
+    color: var(--nw-ink);
+}
+
+.kiwi-statebrowser-network.kiwi-statebrowser-network--active .kiwi-statebrowser-network-header,
+.kiwi-statebrowser-network--active .kiwi-statebrowser-network-header a {
+    color: var(--nw-selected-fg);
+    background: var(--nw-selected);
+    text-shadow: 1px 1px 0 #000;
+}
+
+.kiwi-statebrowser-channels .kiwi-statebrowser-channel {
+    color: var(--nw-ink);
+    border-bottom: 1px solid rgb(0 0 0 / 8%);
+    font-family: var(--nw-font-mono);
+}
+
+.kiwi-statebrowser-channel .kiwi-statebrowser-channel-name {
+    color: inherit;
+}
+
+.kiwi-statebrowser-channel:hover {
+    color: var(--nw-selected-fg);
+    background: var(--nw-selected);
+}
+
+.kiwi-statebrowser-channel-active {
+    color: var(--nw-selected-fg);
+    background: var(--nw-selected);
+}
+
+.kiwi-statebrowser-channel-active .kiwi-statebrowser-channel-name {
+    color: var(--nw-selected-fg);
+    font-weight: 700;
+}
+
+.kiwi-statebrowser-channel--favorite .kiwi-statebrowser-channel-name {
+    color: var(--nw-accent);
+}
+
+.kiwi-statebrowser-channel--muted,
+.kiwi-statebrowser-channel--muted:hover {
+    color: #6c6c6c;
+    background: #b8b8b8;
+}
+
+.kiwi-statebrowser-channel-settings:hover,
+.kiwi-statebrowser-channel-leave:hover {
+    color: var(--nw-error);
+}
+
+.kiwi-statebrowser-newchannel a,
+.kiwi-statebrowser-newnetwork a {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border: 2px outset var(--nw-panel);
+    font-family: var(--nw-font-ui);
+    font-weight: 700;
+}
+
+.kiwi-statebrowser-newchannel a:hover,
+.kiwi-statebrowser-newnetwork a:hover {
+    color: var(--nw-selected-fg);
+    background: var(--nw-selected);
+}
+
+.kiwi-statebrowser-newchannel-inputwrap,
+.kiwi-statebrowser-newchannel-inputwrap input[type='text'] {
+    color: var(--nw-ink);
+    background: #fff;
+    border: 2px inset var(--nw-panel);
+    font-family: var(--nw-font-mono);
+}
+
+.kiwi-statebrowser-channelfilter {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border-bottom: 2px inset var(--nw-panel);
+}
+
+.kiwi-statebrowser-channelfilter::after {
+    color: var(--nw-panel-dark);
+}
+
+.kiwi-statebrowser-channelfilter input {
+    color: var(--nw-ink);
+    background: #fff;
+}
+
+.kiwi-statebrowser-channelfilter p {
+    color: var(--nw-link);
+}
+
+.kiwi-statebrowser-switcher a {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border: 2px outset var(--nw-panel);
+}
+
+.kiwi-statebrowser-switcher a:hover {
+    color: var(--nw-selected-fg);
+    background: var(--nw-selected);
+}
+
+.kiwi-statebrowser-options {
+    background: var(--nw-panel);
+}
+
+.kiwi-statebrowser-channel-notjoined .kiwi-statebrowser-channel-name {
+    color: #666;
+    font-style: italic;
+}
+
+.kiwi-statebrowser-usermenu--open {
+    background: #e8e8e8;
+}
+
+.kiwi-statebrowser-usermenu-body .u-link {
+    color: var(--nw-error);
+}
+
+.kiwi-statebrowser-usermenu-close {
+    color: #fff;
+    background: var(--nw-error);
+    border: 2px outset var(--nw-panel);
+}
+
+.kiwi-statebrowser-divider {
+    background: var(--nw-panel-dark);
+}
+
+/* ==================================================================== *
+ * Workspace / container
+ * ==================================================================== */
+.kiwi-workspace {
+    background: var(--nw-panel);
+}
+
+.kiwi-workspace::before {
+    background: var(--nw-cyan);
+}
+
+.kiwi-workspace::after {
+    background: var(--nw-error);
+}
+
+.kiwi-container {
+    background: var(--nw-panel);
+}
+
+.kiwi-container-toggledraw-statebrowser,
+.kiwi-container-toggledraw-sidebar {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border: 2px outset var(--nw-panel);
+}
+
+.kiwi-container-toggledraw-sidebar--disabled {
+    color: #8a8a8a;
+}
+
+.kiwi-container-toggledraw-statebrowser-messagecount,
+.kiwi-container-toggledraw-statebrowser-messagecount--highlight {
+    color: #111;
+    background: var(--nw-accent);
+    border: 1px solid #000;
+}
+
+.kiwi-container-empty .u-button {
+    background: var(--nw-accent);
+}
+
+/* ==================================================================== *
+ * Message list
+ * ==================================================================== */
+.kiwi-messagelist {
+    color: var(--nw-ink);
+    background: var(--nw-content);
+    border-top: 2px solid var(--nw-panel-dark);
+    border-left: 2px solid var(--nw-panel-dark);
+    border-right: 2px solid var(--nw-bevel-light);
+    border-bottom: 2px solid var(--nw-bevel-light);
+    font-family: var(--nw-font-mono);
+    font-size: 0.92rem;
+}
+
+.kiwi-messagelist-message {
+    padding: 2px 6px;
+}
+
+.kiwi-messagelist-message--hover,
+.kiwi-messagelist-message--info-open {
+    background: #f4f0e3;
+}
+
+.kiwi-messagelist-message--highlight,
+.kiwi-messagelist-message.kiwi-messagelist-message-error.kiwi-messagelist-message--highlight {
+    background: var(--nw-highlight);
+    box-shadow: inset 3px 0 0 var(--nw-accent);
+}
+
+.kiwi-messagelist-message--unread,
+.kiwi-messagelist-message.kiwi-messagelist-message--unread {
+    border-top: 2px solid var(--nw-cyan);
+}
+
+.kiwi-messagelist-time {
+    color: #756e62;
+}
+
+.kiwi-messagelist-nick {
+    font-weight: 700;
+}
+
+.kiwi-messagelist-body a,
+.kiwi-messagelist-body a:hover {
+    color: var(--nw-link);
+    text-decoration: underline;
+}
+
+.kiwi-messagelist-body a:hover {
+    color: var(--nw-link-hover);
+}
+
+.kiwi-messagelist-body code,
+.kiwi-messagelist-body pre {
+    color: #111;
+    background: #f0ead8;
+    border: 1px solid #c0b89f;
+    font-family: var(--nw-font-mono);
+}
+
+.kiwi-messagelist-body blockquote {
+    border-left: 3px solid var(--nw-purple);
+    background: #faf4e3;
+}
+
+.kiwi-messagelist-body img,
+.kiwi-messagelist-body video,
+.kiwi-messagelist-body audio,
+.kiwi-messagelist-body iframe {
+    max-width: 100%;
+    border: 2px inset var(--nw-panel);
+    background: #fff;
+}
+
+.kiwi-messagelist-message-action .kiwi-messagelist-body,
+.kiwi-messagelist-message-notice {
+    color: var(--nw-purple);
+    font-style: italic;
+}
+
+.kiwi-messagelist-message-error,
+.kiwi-messagelist-message-motd {
+    color: var(--nw-error);
+}
+
+.kiwi-messagelist-message-traffic-join {
+    color: var(--nw-online);
+}
+
+.kiwi-messagelist-message-traffic-part,
+.kiwi-messagelist-message-traffic-quit {
+    color: #7a3b00;
+}
+
+.kiwi-messagelist-message-traffic-kick {
+    color: var(--nw-error);
+}
+
+.kiwi-messagelist-message-topic,
+.kiwi-messagelist-message.kiwi-messagelist-message-topic {
+    color: #111;
+    background: var(--nw-highlight-alt);
+}
+
+.kiwi-messagelist-seperator {
+    border-top: 1px solid #c7c0ad;
+}
+
+.kiwi-messagelist-seperator > span {
+    color: #6d6558;
+    background: var(--nw-content);
+}
+
+.kiwi-messagelist-body--redacted {
+    color: #777;
+    background: #e7e2d5;
+}
+
+.kiwi-messagelist-body--redacted-revealed {
+    color: var(--nw-error);
+}
+
+.kiwi-messageinfo,
+.kiwi-userbox {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border: 2px outset var(--nw-panel);
+    box-shadow: 4px 4px 0 var(--nw-shadow);
+}
+
+.kiwi-messageinfo-urls,
+.kiwi-messageinfo-actions {
+    border-top: 2px inset var(--nw-panel);
+}
+
+.kiwi-messageinfo-actions .u-link {
+    color: var(--nw-link);
+}
+
+.kiwi-messageinfo-actions .kiwi-messageinfo-redact {
+    color: var(--nw-error);
+}
+
+/* ==================================================================== *
+ * Control input
+ * ==================================================================== */
+.kiwi-controlinput {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border-top: 2px solid var(--nw-panel-dark);
+    font-family: var(--nw-font-ui);
+}
+
+.kiwi-controlinput .kiwi-controlinput-input-wrap {
+    border-top: 2px solid var(--nw-panel-dark);
+    border-left: 2px solid var(--nw-panel-dark);
+    border-right: 2px solid var(--nw-bevel-light);
+    border-bottom: 2px solid var(--nw-bevel-light);
+    background: #fff;
+    box-shadow: inset 1px 1px 0 var(--nw-bevel-dark);
+}
+
+.kiwi-controlinput .kiwi-controlinput-input-wrap:focus-within {
+    box-shadow: inset 1px 1px 0 var(--nw-bevel-dark), 0 0 0 1px var(--nw-cyan);
+}
+
+.kiwi-controlinput .kiwi-controlinput-input {
+    color: var(--nw-ink);
+    background: transparent;
+    font-family: var(--nw-font-mono);
+}
+
+.kiwi-controlinput .kiwi-ircinput-editor {
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.kiwi-controlinput .kiwi-controlinput-input::placeholder {
+    color: #6a6a6a;
+}
+
+.kiwi-controlinput-send {
+    color: #111;
+    background: var(--nw-accent);
+    border: 2px outset var(--nw-panel);
+    font-family: var(--nw-font-ui);
+    font-weight: 700;
+}
+
+.kiwi-controlinput-button,
+.kiwi-controlinput-active-tool {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border: 2px outset var(--nw-panel);
+}
+
+.kiwi-controlinput-button:hover,
+.kiwi-controlinput-active-tool:hover {
+    background: var(--nw-panel-light);
+}
+
+.kiwi-controlinput-command-warn {
+    color: var(--nw-warning);
+}
+
+.kiwi-controlinput-selfuser {
+    color: var(--nw-ink);
+    background: var(--nw-panel-light);
+    border: 2px outset var(--nw-panel);
+}
+
+/* ==================================================================== *
+ * Sidebar, nicklist, userbox, radio
+ * ==================================================================== */
+.kiwi-sidebar {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border-left: 2px solid var(--nw-panel-dark);
+    font-family: var(--nw-font-ui);
+}
+
+.kiwi-sidebar-options {
+    background: var(--nw-panel-light);
+    border-bottom: 2px solid var(--nw-panel-dark);
+}
+
+.kiwi-sidebar-pin:hover,
+.kiwi-sidebar-options .kiwi-sidebar-close:hover {
+    color: var(--nw-error);
+}
+
+.kiwi-nicklist {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    font-family: var(--nw-font-ui);
+}
+
+.kiwi-nicklist-users {
+    background: #fff;
+    border: 2px inset var(--nw-panel);
+}
+
+.kiwi-nicklist-user {
+    color: var(--nw-ink);
+    font-family: var(--nw-font-mono);
+}
+
+.kiwi-nicklist-user:hover,
+.kiwi-nicklist-user-message:hover {
+    color: var(--nw-selected-fg);
+    background: var(--nw-selected);
+}
+
+.kiwi-nicklist-user-message,
+.kiwi-nicklist-user-typing {
+    color: #6b655a;
+}
+
+.kiwi-nicklist-filter {
+    color: var(--nw-ink);
+    background: #fff;
+    border: 2px inset var(--nw-panel);
+    font-family: var(--nw-font-mono);
+}
+
+.kiwi-avatar-background,
+.kiwi-avatar-initials {
+    border: 1px solid #000;
+    background: var(--nw-panel-light);
+}
+
+.kiwi-awaystatusindicator,
+.kiwi-avatar-status {
+    background-color: #00a84f;
+    fill: #00a84f;
+}
+
+.kiwi-awaystatusindicator.kiwi-awaystatusindicator--away,
+.kiwi-avatar-status--away {
+    background-color: #e08a00;
+    fill: #e08a00;
+}
+
+.kiwi-awaystatusindicator.kiwi-awaystatusindicator--offline,
+.kiwi-avatar-status--offline {
+    background-color: #b00020;
+    fill: #b00020;
+}
+
+.kiwi-userbox {
+    background: var(--nw-panel);
+}
+
+.kiwi-userbox .u-button {
+    margin: 2px;
+}
+
+.kiwi-userbox-actions {
+    border-top: 2px inset var(--nw-panel);
+}
+
+.kiwi-radio-controls {
+    --brand-primary: var(--nw-radio-wave-bottom);
+    --brand-primary-hover: var(--nw-radio-wave-top);
+
+    color: var(--nw-radio-text);
+    background: var(--nw-radio-face);
+    border: 2px outset var(--nw-radio-edge);
+    box-shadow: inset 0 0 12px rgb(0 0 0 / 70%);
+    font-family: var(--nw-font-lcd);
+}
+
+.kiwi-radio-controls a {
+    color: var(--nw-radio-text);
+}
+
+.kiwi-radio-controls a:hover {
+    color: var(--nw-radio-hover);
+}
+
+.kiwi-radio-controls-name {
+    color: var(--nw-radio-text);
+    text-shadow: var(--nw-radio-text-shadow);
+}
+
+.kiwi-radio-controls-track {
+    color: var(--nw-radio-text-alt);
+    text-shadow: var(--nw-radio-track-shadow);
+}
+
+.kiwi-radio-controls-volume {
+    accent-color: var(--nw-radio-volume);
+}
+
+.kiwi-radio-controls input[type='range']::-webkit-slider-runnable-track {
+    background: var(--nw-radio-track-bg);
+    border-color: var(--nw-radio-edge);
+}
+
+.kiwi-radio-controls input[type='range']::-webkit-slider-thumb {
+    background: var(--nw-radio-thumb);
+    border-color: var(--nw-radio-text);
+}
+
+.kiwi-radio-controls-wave {
+    background: var(--nw-radio-wave-bg);
+    border: 2px inset var(--nw-radio-edge);
+}
+
+body.nephwave-preset-teal .kiwi-radio-controls a,
+body.nephwave-preset-platinum .kiwi-radio-controls a,
+body.nephwave-preset-be .kiwi-radio-controls a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    min-width: 15px;
+    min-height: 15px;
+    padding: 0;
+    color: var(--nw-radio-button-text);
+    background: var(--nw-radio-button);
+    border: 1px outset var(--nw-radio-edge);
+    font-size: 8px;
+    line-height: 1;
+}
+
+body.nephwave-preset-teal .kiwi-radio-controls a:hover,
+body.nephwave-preset-platinum .kiwi-radio-controls a:hover,
+body.nephwave-preset-be .kiwi-radio-controls a:hover {
+    color: var(--nw-radio-button-text);
+    background: var(--nw-radio-button);
+}
+
+body.nephwave-preset-teal .kiwi-radio-controls-row,
+body.nephwave-preset-platinum .kiwi-radio-controls-row,
+body.nephwave-preset-be .kiwi-radio-controls-row {
+    gap: 3px;
+}
+
+body.nephwave-preset-platinum .kiwi-radio-controls,
+body.nephwave-preset-be .kiwi-radio-controls {
+    box-shadow: inset 0 0 8px rgb(0 0 0 / 12%);
+}
+
+.kiwi-radio-browser {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border: 2px outset var(--nw-panel);
+    box-shadow: 4px 4px 0 var(--nw-shadow);
+    font-family: var(--nw-font-ui);
+}
+
+.kiwi-radio-browser-header {
+    color: var(--nw-title-fg);
+    background: linear-gradient(90deg, var(--nw-title-a), var(--nw-title-c));
+    border-bottom: 1px solid #000;
+    font-weight: 700;
+}
+
+body.nephwave-preset-platinum .kiwi-radio-browser-header {
+    color: #111;
+    background: repeating-linear-gradient(0deg, #5f5f5f 0 1px, #f4f4f4 1px 3px);
+}
+
+.kiwi-radio-browser-station {
+    color: var(--nw-ink);
+    border-bottom: 1px solid #b0b0b0;
+}
+
+.kiwi-radio-browser-station:hover,
+.kiwi-radio-browser-station--active {
+    color: var(--nw-selected-fg);
+    background: var(--nw-selected);
+}
+
+.kiwi-radio-browser-image {
+    border: 2px inset var(--nw-panel);
+    background: #fff;
+}
+
+.kiwi-radio-browser-name {
+    font-family: var(--nw-font-ui);
+    font-weight: 700;
+}
+
+.kiwi-radio-browser-description {
+    color: #4d4d4d;
+}
+
+.kiwi-radio-browser-error {
+    color: var(--nw-error);
+}
+
+.kiwi-radio-browser-close,
+.kiwi-radio-browser-title a {
+    color: var(--nw-link);
+}
+
+/* ==================================================================== *
+ * Settings, network settings, channel list, dialogs
+ * ==================================================================== */
+.kiwi-appsettings {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    font-family: var(--nw-font-ui);
+}
+
+.kiwi-appsettings-block {
+    border: 2px outset var(--nw-panel);
+    background: var(--nw-panel);
+    box-shadow: 2px 2px 0 var(--nw-shadow);
+}
+
+.kiwi-appsettings-block h3 {
+    background: linear-gradient(90deg, var(--nw-title-a), var(--nw-title-c));
+    border-bottom: 1px solid #000;
+    color: var(--nw-title-fg);
+    font-family: var(--nw-font-ui);
+    font-weight: 700;
+}
+
+.kiwi-appsettings-section {
+    padding: 12px;
+}
+
+.kiwi-appsettings-close {
+    color: #fff;
+    background: var(--nw-error);
+    border: 2px outset var(--nw-panel);
+}
+
+.kiwi-networksettings .kiwi-title {
+    color: var(--nw-title-fg);
+    background: linear-gradient(90deg, var(--nw-title-a), var(--nw-title-c));
+    border-bottom: 1px solid #000;
+    font-family: var(--nw-font-ui);
+    font-weight: 700;
+}
+
+.kiwi-networksettings .u-form span {
+    color: var(--nw-ink);
+}
+
+.kiwi-networksettings-error {
+    color: var(--nw-error);
+    background: #fff0f0;
+    border: 2px inset var(--nw-panel);
+}
+
+.kiwi-networksettings .kiwi-networksettings-server-types .kiwi-network-type-button {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border: 2px outset var(--nw-panel);
+    font-family: var(--nw-font-ui);
+}
+
+.kiwi-networksettings .kiwi-networksettings-server-types .kiwi-network-type-button:hover,
+.kiwi-networksettings .kiwi-networksettings-server-types .kiwi-network-type-button.kiwi-networksettings-server-type-active {
+    color: var(--nw-selected-fg);
+    background: var(--nw-selected);
+}
+
+.kiwi-networksettings-advanced h3:hover {
+    color: var(--nw-link-hover);
+}
+
+.kiwi-settings-advanced-notice {
+    color: var(--nw-warning);
+    background: var(--nw-highlight);
+    border: 2px inset var(--nw-panel);
+}
+
+.kiwi-settings-aliases-input {
+    color: var(--nw-ink);
+    background: #fff;
+    border: 2px inset var(--nw-panel);
+    font-family: var(--nw-font-mono);
+}
+
+.kiwi-channellist {
+    color: var(--nw-ink);
+    background: var(--nw-content);
+    border: 2px inset var(--nw-panel);
+    font-family: var(--nw-font-mono);
+}
+
+.kiwi-channellist-grid {
+    border-bottom: 1px solid #d1c9b7;
+}
+
+.kiwi-channellist-grid:nth-child(even) {
+    background: #f6f0df;
+}
+
+.kiwi-channellist-table-topic a,
+.kiwi-channellist-topic a {
+    color: var(--nw-link);
+}
+
+.kiwi-notconnected {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border: 2px outset var(--nw-panel);
+    box-shadow: 4px 4px 0 var(--nw-shadow);
+    font-family: var(--nw-font-ui);
+}
+
+.kiwi-notconnected-button {
+    color: #111;
+    background: var(--nw-accent);
+    border: 2px outset var(--nw-panel);
+}
+
+.kiwi-notconnected-button-settings:hover,
+.kiwi-notconnected-button:hover {
+    background: var(--nw-accent-hi);
+}
+
+.kiwi-aboutbuffer {
+    color: var(--nw-ink);
+    background: var(--nw-content);
+    border: 2px inset var(--nw-panel);
+    font-family: var(--nw-font-mono);
+}
+
+.kiwi-aboutbuffer h3,
+.kiwi-aboutbuffer h4 {
+    color: var(--nw-accent);
+}
+
+.kiwi-aboutbuffer a {
+    color: var(--nw-link);
+}
+
+.kiwi-channelsettings-disabled {
+    color: #777;
+}
+
+/* ==================================================================== *
+ * IRC colours (tuned for a light transcript)
+ * ==================================================================== */
+.irc-fg-colour-white {
+    color: #fff;
+    text-shadow: 0 1px 0 #000, 0 0 2px #000;
+}
+
+.irc-fg-colour-black { color: #111; }
+.irc-fg-colour-blue { color: #0000a8; }
+.irc-fg-colour-green { color: #006b2f; }
+.irc-fg-colour-red { color: #a00020; }
+.irc-fg-colour-brown { color: #6f3b00; }
+.irc-fg-colour-purple { color: #6a1b9a; }
+.irc-fg-colour-orange { color: #9a4500; }
+.irc-fg-colour-yellow { color: #6f5900; }
+.irc-fg-colour-light-green { color: #1a7d3b; }
+.irc-fg-colour-cyan { color: #006b78; }
+.irc-fg-colour-light-cyan { color: #007a88; }
+.irc-fg-colour-light-blue { color: #0055b0; }
+.irc-fg-colour-pink { color: #9a006a; }
+.irc-fg-colour-grey { color: #555; }
+.irc-fg-colour-light-grey { color: #777; }
+
+.irc-bg-colour-white {
+    color: #111;
+    background-color: #fff;
+}
+
+.irc-bg-colour-black {
+    color: #fff;
+    background-color: #111;
+}
+
+.irc-bg-colour-blue {
+    color: #fff;
+    background-color: #0000a8;
+}
+
+.irc-bg-colour-green {
+    color: #fff;
+    background-color: #006b2f;
+}
+
+.irc-bg-colour-red {
+    color: #fff;
+    background-color: #a00020;
+}
+
+.irc-bg-colour-brown {
+    color: #fff;
+    background-color: #6f3b00;
+}
+
+.irc-bg-colour-purple {
+    color: #fff;
+    background-color: #6a1b9a;
+}
+
+.irc-bg-colour-orange {
+    color: #111;
+    background-color: #ffb347;
+}
+
+.irc-bg-colour-yellow {
+    color: #111;
+    background-color: #fffb96;
+}
+
+.irc-bg-colour-light-green {
+    color: #111;
+    background-color: #b7ffd0;
+}
+
+.irc-bg-colour-cyan {
+    color: #111;
+    background-color: #8cf4ff;
+}
+
+.irc-bg-colour-light-cyan {
+    color: #111;
+    background-color: #d0fbff;
+}
+
+.irc-bg-colour-light-blue {
+    color: #111;
+    background-color: #b9ddff;
+}
+
+.irc-bg-colour-pink {
+    color: #111;
+    background-color: #ffb7eb;
+}
+
+.irc-bg-colour-grey {
+    color: #111;
+    background-color: #b8b8b8;
+}
+
+.irc-bg-colour-light-grey {
+    color: #111;
+    background-color: #e5e5e5;
+}
+
+/* ==================================================================== *
+ * NephWave Desktop chrome (rendered by the companion plugin)
+ * ==================================================================== */
+body.nephwave-active {
+    --nw-visible-top: var(--nw-top-h);
+}
+
+.nephwave-chrome {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    color: var(--nw-ink);
+    font-family: var(--nw-font-ui);
+}
+
+.nephwave-chrome[hidden] {
+    display: none;
+}
+
+.nephwave-titlebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: opacity 0.16s ease, transform 0.16s ease, visibility 0s linear;
+    right: 0;
+    z-index: 10000;
+    height: var(--nw-titlebar-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 8px;
+    box-sizing: border-box;
+    color: var(--nw-title-fg);
+    background: linear-gradient(90deg, var(--nw-title-a), var(--nw-title-b) 62%, var(--nw-title-c));
+    border-bottom: 1px solid #000;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 45%), 0 1px 0 var(--nw-title-edge);
+    pointer-events: auto;
+    user-select: none;
+}
+
+.nephwave-brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.nephwave-logo {
+    display: block;
+    flex: 0 0 auto;
+    width: 18px;
+    height: 16px;
+    object-fit: contain;
+}
+
+.nephwave-brand-name {
+    font-family: var(--nw-font-ui);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-shadow: 1px 1px 0 rgb(0 0 0 / 55%);
+}
+
+.nephwave-title-actions {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.nephwave-title-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 16px;
+    padding: 0;
+    color: #111;
+    background: var(--nw-panel);
+    border: 2px outset var(--nw-panel);
+    font-family: var(--nw-font-ui);
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.nephwave-title-btn:active {
+    border-style: inset;
+}
+
+.nephwave-menubar {
+    position: absolute;
+    top: var(--nw-titlebar-h);
+    left: 0;
+    transition: opacity 0.16s ease, transform 0.16s ease, visibility 0s linear;
+    right: 0;
+    z-index: 10000;
+    height: var(--nw-menubar-h);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 8px;
+    box-sizing: border-box;
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border-bottom: 2px solid var(--nw-panel-dark);
+    box-shadow: inset 0 1px 0 var(--nw-bevel-light);
+    pointer-events: auto;
+    user-select: none;
+}
+
+.nephwave-menu-btn {
+    padding: 1px 6px;
+    color: var(--nw-ink);
+    background: transparent;
+    border: 0;
+    font-family: var(--nw-font-ui);
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.nephwave-menu-btn:hover,
+.nephwave-menu-btn[aria-expanded='true'] {
+    color: var(--nw-selected-fg);
+    background: var(--nw-selected);
+}
+
+.nephwave-menubar-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+    color: #333;
+    font-family: var(--nw-font-mono);
+    font-size: 9px;
+}
+
+.nephwave-status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border: 1px solid #000;
+    background: #777;
+}
+
+.nephwave-status--online .nephwave-status-dot { background: var(--nw-green); }
+.nephwave-status--connecting .nephwave-status-dot { background: var(--nw-accent-hi); }
+.nephwave-status--offline .nephwave-status-dot { background: #b33; }
+
+.nephwave-bezel {
+    position: fixed;
+    inset: var(--nw-frame-top) var(--nw-frame-right) var(--nw-frame-bottom) var(--nw-frame-left);
+    z-index: 9997;
+    transition: opacity 0.16s ease, visibility 0s linear;
+    border: 3px outset var(--nw-panel);
+    box-shadow: 6px 6px 0 rgb(0 0 0 / 35%);
+    pointer-events: none;
+}
+
+.nephwave-taskbar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    height: var(--nw-taskbar-h);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 6px;
+    box-sizing: border-box;
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border-top: 2px solid var(--nw-bevel-light);
+    box-shadow: 0 -2px 0 var(--nw-panel-dark);
+    pointer-events: auto;
+    user-select: none;
+}
+
+.nephwave-start,
+.nephwave-task,
+.nephwave-tray-btn {
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border: 2px outset var(--nw-panel);
+    font-family: var(--nw-font-ui);
+    cursor: pointer;
+}
+
+.nephwave-start {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 24px;
+    padding: 0 8px;
+    font-weight: 700;
+}
+
+.nephwave-start-logo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    width: 14px;
+    height: 14px;
+}
+
+.nephwave-start-logo span:nth-child(1) { background: var(--nw-pink); }
+.nephwave-start-logo span:nth-child(2) { background: var(--nw-cyan); }
+.nephwave-start-logo span:nth-child(3) { background: var(--nw-green); }
+.nephwave-start-logo span:nth-child(4) { background: var(--nw-yellow); }
+
+.nephwave-start:active,
+.nephwave-task:active,
+.nephwave-tray-btn:active,
+.nephwave-title-btn:active {
+    border-style: inset;
+    transform: translate(1px, 1px);
+}
+
+.nephwave-tasks {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.nephwave-task {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 190px;
+    height: 24px;
+    padding: 0 8px;
+    overflow: hidden;
+    font-size: 11px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.nephwave-task--active {
+    border-style: inset;
+    background: var(--nw-panel-light);
+}
+
+.nephwave-task[hidden],
+.nephwave-menu-item[hidden],
+.nephwave-nowplaying[hidden] {
+    display: none;
+}
+
+.nephwave-task--radio {
+    color: #d7ffe2;
+    background: #1b1f24;
+    border-color: #40464f;
+}
+
+.nephwave-task--radio.nephwave-task--active {
+    color: #d7ffe2;
+    background: #2c343d;
+    border-color: var(--nw-lcd-green);
+}
+
+.nephwave-tray {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    padding-left: 4px;
+}
+
+.nephwave-tray-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 12px;
+    height: 24px;
+}
+
+.nephwave-nowplaying {
+    max-width: 170px;
+    padding: 1px 5px;
+    overflow: hidden;
+    color: var(--nw-lcd-green);
+    background: var(--nw-lcd-bg);
+    border: 2px inset var(--nw-panel);
+    font-family: var(--nw-font-lcd);
+    font-size: 11px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.nephwave-tray-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    font-size: 11px;
+}
+
+.nephwave-tray-btn--active {
+    background: var(--nw-panel-light);
+    border-style: inset;
+}
+
+.nephwave-clock {
+    min-width: 66px;
+    padding: 1px 5px;
+    color: var(--nw-ink);
+    background: var(--nw-panel-light);
+    border: 2px inset var(--nw-panel);
+    font-family: var(--nw-font-lcd);
+    font-size: 12px;
+    text-align: center;
+}
+
+.nephwave-startmenu {
+    position: absolute;
+    bottom: calc(var(--nw-taskbar-h) + 3px);
+    left: 4px;
+    z-index: 10001;
+    display: flex;
+    width: 270px;
+    max-width: calc(100vw - 10px);
+    max-height: calc(100vh - var(--nw-taskbar-h) - 12px);
+    padding: 2px;
+    overflow-y: auto;
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border: 2px outset var(--nw-panel);
+    box-shadow: 5px 5px 0 rgb(0 0 0 / 40%);
+    pointer-events: auto;
+}
+
+.nephwave-startmenu[hidden] {
+    display: none;
+}
+
+.nephwave-startmenu-banner {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 34px;
+    padding-bottom: 12px;
+    color: var(--nw-title-fg);
+    background: linear-gradient(180deg, var(--nw-title-a), var(--nw-title-c));
+    border: 1px solid #000;
+    font-family: var(--nw-font-ui);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+}
+
+.nephwave-startmenu-body {
+    flex: 1;
+    padding: 2px;
+}
+
+.nephwave-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 5px 8px;
+    color: var(--nw-ink);
+    background: transparent;
+    border: 0;
+    font-family: var(--nw-font-ui);
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.nephwave-menu-item:hover,
+.nephwave-menu-item:focus-visible {
+    color: var(--nw-selected-fg);
+    background: var(--nw-selected);
+}
+
+.nephwave-menu-item .fa {
+    width: 14px;
+    text-align: center;
+}
+
+.nephwave-menu-sep {
+    height: 0;
+    margin: 3px 2px;
+    border-top: 1px solid var(--nw-panel-dark);
+    border-bottom: 1px solid var(--nw-bevel-light);
+}
+
+.nephwave-menu-label {
+    padding: 4px 8px 2px;
+    color: #555;
+    font-family: var(--nw-font-mono);
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.nephwave-preset-check {
+    margin-left: auto;
+    color: var(--nw-accent);
+    font-weight: 700;
+    visibility: hidden;
+}
+
+.nephwave-preset-item[aria-checked='true'] .nephwave-preset-check {
+    visibility: visible;
+}
+
+.nephwave-crt-menu-label,
+.nephwave-sounds-menu-label {
+    margin-left: auto;
+    color: var(--nw-accent);
+    font-family: var(--nw-font-mono);
+    font-size: 9px;
+}
+
+.nephwave-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10002;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    background: rgb(0 0 0 / 55%);
+    pointer-events: auto;
+}
+
+.nephwave-modal[hidden] {
+    display: none;
+}
+
+.nephwave-dialog {
+    width: 100%;
+    max-width: 410px;
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border: 2px outset var(--nw-panel);
+    box-shadow: 6px 6px 0 rgb(0 0 0 / 45%);
+}
+
+.nephwave-dialog-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 3px 6px;
+    color: var(--nw-title-fg);
+    background: linear-gradient(90deg, var(--nw-title-a), var(--nw-title-c));
+    border-bottom: 1px solid #000;
+    font-family: var(--nw-font-ui);
+    font-weight: 700;
+}
+
+.nephwave-dialog-close {
+    width: 18px;
+    height: 16px;
+    padding: 0;
+    color: #111;
+    background: var(--nw-panel);
+    border: 2px outset var(--nw-panel);
+    cursor: pointer;
+}
+
+.nephwave-dialog-body {
+    padding: 14px;
+    font-family: var(--nw-font-mono);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.nephwave-dialog-body h3 {
+    margin: 0 0 8px;
+    color: var(--nw-accent);
+    font-family: var(--nw-font-ui);
+}
+
+.nephwave-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    padding: 10px 14px 14px;
+}
+
+.nephwave-btn {
+    min-height: 24px;
+    padding: 3px 10px;
+    color: var(--nw-ink);
+    background: var(--nw-panel);
+    border: 2px outset var(--nw-panel);
+    font-family: var(--nw-font-ui);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.nephwave-btn:hover {
+    background: var(--nw-panel-light);
+}
+
+.nephwave-btn--primary {
+    color: #111;
+    background: var(--nw-accent);
+}
+
+.nephwave-btn--primary:hover {
+    background: var(--nw-accent-hi);
+}
+
+.nephwave-crt {
+    position: fixed;
+    inset: 0;
+    z-index: 9996;
+    pointer-events: none;
+    background:
+        repeating-linear-gradient(to bottom, transparent 0 2px, var(--nw-scanline) 2px 3px),
+        linear-gradient(90deg, rgb(255 0 0 / 2%), rgb(0 255 0 / 1%) 50%, rgb(0 0 255 / 2%));
+    background-size: 100% 3px, 5px 100%;
+    opacity: 0.42;
+    mix-blend-mode: multiply;
+}
+
+body.nephwave-crt-off .nephwave-crt {
+    display: none;
+}
+
+body.nephwave-glitch .kiwi-workspace,
+body.nephwave-glitch .kiwi-statebrowser {
+    animation: nephwave-glitch 0.16s steps(2, end);
+}
+
+@keyframes nephwave-glitch {
+    0% {
+        transform: translate(0);
+        filter: none;
+    }
+
+    25% {
+        transform: translate(-2px, 1px);
+        filter: hue-rotate(18deg);
+    }
+
+    50% {
+        transform: translate(2px, -1px);
+        filter: hue-rotate(-18deg);
+    }
+
+    75% {
+        transform: translate(-1px, 0);
+        filter: none;
+    }
+
+    100% {
+        transform: translate(0);
+        filter: none;
+    }
+}
+
+/* Platinum titlebar variant */
+body.nephwave-preset-platinum .nephwave-titlebar {
+    background: repeating-linear-gradient(0deg, #5f5f5f 0 1px, #f4f4f4 1px 3px);
+    border-bottom: 1px solid #222;
+    box-shadow: inset 0 1px 0 #fff;
+    color: #111;
+}
+
+body.nephwave-preset-platinum .nephwave-title-actions {
+    order: -1;
+}
+
+body.nephwave-preset-platinum .nephwave-brand {
+    margin-left: auto;
+}
+
+body.nephwave-preset-platinum .nephwave-brand-name {
+    color: #111;
+    text-shadow: 1px 1px 0 #fff;
+}
+
+body.nephwave-preset-be .nephwave-brand-name {
+    color: #111;
+    text-shadow: 1px 1px 0 rgb(255 255 255 / 45%);
+}
+
+body.nephwave-preset-platinum .nephwave-bezel {
+    border-color: #777;
+    box-shadow: 5px 5px 0 rgb(0 0 0 / 28%);
+}
+
+/* ==================================================================== *
+ * Reserved chrome space
+ * ==================================================================== */
+body.nephwave-active .kiwi-workspace {
+    top: var(--nw-frame-top);
+    height: calc(100% - var(--nw-frame-top) - var(--nw-frame-bottom));
+    margin-left: calc(220px + var(--nw-frame-left) + 2px);
+    margin-right: var(--nw-frame-right);
+    transition:
+        left 0.2s,
+        margin-left 0.2s,
+        opacity 0.18s ease,
+        transform 0.18s ease,
+        visibility 0s linear;
+}
+
+body.nephwave-active .kiwi-statebrowser {
+    top: var(--nw-frame-top);
+    bottom: var(--nw-frame-bottom);
+    left: var(--nw-frame-left);
+    transition:
+        left 0.145s,
+        margin-left 0.145s,
+        opacity 0.18s ease,
+        transform 0.18s ease,
+        visibility 0s linear;
+}
+
+body.nephwave-startup .nephwave-tasks,
+body.nephwave-startup .nephwave-menubar-status,
+body.nephwave-startup .nephwave-title-btn--minimize {
+    display: none;
+}
+
+/* ---- Messenger minimize / restore ---- */
+body.nephwave-minimized .nephwave-titlebar,
+body.nephwave-minimized .nephwave-menubar {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-12px);
+    transition:
+        opacity 0.16s ease,
+        transform 0.16s ease,
+        visibility 0s linear 0.16s;
+}
+
+body.nephwave-minimized .nephwave-bezel {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.16s ease, visibility 0s linear 0.16s;
+}
+
+body.nephwave-minimized .kiwi-workspace {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(14px) scale(0.985);
+    transition:
+        left 0.2s,
+        margin-left 0.2s,
+        opacity 0.18s ease,
+        transform 0.18s ease,
+        visibility 0s linear 0.18s;
+}
+
+body.nephwave-minimized .kiwi-statebrowser {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(14px) scale(0.985);
+    transition:
+        left 0.145s,
+        margin-left 0.145s,
+        opacity 0.18s ease,
+        transform 0.18s ease,
+        visibility 0s linear 0.18s;
+}
+
+/* ==================================================================== *
+ * Responsive layout
+ * ==================================================================== */
+@media screen and (max-width: 900px) {
+    .nephwave-task {
+        max-width: 130px;
+    }
+}
+
+@media screen and (max-width: 769px) {
+    :root,
+    body {
+        --nw-menubar-h: 0px;
+        --nw-top-h: var(--nw-titlebar-h);
+        --nw-gutter: 6px;
+        --nw-frame-left: 6px;
+        --nw-frame-right: 6px;
+    }
+
+    .nephwave-menubar {
+        display: none;
+    }
+
+    body.nephwave-active .kiwi-statebrowser {
+        left: calc(-220px - var(--nw-frame-left));
+    }
+
+    body.nephwave-active .kiwi-wrap--statebrowser-drawopen .kiwi-statebrowser {
+        left: var(--nw-frame-left);
+    }
+
+    body.nephwave-active .kiwi-workspace {
+        left: 0;
+        margin-left: var(--nw-frame-left);
+        margin-right: var(--nw-frame-right);
+    }
+
+    body.nephwave-active .kiwi-wrap--statebrowser-drawopen .kiwi-workspace {
+        left: 75%;
+    }
+
+    body.nephwave-active .kiwi-startup-common {
+        padding: var(--nw-frame-top) 6px var(--nw-frame-bottom);
+    }
+
+    .nephwave-task span:last-child {
+        display: none;
+    }
+
+    .nephwave-task {
+        width: 30px;
+        justify-content: center;
+        padding: 0;
+    }
+
+    .nephwave-clock {
+        min-width: 58px;
+    }
+
+    .nephwave-nowplaying,
+    .nephwave-task--radio,
+    .nephwave-startmenu [data-action='radio'] {
+        display: none;
+    }
+}
+
+@media screen and (max-width: 520px) {
+    .nephwave-brand-name {
+        font-size: 11px;
+    }
+
+    .nephwave-menubar-status,
+    .nephwave-tray-status {
+        display: none;
+    }
+
+    .nephwave-startmenu {
+        width: min(270px, calc(100vw - 12px));
+    }
+
+    .nephwave-start {
+        padding: 0 6px;
+    }
+
+    .nephwave-start span:last-child {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .kiwi-wrap *,
+    .nephwave-chrome *,
+    .nephwave-chrome *::before,
+    .nephwave-chrome *::after {
+        animation-duration: 0.001ms;
+        animation-iteration-count: 1;
+        transition-duration: 0.001ms;
+        scroll-behavior: auto;
+    }
+
+    .nephwave-crt {
+        display: none;
+    }
+
+    .nephwave-glitch .kiwi-workspace,
+    .nephwave-glitch .kiwi-statebrowser {
+        animation: none;
+    }
+}
+
+@media (prefers-contrast: more) {
+    .nephwave-crt {
+        display: none;
+    }
+
+    .kiwi-wrap,
+    .nephwave-chrome {
+        --nw-panel-dark: #000;
+        --nw-panel-shadow: #000;
+    }
+
+    .u-button,
+    .nephwave-btn,
+    .nephwave-menu-item {
+        border-width: 2px;
+    }
+}

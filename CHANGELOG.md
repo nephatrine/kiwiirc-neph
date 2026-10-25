@@ -10,6 +10,7 @@ and this project adheres to
 
 ### Added
 
+- **Themes**: Added NephWave, a standalone theme with the optional NephWave Desktop shell plugin.
 - **Twitch**: Added Twitch IRC support, requesting `twitch.tv/commands`,
   `twitch.tv/tags`, and `twitch.tv/membership` when advertised. Twitch tags
   drive message IDs, display names, colors, timestamps, replies, reroute

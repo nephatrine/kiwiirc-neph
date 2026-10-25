@@ -20,6 +20,7 @@ export const configTemplates = {
         plugins: [
             { name: 'channels-sidebar', url: 'static/plugins/channels-sidebar.html' },
             { name: 'nephnet-cyberdeck', url: 'static/plugins/nephnet-cyberdeck.html' },
+            { name: 'nephwave-desktop', url: 'static/plugins/nephwave-desktop.html' },
             { name: 'bongo-cat', url: 'static/plugins/bongo-cat.html' },
         ],
         windowTitle: 'Kiwi IRC - The web IRC client',
@@ -53,6 +54,7 @@ export const configTemplates = {
             { name: 'NephDeck Amber', url: 'static/themes/nephdeck-amber', mode: 'dark', google_fonts: ['Orbitron:wght@600;800;900', 'Share Tech Mono', 'Chivo Mono:ital,wght@0,300;0,400;0,600;0,700;1,400'] },
             { name: 'NephDeck Green', url: 'static/themes/nephdeck-green', mode: 'dark', google_fonts: ['Orbitron:wght@600;800;900', 'Share Tech Mono', 'Chivo Mono:ital,wght@0,300;0,400;0,600;0,700;1,400'] },
             { name: 'NephDeck Cyan', url: 'static/themes/nephdeck-cyan', mode: 'dark', google_fonts: ['Orbitron:wght@600;800;900', 'Share Tech Mono', 'Chivo Mono:ital,wght@0,300;0,400;0,600;0,700;1,400'] },
+            { name: 'NephWave', url: 'static/themes/nephwave', mode: 'dark', google_fonts: ['Pixelify Sans:wght@500;700', 'VT323', 'Chivo Mono:ital,wght@0,400;0,600;0,700;1,400'] },
             { name: 'Nord Dark', url: 'static/themes/nord-dark', mode: 'dark', google_fonts: ['Manrope:wght@400;700', 'Overpass Mono:wght@400;700'] },
             { name: 'Nord Light', url: 'static/themes/nord-light', mode: 'light', google_fonts: ['Manrope:wght@400;700', 'Overpass Mono:wght@400;700'] },
             { name: 'One Dark', url: 'static/themes/one-dark', mode: 'dark', google_fonts: ['Work Sans:wght@400;700', 'Roboto Mono:wght@400;700'] },
