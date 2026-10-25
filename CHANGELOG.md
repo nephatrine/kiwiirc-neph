@@ -105,6 +105,14 @@ and this project adheres to
 
 ### Fixed
 
+- **Connection**: Auto-reconnect no longer leaves a direct WebSocket network
+  stuck in Connecting after the final attempt fails, and a connecting attempt
+  can be cancelled from the network list, buffer, and network settings.
+- **History**: Pending chathistory requests are cleared on disconnect and
+  reconnect, so "Loading previous messages..." no longer sticks and later
+  requests are not queued behind a dead batch.
+- **Reconnect Notice**: A first-time channel join after an early reconnect uses
+  the normal join message instead of "has reconnected."
 - **Sidebar**: Link preview handles in sidebar topic, description, and realname
   text now open the URL in the pinned media viewer instead of doing nothing.
 - **Login**: Reusing a saved network now adopts the current startup transport

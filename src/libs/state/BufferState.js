@@ -93,9 +93,7 @@ export default class BufferState {
         // This will make the `getLoadingState()` stay as 'loading' while the chathistory reloads.
         function onNetworkConnecting(event) {
             if (event.network === this.getNetwork()) {
-                this.chathistory_request_count = 0;
-                this.flags.names_received = false;
-                this.flags.marker_received = false;
+                this.resetHistoryForReconnect();
             }
         }
 
@@ -125,6 +123,14 @@ export default class BufferState {
         if (this.getNetwork()?.state === 'connected') {
             this.initHistory();
         }
+    }
+
+    resetHistoryForReconnect() {
+        this.chathistory_request_count = 0;
+        this.flags.is_requesting_chathistory = false;
+        this.flags.chathistory_available = true;
+        this.flags.names_received = false;
+        this.flags.marker_received = false;
     }
 
     initHistory() {
@@ -1133,14 +1139,16 @@ function getBufferHistory(buffer, chathistoryFuncName, time, depth = 0) {
         }
 
         if (event.error) {
-            const errorMsg = event.reason || event.error;
-            buffer.state.addMessage(buffer, {
-                time: Date.now(),
-                nick: '*',
-                message: 'Failed to load history: ' + errorMsg,
-                type: 'error',
-            });
-            buffer.flag('chathistory_available', false);
+            if (!event.silent) {
+                const errorMsg = event.reason || event.error;
+                buffer.state.addMessage(buffer, {
+                    time: Date.now(),
+                    nick: '*',
+                    message: 'Failed to load history: ' + errorMsg,
+                    type: 'error',
+                });
+                buffer.flag('chathistory_available', false);
+            }
             return;
         }
 

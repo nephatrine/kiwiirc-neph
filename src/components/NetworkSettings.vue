@@ -134,17 +134,20 @@
                     </template>
                     <template v-else>
                         <a
-                            v-if="network.state !== 'connected'"
+                            v-if="network.state === 'connecting'"
+                            type="button"
+                            class="u-button u-button-warning u-submit kiwi-connect-to-newnetwork"
+                            @click="cancelConnect()"
+                        >
+                            {{ $t('cancel') }}
+                        </a>
+                        <a
+                            v-else-if="network.state !== 'connected'"
                             type="button"
                             class="u-button u-button-online u-submit kiwi-connect-to-newnetwork"
-                            :disabled="network.state !== 'disconnected'"
                             @click="connect()"
                         >
-                            {{
-                                $t(network.state === 'disconnected'
-                                    ? 'network_connect'
-                                    : 'network_connecting')
-                            }}
+                            {{ $t('network_connect') }}
                         </a>
                         <a
                             v-else
@@ -555,6 +558,9 @@ export default {
                 this.$state.setting('quitMessage') || 'Client Closed Connection'
             );
         },
+        cancelConnect() {
+            this.network.ircClient.cancelConnect();
+        },
         // Explicit save: diff this one network against the last bouncer
         // snapshot and send the result to the bouncer, nothing else.
         saveBouncerNetwork() {
@@ -568,9 +574,6 @@ export default {
         // network whose upstream link failed.
         connectBouncerNetwork() {
             this.saveBouncerNetwork();
-            if (this.network.state === 'connecting') {
-                return;
-            }
             this.switch_tabs_on_connect = true;
             this.network.ircClient.connect();
         },

@@ -79,6 +79,16 @@ function addFunctionsToClient(client, network) {
 
             this.queueNext();
         },
+        reset(value) {
+            const pending = this.callbacks;
+            this.callbacks = Object.create(null);
+            this.queue = [];
+            this.queueActive = false;
+
+            Object.keys(pending).forEach((target) => {
+                pending[target].forEach((cb) => cb(value));
+            });
+        },
         queueNext() {
             this.queueActive = true;
 
@@ -96,6 +106,21 @@ function addFunctionsToClient(client, network) {
             client.raw(ircMessage);
         },
     };
+
+    const resetPendingHistory = () => {
+        history.batchCallbacks.reset({
+            error: 'disconnected',
+            reason: 'Disconnected',
+            silent: true,
+        });
+    };
+
+    // A socket close abandons any CHATHISTORY batch that was in flight. Resolve
+    // those promises and clear the queue so a reconnect starts with a clean
+    // request pipeline.
+    client.on('connecting', resetPendingHistory);
+    client.on('socket close', resetPendingHistory);
+    client.on('close', resetPendingHistory);
 
     // history.isSupported gates the use of the CHATHISTORY command.
     // Spec requires draft/chathistory capability to be negotiated.

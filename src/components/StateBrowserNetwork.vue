@@ -135,6 +135,9 @@
                     </template>
                     <template v-else-if="network.state === 'connecting'">
                         {{ $t('connecting') }}
+                        <a class="u-link" @click="cancelConnect">
+                            {{ $t('cancel') }}
+                        </a>
                     </template>
                 </div>
                 <div
@@ -444,6 +447,11 @@ export default {
         },
     },
     methods: {
+        cancelConnect() {
+            if (this.network && this.network.ircClient) {
+                this.network.ircClient.cancelConnect();
+            }
+        },
         activityFromBuffers(buffers) {
             let totalUnread = 0;
             let highlight = false;

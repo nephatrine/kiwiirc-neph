@@ -193,6 +193,46 @@ export function create(state, network) {
         originalIrcClientConnect.apply(ircClient, args);
     };
 
+    // Abort a connection attempt without leaving the network stuck in the
+    // connecting state. The direct websocket transport only closes its socket
+    // while connected, so a handshake in progress needs an explicit close.
+    ircClient.cancelConnect = function cancelConnect() {
+        const connection = ircClient.connection;
+        if (!connection) {
+            return;
+        }
+
+        if (network.state !== 'connecting') {
+            ircClient.quit();
+            return;
+        }
+
+        connection.requested_disconnect = true;
+        connection.clearTimers();
+
+        const transport = connection.transport;
+        if (transport) {
+            if (transport.socket && typeof transport.socket.close === 'function') {
+                try {
+                    transport.socket.close();
+                } catch (err) {
+                    // The transport may already have closed the socket.
+                }
+            }
+            if (typeof transport.disposeSocket === 'function') {
+                transport.disposeSocket();
+            }
+            if (typeof transport.close === 'function') {
+                transport.close(true);
+            }
+        }
+
+        // disposeSocket() detaches the direct websocket handlers, so emit the
+        // close ourselves to run the normal disconnect cleanup.
+        connection.connected = false;
+        connection.emit('socket close');
+    };
+
     // Overload the raw() function so that we can emit outgoing IRC messages to plugins
     let originalIrcClientRaw = ircClient.raw;
     ircClient.raw = function raw(...args) {
@@ -513,6 +553,11 @@ function clientMiddleware(state, network) {
             network.metadata_throttles = new Map();
             network.metadata_label_targets = new Map();
             network.connected_at = 0;
+            // Auto-reconnects happen inside irc-framework, so the manual
+            // connect overload does not emit network.connecting for them.
+            // Reset each buffer's history state here so the next NAMES/MOTD
+            // can request history again.
+            network.buffers.forEach((buffer) => buffer.resetHistoryForReconnect());
             // A fresh attempt is not registered yet. Without this reset a
             // stale flag drops the 900, and sasl_account is never restored.
             isRegistered = false;
@@ -764,14 +809,7 @@ function clientMiddleware(state, network) {
             }
         });
 
-        client.on('socket close', (err) => {
-            if (!client.connection.requested_disconnect && network.state === 'connecting') {
-                // A replacement connection attempt can end an old socket
-                // before the new one is registered. Ignore that stale close; a
-                // manual quit while connecting sets requested_disconnect and
-                // must still run cleanup.
-                return;
-            }
+        function markDisconnected(err) {
             isRegistered = false;
             network.state = 'disconnected';
             network.connected_at = 0;
@@ -801,6 +839,33 @@ function clientMiddleware(state, network) {
                 buffer.joined = false;
                 buffer.clearUsers();
             });
+        }
+
+        client.on('socket close', (err) => {
+            if (
+                !client.connection.requested_disconnect &&
+                network.state === 'connecting' &&
+                !network.connection.direct
+            ) {
+                // A gateway replacement can end an old multiplexed channel
+                // before the new one is registered. Ignore that stale close; a
+                // manual quit while connecting sets requested_disconnect and
+                // must still run cleanup. Direct websockets detach the old
+                // socket handlers in disposeSocket(), so a close while
+                // connecting is a real failed attempt there.
+                return;
+            }
+            markDisconnected(err);
+        });
+
+        client.on('close', () => {
+            // The framework emits close only after it has stopped reconnecting.
+            // If the final attempt failed while still connecting, socket close
+            // was ignored above and this is the only chance to leave the
+            // connecting state.
+            if (network.state === 'connecting') {
+                markDisconnected();
+            }
         });
     };
 
@@ -1531,6 +1596,7 @@ function clientMiddleware(state, network) {
                 buffer.rename(targetName);
             }
 
+            let isReconnect = false;
             if (!isHistory) {
                 state.addUserToBuffer(buffer, {
                     nick: event.nick,
@@ -1544,8 +1610,9 @@ function clientMiddleware(state, network) {
                     buffer.enabled = true;
                     buffer.joined = true;
                     buffer.flags.channel_badkey = false;
+                    isReconnect = numConnects > 1 && !!buffer.flags.reconnect_known;
                     network.ircClient.raw('MODE', event.channel);
-                    if (!network.isTwitch() && !(numConnects > 1 && buffer.flags.reconnect_known)) {
+                    if (!network.isTwitch() && !isReconnect) {
                         network.ircClient.who(event.channel);
                     }
                     state.$delete(buffer.flags, 'reconnect_known');
@@ -1579,7 +1646,7 @@ function clientMiddleware(state, network) {
                     TextFormatting.formatUserFull(event) :
                     TextFormatting.formatUser(event);
 
-                let joinKey = (event.nick === client.user.nick && numConnects > 1)
+                let joinKey = (event.nick === client.user.nick && isReconnect)
                     ? 'has_reconnected'
                     : 'has_joined';
                 let messageBody = TextFormatting.formatAndT(

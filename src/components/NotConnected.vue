@@ -52,6 +52,13 @@
                 class="bx bx-refresh bx-spin kiwi-notconnected-bigicon"
                 aria-hidden="true"
             />
+            <a
+                v-if="network.state === 'connecting'"
+                class="u-link kiwi-notconnected-cancel"
+                @click="cancelConnect"
+            >
+                {{ $t('cancel') }}
+            </a>
         </div>
 
         <captcha
@@ -131,6 +138,12 @@ export default {
             }
             this.buffer.getNetwork().ircClient.connect();
         },
+        cancelConnect() {
+            const network = this.buffer.getNetwork();
+            if (network && network.ircClient) {
+                network.ircClient.cancelConnect();
+            }
+        },
         showNetworkSettings() {
             let network = this.buffer.getNetwork();
             network.showServerBuffer('settings');
@@ -168,6 +181,13 @@ export default {
     position: relative;
     right: -3px;
     top: 3px;
+}
+
+.kiwi-notconnected-cancel {
+    margin-left: 10px;
+    font-size: 0.8em;
+    font-weight: normal;
+    cursor: pointer;
 }
 
 .kiwi-notconnected-captcha {
