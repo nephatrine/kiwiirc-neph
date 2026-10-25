@@ -215,6 +215,25 @@ describe('GlobalApi plugin surface', () => {
         expect(events.map((event) => event.playing)).toEqual([true, false]);
     });
 
+    it('returns a display string with metadata fallbacks', () => {
+        api.setMediaPlaying('radio', true, {
+            station: 'NephFM',
+            title: 'Midnight Arcade',
+            display: 'NephFM — Midnight Arcade',
+        });
+        expect(api.getMediaDisplay('radio')).toBe('NephFM — Midnight Arcade');
+
+        api.setMediaPlaying('radio', true, { title: 'Midnight Arcade' });
+        expect(api.getMediaDisplay('radio')).toBe('Midnight Arcade');
+
+        api.setMediaPlaying('radio', true, { station: 'NephFM' });
+        expect(api.getMediaDisplay('radio')).toBe('NephFM');
+
+        api.clearMediaSource('radio');
+        expect(api.getMediaDisplay('radio')).toBe('');
+        expect(api.getMediaDisplay('missing')).toBe('');
+    });
+
     it('ignores media updates without a source id', () => {
         api.setMediaPlaying('', true);
         expect(api.isMediaPlaying()).toBe(false);

@@ -193,14 +193,21 @@ Plugins that play audio can report it centrally:
 
 ```js
 kiwi.setMediaPlaying('my-player', true, {
-    title: 'Song name'
+    title: 'Song name',
+    display: 'Song name — Artist'
 });
 kiwi.setMediaPlaying('my-player', false);
 ```
 
+`display` is an optional ready-to-render string for UI such as status bars.
+Consumers should use `getMediaDisplay()`; it falls back to `title` and then
+`station` when a source does not provide one.
+
 - `kiwi.media.playing` is true while any registered source is playing.
 - `kiwi.isMediaPlaying()` returns the aggregate state.
 - `kiwi.getMediaSource(source)` returns metadata for one source.
+- `kiwi.getMediaDisplay(source)` returns the source's display string, with
+  `title` and `station` fallbacks.
 - `kiwi.getMediaSources()` returns the source map.
 - `kiwi.clearMediaSource(source)` removes a source.
 - `kiwi.on('media.playing', handler)` fires when the aggregate state changes.
@@ -246,4 +253,5 @@ that is not forwarded through `kiwi`.
 - [bongo-cat](static/plugins/bongo-cat.md)
 - [channels-sidebar](static/plugins/channels-sidebar.md)
 - [nephnet-cyberdeck](static/plugins/nephnet-cyberdeck.md)
+- [nephwave-desktop](static/plugins/nephwave-desktop.md)
 - [customise starter](static/plugins/customise.md)

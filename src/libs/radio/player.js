@@ -78,6 +78,7 @@ function createRadio() {
         GlobalApi.singleton().setMediaPlaying('radio', playing, {
             station: ui.currentName,
             title: ui.trackTitle,
+            display: [ui.currentName, ui.trackTitle].filter(Boolean).join(' — '),
         });
     }
 

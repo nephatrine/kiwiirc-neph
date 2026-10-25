@@ -155,7 +155,7 @@ export default class GlobalApi extends EventEmitter {
      * `kiwi.media.playing` flag stays true until every source has stopped.
      * @param {String} source Stable plugin identifier, eg. 'radio'
      * @param {Boolean} playing Whether this source is playing
-     * @param {Object} metadata Optional details such as title, station, or url
+     * @param {Object} metadata Optional details such as title, station, display, or url
      */
     setMediaPlaying(source, playing, metadata = {}) {
         if (!source) {
@@ -192,6 +192,29 @@ export default class GlobalApi extends EventEmitter {
 
     getMediaSource(source) {
         return this.media.sources[source] || null;
+    }
+
+    /**
+     * Return a human-readable display string for a media source.
+     *
+     * Media players should provide `metadata.display`; `title` and `station`
+     * are accepted as fallbacks for older sources.
+     * @param {String} source Stable plugin identifier, eg. 'radio'
+     * @returns {String}
+     */
+    getMediaDisplay(source) {
+        const media = this.getMediaSource(source);
+        if (!media) {
+            return '';
+        }
+
+        const candidates = [media.display, media.title, media.station];
+        for (let i = 0; i < candidates.length; i += 1) {
+            if (typeof candidates[i] === 'string' && candidates[i]) {
+                return candidates[i];
+            }
+        }
+        return '';
     }
 
     getMediaSources() {
