@@ -47,6 +47,29 @@ from:
 - Hiding and showing reset the care clocks, so hidden time does not create a
   decay backlog.
 
+### Progression
+
+- Maximum level: 20. XP caps at 1,900 and the level bar shows 100% at max.
+- Daily login: +10 XP.
+- Active XP: +5 XP per 10 minutes of actual input activity.
+- Vibing XP: +1 XP per 10 minutes while the companion is dancing to music.
+- Active and vibing XP require a visible tab and share a 60 XP daily cap.
+- Daily login XP is separate from that 60-point cap.
+- Active XP takes precedence over vibing XP in the same window.
+- Hidden companions, idle periods, and background tabs do not accrue active or
+  vibing XP.
+- Reset clears XP, hats, daily XP counters, and progress.
+
+### Placement
+
+- Position can be set to **Bottom Right** (default) or **Top Right**.
+- Bottom placement opens the stats card upward; top placement opens it downward.
+- A quick position button is available in the stats card next to the sound
+  toggle.
+- The position is stored with the companion state and is preserved by reset.
+- On short viewports, the stats card becomes a scrollable top overlay so it
+  remains usable.
+
 ## Customization
 
 No plugin code changes are needed. Add the assets, edit the relevant JSON, and
@@ -298,8 +321,10 @@ Asset creation:
 Invalid entries and duplicate IDs are ignored. If the catalog is missing, empty,
 or invalid, no hats are available and the Roll Hat button is disabled.
 
-Added hats enter the roll pool. The companion earns one roll per level. A new
-hat auto-equips only when nothing is equipped. Duplicate rolls grant +5 XP.
+Added hats enter the roll pool. The companion earns one roll per level, for 20
+rolls at the level cap. A new hat auto-equips only when nothing is equipped.
+Duplicate rolls grant +5 XP. Resetting is the intended way to hunt for hats
+still missing after level 20.
 
 ## Features
 
@@ -308,12 +333,12 @@ hat auto-equips only when nothing is equipped. Duplicate rolls grant +5 XP.
 - Hunger, tiredness, mood, snacks, naps, petting, and cooldowns.
 - Inactivity sleep pauses tiredness growth without reducing it. Naps and drink
   snacks are the recovery methods.
-- Daily and active-session XP with levels.
+- Daily, active-use, and music-vibing XP with a level 20 cap.
 - Configurable skins, snacks, and hats.
 - Rate-limited reactions to messages, highlights, disconnects, reconnects, and
   Twitch user notices.
-- Settings for skin, name, sounds, volume, animation intensity, size,
-  visibility, cosmetics, and reset.
+- Settings for skin, name, sounds, volume, size, position, visibility,
+  cosmetics, and reset.
 - Reduced-motion support and accessible controls.
 
 ## Persistence

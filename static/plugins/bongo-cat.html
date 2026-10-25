@@ -20,12 +20,13 @@
             'kiwi-bongo-cat--acknowledge': acknowledging,
             'kiwi-bongo-cat--celebrate': celebrating,
             'kiwi-bongo-cat--worried': worried,
-            'kiwi-bongo-cat--calm': store.calm,
             'kiwi-bongo-cat--large': store.large,
+            'kiwi-bongo-cat--top': store.position === 'top',
             'kiwi-bongo-cat--radio': radioMode === 'jam' || radioMode === 'tired-jam' || radioMode === 'listen',
             'kiwi-bongo-cat--radio-jam': radioMode === 'jam',
             'kiwi-bongo-cat--radio-tired': radioMode === 'tired-jam',
             'kiwi-bongo-cat--radio-listen': radioMode === 'listen',
+            'kiwi-bongo-cat--toolbar-open': toolbarOpen,
         }"
     >
         <transition name="kiwi-bongo-pop">
@@ -63,6 +64,23 @@
                             <i
                                 class="fa"
                                 :class="store.sound ? 'fa-volume-up' : 'fa-volume-off'"
+                                aria-hidden="true"
+                            ></i>
+                        </button>
+                        <button
+                            type="button"
+                            class="kiwi-bongo-cat__icon-button"
+                            :aria-label="store.position === 'top'
+                                ? $t('bongo-cat:move_to_bottom')
+                                : $t('bongo-cat:move_to_top')"
+                            :title="store.position === 'top'
+                                ? $t('bongo-cat:move_to_bottom')
+                                : $t('bongo-cat:move_to_top')"
+                            @click="togglePosition"
+                        >
+                            <i
+                                class="fa"
+                                :class="store.position === 'top' ? 'fa-arrow-down' : 'fa-arrow-up'"
                                 aria-hidden="true"
                             ></i>
                         </button>
@@ -204,7 +222,7 @@
                 />
 
                 <g
-                    v-if="dancing && !store.calm"
+                    v-if="dancing"
                     class="kiwi-bongo-cat__spotlights"
                     aria-hidden="true"
                 >
@@ -512,13 +530,20 @@
                 </div>
 
                 <label class="u-checkbox-wrapper">
-                    <span>{{ $t('bongo-cat:calm') }}</span>
-                    <input type="checkbox" :checked="store.calm" @change="toggleCalm">
-                </label>
-
-                <label class="u-checkbox-wrapper">
                     <span>{{ $t('bongo-cat:large_cat') }}</span>
                     <input type="checkbox" :checked="store.large" @change="toggleLarge">
+                </label>
+
+                <label class="u-form-block">
+                    <span>{{ $t('bongo-cat:position') }}</span>
+                    <select
+                        class="u-input"
+                        :value="store.position"
+                        @change="setPosition($event.target.value)"
+                    >
+                        <option value="bottom">{{ $t('bongo-cat:position_bottom') }}</option>
+                        <option value="top">{{ $t('bongo-cat:position_top') }}</option>
+                    </select>
                 </label>
 
                 <div class="kiwi-bongo-settings__center">
@@ -650,10 +675,25 @@
     pointer-events: none;
     font-family: inherit;
     line-height: 1.3;
+    transition: bottom 0.18s ease;
 }
 
 .kiwi-bongo-cat--large {
     width: 231px;
+}
+
+.kiwi-bongo-cat--top {
+    top: 92px;
+    bottom: auto;
+}
+
+.kiwi-bongo-cat--top .kiwi-bongo-cat__card {
+    top: calc(100% + 1em + 4px);
+    bottom: auto;
+}
+
+.kiwi-bongo-cat--toolbar-open:not(.kiwi-bongo-cat--top) {
+    bottom: 152px;
 }
 
 .kiwi-bongo-cat__button {
@@ -920,7 +960,11 @@
     bottom: calc(100% + 1em + 4px);
     box-sizing: border-box;
     width: 236px;
+    max-height: calc(100vh - 260px);
+    max-height: calc(100dvh - 260px);
     padding: 13px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     border: 1px solid var(--brand-input-border, #3d4557);
     border-radius: 14px;
     background: var(--brand-midtone, #20242d);
@@ -1386,18 +1430,20 @@
     }
 }
 
-.kiwi-bongo-cat--calm *,
-.kiwi-bongo-cat--calm *::before,
-.kiwi-bongo-cat--calm *::after {
-    animation: none !important;
-    transition: none !important;
-}
-
 @media (max-width: 720px) {
     .kiwi-bongo-cat {
         right: 10px;
         bottom: 76px;
         width: 108px;
+    }
+
+    .kiwi-bongo-cat--top {
+        top: 84px;
+        bottom: auto;
+    }
+
+    .kiwi-bongo-cat--toolbar-open:not(.kiwi-bongo-cat--top) {
+        bottom: 140px;
     }
 
     .kiwi-bongo-cat--large {
@@ -1409,7 +1455,28 @@
     }
 }
 
+@media (max-height: 560px) {
+    .kiwi-bongo-cat .kiwi-bongo-cat__card {
+        position: fixed;
+        top: 56px;
+        left: 50%;
+        right: auto;
+        bottom: auto;
+        width: min(340px, calc(100vw - 16px));
+        max-height: calc(100vh - 96px);
+        max-height: calc(100dvh - 96px);
+        transform: translateX(-50%);
+        z-index: 60;
+    }
+
+    .kiwi-bongo-pop-enter,
+    .kiwi-bongo-pop-leave-to {
+        transform: translateX(-50%) translateY(6px) scale(0.97);
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
+    .kiwi-bongo-cat,
     .kiwi-bongo-cat *,
     .kiwi-bongo-cat *::before,
     .kiwi-bongo-cat *::after,
@@ -1485,8 +1552,12 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
             reset_confirm: 'Reset Companion? This clears care, XP, and cosmetics.',
             reset_hint: "Reset your pet's current state and experience levels.",
             bongo_taps: 'Tap Sounds',
-            calm: 'Minimal Animations',
             large_cat: 'Larger Companion',
+            position: 'Position',
+            position_bottom: 'Bottom Right',
+            position_top: 'Top Right',
+            move_to_top: 'Move companion to top right',
+            move_to_bottom: 'Move companion to bottom right',
             skin: 'Skin',
             skin_load_error: 'Unable to load skin "{{skin}}". Choose another skin.',
             cosmetics: 'Cosmetics',
@@ -1534,10 +1605,16 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
     var MIN_TIREDNESS = 0;
     var MIN_MOOD = 0;
     var XP_PER_LEVEL = 100;
+    var MAX_LEVEL = 20;
+    var MAX_XP = (MAX_LEVEL - 1) * XP_PER_LEVEL;
     var DAILY_XP = 10;
     var ACTIVE_XP_POINTS = 5;
     var ACTIVE_XP_MS = 10 * 60 * 1000;
     var ACTIVE_XP_CAP_MS = 30 * 60 * 1000;
+    var ACTIVE_XP_DAILY_CAP = 60;
+    var VIBE_XP_POINTS = 1;
+    var VIBE_XP_MS = 10 * 60 * 1000;
+    var VIBE_XP_CAP_MS = 30 * 60 * 1000;
     var HATS_CONFIG_PATH = 'static/plugins/bongo-cat/hats.json';
     var HATS_DIR = 'static/plugins/bongo-cat/hats/';
     var hatCatalog = kiwi.Vue.observable({
@@ -2009,8 +2086,8 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
             skin: normalizeSkinId(stored.skin) || DEFAULT_SKIN_ID,
             sound: typeof stored.sound === 'boolean' ? stored.sound : true,
             volume: clamp(numberOr(stored.volume, DEFAULT_VOLUME), 0, 1),
-            calm: stored.calm === true,
             large: stored.large === true,
+            position: stored.position === 'top' ? 'top' : 'bottom',
             hidden: typeof stored.hidden === 'boolean' ? stored.hidden : true,
             hunger: clamp(numberOr(stored.hunger, DEFAULT_HUNGER), MIN_HUNGER, 100),
             tiredness: clamp(
@@ -2019,11 +2096,19 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 100
             ),
             mood: clamp(numberOr(stored.mood, DEFAULT_MOOD), MIN_MOOD, 100),
-            xp: Math.max(0, Math.floor(numberOr(stored.xp, 0))),
+            xp: Math.min(MAX_XP, Math.max(0, Math.floor(numberOr(stored.xp, 0)))),
             lastHungerAt: timestampOr(stored.lastHungerAt, now),
             lastTirednessAt: timestampOr(stored.lastTirednessAt, now),
             lastMoodAt: timestampOr(stored.lastMoodAt, now),
             lastActiveXpAt: timestampOr(stored.lastActiveXpAt, now),
+            lastVibeXpAt: timestampOr(stored.lastVibeXpAt, now),
+            activeXpDay: typeof stored.activeXpDay === 'string'
+                ? stored.activeXpDay
+                : dayKey(new Date(now)),
+            activeXpToday: Math.min(
+                ACTIVE_XP_DAILY_CAP,
+                Math.max(0, Math.floor(numberOr(stored.activeXpToday, 0)))
+            ),
             lastXpDay: typeof stored.lastXpDay === 'string'
                 ? stored.lastXpDay
                 : dayKey(new Date(now)),
@@ -2046,6 +2131,13 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
         store.lastTirednessAt = time;
         store.lastMoodAt = time;
         store.lastActiveXpAt = time;
+        store.lastVibeXpAt = time;
+    }
+
+    function addXp(amount) {
+        var before = store.xp;
+        store.xp = Math.min(MAX_XP, before + amount);
+        return store.xp - before;
     }
 
     function persist() {
@@ -2055,8 +2147,8 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 skin: store.skin,
                 sound: store.sound,
                 volume: store.volume,
-                calm: store.calm,
                 large: store.large,
+                position: store.position,
                 hidden: store.hidden,
                 hunger: store.hunger,
                 tiredness: store.tiredness,
@@ -2066,6 +2158,9 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 lastTirednessAt: store.lastTirednessAt,
                 lastMoodAt: store.lastMoodAt,
                 lastActiveXpAt: store.lastActiveXpAt,
+                lastVibeXpAt: store.lastVibeXpAt,
+                activeXpDay: store.activeXpDay,
+                activeXpToday: store.activeXpToday,
                 lastXpDay: store.lastXpDay,
                 hatsUnlocked: store.hatsUnlocked,
                 selectedHat: store.selectedHat,
@@ -2262,8 +2357,12 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 lastHighlightReactionAt: 0,
                 lastNoticeReactionAt: 0,
                 lastWorriedReactionAt: 0,
+                lastUserActivityAt: 0,
                 highTone: false,
                 now: Date.now(),
+                toolbarOpen: false,
+                toolbarObserver: null,
+                toolbarCheckTimer: null,
                 typingTimer: null,
                 sleepTimer: null,
                 pettedTimer: null,
@@ -2349,10 +2448,10 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 return skinState.failedSkin;
             },
             level: function() {
-                return Math.floor(store.xp / XP_PER_LEVEL) + 1;
+                return Math.min(MAX_LEVEL, Math.floor(store.xp / XP_PER_LEVEL) + 1);
             },
             levelProgress: function() {
-                return store.xp % XP_PER_LEVEL;
+                return store.xp >= MAX_XP ? XP_PER_LEVEL : store.xp % XP_PER_LEVEL;
             },
             levelPercent: function() {
                 return Math.round((this.levelProgress / XP_PER_LEVEL) * 100);
@@ -2536,7 +2635,6 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 return this.evil &&
                     this.moodBand === 'happy' &&
                     !store.hidden &&
-                    !store.calm &&
                     !this.asleep &&
                     !this.worried &&
                     !this.celebrating &&
@@ -2572,8 +2670,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     this.radioMode === 'tired-jam';
             },
             showMusicNotes: function() {
-                return (this.radioMode === 'jam' || this.radioMode === 'tired-jam') &&
-                    !store.calm;
+                return this.radioMode === 'jam' || this.radioMode === 'tired-jam';
             },
             asleep: function() {
                 return this.sleeping || this.napping;
@@ -2643,6 +2740,8 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
             kiwi.on('message.new', this.onMessage, this);
             kiwi.on('twitch.usernotice', this.onUserNotice, this);
             this.applyDecay();
+            store.lastActiveXpAt = Date.now();
+            store.lastVibeXpAt = Date.now();
             this.applyProgression();
             this.checkSleep();
             this.scheduleBlink();
@@ -2654,12 +2753,19 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
             this.loadSnacks();
             this.loadHats();
             this.loadSkin();
+            this.observeToolbar();
+            this.updateToolbarOffset();
             this.sleepTimer = window.setInterval(this.tick.bind(this), CARE_TICK_MS);
         },
         beforeDestroy: function() {
             kiwi.off('input.activity', this.onActivity, this);
             kiwi.off('message.new', this.onMessage, this);
             kiwi.off('twitch.usernotice', this.onUserNotice, this);
+            if (this.toolbarObserver) {
+                this.toolbarObserver.disconnect();
+                this.toolbarObserver = null;
+            }
+            window.clearTimeout(this.toolbarCheckTimer);
             window.clearInterval(this.sleepTimer);
             window.clearTimeout(this.typingTimer);
             window.clearTimeout(this.pettedTimer);
@@ -2682,6 +2788,71 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
             window.clearTimeout(this.evilTimer);
         },
         methods: {
+            isToolbarOpen: function() {
+                var inline = document.querySelector('.kiwi-controlinput--show-tools--inline');
+                var tools = document.querySelector('.kiwi-controlinput-tools-container');
+                var active = document.querySelector('.kiwi-controlinput-active-tool');
+                return (!!tools && !inline) || !!(active && active.firstElementChild);
+            },
+            updateToolbarOffset: function() {
+                this.toolbarOpen = this.isToolbarOpen();
+            },
+            scheduleToolbarCheck: function() {
+                if (this.toolbarCheckTimer) {
+                    return;
+                }
+                this.toolbarCheckTimer = window.setTimeout(function() {
+                    this.toolbarCheckTimer = null;
+                    this.updateToolbarOffset();
+                }.bind(this), 0);
+            },
+            isToolbarMutationRelevant: function(mutations) {
+                var selector = '.kiwi-controlinput-tools-container, ' +
+                    '.kiwi-controlinput-active-tool';
+                var isRelevantNode = function(node) {
+                    return !!(node && node.nodeType === 1 &&
+                        (node.matches(selector) || node.querySelector(selector)));
+                };
+
+                for (var i = 0; i < mutations.length; i += 1) {
+                    var target = mutations[i].target;
+                    if (target && target.nodeType === 1 && target.closest(selector)) {
+                        return true;
+                    }
+
+                    var added = mutations[i].addedNodes;
+                    for (var j = 0; j < added.length; j += 1) {
+                        if (isRelevantNode(added[j])) {
+                            return true;
+                        }
+                    }
+
+                    var removed = mutations[i].removedNodes;
+                    for (var k = 0; k < removed.length; k += 1) {
+                        if (isRelevantNode(removed[k])) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            },
+            onToolbarMutation: function(mutations) {
+                if (this.isToolbarMutationRelevant(mutations)) {
+                    this.scheduleToolbarCheck();
+                }
+            },
+            observeToolbar: function() {
+                if (this.toolbarObserver || typeof window.MutationObserver !== 'function') {
+                    return;
+                }
+                this.toolbarObserver = new window.MutationObserver(
+                    this.onToolbarMutation.bind(this)
+                );
+                this.toolbarObserver.observe(document.body, {
+                    childList: true,
+                    subtree: true,
+                });
+            },
             cooldownRemaining: function(lastAt, duration) {
                 var remaining = (lastAt || 0) + duration - this.now;
                 return remaining > 0 ? remaining : 0;
@@ -2787,31 +2958,81 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 this.lastMusicAt = now - (elapsed % MUSIC_EFFECT_MS);
                 persist();
             },
+            isVibing: function() {
+                return !this.asleep &&
+                    this.radioPlaying &&
+                    (this.radioMode === 'jam' || this.radioMode === 'tired-jam');
+            },
             applyProgression: function() {
                 var now = Date.now();
-
-                if (store.hidden) {
-                    store.lastActiveXpAt = now;
-                    return;
-                }
-
-                var changed = false;
                 var today = dayKey(new Date(now));
+                var changed = false;
 
                 if (store.lastXpDay !== today) {
                     store.lastXpDay = today;
-                    store.xp += DAILY_XP;
+                    addXp(DAILY_XP);
                     changed = true;
                 }
 
+                if (store.activeXpDay !== today) {
+                    store.activeXpDay = today;
+                    store.activeXpToday = 0;
+                    changed = true;
+                }
+
+                if (store.hidden || document.visibilityState === 'hidden') {
+                    store.lastActiveXpAt = now;
+                    store.lastVibeXpAt = now;
+                    if (changed) {
+                        persist();
+                    }
+                    return;
+                }
+
+                var activeAwarded = false;
                 var last = Math.min(timestampOr(store.lastActiveXpAt, now), now);
                 var elapsed = Math.min(Math.max(now - last, 0), ACTIVE_XP_CAP_MS);
                 var points = Math.floor(elapsed / ACTIVE_XP_MS);
+                var hasActivity = this.lastUserActivityAt >= last;
 
                 if (points > 0) {
-                    store.xp += points * ACTIVE_XP_POINTS;
+                    var activeCapLeft = ACTIVE_XP_DAILY_CAP - store.activeXpToday;
+                    if (hasActivity && activeCapLeft > 0) {
+                        var activeAmount = Math.min(
+                            points * ACTIVE_XP_POINTS,
+                            activeCapLeft
+                        );
+                        var activeGained = addXp(activeAmount);
+                        if (activeGained > 0) {
+                            store.activeXpToday += activeGained;
+                            activeAwarded = true;
+                            changed = true;
+                        }
+                    }
                     store.lastActiveXpAt = now - (elapsed % ACTIVE_XP_MS);
-                    changed = true;
+                } else if (!hasActivity) {
+                    store.lastActiveXpAt = now;
+                }
+
+                var vibing = this.isVibing();
+                var vibeLast = Math.min(timestampOr(store.lastVibeXpAt, now), now);
+                var vibeElapsed = Math.min(Math.max(now - vibeLast, 0), VIBE_XP_CAP_MS);
+                var vibePoints = Math.floor(vibeElapsed / VIBE_XP_MS);
+
+                if (vibePoints > 0) {
+                    var vibeCapLeft = ACTIVE_XP_DAILY_CAP - store.activeXpToday;
+                    if (!activeAwarded && vibing && vibeCapLeft > 0) {
+                        var vibeGained = addXp(
+                            Math.min(vibePoints * VIBE_XP_POINTS, vibeCapLeft)
+                        );
+                        if (vibeGained > 0) {
+                            store.activeXpToday += vibeGained;
+                            changed = true;
+                        }
+                    }
+                    store.lastVibeXpAt = now - (vibeElapsed % VIBE_XP_MS);
+                } else if (activeAwarded || !vibing) {
+                    store.lastVibeXpAt = now;
                 }
 
                 if (changed) {
@@ -2859,9 +3080,6 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 }.bind(this), 1000);
             },
             shouldBlink: function() {
-                if (store.calm) {
-                    return false;
-                }
                 if (window.matchMedia &&
                     window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                     return false;
@@ -2890,7 +3108,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 }.bind(this), delay);
             },
             shouldYawn: function() {
-                if (store.hidden || store.calm || this.asleep ||
+                if (store.hidden || this.asleep ||
                     this.worried || this.celebrating) {
                     return false;
                 }
@@ -2968,7 +3186,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 this.ensureSmileScheduled();
             },
             shouldSmile: function() {
-                if (store.hidden || store.calm || this.asleep || this.evil ||
+                if (store.hidden || this.asleep || this.evil ||
                     this.worried || this.celebrating || this.yawning) {
                     return false;
                 }
@@ -3018,7 +3236,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 }.bind(this), delay);
             },
             shouldSwapLimbs: function() {
-                if (store.hidden || store.calm || this.asleep) {
+                if (store.hidden || this.asleep) {
                     return false;
                 }
                 return !(window.matchMedia &&
@@ -3186,6 +3404,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     return;
                 }
 
+                this.lastUserActivityAt = Date.now();
                 this.wake();
                 this.pawSide = this.pawSide === 'left' ? 'right' : 'left';
                 this.pawDownSide = this.pawSide;
@@ -3474,6 +3693,10 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     playTone(true);
                 }
             },
+            togglePosition: function() {
+                store.position = store.position === 'top' ? 'bottom' : 'top';
+                persist();
+            },
         },
     });
 
@@ -3497,10 +3720,10 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 return skinState.failedSkin;
             },
             level: function() {
-                return Math.floor(store.xp / XP_PER_LEVEL) + 1;
+                return Math.min(MAX_LEVEL, Math.floor(store.xp / XP_PER_LEVEL) + 1);
             },
             levelProgress: function() {
-                return store.xp % XP_PER_LEVEL;
+                return store.xp >= MAX_XP ? XP_PER_LEVEL : store.xp % XP_PER_LEVEL;
             },
             xpPerLevel: function() {
                 return XP_PER_LEVEL;
@@ -3551,12 +3774,12 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 persist();
                 playTone(true);
             },
-            toggleCalm: function() {
-                store.calm = !store.calm;
-                persist();
-            },
             toggleLarge: function() {
                 store.large = !store.large;
+                persist();
+            },
+            setPosition: function(value) {
+                store.position = value === 'top' ? 'top' : 'bottom';
                 persist();
             },
             show: function() {
@@ -3606,7 +3829,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                         file: hat.file,
                     };
                 } else {
-                    store.xp += 5;
+                    addXp(5);
                     this.hatRollResult = {
                         type: 'duplicate',
                         name: hat.name,
@@ -3634,6 +3857,9 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 store.lastTirednessAt = now;
                 store.lastMoodAt = now;
                 store.lastActiveXpAt = now;
+                store.lastVibeXpAt = now;
+                store.activeXpDay = dayKey(new Date(now));
+                store.activeXpToday = 0;
                 store.lastXpDay = dayKey(new Date(now));
                 store.hatsUnlocked = [];
                 store.selectedHat = '';
