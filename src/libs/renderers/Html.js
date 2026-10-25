@@ -69,7 +69,7 @@ function render(blocks, renderEmoticons) {
             content = EmojiProvider.blockToHtml(block, blocks.length === 1, showEmoticons);
             break;
         default:
-            content = escapeHtml(block.content);
+            content = EmojiProvider.wrapEmojiText(block.content);
         }
 
         return html + buildSpan(content, classes, style);
@@ -108,11 +108,11 @@ function linkifyUser(block) {
 
     return `<a class="kiwi-nick" data-nick="${escaped}"` +
         (colour ? ` style="color:${colour};"` : '') +
-        `>${escaped}</a>`;
+        `>${EmojiProvider.wrapEmojiText(block.meta.user)}</a>`;
 }
 
 function linkifyChannel(block) {
-    return `<a class="u-link kiwi-channel" data-channel-name="${escapeHtml(block.meta.channel)}">${escapeHtml(block.content)}</a>`;
+    return `<a class="u-link kiwi-channel" data-channel-name="${escapeHtml(block.meta.channel)}">${EmojiProvider.wrapEmojiText(block.content)}</a>`;
 }
 
 function buildSpan(content, classes, style) {

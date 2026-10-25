@@ -428,6 +428,14 @@ msgstr "Show timestamps"
 msgid "settings_24hour_timestamps"
 msgstr "Use 24-hour timestamps"
 
+#: Maximum emoji Unicode version shown in the picker
+msgid "settings_emoji_picker_max_version"
+msgstr "Show Emoji Up To"
+
+#: Show all emoji versions
+msgid "settings_emoji_version_all"
+msgstr "All"
+
 #: Show emoticons
 msgid "settings_emoticons"
 msgstr "Show emoticons"

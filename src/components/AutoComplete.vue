@@ -12,14 +12,14 @@
             @mousedown.prevent
             @click="handleClick(item)"
         >
-            <span class="kiwi-autocomplete-item-value">{{ item.text }}<span
+            <span class="kiwi-autocomplete-item-value"><emoji-text :text="item.text" /><span
                 v-if="item.badge"
                 :class="['kiwi-autocomplete-badge', `kiwi-autocomplete-badge--${item.badge.toLowerCase()}`]"
             >{{ item.badge }}</span></span>
             <span
                 v-if="item.type === 'command'"
                 class="u-link kiwi-autocomplete-item-details"
-            >{{ item.description }}</span>
+            ><emoji-text :text="item.description" /></span>
             <span
                 v-else-if="item.type === 'user'"
                 class="u-link kiwi-autocomplete-item-details"

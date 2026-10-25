@@ -1,7 +1,19 @@
 'kiwi public';
 
 import getState from '@/libs/state';
-import { shortcodeToChar } from '@/res/emojis';
+import { emojiData, shortcodeToChar } from '@/res/emojis';
+import { escapeHtml } from '@/helpers/Utils';
+
+const emojiByChar = new Map();
+Object.values(emojiData).forEach((list) => {
+    list.forEach((emoji) => {
+        emojiByChar.set(emoji.char, emoji);
+    });
+});
+
+const graphemeSegmenter = typeof Intl !== 'undefined' && Intl.Segmenter ?
+    new Intl.Segmenter(undefined, { granularity: 'grapheme' }) :
+    null;
 
 export function matchEmoji(word) {
     if (!getState().setting('buffers.emoji_convert_incoming')) {
@@ -19,13 +31,41 @@ export function matchEmoji(word) {
         type: 'emoji',
         meta: {
             emoji: shortcodeToChar[shortcode],
+            shortcode,
         },
     }];
 }
 
 export function blockToHtml(block, isSingle, showEmoticons) {
-    // Native unicode emojis are just text
-    return block.meta.emoji || block.content;
+    if (block.meta.emoji) {
+        return emojiSpan(block.meta.emoji, block.meta.shortcode);
+    }
+    return escapeHtml(block.content);
+}
+
+/**
+ * Wrap only emoji that exactly match an entry in our database.
+ * Unknown emoji, skin-tone variants, and unqualified forms are left as text.
+ * @param {string} text
+ * @returns {string}
+ */
+export function wrapEmojiText(text) {
+    const source = String(text || '');
+    if (!graphemeSegmenter) {
+        return escapeHtml(source);
+    }
+
+    let html = '';
+    Array.from(graphemeSegmenter.segment(source)).forEach(({ segment }) => {
+        const emoji = emojiByChar.get(segment);
+        html += emoji ? emojiSpan(segment, emoji.shortcode) : escapeHtml(segment);
+    });
+    return html;
+}
+
+function emojiSpan(char, shortcode) {
+    const title = shortcode ? ` title=":${escapeHtml(shortcode)}:"` : '';
+    return `<span class="kiwi-emoji"${title}>${escapeHtml(char)}</span>`;
 }
 
 export function getEmojis(word) {
@@ -41,6 +81,6 @@ export function getEmojis(word) {
 }
 
 function extractShortcode(word) {
-    const match = word.match(/:([a-z0-9_+-]+):/);
+    const match = word.match(/:([\p{L}\p{N}_+-]+):/u);
     return match ? match[1] : null;
 }

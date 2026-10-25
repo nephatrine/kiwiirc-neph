@@ -19,7 +19,7 @@
                 <away-status-indicator
                     v-if="buffer.isQuery() && awayNotifySupported()"
                     :network="network" :user="network.userByName(buffer.name)"
-                />{{ buffer.metadata['display-name'] || buffer.name }}
+                /><emoji-text :text="buffer.metadata['display-name'] || buffer.name" />
             </div>
             <div class="kiwi-statebrowser-buffer-actions">
                 <div class="kiwi-statebrowser-channel-labels">

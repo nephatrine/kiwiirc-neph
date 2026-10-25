@@ -53,7 +53,7 @@
                         <div class="kiwi-emojipicker-category-title">{{ cat.label }}</div>
                         <div class="kiwi-emojipicker-category-list">
                             <div
-                                v-for="emoji in emojiData[cat.id]"
+                                v-for="emoji in visibleEmojiData[cat.id]"
                                 :key="emoji.shortcode"
                                 :title="emoji.shortcode"
                                 class="kiwi-emojipicker-emoji"
@@ -73,6 +73,7 @@
 'kiwi public';
 
 import { categories, emojiData } from '@/res/emojis';
+import { emojiMatches, filterEmojiData } from '@/helpers/Emoji';
 
 export default {
     data() {
@@ -87,12 +88,18 @@ export default {
         visible() {
             return this.$state.ui.emoji_picker.visible;
         },
+        emojiPickerMaxVersion() {
+            const value = Number(this.$state.setting('emojiPickerMaxVersion'));
+            return Number.isFinite(value) ? value : 0;
+        },
+        visibleEmojiData() {
+            return filterEmojiData(this.emojiData, this.emojiPickerMaxVersion);
+        },
         filteredEmojis() {
-            const f = this.filter.toLowerCase();
             const results = [];
-            Object.values(this.emojiData).forEach((list) => {
+            Object.values(this.visibleEmojiData).forEach((list) => {
                 list.forEach((emoji) => {
-                    if (emoji.shortcode.includes(f) || emoji.name.includes(f)) {
+                    if (emojiMatches(emoji, this.filter)) {
                         results.push(emoji);
                     }
                 });

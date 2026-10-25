@@ -15,13 +15,13 @@
                 <span
                     class="kiwi-userbox-nick"
                     :style="{ color: user.getColour() }"
-                >{{ user.metadata['display-name'] || user.nick }}</span>
+                ><emoji-text :text="user.metadata['display-name'] || user.nick" /></span>
                 <span v-if="user.metadata.pronouns" class="kiwi-userbox-pronouns">({{ user.metadata.pronouns }})</span>
                 <span v-if="userMode" class="kiwi-userbox-modestring">+{{ userMode }}</span>
                 <span
                     v-if="user.metadata['display-name'] && user.metadata['display-name'] !== user.nick"
                     class="kiwi-userbox-truenick"
-                >{{ user.nick }} (irc)</span>
+                ><emoji-text :text="user.nick" /> (irc)</span>
                 <span v-if="realname" class="kiwi-userbox-realname" v-html="formattedRealname" />
                 <span v-if="user.username || user.host" class="kiwi-userbox-usermask">{{ user.username }}@{{ user.host }}</span>
                 <span v-if="user.is_bot" :title="$t('bot')" class="kiwi-userbox-bot">🤖</span>
@@ -52,10 +52,10 @@
 
         <div class="kiwi-userbox-basicinfo">
             <div v-if="user.statusMessage()" class="kiwi-userbox-status">
-                <strong>{{ $t('status') }}:</strong> {{ user.statusMessage() }}
+                <strong>{{ $t('status') }}:</strong> <emoji-text :text="user.statusMessage()" />
             </div>
             <div v-if="user.metadata.description && !isEditingProfile" class="kiwi-userbox-description">
-                {{ user.metadata.description }}
+                <emoji-text :text="user.metadata.description" />
             </div>
             <div v-if="user.metadata.homepage && !isEditingProfile" class="kiwi-userbox-homepage">
                 <i class="fa fa-globe" aria-hidden="true" />

@@ -90,6 +90,12 @@ and this project adheres to
   file quietly disables the player. Plugins can expose and consume named
   services with `kiwi.registerService()` and `kiwi.getService()`; NephWave uses
   the new `radio` service.
+- **Emoji**: Emoji categories, shortnames, aliases, and variation selectors now
+  follow JoyPixels emoji-toolkit metadata. The picker can limit emoji to a
+  maximum Unicode version with `emojiPickerMaxVersion`; the setting appears only
+  while the picker is enabled. Known emoji in messages, display names,
+  descriptions, and other metadata are wrapped in `kiwi-emoji` spans with an
+  emoji font stack and a shortcode tooltip.
 
 ### Fixed
 

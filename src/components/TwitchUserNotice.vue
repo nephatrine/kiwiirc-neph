@@ -43,7 +43,7 @@
                         v-for="(part, index) in headlineParts"
                         :key="`headline-${index}`"
                         :class="{ 'kiwi-formatting-reverse kiwi-twitch-usernotice-actor': part.actor }"
-                    >{{ part.text }}</span>
+                    ><emoji-text :text="part.text" /></span>
                 </span>
             </div>
             <div v-if="details.length" class="kiwi-twitch-usernotice-details">
@@ -56,7 +56,7 @@
                         {{ $t(detail.labelKey) }}
                     </span>
                     <span class="kiwi-twitch-usernotice-detail-value">
-                        {{ detailValue(detail) }}
+                        <emoji-text :text="detailValue(detail)" />
                     </span>
                 </span>
             </div>

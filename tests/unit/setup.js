@@ -7,6 +7,21 @@ import Vue from 'vue';
  * this.listen() throw from their created hook.
  */
 
+// Keep component templates that use <emoji-text> resolvable without importing
+// the app's state singleton into the test setup. The real component is tested
+// directly in EmojiText.spec.js.
+Vue.component('emoji-text', {
+    props: {
+        text: {
+            type: String,
+            default: '',
+        },
+    },
+    render(h) {
+        return h('span', this.text);
+    },
+});
+
 Vue.directive('focus', {
     // Support conditional eg. v-focus="false"
     bind(el, bindings) {

@@ -16,6 +16,21 @@ div {
     -webkit-tap-highlight-color: rgb(0, 0, 0, 0);
 }
 
+.kiwi-emoji {
+    font-family:
+        'Twemoji Mozilla',
+        'Apple Color Emoji',
+        'Segoe UI Emoji',
+        'Noto Color Emoji',
+        'Android Emoji',
+        'EmojiOne Color',
+        'Segoe UI Symbol',
+        sans-serif;
+    font-variant-emoji: emoji;
+    font-style: normal;
+    font-weight: normal;
+}
+
 ul {
     padding-left: 1em;
 }

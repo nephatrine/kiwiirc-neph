@@ -5,10 +5,10 @@
         </div>
         <div class="kiwi-aboutbuffer-header">
             <div class="kiwi-aboutbuffer-displayname">
-                {{ b.metadata['display-name'] || b.name }}
+                <emoji-text :text="b.metadata['display-name'] || b.name" />
             </div>
             <div v-if="b.metadata['display-name']" class="kiwi-aboutbuffer-name">
-                {{ b.name }}
+                <emoji-text :text="b.name" />
             </div>
         </div>
 

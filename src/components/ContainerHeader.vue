@@ -14,8 +14,8 @@
                         class="kiwi-header-network-icon"
                         @error="iconError = true"
                     >
-                    {{ buffer.metadata['display-name'] || buffer.name }}
-                    <span v-if="buffer.metadata['display-name']" class="kiwi-header-name-id">({{ buffer.name }})</span>
+                    <emoji-text :text="buffer.metadata['display-name'] || buffer.name" />
+                    <span v-if="buffer.metadata['display-name']" class="kiwi-header-name-id">(<emoji-text :text="buffer.name" />)</span>
                 </div>
             </div>
             <div class="kiwi-header-center">

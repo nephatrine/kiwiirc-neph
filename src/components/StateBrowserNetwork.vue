@@ -19,7 +19,7 @@
                     class="kiwi-statebrowser-network-icon"
                     @error="iconError = true"
                 >
-                {{ network.name }}
+                <emoji-text :text="network.name" />
             </a>
             <div class="kiwi-statebrowser-buffer-actions">
                 <div class="kiwi-statebrowser-channel-labels">

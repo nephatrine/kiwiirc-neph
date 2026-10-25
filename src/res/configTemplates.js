@@ -186,6 +186,7 @@ export const configTemplates = {
         autocompleteTokens: ['/', '#', '@'],
         forceShowEmojiPicker: false,
         showEmojiPicker: true,
+        emojiPickerMaxVersion: 0,
         showColorPicker: false,
         showSendButton: false,
         showAwayStatusIndicators: true,

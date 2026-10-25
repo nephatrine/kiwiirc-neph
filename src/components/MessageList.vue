@@ -466,7 +466,8 @@ export default {
         onMessageDblClick(event, message) {
             clearTimeout(this.messageClickTmr);
 
-            let dataNick = event.target.getAttribute('data-nick');
+            let nickElement = event.target.closest('a[data-nick]');
+            let dataNick = nickElement ? nickElement.getAttribute('data-nick') : null;
             if (!dataNick) {
                 return;
             }
@@ -484,18 +485,23 @@ export default {
                 return;
             }
 
+            let link = event.target.closest('a');
+            let nickElement = event.target.closest('a[data-nick]');
+            let channelElement = event.target.closest('[data-channel-name]');
+            let urlElement = event.target.closest('[data-url]');
+
             // Delaying the click for 200ms allows us to check for a second click. ie. double click
             // Quick hack as we only need double click for nicks, nothing else
-            if (delay && event.target.getAttribute('data-nick')) {
+            if (delay && nickElement) {
                 clearTimeout(this.messageClickTmr);
                 this.messageClickTmr = setTimeout(this.onMessageClick, 200, event, message, false);
                 return;
             }
 
-            let isLink = event.target.tagName === 'A';
-
-            let channelName = event.target.getAttribute('data-channel-name');
-            if (channelName && isLink) {
+            let channelName = channelElement ?
+                channelElement.getAttribute('data-channel-name') :
+                null;
+            if (channelName && link) {
                 let network = this.buffer.getNetwork();
                 this.$state.addBuffer(this.buffer.networkid, channelName);
                 network.ircClient.join(channelName);
@@ -503,14 +509,14 @@ export default {
                 return;
             }
 
-            let userNick = event.target.getAttribute('data-nick');
-            if (userNick && isLink) {
+            let userNick = nickElement ? nickElement.getAttribute('data-nick') : null;
+            if (userNick && link) {
                 this.openUserBox(userNick);
                 return;
             }
 
-            let url = event.target.getAttribute('data-url');
-            if (url && isLink) {
+            let url = urlElement ? urlElement.getAttribute('data-url') : null;
+            if (url && link) {
                 if (this.$state.setting('buffers.inline_link_auto_previews')) {
                     message.embed.type = 'url';
                     message.embed.payload = url;

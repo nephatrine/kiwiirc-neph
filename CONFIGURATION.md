@@ -233,6 +233,7 @@ them.
 | `google_fonts`                  | Source Sans Pro and Source Code Pro |                            |
 | `showEmojiPicker`               | `true`                              |                            |
 | `forceShowEmojiPicker`          | `false`                             |                            |
+| `emojiPickerMaxVersion`         | `0`                                 | `0` shows all versions.    |
 | `showColorPicker`               | `false`                             |                            |
 | `showSendButton`                | `false`                             |                            |
 | `showAutocomplete`              | `true`                              |                            |

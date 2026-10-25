@@ -116,6 +116,22 @@
                                 <span>{{ $t('settings_emoji_convert_as_typed') }} </span>
                                 <input v-model="settingBufferEmojiConvertAsTyped" type="checkbox">
                             </label>
+                            <label
+                                v-if="emojiPickerEnabled"
+                                class="kiwi-appsettings-messagelistDisplay"
+                            >
+                                <span>{{ $t('settings_emoji_picker_max_version') }} </span>
+                                <select v-model.number="settingEmojiPickerMaxVersion">
+                                    <option :value="0">{{ $t('settings_emoji_version_all') }}</option>
+                                    <option
+                                        v-for="version in emojiVersions"
+                                        :key="version"
+                                        :value="version"
+                                    >
+                                        Unicode {{ version.toFixed(1) }}
+                                    </option>
+                                </select>
+                            </label>
                             <label class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_block_private') }} </span>
                                 <input v-model="settingBufferBlockPms" type="checkbox">
@@ -326,6 +342,8 @@
 import ThemeManager from '@/libs/ThemeManager';
 import GlobalApi from '@/libs/GlobalApi';
 import localesList from '@/res/localesList';
+import { emojiData } from '@/res/emojis';
+import { getEmojiVersions } from '@/helpers/Emoji';
 import { effectiveService, filehostAvailable, listUploadServices } from '@/libs/fileupload';
 import { debounce } from '@/helpers/Async';
 import SettingsAliases from './SettingsAliases';
@@ -398,6 +416,15 @@ export default {
             let activeNetwork = this.$state.getActiveNetwork();
             return !activeNetwork || activeNetwork.isUtf8;
         },
+        emojiPickerEnabled() {
+            return this.activeNetworkIsUtf8 && (
+                !!this.$state.setting('forceShowEmojiPicker') ||
+                !!this.$state.setting('showEmojiPicker')
+            );
+        },
+        emojiVersions() {
+            return getEmojiVersions(emojiData);
+        },
         timestamps_24h: {
             get() {
                 // %H is 24 hour format
@@ -414,6 +441,7 @@ export default {
             return this.$state.settings;
         },
         settingShowAutoComplete: bindSetting('showAutocomplete'),
+        settingEmojiPickerMaxVersion: bindSetting('emojiPickerMaxVersion'),
         settingAutoReconnect: bindSetting('autoReconnect'),
         settingPersistencePreference: bindSetting('persistencePreference'),
         settingWebpushEnabled: bindSetting('webpushEnabled'),

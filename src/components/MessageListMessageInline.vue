@@ -48,10 +48,14 @@
             <div v-if="props.message.reply" class="kiwi-messagelist-reply-preview" @click="props.ml.maybeScrollToId(props.message.reply)">
                 <i class="fa fa-reply" aria-hidden="true" />
                 <span v-if="props.m().getReplyMessage(props.message.reply)" class="kiwi-messagelist-reply-preview-nick">
-                    {{ props.ml.displayNickFor(props.m().getReplyMessage(props.message.reply)) }}:
+                    <emoji-text
+                        :text="props.ml.displayNickFor(
+                            props.m().getReplyMessage(props.message.reply)
+                        )"
+                    />:
                 </span>
                 <span v-if="props.m().getReplyMessage(props.message.reply)" class="kiwi-messagelist-reply-preview-message">
-                    {{ props.m().getReplyMessageText(props.message.reply) }}
+                    <emoji-text :text="props.m().getReplyMessageText(props.message.reply)" />
                 </span>
                 <span v-else class="kiwi-messagelist-reply-preview-id">
                     {{ props.message.reply }}
@@ -84,7 +88,7 @@
                 @mouseover="props.ml.hover_nick = props.message.nick.toLowerCase();"
                 @mouseout="props.ml.hover_nick = '';"
             >
-                <span v-if="!props.message.bridged_nick" class="kiwi-messagelist-nick--prefix">{{ props.message.user ? props.m().userModePrefix(props.message.user) : '' }}</span><a :data-nick="(props.message.nick || '').toLowerCase()">{{ props.m().displayNick() }}</a>
+                <span v-if="!props.message.bridged_nick" class="kiwi-messagelist-nick--prefix">{{ props.message.user ? props.m().userModePrefix(props.message.user) : '' }}</span><a :data-nick="(props.message.nick || '').toLowerCase()"><emoji-text :text="props.m().displayNick()" /></a>
             </span>
             <div
                 v-if="props.message.bodyTemplate

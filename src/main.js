@@ -39,6 +39,7 @@ import '@/components/utils/IrcInput';
 import '@/components/utils/InputPrompt';
 import '@/components/utils/InputConfirm';
 import '@/components/utils/TransitionExpand';
+import '@/components/utils/EmojiText';
 
 Vue.use(VueVirtualScroller);
 

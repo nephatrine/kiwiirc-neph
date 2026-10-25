@@ -54,6 +54,24 @@ $ npm run build
 ***Note:*** *Be sure to copy the files from the `dist/` folder to your
 webserver! This folder will be overwritten each time it is built.*
 
+### Updating Emoji Data
+
+`src/res/emojis.js` is generated from JoyPixels `emoji.json` and should not be
+hand-edited. Download `emoji.json` from
+[JoyPixels emoji-toolkit](https://github.com/joypixels/emoji-toolkit), then run:
+
+```bash
+npm run generate:emojis -- /path/to/emoji.json
+```
+
+The generator uses JoyPixels categories, primary shortnames, aliases, and
+fully-qualified variation selectors. It excludes skin-tone and hair-color
+variants, regional-indicator components, keycap components.
+
+If JoyPixels adds or removes emoji, the generator intentionally fails until
+`EXPECTED_CATEGORY_COUNTS` in the script and `tests/unit/EmojiData.spec.js` are
+updated.
+
 ### Development Environment
 
 Kiwi IRC is built with Vue.js, webpack, and Babel.
