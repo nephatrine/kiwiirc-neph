@@ -41,6 +41,9 @@ and this project adheres to
 
 ### Changed
 
+- **Themes**: NephDeck is now one theme with Amber, Green, and Cyan presets.
+  Preset, CRT, and sound preferences persist under `plugin-nephdeck.*` instead
+  of switching between three separate themes.
 - **Plugins**: Renamed the bundled channels sidebar file to
   `static/plugins/channels-sidebar.html`; update custom `plugins` URLs that used
   the old `plugin-channels-sidebar.html` name.

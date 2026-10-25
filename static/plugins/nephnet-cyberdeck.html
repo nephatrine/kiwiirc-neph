@@ -1,19 +1,19 @@
 <!--
     NephNET Cyberdeck — companion plugin
     ------------------------------------
-    Adds the physical "cyberdeck" chrome around the KiwiIRC application when a
-    NephNET Cyberdeck theme is active: top hardware bar, bottom nav-bus control
-    strip, corner rivets, CRT scanlines/vignette, and the phosphor/CRT/power/
-    audio controls.
+    Adds the physical "cyberdeck" chrome around the KiwiIRC application when the
+    NephDeck theme is active: top hardware bar, bottom nav-bus control strip,
+    corner rivets, CRT scanlines/vignette, and the phosphor/CRT/power/audio
+    controls.
 
     It also drives the interaction layer: a synthesized click earcon on
     button-like controls (buffers, sidebar tabs, the station manager) and
     contextual glitch bursts on highlights, link (connect/disconnect) changes
-    and palette switches.
+    and preset switches.
 
+    Preset, CRT, and sound preferences persist under plugin-nephdeck.*.
     The plugin is completely inert for every other theme: it only builds the
-    chrome while a NephNET Cyberdeck theme is selected and removes it again
-    when switching away.
+    chrome while NephDeck is selected and removes it again when switching away.
 
     Loaded via the `plugins` array in config.json.
 -->
@@ -22,16 +22,19 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
     'use strict';
 
     var THEME_PREFIX = 'nephdeck';
-    var PALETTES = {
-        amber: 'NephDeck Amber',
-        green: 'NephDeck Green',
-        cyan: 'NephDeck Cyan',
+    var SETTING_PREFIX = 'plugin-nephdeck.';
+    var DEFAULT_PRESET = 'amber';
+    var PRESETS = {
+        amber: 'Amber',
+        green: 'Green',
+        cyan: 'Cyan',
     };
 
     var rootWrap = null;
     var chromeRoot = null;
     var clockTimer = null;
     var signalTimer = null;
+    var preset = DEFAULT_PRESET;
     var crtOn = true;
     var poweredOn = true;
     var audioMuted = true;
@@ -40,6 +43,33 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
     var active = false;
     var lastUiTick = 0;
     var lastGlitch = 0;
+
+    function normalizePreset(value) {
+        return Object.prototype.hasOwnProperty.call(PRESETS, value)
+            ? value
+            : DEFAULT_PRESET;
+    }
+
+    function readSetting(name, fallback) {
+        try {
+            var value = kiwi.state.setting(SETTING_PREFIX + name);
+            return typeof value === 'undefined' ? fallback : value;
+        } catch (err) {
+            return fallback;
+        }
+    }
+
+    function writeSetting(name, value) {
+        try {
+            kiwi.state.setting(SETTING_PREFIX + name, value);
+        } catch (err) {
+            log.error('Unable to save NephDeck setting', err);
+        }
+    }
+
+    function boolSetting(value, fallback) {
+        return typeof value === 'boolean' ? value : fallback;
+    }
 
     /* ---- Web Audio: synthesized mechanical clicks + beeps (no files) ---- */
     function initAudio() {
@@ -357,19 +387,16 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         var controls = makeEl('div', 'nephnet-controls');
 
         var paletteButtons = {};
-        Object.keys(PALETTES).forEach(function (key) {
+        Object.keys(PRESETS).forEach(function (key) {
             var btn = makeEl('button', 'nephnet-btn nephnet-btn--phosphor', '');
             btn.type = 'button';
             btn.setAttribute('data-palette', key);
-            btn.setAttribute('title', key.toUpperCase() + ' phosphor');
-            btn.setAttribute('aria-label', key.toUpperCase() + ' phosphor palette');
+            btn.setAttribute('title', PRESETS[key] + ' phosphor');
+            btn.setAttribute('aria-label', PRESETS[key] + ' phosphor palette');
             btn.addEventListener('click', function () {
                 initAudio();
                 playBeep(750, 0.04);
-                if (kiwi.themes && typeof kiwi.themes.setTheme === 'function') {
-                    kiwi.themes.setTheme(PALETTES[key]);
-                }
-                updateControls();
+                applyPreset(key, true);
                 glitch();
             });
             paletteButtons[key] = btn;
@@ -382,7 +409,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
             initAudio();
             playClick(300, 0.03);
             crtOn = !crtOn;
-            applyCrt();
+            applyCrt(true);
         });
         crtBtn.setAttribute('title', 'CRT effect');
         crtBtn.setAttribute('aria-label', 'Toggle CRT effect');
@@ -390,7 +417,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         var audioBtn = makeIconButton('fa-volume-off', function () {
             audioMuted = !audioMuted;
             initAudio();
-            updateAudioButton();
+            applyAudio(true);
             if (!audioMuted) {
                 playBeep(1200, 0.05);
             }
@@ -411,16 +438,6 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         powerBtn.setAttribute('title', 'Power');
         powerBtn.setAttribute('aria-label', 'Toggle power');
         controls.appendChild(powerBtn);
-
-        function updateAudioButton() {
-            var icon = audioBtn.querySelector('i');
-            if (icon) {
-                icon.className = 'fa ' + (audioMuted ? 'fa-volume-off' : 'fa-volume-up');
-            }
-            audioBtn.classList.toggle('nephnet-btn--active', !audioMuted);
-        }
-
-        updateAudioButton();
 
         var bottombar = makeEl('div', 'nephnet-bottombar');
         bottombar.appendChild(makeEl('span', 'nephnet-bottombar-label', 'TACTILE NAV BUS // CYBERDECK'));
@@ -453,6 +470,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
 
         applyCrt();
         applyPower();
+        applyAudio(false);
         updateControls();
 
         clockTimer = window.setInterval(updateClock, 1000);
@@ -537,7 +555,39 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         updateSignal();
     }
 
-    function applyCrt() {
+    function applyPreset(value, persist) {
+        preset = normalizePreset(value);
+        if (document.body) {
+            Object.keys(PRESETS).forEach(function (key) {
+                document.body.classList.remove('nephdeck-preset-' + key);
+            });
+            document.body.classList.add('nephdeck-preset-' + preset);
+        }
+        updateControls();
+        if (persist) {
+            writeSetting('preset', preset);
+        }
+    }
+
+    function updateAudioButton() {
+        if (!chromeRoot || !chromeRoot._audioBtn) {
+            return;
+        }
+        var icon = chromeRoot._audioBtn.querySelector('i');
+        if (icon) {
+            icon.className = 'fa ' + (audioMuted ? 'fa-volume-off' : 'fa-volume-up');
+        }
+        chromeRoot._audioBtn.classList.toggle('nephnet-btn--active', !audioMuted);
+    }
+
+    function applyAudio(persist) {
+        updateAudioButton();
+        if (persist) {
+            writeSetting('sounds', !audioMuted);
+        }
+    }
+
+    function applyCrt(persist) {
         if (!document.body) {
             return;
         }
@@ -545,6 +595,9 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         document.body.classList.toggle('nephnet-deck-crt-off', !crtOn);
         if (chromeRoot && chromeRoot._crtBtn) {
             chromeRoot._crtBtn.classList.toggle('nephnet-btn--active', crtOn);
+        }
+        if (persist) {
+            writeSetting('crt', crtOn);
         }
     }
 
@@ -590,11 +643,9 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         if (!chromeRoot) {
             return;
         }
-        var activeTheme = currentThemeName();
         var buttons = chromeRoot._paletteButtons || {};
         Object.keys(buttons).forEach(function (key) {
-            var activePalette = PALETTES[key].toLowerCase() === activeTheme;
-            buttons[key].classList.toggle('nephnet-btn--active', activePalette);
+            buttons[key].classList.toggle('nephnet-btn--active', key === preset);
         });
     }
 
@@ -644,14 +695,19 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
     }
 
     function activate() {
+        preset = normalizePreset(readSetting('preset', DEFAULT_PRESET));
+        crtOn = boolSetting(readSetting('crt', true), true);
+        audioMuted = !boolSetting(readSetting('sounds', false), false);
+
         buildChrome();
         document.body.classList.add('nephnet-deck-active');
         syncStateBrowserPresence();
         syncStartupPresence();
         chromeRoot.hidden = false;
-        applyCrt();
+        applyPreset(preset, false);
+        applyCrt(false);
         applyPower();
-        updateControls();
+        applyAudio(false);
         if (!active) {
             active = true;
             addInteractionListeners();
@@ -676,6 +732,9 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
                 'nephnet-deck-power-on',
                 'nephnet-deck-powered-off'
             );
+            Object.keys(PRESETS).forEach(function (key) {
+                document.body.classList.remove('nephdeck-preset-' + key);
+            });
         }
         if (chromeRoot) {
             chromeRoot.hidden = true;

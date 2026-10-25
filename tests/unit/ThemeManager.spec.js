@@ -79,9 +79,9 @@ describe('ThemeManager mode detection', () => {
     });
 
     it('leaves the mode untouched when the name matches neither', () => {
-        const manager = makeManager(makeTheme('NephDeck Amber'));
+        const manager = makeManager(makeTheme('NephDeck'));
         manager.setMode('dark');
-        manager.guessMode(makeTheme('NephDeck Amber'));
+        manager.guessMode(makeTheme('NephDeck'));
         expect(manager.themeMode()).toBe('dark');
     });
 
@@ -97,7 +97,7 @@ describe('ThemeManager mode detection', () => {
 
     it('measures --brand-default-bg when no mode is configured', () => {
         mockComputedStyle({ '--brand-default-bg': '#1e1e2e' });
-        const manager = makeManager(makeTheme('NephDeck Amber'));
+        const manager = makeManager(makeTheme('NephDeck'));
         manager.refreshMode();
         expect(manager.themeMode()).toBe('dark');
     });

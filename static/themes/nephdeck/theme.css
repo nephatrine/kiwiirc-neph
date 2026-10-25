@@ -5,9 +5,9 @@
  * own complete set of component styling so it can present the cyberdeck /
  * field-terminal look from scratch.
  *
- * The three registered themes (amber / green / cyan) all import this file and
- * then override the --cd-* phosphor variables below. Because the @import sits
- * at the very top of each theme.css, those later overrides win the cascade.
+ * Amber is the default phosphor palette. The companion plugin adds one of
+ * `body.nephdeck-preset-amber`, `-green`, or `-cyan`; the overrides below swap
+ * only the phosphor variables while keeping the shared cyberdeck chassis.
  *
  * The `body.nephnet-deck-active` class (added by the companion plugin) enables
  * the hardware chrome and reserves space for the top/bottom bars and side rails.
@@ -96,6 +96,30 @@
     color-scheme: dark;
     color: var(--brand-default-fg);
     background-color: var(--cd-chassis);
+}
+
+/* Phosphor presets. Override both the body (chrome) and .kiwi-wrap because
+ * the base block above redeclares these variables on .kiwi-wrap. */
+body.nephdeck-preset-green,
+body.nephdeck-preset-green .kiwi-wrap {
+    --cd-accent: #22c55e;
+    --cd-accent-glow: #4ade80;
+    --cd-accent-deep: #15803d;
+    --cd-glow-rgb: 34 197 94;
+
+    --cd-screen-text: #86efac;
+    --cd-screen-dim: #6b8f78;
+}
+
+body.nephdeck-preset-cyan,
+body.nephdeck-preset-cyan .kiwi-wrap {
+    --cd-accent: #06b6d4;
+    --cd-accent-glow: #38bdf8;
+    --cd-accent-deep: #0e7490;
+    --cd-glow-rgb: 6 182 212;
+
+    --cd-screen-text: #7dd3fc;
+    --cd-screen-dim: #5f8598;
 }
 
 .kiwi-wrap select option {

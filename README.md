@@ -7,7 +7,7 @@
   [webircgateway](https://github.com/kiwiirc/webircgateway), or through a
   bouncer such as [soju](https://soju.im/) with the IRCv3 `bouncer-networks`
   extension
-- 40 built-in themes, plus a custom theme URL
+- 38 built-in themes, plus a custom theme URL
 - Replies, reactions, typing indicators, and an emoji picker
 - Display names, pronouns, and profile colour when the server provides them
 - History and read markers that stay in sync across sessions
