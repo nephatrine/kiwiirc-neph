@@ -96,6 +96,9 @@ and this project adheres to
   while the picker is enabled. Known emoji in messages, display names,
   descriptions, and other metadata are wrapped in `kiwi-emoji` spans with an
   emoji font stack and a shortcode tooltip.
+- **Build**: Production builds now minify theme CSS, plugin HTML, and locale
+  JSON in `dist/static/`. Config files, station lists, and other static data
+  remain readable.
 
 ### Fixed
 
