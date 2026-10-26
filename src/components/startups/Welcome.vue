@@ -445,15 +445,18 @@ export default {
                 !this.rememberPasswordDisabled;
         },
         greetingText() {
-            let greeting = this.$state.settings.startupOptions.greetingText;
+            let greeting = this.startupOptions.greetingText;
             if (typeof greeting === 'string') {
                 return greeting;
             }
-            if (this.serverInfo && this.serverInfo.isupport.NETWORK) {
+
+            const isupport = this.serverInfo && this.serverInfo.isupport;
+            if (isupport && isupport.NETWORK) {
                 return this.$t('welcome_to_network', {
-                    network: escapeHtml(this.serverInfo.isupport.NETWORK),
+                    network: escapeHtml(isupport.NETWORK),
                 });
             }
+
             return this.$t('start_greeting');
         },
         footerText() {
@@ -618,7 +621,7 @@ export default {
                 name === 'ICON' || name.endsWith('/ICON')
             ));
             return key ?
-                Misc.sanitizeUrl(tokens[key]) :
+                Misc.sanitizeUrl(tokens[key]).replace('{size}', '64') :
                 '';
         },
         // IRC lengths are byte counts, so a multi-byte character can be

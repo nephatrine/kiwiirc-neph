@@ -585,4 +585,30 @@ describe('Welcome account tabs', () => {
         expect(comp.registerNickSuggestion).toBe('user');
         expect(comp.effectiveNick).toBe('user');
     });
+
+    it('keeps a configured greeting when the probe reports a network name', async() => {
+        s.settings.startupOptions = { greetingText: 'NephIRC' };
+        comp.serverInfo = { isupport: { NETWORK: 'Libera.Chat' } };
+        await comp.$nextTick();
+        expect(comp.greetingText).toBe('NephIRC');
+    });
+
+    it('falls back to the network name when no greeting is configured', async() => {
+        s.settings.startupOptions = {};
+        comp.serverInfo = { isupport: { NETWORK: 'Libera.Chat' } };
+        await comp.$nextTick();
+        expect(comp.greetingText).toBe('welcome_to_network');
+    });
+
+    it('keeps the probe icon when a greeting is configured', async() => {
+        s.settings.startupOptions = { greetingText: 'NephIRC' };
+        comp.serverInfo = {
+            isupport: {
+                'DRAFT/ICON': 'https://example.com/icon-{size}.png',
+            },
+        };
+        await comp.$nextTick();
+        expect(comp.greetingText).toBe('NephIRC');
+        expect(comp.serverIcon).toBe('https://example.com/icon-64.png');
+    });
 });
