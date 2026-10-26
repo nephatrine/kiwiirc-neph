@@ -708,6 +708,22 @@ export default {
     padding: 10px;
 }
 
+.kiwi-appsettings-block label {
+    display: block;
+    line-height: 20px;
+    margin: 0 0 3px 2px;
+}
+
+.kiwi-appsettings-block label span {
+    display: inline-block;
+    margin-right: 1em;
+    line-height: 25px;
+    width: auto;
+    font-weight: 500;
+    text-align: left;
+    max-width: none;
+}
+
 .kiwi-appsettings-webpush-error {
     color: var(--brand-error);
     padding: 0 10px 10px 10px;
