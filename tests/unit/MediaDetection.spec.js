@@ -1,6 +1,13 @@
 import * as Misc from '@/helpers/Misc';
 
 describe('Media Detection', () => {
+    it('should only preview native media', () => {
+        expect(Misc.canPreviewUrl('https://example.com/article')).toBe(false);
+        expect(Misc.canPreviewUrl('https://example.com/image.jpg')).toBe(true);
+        expect(Misc.canPreviewUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe(true);
+        expect(Misc.canPreviewUrl('')).toBe(false);
+    });
+
     it('should detect images', () => {
         expect(Misc.getMediaInfo('https://example.com/image.jpg').type).toBe('image');
         expect(Misc.getMediaInfo('https://example.com/image.PNG').type).toBe('image');

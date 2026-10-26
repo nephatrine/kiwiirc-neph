@@ -81,24 +81,6 @@ the service and retention in settings. `none` does not lock out a user override.
 available only after SASL login. Plain `http` is refused when `connection.tls`
 is set.
 
-## Embedly
-
-Cards are used only for links that are not already an image, audio, or video
-embed. Set the key in `static/config.json`:
-
-```json
-"embedly": {
-    "Key": "your-key-here"
-}
-```
-
-`embedly.key` also works. The value is sent to the browser as `data-card-key`,
-so it cannot be a secret. An empty key leaves Embedly off.
-
-`embedly.script` replaces `//cdn.embedly.com/widgets/platform.js`.
-`embedly.cardWidth` applies to pinned cards. Their default width is `400px`.
-Other cards are `600px`.
-
 ## Connection
 
 | Key                       | Default            |                                            |

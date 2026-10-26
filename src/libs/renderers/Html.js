@@ -1,6 +1,7 @@
 'kiwi public';
 
 import { escapeHtml } from '@/helpers/Utils';
+import { canPreviewUrl } from '@/helpers/Misc';
 import getState from '@/libs/state';
 import * as EmojiProvider from '@/libs/EmojiProvider';
 
@@ -55,7 +56,8 @@ function render(blocks, renderEmoticons) {
         switch (block.type) {
         case 'url':
             content = linkifyUrl(block, {
-                addHandle: state.setting('buffers.show_link_previews'),
+                addHandle: state.setting('buffers.show_link_previews') &&
+                    canPreviewUrl(block.meta.url),
                 handleClass: 'bx bx-share u-link kiwi-messagelist-message-linkhandle',
             });
             break;

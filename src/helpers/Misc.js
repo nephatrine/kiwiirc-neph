@@ -266,6 +266,15 @@ export function getMediaInfo(url) {
 }
 
 /**
+ * Whether a URL has a native media preview we can render.
+ * @param {string} url The URL to check
+ * @returns {boolean}
+ */
+export function canPreviewUrl(url) {
+    return !!url && !!getMediaInfo(url).type;
+}
+
+/**
  * Replace IRC control characters with visible Unicode glyphs
  * @param {string} str The string to process
  */

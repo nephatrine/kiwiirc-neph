@@ -517,6 +517,9 @@ export default {
 
             let url = urlElement ? urlElement.getAttribute('data-url') : null;
             if (url && link) {
+                if (!Misc.canPreviewUrl(url)) {
+                    return;
+                }
                 if (this.$state.setting('buffers.inline_link_auto_previews')) {
                     message.embed.type = 'url';
                     message.embed.payload = url;

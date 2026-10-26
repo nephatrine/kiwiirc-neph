@@ -80,6 +80,7 @@
 'kiwi public';
 
 import UserBox from '@/components/UserBox';
+import * as Misc from '@/helpers/Misc';
 import SidebarState from './SidebarState';
 import SidebarAboutBuffer from './SidebarAboutBuffer';
 import SidebarSectionSettings from './SidebarSectionSettings';
@@ -121,7 +122,7 @@ export default {
             }
 
             let url = handle.getAttribute('data-url');
-            if (!url) {
+            if (!url || !Misc.canPreviewUrl(url)) {
                 return;
             }
 

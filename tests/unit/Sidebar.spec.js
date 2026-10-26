@@ -11,22 +11,44 @@ function clickEvent(handle) {
 }
 
 describe('Sidebar link handles', () => {
-    it('opens a link handle in the pinned media viewer', () => {
+    it('opens a previewable link handle in the pinned media viewer', () => {
         let emit = jest.fn();
         let handle = {
-            getAttribute: jest.fn(() => 'https://example.com/embed'),
+            getAttribute: jest.fn(() => 'https://example.com/image.jpg'),
         };
         let event = clickEvent(handle);
 
-        Sidebar.methods.onSidebarClick.call({ $state: { $emit: emit } }, event);
+        Sidebar.methods.onSidebarClick.call({
+            $state: {
+                $emit: emit,
+            },
+        }, event);
 
         expect(event.target.closest).toHaveBeenCalledWith('a[data-url]');
         expect(emit).toHaveBeenCalledWith(
             'mediaviewer.show',
-            'https://example.com/embed'
+            'https://example.com/image.jpg'
         );
         expect(event.preventDefault).toHaveBeenCalled();
         expect(event.stopPropagation).toHaveBeenCalled();
+    });
+
+    it('ignores a link-only handle', () => {
+        let emit = jest.fn();
+        let handle = {
+            getAttribute: jest.fn(() => 'https://example.com/article'),
+        };
+        let event = clickEvent(handle);
+
+        Sidebar.methods.onSidebarClick.call({
+            $state: {
+                $emit: emit,
+            },
+        }, event);
+
+        expect(emit).not.toHaveBeenCalled();
+        expect(event.preventDefault).not.toHaveBeenCalled();
+        expect(event.stopPropagation).not.toHaveBeenCalled();
     });
 
     it('leaves normal sidebar links alone', () => {

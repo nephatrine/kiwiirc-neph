@@ -87,6 +87,12 @@ export default {
 
             return options.join(' ');
         },
+        canPreview() {
+            if (this.isIframe || this.component) {
+                return true;
+            }
+            return Misc.canPreviewUrl(this.url);
+        },
     },
     watch: {
         url() {
@@ -104,6 +110,11 @@ export default {
         }, 0);
     },
     mounted() {
+        if (!this.canPreview) {
+            this.$emit('close');
+            return;
+        }
+
         this.updateEmbed(false);
         this.$nextTick(() => {
             this.emitEvent('opened');
@@ -111,6 +122,11 @@ export default {
     },
     methods: {
         updateEmbed(shouldEmit) {
+            if (!this.canPreview) {
+                this.$emit('close');
+                return;
+            }
+
             this.setHeight('auto');
             this.setMaxHeight('45%');
 

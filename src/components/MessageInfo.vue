@@ -3,7 +3,7 @@
         <div v-if="message.mentioned_urls.length > 0" class="kiwi-messageinfo-urls">
             <div v-for="url in message.mentioned_urls" :key="url" class="kiwi-messageinfo-url">
                 <a
-                    v-if="showLinkPreviews"
+                    v-if="showLinkPreviews && canPreviewUrl(url)"
                     class="u-button u-button-secondary"
                     @click="urlPreview(url)"
                 >{{ $t('preview') }}</a>
@@ -87,6 +87,7 @@
 'kiwi public';
 
 import GlobalApi from '@/libs/GlobalApi';
+import * as Misc from '@/helpers/Misc';
 import { curatedEmojis } from '@/helpers/Emoji';
 
 export default {
@@ -130,7 +131,13 @@ export default {
             this.buffer.react(this.message, emojiChar);
             this.$emit('close');
         },
+        canPreviewUrl(url) {
+            return Misc.canPreviewUrl(url);
+        },
         urlPreview(url) {
+            if (!this.canPreviewUrl(url)) {
+                return;
+            }
             this.$state.$emit('mediaviewer.show', url);
         },
         areWeAnOp() {

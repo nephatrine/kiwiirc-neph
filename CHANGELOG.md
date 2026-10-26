@@ -103,6 +103,12 @@ and this project adheres to
   locale JSON in `dist/static/`. Config files, station lists, and other static
   data remain readable.
 
+### Removed
+
+- **Embedly**: Removed optional Embedly card support and the `embedly`
+  configuration. Existing `embedly` blocks are ignored and can be removed.
+  Native media previews are unchanged.
+
 ### Fixed
 
 - **Connection**: Auto-reconnect no longer leaves a direct WebSocket network
@@ -111,6 +117,9 @@ and this project adheres to
 - **History**: Pending chathistory requests are cleared on disconnect and
   reconnect, so "Loading previous messages..." no longer sticks and later
   requests are not queued behind a dead batch.
+- **Link Previews**: Links with no native media type no longer show preview
+  handles, inline cards, or Message Info preview buttons. Native media embeds
+  are unchanged.
 - **Reconnect Notice**: A first-time channel join after an early reconnect uses
   the normal join message instead of "has reconnected."
 - **Sidebar**: Link preview handles in sidebar topic, description, and realname

@@ -2,7 +2,7 @@
 
 import Vue from 'vue';
 import parseMessage from '@/libs/MessageParser';
-import { stripStyles, sanitizeUrl } from '@/helpers/Misc';
+import { stripStyles, sanitizeUrl, canPreviewUrl } from '@/helpers/Misc';
 import toHtml from '@/libs/renderers/Html';
 import GlobalApi from '@/libs/GlobalApi';
 import getState from './state';
@@ -201,6 +201,10 @@ export default class Message {
             }
         } catch (err) {
             // A bad regex pattern should not block all previews
+        }
+
+        if (!canPreviewUrl(url)) {
+            return;
         }
 
         this.embed.payload = url;
