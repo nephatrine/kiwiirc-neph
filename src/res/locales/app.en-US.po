@@ -2114,6 +2114,26 @@ msgstr "Browser notifications are blocked for this site. Allow them in your brow
 msgid "webpush_failed"
 msgstr "Web Push Failed: {{reason}}"
 
+#: Reset Browser Push
+msgid "webpush_reset"
+msgstr "Reset Browser Push"
+
+#: Reset Browser Push Confirmation
+msgid "webpush_reset_confirm"
+msgstr "This will turn off Web Push for this network and remove its browser push subscription. Continue?"
+
+#: Browser Push Subscription Failed
+msgid "webpush_subscription_failed"
+msgstr "Could not create a browser push subscription."
+
+#: Browser Push Service Worker Failed
+msgid "webpush_service_worker_failed"
+msgstr "Could not activate the browser push service worker. Reload the page and try again."
+
+#: Browser Push Reset Failed
+msgid "webpush_reset_failed"
+msgstr "Could not reset the browser push subscription."
+
 #: Default Away Message
 msgid "default_away_message"
 msgstr "Currently Away"

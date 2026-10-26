@@ -44,6 +44,16 @@ export default {
                 network.setWebpushEnabled();
             }
         },
+        resetWebpush() {
+            const network = this.networkPreferencesTarget();
+            if (!network || !network.resetWebpush) {
+                return;
+            }
+            if (!confirm(this.$t('webpush_reset_confirm'))) {
+                return;
+            }
+            network.resetWebpush();
+        },
     },
     computed: {
         persistencePreferenceAvailable() {
@@ -52,7 +62,9 @@ export default {
         },
         webpushAvailable() {
             const network = this.networkPreferencesTarget();
-            return network && network.webpushAvailable();
+            return network && network.webpushAvailable() &&
+                typeof window !== 'undefined' &&
+                'Notification' in window;
         },
         webpushError() {
             const network = this.networkPreferencesTarget();

@@ -1,6 +1,7 @@
 'kiwi public';
 
 import * as MetadataCache from '@/libs/MetadataCache';
+import * as WebpushUtils from '@/libs/WebpushUtils';
 import { debounce } from '@/helpers/Async';
 
 export default class StatePersistence {
@@ -97,6 +98,7 @@ export default class StatePersistence {
     }
 
     async forgetState() {
+        await WebpushUtils.unsubscribeStateBrowserSubscriptions(this.state.stateKey());
         this.state.resetState();
         await this.storage.set(this.storageKey, null);
         await MetadataCache.clear();

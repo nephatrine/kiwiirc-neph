@@ -102,13 +102,23 @@ extended-join report replaces it.
   IRC negotiates exactly one of the two names, preferring the draft form, and
   never both in one request. Push Notifications is a per-network opt-in checkbox
   (default off), shown only for account logins on servers that negotiate a cap
-  and send a VAPID key. The connection that negotiated the capability sends
-  WEBPUSH REGISTER with the endpoint and keys, renewing daily; toggling off
-  sends WEBPUSH UNREGISTER. Desktop notifications are per-network, so turning
-  them off suspends only that network's registration while keeping its opt-in.
-  Server FAILs only clear the local registered flag (the message itself still
-  surfaces) and never trigger a retry loop. A dependency-free worker in
-  static/sw.js turns each pushed IRC line into a system notification.
+  and send a VAPID key. Each network owns its own service worker registration,
+  scoped under `static/webpush/<stateKey>/<networkId>/`, so Ergo servers with
+  different VAPID keys and Soju networks sharing one key can coexist. The
+  connection that negotiated the capability sends WEBPUSH REGISTER with that
+  network's endpoint and keys, renewing daily; toggling off sends WEBPUSH
+  UNREGISTER and removes the browser subscription. Desktop notifications are
+  per-network, so turning them off suspends only that network's registration
+  while keeping its opt-in. Server FAILs uncheck the opt-in, clear the
+  endpoint/timer, record the error, and never trigger a retry loop. A
+  dependency-free worker in `static/sw.js` parses the pushed IRC line (including
+  IRCv3 tags) and only notifies for PRIVMSG, NOTICE, and INVITE; control pushes
+  such as MARKREAD and WEBPUSH REGISTERED are ignored. Local and push
+  notifications share a msgid-based tag so the browser replaces duplicates
+  without suppressing either path. Clicking a notification routes to the
+  matching buffer by msgid, then target/nick. Tabs synchronise Web Push setting
+  and registration state over the `kiwi-ipc` channel. A per-network Reset
+  Browser Push action clears a broken subscription.
 - **draft/bouncer-networks** (or **soju.im/bouncer-networks**): Connects through
   a modern bouncer and manages its networks. Kiwi IRC negotiates exactly one of
   the two names, preferring the draft form, and never both in one request. See

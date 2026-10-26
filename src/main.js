@@ -20,6 +20,7 @@ import getState from '@/libs/state';
 import { installGlobalErrorHandlers } from '@/libs/GlobalErrorHandler';
 import ThemeManager from '@/libs/ThemeManager';
 import InputHandler from '@/libs/InputHandler';
+import IPC from '@/libs/IPC';
 import StatePersistence from '@/libs/StatePersistence';
 import * as MetadataCache from '@/libs/MetadataCache';
 import * as Storage from '@/libs/storage/Local';
@@ -546,6 +547,17 @@ async function initState() {
 
     if (stateKey) {
         await persist.loadStateIfExists();
+    }
+
+    try {
+        IPC.init();
+    } catch {
+        // Cross-tab sync is best-effort.
+    }
+    try {
+        await getState().cleanupWebpushRegistrations();
+    } catch {
+        // Push registration cleanup is best-effort.
     }
 
     await MetadataCache.load(Storage);

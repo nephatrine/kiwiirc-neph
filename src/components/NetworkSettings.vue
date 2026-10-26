@@ -346,6 +346,14 @@
                 <div v-if="webpushError" class="kiwi-appsettings-webpush-error">
                     {{ $t('webpush_failed', { reason: webpushError }) }}
                 </div>
+                <button
+                    v-if="webpushError"
+                    type="button"
+                    class="u-button u-button-warning kiwi-appsettings-webpush-reset"
+                    @click="resetWebpush"
+                >
+                    {{ $t('webpush_reset') }}
+                </button>
             </div>
         </div>
     </div>

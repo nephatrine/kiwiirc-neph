@@ -181,6 +181,7 @@ export default {
 
                 // Listen for messages immediately so we don't miss anything on load
                 Notifications.listenForNewMessages(this.$state);
+                Notifications.listenForWebpushClicks(this.$state);
 
                 if (global.Notification && Notification.permission === 'granted') {
                     Notifications.requestPermission(this.$state);

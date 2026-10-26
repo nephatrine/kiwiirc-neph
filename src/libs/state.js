@@ -13,6 +13,7 @@ import BufferState from './state/BufferState';
 import UserState from './state/UserState';
 import Message from './Message';
 import * as MetadataCache from './MetadataCache';
+import * as WebpushUtils from './WebpushUtils';
 
 function createNewState() {
     const stateObj = {
@@ -277,9 +278,46 @@ function createNewState() {
             },
 
             resetState() {
+                this.networks.forEach((network) => {
+                    if (network.cleanupWebpush) {
+                        try {
+                            network.cleanupWebpush();
+                        } catch {
+                            // Cleanup is best-effort.
+                        }
+                    }
+                });
                 this.$set(this.$data, 'user_settings', {});
                 this.$set(this.$data, 'networks', []);
                 messages.splice(0);
+            },
+
+            stateKey() {
+                const startupOptions = this.settings.startupOptions || {};
+                return startupOptions.state_key || 'kiwi-state';
+            },
+
+            cleanupWebpushRegistrations() {
+                const legacy = WebpushUtils.cleanupLegacyRegistrations();
+
+                // A fresh tab may not have imported saved networks yet. Do not
+                // remove another tab's registrations just because this tab is
+                // still empty.
+                if (!this.networks.length) {
+                    return legacy;
+                }
+
+                return Promise.all([
+                    legacy,
+                    WebpushUtils.cleanupOrphanedRegistrations(
+                        this.stateKey(),
+                        this.networks.map((network) => network.id)
+                    ),
+                ]);
+            },
+
+            forgetWebpushRegistrations() {
+                return WebpushUtils.unsubscribeStateBrowserSubscriptions(this.stateKey());
             },
 
             setting(name, val) {
@@ -414,8 +452,32 @@ function createNewState() {
                 }
 
                 if (network.state === 'connected') {
+                    const endpoints = [
+                        network.webpush_endpoint,
+                        network.webpush_pending_endpoint,
+                    ].filter(Boolean);
+                    try {
+                        [...new Set(endpoints)].forEach((endpoint) => {
+                            network.ircClient.raw('WEBPUSH', 'UNREGISTER', endpoint);
+                        });
+                    } catch {
+                        // The connection went away; the server will prune it.
+                    }
                     network.ircClient.quit();
                 }
+
+                if (network.cleanupWebpush) {
+                    try {
+                        network.cleanupWebpush();
+                    } catch {
+                        // Cleanup is best-effort.
+                    }
+                }
+                WebpushUtils.unsubscribeBrowserSubscription({
+                    stateKey: this.stateKey(),
+                    networkId: network.id,
+                    unregister: true,
+                }).catch(() => {});
 
                 while (network.buffers.length > 0) {
                     this.removeBuffer(network.buffers[0]);
@@ -589,6 +651,105 @@ function createNewState() {
                 let buffer = find(network.buffers, (b) => b.name.toLowerCase() === toMatch);
 
                 return buffer;
+            },
+
+            findMessageByIrcId(networkid, msgid) {
+                if (!msgid) {
+                    return null;
+                }
+
+                const networks = networkid ?
+                    [this.getNetwork(networkid)].filter(Boolean) :
+                    this.networks;
+                const network = networks.find((net) => (
+                    net.buffers.some((buffer) => (
+                        buffer.messagesObj && buffer.messagesObj.messageIds[msgid]
+                    ))
+                ));
+                if (!network) {
+                    return null;
+                }
+
+                const buffer = network.buffers.find((candidate) => (
+                    candidate.messagesObj && candidate.messagesObj.messageIds[msgid]
+                ));
+                return {
+                    network,
+                    buffer,
+                    message: buffer.messagesObj.messageIds[msgid],
+                };
+            },
+
+            handleWebpushNotificationClick(data) {
+                if (!data || typeof data !== 'object') {
+                    return false;
+                }
+                if (data.stateKey && String(data.stateKey) !== String(this.stateKey())) {
+                    return false;
+                }
+
+                const network = data.networkId ?
+                    this.getNetwork(Number(data.networkId)) :
+                    null;
+                const msgid = data.msgid || '';
+
+                if (network && msgid) {
+                    const found = this.findMessageByIrcId(network.id, msgid);
+                    if (found) {
+                        this.setActiveBuffer(network.id, found.buffer.name);
+                        this.$nextTick(() => {
+                            found.buffer.scrollToMessage(found.message.id);
+                        });
+                        return true;
+                    }
+                }
+
+                const target = data.target || data.nick || '';
+                if (network && target) {
+                    let buffer = this.getBufferByName(network.id, target);
+                    if (!buffer && data.nick) {
+                        buffer = this.getBufferByName(network.id, data.nick);
+                    }
+                    if (buffer) {
+                        this.setActiveBuffer(network.id, buffer.name);
+                        return true;
+                    }
+                }
+
+                if (msgid) {
+                    const found = this.findMessageByIrcId(null, msgid);
+                    if (found) {
+                        this.setActiveBuffer(found.network.id, found.buffer.name);
+                        this.$nextTick(() => {
+                            found.buffer.scrollToMessage(found.message.id);
+                        });
+                        return true;
+                    }
+                }
+
+                if (target) {
+                    const activeNetwork = this.getActiveNetwork();
+                    let buffer = activeNetwork ?
+                        this.getBufferByName(activeNetwork.id, target) :
+                        null;
+                    let foundNetwork = activeNetwork;
+
+                    if (!buffer) {
+                        foundNetwork = this.networks.find((net) => (
+                            !!this.getBufferByName(net.id, target)
+                        )) || null;
+                        if (foundNetwork) {
+                            buffer = this.getBufferByName(foundNetwork.id, target);
+                        }
+                    }
+
+                    if (buffer) {
+                        this.setActiveBuffer(foundNetwork.id, buffer.name);
+                        return true;
+                    }
+                }
+
+                return false;
             },
 
             addBuffer(networkid, bufferName) {
@@ -907,8 +1068,18 @@ function createNewState() {
                     if (notifyTitle) {
                         this.$emit('notification.show', notifyMessage, {
                             title: notifyTitle,
+                            tag: message.irc_id ?
+                                WebpushUtils.notificationTag(
+                                    this.stateKey(),
+                                    buffer.networkid,
+                                    message.irc_id
+                                ) :
+                                '',
                             onclick: () => {
                                 state.setActiveBuffer(buffer.networkid, buffer.name);
+                                state.$nextTick(() => {
+                                    buffer.scrollToMessage(message.id);
+                                });
 
                                 // Newer webkit browser use parent.focus() while older webkit uses
                                 // window.focus()

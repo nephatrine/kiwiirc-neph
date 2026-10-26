@@ -117,6 +117,7 @@ export default class NetworkState {
         // persisted: subscriptions live in the browser, not in saved state.
         this.webpush_registered = false;
         this.webpush_endpoint = '';
+        this.webpush_pending_endpoint = '';
         this.webpush_error = '';
         this.isupport = {};
         // Account registration (draft/account-registration) flow state.

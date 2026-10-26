@@ -249,6 +249,14 @@
                             <div v-if="webpushError" class="kiwi-appsettings-webpush-error">
                                 {{ $t('webpush_failed', { reason: webpushError }) }}
                             </div>
+                            <button
+                                v-if="webpushError"
+                                type="button"
+                                class="u-button u-button-warning kiwi-appsettings-webpush-reset"
+                                @click="resetWebpush"
+                            >
+                                {{ $t('webpush_reset') }}
+                            </button>
                             <label class="kiwi-appsettings-full">
                                 <span>{{ $t('settings_highlight') }} </span>
                                 <input v-model="settingHighlights" type="text" class="u-input">
@@ -704,6 +712,10 @@ export default {
     color: var(--brand-error);
     padding: 0 10px 10px 10px;
     font-size: 0.9em;
+}
+
+.kiwi-appsettings-webpush-reset {
+    margin: 0 10px 10px;
 }
 
 .kiwi-appsettings-block-aliases {

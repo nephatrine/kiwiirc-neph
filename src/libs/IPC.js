@@ -4,18 +4,31 @@ import EventEmitter from 'eventemitter3';
 
 class IpcBroadcastChannel extends EventEmitter {
     init() {
+        if (this.initialized) {
+            return;
+        }
+        this.initialized = true;
+
         try {
             // Privacy settings in firefox 104~ block broadcast channels in iframes
             this.bc = new BroadcastChannel('kiwi-ipc');
             this.bc.onmessage = this.onmessage.bind(this);
         } catch {
-            // catch
+            this.fallback = new IpcLocalStorage();
+            this.fallback.on('message', (msg) => this.emit('message', msg));
+            try {
+                this.fallback.init();
+            } catch {
+                // Cross-tab sync is best-effort.
+            }
         }
     }
 
     send(msg) {
         if (this.bc) {
             this.bc.postMessage(msg);
+        } else if (this.fallback) {
+            this.fallback.send(msg);
         }
     }
 
@@ -26,6 +39,10 @@ class IpcBroadcastChannel extends EventEmitter {
 
 class IpcLocalStorage extends EventEmitter {
     init() {
+        if (this.initialized) {
+            return;
+        }
+        this.initialized = true;
         window.addEventListener('storage', this.onmessage.bind(this));
     }
 
@@ -48,4 +65,8 @@ class IpcLocalStorage extends EventEmitter {
     }
 }
 
-export default (window.BroadcastChannel ? new IpcBroadcastChannel() : new IpcLocalStorage());
+const hasBroadcastChannel = typeof window !== 'undefined' && !!window.BroadcastChannel;
+
+export default hasBroadcastChannel ?
+    new IpcBroadcastChannel() :
+    new IpcLocalStorage();

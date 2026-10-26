@@ -27,6 +27,7 @@ function makeHarness({
     window.Notification = { permission: 'granted' };
     const handlers = {};
     const client = {
+        connected: true,
         raw: jest.fn(),
         on: jest.fn((event, fn) => {
             handlers[event] = handlers[event] || [];
@@ -44,13 +45,36 @@ function makeHarness({
         endpoint: ENDPOINT,
         keys: KEYS,
     }));
-    const useMiddleware = webpushMiddleware(network, { subscriptionProvider: stubProvider });
+    const unsubscribeProvider = jest.fn(async() => true);
+    const ipc = {
+        sent: [],
+        handlers: [],
+        send: jest.fn((msg) => {
+            ipc.sent.push(msg);
+        }),
+        on: jest.fn((event, fn) => {
+            if (event === 'message') {
+                ipc.handlers.push(fn);
+            }
+        }),
+        off: jest.fn(),
+        emit(msg) {
+            ipc.handlers.forEach((fn) => fn({ data: msg }));
+        },
+    };
+    const useMiddleware = webpushMiddleware(network, {
+        subscriptionProvider: stubProvider,
+        unsubscribeProvider,
+        ipc,
+    });
     useMiddleware(client, rawEvents, parsedEvents);
     return {
         s,
         network,
         client,
         stubProvider,
+        unsubscribeProvider,
+        ipc,
         emitConnecting() {
             (handlers.connecting || []).forEach((fn) => fn());
         },
@@ -102,7 +126,7 @@ describe('webpush registration', () => {
         const h = makeHarness();
         expect(h.network.webpush_registered).toBe(false);
         await h.emitConnected();
-        expect(h.stubProvider).toHaveBeenCalledWith('test-vapid-key');
+        expect(h.stubProvider).toHaveBeenCalledWith(expect.objectContaining({ vapidPublicKey: 'test-vapid-key' }));
         expect(h.registers()).toEqual([['WEBPUSH', 'REGISTER', ENDPOINT, KEYS]]);
     });
 
@@ -113,7 +137,7 @@ describe('webpush registration', () => {
         expect(h.network.cap_values.vapid).toBeUndefined();
         expect(h.network.webpushAvailable()).toBe(true);
         await h.emitConnected();
-        expect(h.stubProvider).toHaveBeenCalledWith('test-vapid-key');
+        expect(h.stubProvider).toHaveBeenCalledWith(expect.objectContaining({ vapidPublicKey: 'test-vapid-key' }));
         expect(h.registers()).toHaveLength(1);
     });
 
@@ -123,7 +147,7 @@ describe('webpush registration', () => {
         expect(h.network.webpushAvailable()).toBe(true);
 
         await h.emitConnected();
-        expect(h.stubProvider).toHaveBeenCalledWith('test-vapid-key');
+        expect(h.stubProvider).toHaveBeenCalledWith(expect.objectContaining({ vapidPublicKey: 'test-vapid-key' }));
         expect(h.registers()).toHaveLength(1);
     });
 
@@ -273,7 +297,7 @@ describe('webpush registration', () => {
         expect(h.network.webpushAvailable()).toBe(true);
         await h.emitConnected();
 
-        expect(h.stubProvider).toHaveBeenCalledWith('bouncer-key');
+        expect(h.stubProvider).toHaveBeenCalledWith(expect.objectContaining({ vapidPublicKey: 'bouncer-key' }));
         expect(h.registers()).toHaveLength(1);
     });
 
@@ -286,7 +310,7 @@ describe('webpush registration', () => {
 
         expect(h.network.webpushAvailable()).toBe(true);
         await h.emitConnected();
-        expect(h.stubProvider).toHaveBeenCalledWith('test-vapid-key');
+        expect(h.stubProvider).toHaveBeenCalledWith(expect.objectContaining({ vapidPublicKey: 'test-vapid-key' }));
         expect(h.registers()).toHaveLength(1);
     });
 
@@ -317,7 +341,7 @@ describe('webpush registration', () => {
         expect(h.network.webpushAvailable()).toBe(true);
         await h.emitConnected();
 
-        expect(h.stubProvider).toHaveBeenCalledWith('upstream-key');
+        expect(h.stubProvider).toHaveBeenCalledWith(expect.objectContaining({ vapidPublicKey: 'upstream-key' }));
         expect(h.registers()).toHaveLength(1);
     });
 
@@ -495,6 +519,227 @@ describe('webpush registration', () => {
             expect(h.unregisters()).toHaveLength(0);
             expect(h.network.webpush_registered).toBe(true);
             expect(h.network.setting('webpushEnabled')).toBe(true);
+        });
+    });
+
+    describe('per-network lifecycle', () => {
+        it('passes the state key, network id, and VAPID key to the provider', async() => {
+            const h = makeHarness();
+            await h.emitConnected();
+            expect(h.stubProvider).toHaveBeenCalledWith({
+                stateKey: 'kiwi-state',
+                networkId: h.network.id,
+                vapidPublicKey: 'test-vapid-key',
+            });
+        });
+
+        it('sets a pending endpoint before the echo and adopts the echo', async() => {
+            const h = makeHarness();
+            await h.emitConnected();
+            expect(h.network.webpush_pending_endpoint).toBe(ENDPOINT);
+            h.emitWebpush(['REGISTER', ENDPOINT]);
+            expect(h.network.webpush_pending_endpoint).toBe('');
+            expect(h.network.webpush_endpoint).toBe(ENDPOINT);
+        });
+
+        it('unregisters the old endpoint when the subscription endpoint changes', async() => {
+            const h = makeHarness();
+            await h.emitConnected();
+            h.emitWebpush(['REGISTER', ENDPOINT]);
+
+            h.stubProvider.mockResolvedValueOnce({
+                endpoint: 'https://push.example.org/new-endpoint',
+                keys: KEYS,
+            });
+            await h.emitConnected();
+
+            expect(h.unregisters()).toContainEqual([
+                'WEBPUSH',
+                'UNREGISTER',
+                ENDPOINT,
+            ]);
+            expect(h.registers()).toContainEqual([
+                'WEBPUSH',
+                'REGISTER',
+                'https://push.example.org/new-endpoint',
+                KEYS,
+            ]);
+        });
+
+        it('does not mark registered when the echo arrives after disabling', async() => {
+            const h = makeHarness();
+            await h.emitConnected();
+            h.network.setting('webpushEnabled', false);
+            h.emitWebpush(['REGISTER', ENDPOINT]);
+
+            expect(h.unregisters()).toContainEqual([
+                'WEBPUSH',
+                'UNREGISTER',
+                ENDPOINT,
+            ]);
+            expect(h.network.webpush_registered).toBe(false);
+            expect(h.network.webpush_endpoint).toBe('');
+        });
+
+        it('unchecks and reports a provider failure', async() => {
+            const h = makeHarness({
+                provider: jest.fn(async() => {
+                    throw new Error('denied');
+                }),
+            });
+            await h.emitConnected();
+            expect(h.network.setting('webpushEnabled')).toBe(false);
+            expect(h.network.webpush_error).toBe('denied');
+            expect(h.registers()).toHaveLength(0);
+        });
+
+        it('maps service worker activation failures', async() => {
+            const h = makeHarness({
+                provider: jest.fn(async() => {
+                    const err = new Error('service-worker-timeout');
+                    err.code = 'service-worker-timeout';
+                    throw err;
+                }),
+            });
+            await h.emitConnected();
+            expect(h.network.setting('webpushEnabled')).toBe(false);
+            expect(h.network.webpush_error).toBe('webpush_service_worker_failed');
+        });
+
+        it('unchecks and reports a permission denial', async() => {
+            const h = makeHarness();
+            window.Notification.permission = 'denied';
+            h.network.setWebpushEnabled();
+            await new Promise((resolve) => {
+                setTimeout(resolve, 0);
+            });
+            expect(h.network.setting('webpushEnabled')).toBe(false);
+            expect(h.network.webpush_error).toBe('webpush_permission_denied');
+        });
+
+        it('deduplicates concurrent registration attempts', async() => {
+            const h = makeHarness();
+            h.network.setWebpushEnabled();
+            h.network.setWebpushEnabled();
+            await new Promise((resolve) => {
+                setTimeout(resolve, 0);
+            });
+            expect(h.stubProvider).toHaveBeenCalledTimes(1);
+        });
+
+        it('broadcasts registration and setting changes', async() => {
+            const h = makeHarness();
+            await h.emitConnected();
+            h.emitWebpush(['REGISTER', ENDPOINT]);
+            expect(h.ipc.sent).toContainEqual(expect.objectContaining({
+                type: 'webpush-registered',
+                endpoint: ENDPOINT,
+            }));
+
+            h.network.setting('webpushEnabled', false);
+            h.network.setWebpushEnabled();
+            expect(h.ipc.sent).toContainEqual(expect.objectContaining({
+                type: 'webpush-setting',
+                enabled: false,
+            }));
+            expect(h.ipc.sent).toContainEqual(expect.objectContaining({
+                type: 'webpush-unregistered',
+            }));
+        });
+
+        it('receives a cross-tab disable without unsubscribing again', async() => {
+            const h = makeHarness();
+            await h.emitConnected();
+            h.emitWebpush(['REGISTER', ENDPOINT]);
+
+            h.ipc.emit({
+                type: 'webpush-setting',
+                stateKey: 'kiwi-state',
+                networkId: h.network.id,
+                enabled: false,
+            });
+
+            expect(h.network.setting('webpushEnabled')).toBe(false);
+            expect(h.network.webpush_registered).toBe(false);
+            expect(h.unregisters()).toContainEqual([
+                'WEBPUSH',
+                'UNREGISTER',
+                ENDPOINT,
+            ]);
+            expect(h.unsubscribeProvider).not.toHaveBeenCalled();
+        });
+
+        it('receives cross-tab registration state', () => {
+            const h = makeHarness();
+            h.ipc.emit({
+                type: 'webpush-registered',
+                stateKey: 'kiwi-state',
+                networkId: h.network.id,
+                endpoint: ENDPOINT,
+            });
+            expect(h.network.webpush_registered).toBe(true);
+            expect(h.network.webpush_endpoint).toBe(ENDPOINT);
+
+            h.ipc.emit({
+                type: 'webpush-unregistered',
+                stateKey: 'kiwi-state',
+                networkId: h.network.id,
+            });
+            expect(h.network.webpush_registered).toBe(false);
+            expect(h.network.webpush_endpoint).toBe('');
+        });
+
+        it('receives cross-tab failures', () => {
+            const h = makeHarness();
+            h.ipc.emit({
+                type: 'webpush-failed',
+                stateKey: 'kiwi-state',
+                networkId: h.network.id,
+                reason: 'Nope',
+            });
+            expect(h.network.setting('webpushEnabled')).toBe(false);
+            expect(h.network.webpush_error).toBe('Nope');
+        });
+
+        it('ignores messages for other networks and state keys', () => {
+            const h = makeHarness();
+            h.ipc.emit({
+                type: 'webpush-failed',
+                stateKey: 'other-state',
+                networkId: h.network.id,
+                reason: 'Nope',
+            });
+            expect(h.network.setting('webpushEnabled')).toBe(true);
+
+            h.ipc.emit({
+                type: 'webpush-failed',
+                stateKey: 'kiwi-state',
+                networkId: 999,
+                reason: 'Nope',
+            });
+            expect(h.network.setting('webpushEnabled')).toBe(true);
+        });
+
+        it('resetWebpush unchecks, unregisters, and unsubscribes', async() => {
+            const h = makeHarness();
+            await h.emitConnected();
+            h.emitWebpush(['REGISTER', ENDPOINT]);
+
+            h.network.resetWebpush();
+            await new Promise((resolve) => {
+                setTimeout(resolve, 0);
+            });
+
+            expect(h.network.setting('webpushEnabled')).toBe(false);
+            expect(h.network.webpush_registered).toBe(false);
+            expect(h.unregisters()).toContainEqual([
+                'WEBPUSH',
+                'UNREGISTER',
+                ENDPOINT,
+            ]);
+            expect(h.unsubscribeProvider).toHaveBeenCalledWith(
+                expect.objectContaining({ networkId: h.network.id })
+            );
         });
     });
 });

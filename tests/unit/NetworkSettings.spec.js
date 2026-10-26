@@ -26,6 +26,7 @@ describe('NetworkSettings server details', () => {
         s = state.create();
         s.settings.restricted = false;
         Vue.prototype.$state = s;
+        window.Notification = { permission: 'granted' };
 
         network = s.addNetwork('TestNet', 'nick', {
             server: 'irc.example.com',
@@ -45,6 +46,8 @@ describe('NetworkSettings server details', () => {
             }
         }
         delete Vue.prototype.$state;
+        delete window.Notification;
+        delete window.confirm;
     });
 
     function mount() {
@@ -118,6 +121,33 @@ describe('NetworkSettings server details', () => {
         expect(block.textContent).toContain('settings_show_notifications');
         expect(block.textContent).toContain('settings_webpush');
         expect(block.textContent).toContain('webpush_failed');
+    });
+
+    it('offers a per-network browser push reset', async() => {
+        s.addNetwork('OtherNet', 'other', {
+            server: 'other.example.com',
+        });
+        network.state = 'connected';
+        network.sasl_account = 'account';
+        network.enabled_caps = [
+            'draft/persistence',
+            'draft/webpush',
+        ];
+        network.isupport.VAPID = 'key';
+        network.persistence_status = { client: 'ON', effective: 'ON' };
+        network.webpush_error = 'Nope';
+        network.resetWebpush = jest.fn();
+        window.confirm = jest.fn(() => true);
+
+        const comp = mount();
+        const button = comp.$el.querySelector('.kiwi-appsettings-webpush-reset');
+        expect(button).not.toBeNull();
+        expect(button.textContent).toContain('webpush_reset');
+
+        button.click();
+        expect(network.resetWebpush).toHaveBeenCalled();
+
+        delete window.confirm;
     });
 
     it('locks only network details in restricted mode', async() => {
