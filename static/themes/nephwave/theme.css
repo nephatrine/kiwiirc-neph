@@ -864,6 +864,36 @@ body.nephwave-active .kiwi-personal {
     color: var(--nw-accent);
 }
 
+.kiwi-statebrowser-channel-label {
+    color: var(--nw-ink);
+    background: var(--nw-cyan);
+}
+
+.kiwi-statebrowser-channel-label--highlight {
+    color: var(--nw-ink);
+    background: var(--nw-pink);
+    animation: kiwi-label-pulse 2s infinite;
+}
+
+.kiwi-statebrowser-channel-label--error {
+    color: #fff;
+    background: var(--nw-error);
+    animation: kiwi-label-urgent 0.8s infinite;
+}
+
+@keyframes kiwi-label-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+@keyframes kiwi-label-urgent {
+    0% { transform: scale(1) translateX(0); }
+    20% { transform: scale(1.1) translateX(-2px); }
+    40% { transform: scale(1.1) translateX(2px); }
+    100% { transform: scale(1) translateX(0); }
+}
+
 .kiwi-statebrowser-channel--muted,
 .kiwi-statebrowser-channel--muted:hover {
     color: #6c6c6c;
@@ -985,10 +1015,21 @@ body.nephwave-active .kiwi-personal {
     color: #8a8a8a;
 }
 
-.kiwi-container-toggledraw-statebrowser-messagecount,
+.kiwi-container-toggledraw-statebrowser-messagecount {
+    color: var(--nw-ink);
+    background: var(--nw-cyan);
+    border: 1px solid #000;
+}
+
 .kiwi-container-toggledraw-statebrowser-messagecount--highlight {
-    color: #111;
-    background: var(--nw-accent);
+    color: var(--nw-ink);
+    background: var(--nw-pink);
+    border: 1px solid #000;
+}
+
+.kiwi-container-toggledraw-statebrowser-messagecount--error {
+    color: #fff;
+    background: var(--nw-error);
     border: 1px solid #000;
 }
 
