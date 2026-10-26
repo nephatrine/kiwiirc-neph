@@ -15,10 +15,10 @@ function preferenceToWire(preference) {
     return '';
 }
 
-// Reads the user's preference, falling back to Keep As-Is on junk values
+// Reads this network's preference, falling back to Keep As-Is on junk values
 // (e.g. a stale persisted setting from an older client).
 function currentPreference(network) {
-    const preference = network.appState.setting('persistencePreference');
+    const preference = network.setting('persistencePreference');
     return ['keep', 'default', 'on', 'off'].includes(preference) ?
         preference :
         'keep';
@@ -45,19 +45,10 @@ export default function persistenceMiddleware(network) {
     let pendingSet = '';
 
     return function middlewareFn(client, rawEvents, parsedEvents) {
-        // Bouncer-provided persistence is set from the control connection
-        // only. The setting is bouncer-wide, so a bound connection must not
-        // act on its own STATUS or send SET on its behalf.
-        const ownedHere = () => (
-            typeof network.bouncerHasCap !== 'function' ||
-            !network.bouncerHasCap('draft/persistence') ||
-            network.isBouncerController()
-        );
-
+        // Persistence belongs to the connection that negotiated it. A bound
+        // bouncer network sends SET and consumes STATUS on its own connection;
+        // the bouncer filters what applies to the upstream network.
         const sendSet = () => {
-            if (!ownedHere()) {
-                return;
-            }
             const desired = preferenceToWire(currentPreference(network));
             if (!desired) {
                 return;
@@ -114,10 +105,6 @@ export default function persistenceMiddleware(network) {
                     validClients.includes(tail[0]) &&
                     validEffective.includes(tail[1])
                 ) {
-                    if (!ownedHere()) {
-                        next();
-                        return;
-                    }
                     network.persistence_status = {
                         client: tail[0],
                         effective: tail[1],
@@ -132,7 +119,7 @@ export default function persistenceMiddleware(network) {
                     } else if (reported && reported !== 'keep') {
                         const current = currentPreference(network);
                         if (current !== 'keep' && current !== reported) {
-                            network.appState.setting('persistencePreference', reported);
+                            network.setting('persistencePreference', reported);
                         }
                     }
                     // The hold from the REGISTERED handler (if any) is over

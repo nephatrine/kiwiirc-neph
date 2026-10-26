@@ -53,7 +53,14 @@ export function effectiveService(state, network) {
     if (!state || typeof state.setting !== 'function') {
         return null;
     }
-    let id = state.setting('fileupload.service');
+    let id = network && typeof network.setting === 'function' ?
+        network.setting('fileuploadService') :
+        '';
+    if (!id) {
+        id = typeof state.getSetting === 'function' ?
+            state.getSetting('settings.fileupload.service') :
+            state.setting('fileupload.service');
+    }
     if (id === 'filehost' && !filehostAvailable(network)) {
         return null;
     }
@@ -70,13 +77,19 @@ export function retentionFor(service, value) {
     return service.defaultRetention || service.retentions[0];
 }
 
-export function effectiveRetention(state, service) {
+export function effectiveRetention(state, service, network) {
     if (!service) {
         return '';
     }
-    let value = '';
-    if (service.retentionSetting && state && typeof state.setting === 'function') {
-        value = state.setting(service.retentionSetting);
+    let value = network && typeof network.setting === 'function' ?
+        network.setting('fileuploadRetention') :
+        '';
+    if (!value && service.retentionSetting && state &&
+        typeof state.setting === 'function'
+    ) {
+        value = typeof state.getSetting === 'function' ?
+            state.getSetting('settings.' + service.retentionSetting) :
+            state.setting(service.retentionSetting);
     }
     return retentionFor(service, value);
 }

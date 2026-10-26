@@ -748,7 +748,7 @@ export default {
                 !this.isRegistering &&
                 !this.isEditingProfile &&
                 this.network.state === 'connected' &&
-                !(this.network.upstreamAccount && this.network.upstreamAccount()) &&
+                !this.network.currentAccount() &&
                 !this.network.registration.pending &&
                 !!this.registrationInfo;
         },
@@ -817,8 +817,7 @@ export default {
             return !!(this.network && typeof this.network.isErgo === 'function' && this.network.isErgo());
         },
         hasServicesAccount() {
-            return !!(this.network && this.network.upstreamAccount &&
-                this.network.upstreamAccount());
+            return !!(this.network && this.network.currentAccount());
         },
         isNickServCard() {
             return !this.isSelf &&
@@ -1065,7 +1064,7 @@ export default {
             try {
                 let url = await service.upload(file, {
                     network: this.network,
-                    retention: effectiveRetention(this.$state, service),
+                    retention: effectiveRetention(this.$state, service, this.network),
                 });
                 if (this.avatarUploadId === uploadId && this.isEditingProfile) {
                     this.editProfile.avatar = url;

@@ -69,6 +69,57 @@ describe('NetworkSettings server details', () => {
             null;
     }
 
+    it('shows network preferences only with multiple connected networks', async() => {
+        const comp = mount();
+        network.state = 'connected';
+        await Vue.nextTick();
+
+        expect(comp.$el.querySelector('.kiwi-networksettings-preferences')).toBeNull();
+
+        s.addNetwork('OtherNet', 'other', {
+            server: 'other.example.com',
+        });
+        await Vue.nextTick();
+
+        expect(comp.$el.querySelector('.kiwi-networksettings-preferences')).not.toBeNull();
+
+        network.state = 'disconnected';
+        await Vue.nextTick();
+
+        expect(comp.$el.querySelector('.kiwi-networksettings-preferences')).toBeNull();
+    });
+
+    it('renders per-network controls for the current network', async() => {
+        s.addNetwork('OtherNet', 'other', {
+            server: 'other.example.com',
+        });
+        network.state = 'connected';
+        network.sasl_account = 'account';
+        network.enabled_caps = [
+            'draft/persistence',
+            'message-tags',
+            'draft/message-redaction',
+            'draft/webpush',
+        ];
+        network.isupport.VAPID = 'key';
+        network.isupport.BOT = 'B';
+        network.persistence_status = { client: 'ON', effective: 'ON' };
+        network.webpush_error = 'Nope';
+
+        const comp = mount();
+        const block = comp.$el.querySelector('.kiwi-networksettings-preferences');
+        expect(block).not.toBeNull();
+        expect(block.textContent).toContain('settings_persistence');
+        expect(block.textContent).toContain('settings_share_typing');
+        expect(block.textContent).toContain('settings_lenient_rerouting');
+        expect(block.textContent).toContain('settings_ignore_bots');
+        expect(block.textContent).toContain('settings_show_redactions');
+        expect(block.textContent).toContain('settings_fileupload_service');
+        expect(block.textContent).toContain('settings_show_notifications');
+        expect(block.textContent).toContain('settings_webpush');
+        expect(block.textContent).toContain('webpush_failed');
+    });
+
     it('locks only network details in restricted mode', async() => {
         s.settings.restricted = true;
         network.connection.account = 'account';

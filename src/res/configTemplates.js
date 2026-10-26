@@ -88,7 +88,9 @@ export const configTemplates = {
         },
         warnOnExit: true,
         quitMessage: 'Page closed',
-        // Default buffer settings
+        // Default buffer settings. Capability-dependent values (desktop
+        // notifications, typing, bots, redactions) are copied into each
+        // network's settings when it is created and then owned per network.
         buffers: {
             messageLayout: 'modern',
             alert_on: 'highlight',
@@ -166,14 +168,10 @@ export const configTemplates = {
         },
         skipHiddenMessages: false,
         autoReconnect: false,
-        // Preferred server-side persistence (draft/persistence): 'keep'
-        // leaves the server setting alone, 'default' follows the server
+        // Default per-network persistence preference (draft/persistence):
+        // 'keep' leaves the server setting alone, 'default' follows the server
         // default, 'on'/'off' request persistence enabled/disabled.
         persistencePreference: 'keep',
-        // Browser push notifications (draft/webpush): opt-in per user.
-        // The settings checkbox only appears for account logins on
-        // servers that negotiate the cap and send a VAPID key.
-        webpushEnabled: false,
         autoReconnectMaxWait: 30000,
         autoReconnectMaxRetries: 10,
         disconnectOnSaslFail: true,
@@ -298,6 +296,8 @@ export const configTemplates = {
             message_nick: '%prefix%nick',
             general_error: '⚠ %text',
         },
+        // Defaults for new networks; each network stores its own service and
+        // retention choice.
         fileupload: {
             service: 'none',
             litterbox: {

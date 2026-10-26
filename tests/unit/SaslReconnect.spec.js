@@ -42,6 +42,17 @@ describe('sasl account across reconnects', () => {
         expect(network.sasl_account).toBe('ankle');
     });
 
+    it('captures 900 when it arrives after registration', async() => {
+        const client = network.ircClient;
+        await emitRawLine(client, '903', [network.nick, 'SASL ok']);
+        expect(network.sasl_account).toBe('');
+
+        client.emit('registered', { nick: 'TestNick' });
+        client.emit('loggedin', { account: 'ankle' });
+
+        expect(network.sasl_account).toBe('ankle');
+    });
+
     it('restores sasl_account on the next connection after a reconnect', async() => {
         await loginAs('ankle');
         expect(network.sasl_account).toBe('ankle');

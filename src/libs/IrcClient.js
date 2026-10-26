@@ -447,6 +447,11 @@ function clientMiddleware(state, network) {
     let pendingSaslAccount = '';
     let advertisedLsCaps = new Set();
 
+    function isSelfNick(nick) {
+        return !!nick && !!network.nick &&
+            nick.toLowerCase() === network.nick.toLowerCase();
+    }
+
     // Gate token planted in the framework's cap.requested list to hold CAP
     // negotiation open while we fetch ISUPPORT for draft/extended-isupport.
     // It never goes on the wire: the framework only removes entries the
@@ -547,7 +552,6 @@ function clientMiddleware(state, network) {
             network.enabled_caps = [];
             advertisedLsCaps = new Set();
             network.advertised_caps = [];
-            network.bouncer_isupport = null;
             network.metadata_timeout_active = false;
             network.active_metadata_subs = Object.create(null);
             network.metadata_throttles = new Map();
@@ -562,6 +566,7 @@ function clientMiddleware(state, network) {
             // stale flag drops the 900, and sasl_account is never restored.
             isRegistered = false;
             network.sasl_account = '';
+            network.resetCurrentAccount();
             network.is_oper = false;
             saslSucceeded = false;
             pendingSaslAccount = '';
@@ -607,11 +612,6 @@ function clientMiddleware(state, network) {
                 options[key.toUpperCase()] = event.options[key];
             });
             network.isupport = options;
-            if (!isRegistered && network.isBouncerConnection()) {
-                // Everything before registration (and so before BOUNCER BIND
-                // completes) is the bouncer's own ISUPPORT reply.
-                network.bouncer_isupport = Object.assign({}, options);
-            }
 
             // Draft/extended-isupport replies may arrive as several 005
             // lines (batched 005s are re-emitted together at batch end, but
@@ -775,9 +775,8 @@ function clientMiddleware(state, network) {
         });
 
         client.on('loggedin', (event) => {
-            if (isRegistered) {
-                return;
-            }
+            // 900 can arrive after 001 (Soju sends it in the post-registration
+            // burst), so capture it even when isRegistered is already true.
             let account = event && event.account;
             if (typeof account !== 'string' || !account || account === '*') {
                 return;
@@ -790,12 +789,14 @@ function clientMiddleware(state, network) {
 
         client.on('loggedout', () => {
             network.sasl_account = '';
+            network.resetCurrentAccount();
             saslSucceeded = false;
             pendingSaslAccount = '';
         });
 
         client.on('sasl failed', () => {
             network.sasl_account = '';
+            network.resetCurrentAccount();
             saslSucceeded = false;
             pendingSaslAccount = '';
             if (client.connection.options.sasl_disconnect_on_fail &&
@@ -814,6 +815,7 @@ function clientMiddleware(state, network) {
             network.state = 'disconnected';
             network.connected_at = 0;
             network.sasl_account = '';
+            network.resetCurrentAccount();
             saslSucceeded = false;
             pendingSaslAccount = '';
             scrubIsupportGate(client);
@@ -990,7 +992,7 @@ function clientMiddleware(state, network) {
             return;
         }
 
-        if (command === '903' && !isRegistered) {
+        if (command === '903') {
             saslSucceeded = true;
             if (pendingSaslAccount) {
                 network.sasl_account = pendingSaslAccount;
@@ -1292,6 +1294,9 @@ function clientMiddleware(state, network) {
                 const update = {};
                 if (typeof event.account !== 'undefined') {
                     update.account = event.account || '';
+                    if (!isHistory && isSelfNick(event.nick)) {
+                        network.setCurrentAccount(event.account);
+                    }
                 }
                 if (event.tags && typeof event.tags.bot !== 'undefined') {
                     update.is_bot = true;
@@ -1316,7 +1321,7 @@ function clientMiddleware(state, network) {
             let bufferName = event.from_server ? '*' : event.target;
             let isRerouted = false;
 
-            const lenientRerouting = state.setting('buffers.lenient_rerouting');
+            const lenientRerouting = network.setting('lenient_rerouting');
 
             // 1. Determine the protocol destination (original buffer)
             if (!event.from_server) {
@@ -1445,7 +1450,7 @@ function clientMiddleware(state, network) {
 
             // If ignore_bots is enabled and the user is a known bot or the message has a bot tag,
             // ignore the message
-            const ignoreBots = state.setting('buffers.ignore_bots');
+            const ignoreBots = network.setting('ignore_bots');
             let messageUser = state.getUser(network.id, event.nick);
             if (isTwitch && isTwitchUserMessage(event)) {
                 messageUser = network.ensureTwitchUser(
@@ -1605,6 +1610,10 @@ function clientMiddleware(state, network) {
                     realname: event.gecos,
                     account: event.account || '',
                 });
+
+                if (isSelfNick(event.nick) && typeof event.account !== 'undefined') {
+                    network.setCurrentAccount(event.account);
+                }
 
                 if (event.nick === client.user.nick) {
                     buffer.enabled = true;
@@ -1897,6 +1906,9 @@ function clientMiddleware(state, network) {
         if (effectiveCommand === 'ACCOUNT') {
             if (!isHistory) {
                 state.addUser(networkid, { nick: event.nick, account: event.account || '' });
+                if (isSelfNick(event.nick) && typeof event.account !== 'undefined') {
+                    network.setCurrentAccount(event.account);
+                }
             }
         }
 
@@ -1923,6 +1935,10 @@ function clientMiddleware(state, network) {
             Object.keys(user.whois).forEach((prop) => (
                 user.whois[prop] = event[prop] ?? ''
             ));
+
+            if (isSelfNick(event.nick) && typeof event.account !== 'undefined') {
+                network.setCurrentAccount(event.account);
+            }
 
             user.hasWhois = true;
         }
@@ -2011,6 +2027,11 @@ function clientMiddleware(state, network) {
                             account: eventUser.account || undefined,
                             is_bot: !!eventUser.bot,
                         };
+                        if (isSelfNick(eventUser.nick) &&
+                            typeof eventUser.account !== 'undefined'
+                        ) {
+                            network.setCurrentAccount(eventUser.account);
+                        }
                         let user = state.addUser(networkid, userObj, users);
                         if (!user) {
                             // Should never happen as this network should always exist

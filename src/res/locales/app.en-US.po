@@ -955,6 +955,10 @@ msgstr "Kick Reason"
 msgid "settings_server_details"
 msgstr "Server Details"
 
+#: Network preferences
+msgid "settings_network_preferences"
+msgstr "Network Preferences"
+
 #: IRC authentication
 msgid "settings_irc_auth"
 msgstr "IRC Auth"
@@ -2102,13 +2106,13 @@ msgstr "Disabled"
 msgid "settings_webpush"
 msgstr "Enable Push Notifications"
 
-#: Desktop Notifications Locked
-msgid "settings_desktop_notifications_locked"
-msgstr "Desktop notifications are required while push notifications are enabled."
-
 #: Push Notifications Permission Denied
 msgid "webpush_permission_denied"
 msgstr "Browser notifications are blocked for this site. Allow them in your browser settings, then try again."
+
+#: Web Push Failed
+msgid "webpush_failed"
+msgstr "Web Push Failed: {{reason}}"
 
 #: Default Away Message
 msgid "default_away_message"

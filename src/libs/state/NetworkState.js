@@ -2,6 +2,7 @@
 
 import Vue from 'vue';
 import * as Misc from '@/helpers/Misc';
+import { stripAccountSuffix } from '@/helpers/LoginFields';
 import { isTwitchHost, twitchUserModes } from '@/helpers/Twitch';
 import { parseAccountRegistrationCap } from '@/libs/accountRegistration';
 import { def } from './common';
@@ -47,8 +48,32 @@ export default class NetworkState {
             account: '',
             sasl_mechanism: 'AUTO',
         };
+        const config = appState.settings || {};
+        const bufferDefaults = config.buffers || {};
+        const bufferDefault = (name, fallback) => (
+            typeof bufferDefaults[name] === 'undefined' ?
+                fallback :
+                bufferDefaults[name]
+        );
         this.settings = {
             show_raw_caps: false,
+            // Browser push notifications are a per-network opt-in for the
+            // connection that negotiated webpush.
+            webpushEnabled: false,
+            // Settings whose availability depends on the network live here
+            // instead of in the global user settings. New networks start from
+            // the admin config defaults; old user values are not migrated.
+            show_notifications: bufferDefault('show_notifications', true),
+            persistencePreference: typeof config.persistencePreference === 'undefined' ?
+                'keep' :
+                config.persistencePreference,
+            share_typing: bufferDefault('share_typing', true),
+            lenient_rerouting: bufferDefault('lenient_rerouting', true),
+            ignore_bots: bufferDefault('ignore_bots', false),
+            show_redactions: bufferDefault('show_redactions', 'placeholder'),
+            // Empty means use the admin/service default.
+            fileuploadService: '',
+            fileuploadRetention: '',
         };
         this.nick = '';
         this.username = '';
@@ -73,15 +98,13 @@ export default class NetworkState {
         };
         this.password = '';
         this.sasl_account = '';
+        // Our account on this connection. Defaults to the stripped SASL
+        // account until the server reports the account explicitly.
+        this.current_account = '';
+        this.current_account_explicit = false;
         // Bouncer provenance. A bouncer socket sends CAP LS before
-        // BOUNCER BIND, so the advert belongs to the bouncer itself; the
-        // pre-registration ISUPPORT reply is the bouncer's partial token set.
+        // BOUNCER BIND, so the advert belongs to the bouncer itself.
         this.advertised_caps = [];
-        this.bouncer_isupport = null;
-        // Upstream SASL identity on a bouncer connection. The bouncer does
-        // that login for us, so these stay empty until we can learn them.
-        this.upstream_account = '';
-        this.upstream_password = '';
         this.is_oper = false;
         this.away = '';
         this.enabled_caps = [];
@@ -94,6 +117,7 @@ export default class NetworkState {
         // persisted: subscriptions live in the browser, not in saved state.
         this.webpush_registered = false;
         this.webpush_endpoint = '';
+        this.webpush_error = '';
         this.isupport = {};
         // Account registration (draft/account-registration) flow state.
         // Never stores the password here: enumerable fields can be persisted.
@@ -505,18 +529,11 @@ export default class NetworkState {
             '';
     }
 
-    // Whether the Preferred Persistence setting applies to this network:
-    // only when logged in with an account and the cap was negotiated.
+    // Whether the Preferred Persistence setting applies to this network.
+    // The capability belongs to the connection that negotiated it; the bouncer
+    // is responsible for filtering what it advertises to bound networks.
     persistencePreferenceAvailable() {
-        if (!this.hasCap('draft/persistence')) {
-            return false;
-        }
-        if (this.capPlane('draft/persistence') === 'bouncer') {
-            // The bouncer keeps its networks alive itself, so this can only
-            // be set from the control connection, for the whole bouncer.
-            return this.isBouncerController() && !!this.bouncerAccount();
-        }
-        return !!this.upstreamAccount();
+        return this.hasCap('draft/persistence') && !!this.sasl_account;
     }
 
     metadataCap() {
@@ -670,137 +687,69 @@ export default class NetworkState {
         return !!account && !!this.password;
     }
 
-    // Whether the bouncer itself advertised `name` before binding. This is
-    // how bouncer-provided features are told apart from upstream ones.
-    bouncerHasCap(name) {
-        if (!this.isBouncerConnection()) {
-            return false;
+    // Our account on this connection. The SASL account is the default until
+    // the server reports an explicit account name for us.
+    currentAccount() {
+        if (this.current_account_explicit) {
+            return this.current_account;
         }
-        return (this.advertised_caps || []).includes(name.toLowerCase());
+        return stripAccountSuffix((this.sasl_account || '').trim());
     }
 
-    // The bouncer's ISUPPORT value for `name`. A bound connection only sees
-    // a partial pre-BIND reply, so fall back to the control connection, which
-    // receives the bouncer's full token set after registration.
-    bouncerSupports(name) {
-        if (!this.isBouncerConnection()) {
-            return undefined;
+    // Record an explicit account name reported by the server. '*' means no
+    // account; strip any /network or @client suffix.
+    setCurrentAccount(account) {
+        const raw = account === '*' ? '' : String(account || '').trim();
+        const value = stripAccountSuffix(raw);
+        if (this.current_account !== value) {
+            this.current_account = value;
         }
-        if (this.isBouncerController()) {
-            return this.supports(name);
-        }
-        const token = name.toUpperCase();
-        if (
-            this.bouncer_isupport &&
-            typeof this.bouncer_isupport[token] !== 'undefined'
-        ) {
-            return this.bouncer_isupport[token];
-        }
-        const controller = this.bouncerController();
-        return controller ? controller.supports(name) : undefined;
+        this.current_account_explicit = true;
     }
 
-    // Which side advertised a negotiated capability: 'bouncer', 'upstream',
-    // or 'none' when it was not negotiated at all.
-    capPlane(name) {
-        if (!this.hasCap(name)) {
-            return 'none';
-        }
-        return this.bouncerHasCap(name) ? 'bouncer' : 'upstream';
+    resetCurrentAccount() {
+        this.current_account = '';
+        this.current_account_explicit = false;
     }
 
-    // Which side advertised an ISUPPORT token.
-    tokenPlane(name) {
-        if (typeof this.bouncerSupports(name) !== 'undefined') {
-            return 'bouncer';
-        }
-        return typeof this.supports(name) !== 'undefined' ? 'upstream' : 'none';
-    }
-
-    // The account that logs in to the bouncer itself. The control connection
-    // holds it; bound connections borrow it.
-    bouncerAccount() {
-        if (!this.isBouncerConnection()) {
+    // The VAPID key provided by this network's post-registration ISUPPORT.
+    // Pre-BIND tokens belong to the bouncer/controller and are not used here.
+    webpushVapidKey() {
+        const cap = this.webpushCap();
+        if (!cap) {
             return '';
         }
-        if (this.isBouncerController()) {
-            return this.connection.account || this.sasl_account || '';
-        }
-        const controller = this.bouncerController();
-        if (!controller) {
-            return '';
-        }
-        return controller.connection.account || controller.sasl_account || '';
+
+        const key = this.supports('VAPID');
+        return typeof key === 'string' ? key : '';
     }
 
-    bouncerPassword() {
-        if (!this.isBouncerConnection()) {
-            return '';
-        }
-        if (this.isBouncerController()) {
-            return this.password || '';
-        }
-        const controller = this.bouncerController();
-        return controller ? (controller.password || '') : '';
-    }
-
-    // The account logged in to the upstream network. A direct connection
-    // knows it from SASL; a bouncer connection leaves that login to the
-    // bouncer, so it is only known once the bouncer tells us.
-    upstreamAccount() {
-        if (!this.isBouncerConnection()) {
-            return this.sasl_account || '';
-        }
-        if (this.isBouncerController()) {
-            return '';
-        }
-        return this.upstream_account || this.sasl_account || '';
-    }
-
-    upstreamPassword() {
-        if (!this.isBouncerConnection()) {
-            return this.password || '';
-        }
-        return this.upstream_password || '';
-    }
-
-    // Whether push notifications apply to this network: only when logged in
-    // with an account, the cap was negotiated, the server sent a VAPID key,
-    // and the connection is persistent. Networks without the persistence
-    // cap (eg. soju) skip the persistence check: they never report STATUS.
+    // Whether push notifications apply to this network. The capability belongs
+    // to the connection that negotiated it; the bouncer is responsible for
+    // filtering what it advertises to bound networks.
     webpushAvailable() {
         const cap = this.webpushCap();
         if (!cap) {
             return false;
         }
-        // A push subscription registered with the bouncer is bouncer-wide,
-        // so it is managed from the control connection only.
-        if (this.capPlane(cap) === 'bouncer' && !this.isBouncerController()) {
-            return false;
+
+        const vapid = this.webpushVapidKey();
+        let persistent = true;
+        if (this.hasCap('draft/persistence')) {
+            persistent = this.persistence_status.effective === 'ON';
         }
-        const account = this.bouncerHasCap(cap) ?
-            this.bouncerAccount() :
-            this.upstreamAccount();
+
         // Push extends desktop notifications; never offer it alone.
-        return !!account &&
-            !!this.supports('VAPID') &&
-            (!this.hasCap('draft/persistence') ||
-                this.persistence_status.effective === 'ON') &&
-            !!this.appState.setting('buffers.show_notifications');
+        return !!this.sasl_account &&
+            !!vapid &&
+            persistent &&
+            !!this.setting('show_notifications');
     }
 
     // Parsed draft/account-registration capability tokens. Returns null when
     // the capability is not enabled.
     accountRegistration() {
         if (!this.hasCap('draft/account-registration')) {
-            return null;
-        }
-        // When the bouncer advertised the cap, registration is a bouncer
-        // feature and cannot be set per network from a bound connection.
-        if (
-            this.capPlane('draft/account-registration') === 'bouncer' &&
-            !this.isBouncerController()
-        ) {
             return null;
         }
         return parseAccountRegistrationCap(this.capValue('draft/account-registration'));
@@ -926,7 +875,7 @@ export default class NetworkState {
             // If it's a PM, the sender is always "in" their own PM queue
             const wasPm = (message.protocol_target === this.nick);
 
-            const lenientRerouting = this.appState.setting('buffers.lenient_rerouting');
+            const lenientRerouting = this.setting('lenient_rerouting');
 
             if (!lenientRerouting && !wasPm &&
                 !senderInContext && !senderInOriginal) {

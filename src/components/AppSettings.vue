@@ -162,7 +162,7 @@
                                 <span>{{ $t('settings_show_inline_previews') }} </span>
                                 <input v-model="settingBufferInlineLinkPreviews" type="checkbox">
                             </label>
-                            <label v-if="!botSupportFound" class="u-checkbox-wrapper">
+                            <label v-if="botSupportFound" class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_ignore_bots') }} </span>
                                 <input v-model="settingBufferIgnoreBots" type="checkbox">
                             </label>
@@ -239,8 +239,6 @@
                                 <input
                                     v-model="settingBufferShowNotifications"
                                     type="checkbox"
-                                    :disabled="desktopNotificationsLocked"
-                                    :title="desktopNotificationsLocked ? $t('settings_desktop_notifications_locked') : ''"
                                     @change="applyDesktopNotifications"
                                 >
                             </label>
@@ -248,6 +246,9 @@
                                 <span>{{ $t('settings_webpush') }} </span>
                                 <input v-model="settingWebpushEnabled" type="checkbox" @change="applyWebpushEnabled">
                             </label>
+                            <div v-if="webpushError" class="kiwi-appsettings-webpush-error">
+                                {{ $t('webpush_failed', { reason: webpushError }) }}
+                            </div>
                             <label class="kiwi-appsettings-full">
                                 <span>{{ $t('settings_highlight') }} </span>
                                 <input v-model="settingHighlights" type="text" class="u-input">
@@ -344,10 +345,10 @@ import GlobalApi from '@/libs/GlobalApi';
 import localesList from '@/res/localesList';
 import { emojiData } from '@/res/emojis';
 import { getEmojiVersions } from '@/helpers/Emoji';
-import { effectiveService, filehostAvailable, listUploadServices } from '@/libs/fileupload';
 import { debounce } from '@/helpers/Async';
 import SettingsAliases from './SettingsAliases';
 import SettingsAdvanced from './SettingsAdvanced';
+import NetworkPreferencesMixin from './NetworkPreferencesMixin';
 
 /**
  * Returns an object for a vuejs computated property on a state settings value
@@ -369,6 +370,7 @@ export default {
         SettingsAliases,
         SettingsAdvanced,
     },
+    mixins: [NetworkPreferencesMixin],
     data() {
         return {
             theme: '',
@@ -385,32 +387,6 @@ export default {
         },
         canRegisterProtocolHandler() {
             return !!navigator.registerProtocolHandler && this.$state.setting('allowRegisterProtocolHandler');
-        },
-        messageTagsSupported() {
-            let activeNetwork = this.$state.getActiveNetwork();
-            return activeNetwork && activeNetwork.hasCap('message-tags');
-        },
-        persistencePreferenceAvailable() {
-            let activeNetwork = this.$state.getActiveNetwork();
-            return activeNetwork && activeNetwork.persistencePreferenceAvailable();
-        },
-        webpushAvailable() {
-            let activeNetwork = this.$state.getActiveNetwork();
-            return activeNetwork && activeNetwork.webpushAvailable();
-        },
-        desktopNotificationsLocked() {
-            // The desktop toggle stays locked while push is active:
-            // pushes without desktop notifications would skip
-            // every mention received with the app open.
-            return !!this.settingWebpushEnabled && !!this.webpushAvailable;
-        },
-        redactionsSupported() {
-            let activeNetwork = this.$state.getActiveNetwork();
-            return activeNetwork && activeNetwork.hasCap('draft/message-redaction');
-        },
-        botSupportFound() {
-            let activeNetwork = this.$state.getActiveNetwork();
-            return activeNetwork && typeof activeNetwork.supports('BOT') !== 'undefined';
         },
         activeNetworkIsUtf8() {
             let activeNetwork = this.$state.getActiveNetwork();
@@ -443,8 +419,6 @@ export default {
         settingShowAutoComplete: bindSetting('showAutocomplete'),
         settingEmojiPickerMaxVersion: bindSetting('emojiPickerMaxVersion'),
         settingAutoReconnect: bindSetting('autoReconnect'),
-        settingPersistencePreference: bindSetting('persistencePreference'),
-        settingWebpushEnabled: bindSetting('webpushEnabled'),
         settingUseMonospace: bindSetting('useMonospace'),
         settingHighlights: bindSetting('highlights'),
         settingBufferColourNicknames: bindSetting('buffers.colour_nicknames_in_messages'),
@@ -456,11 +430,6 @@ export default {
         settingBufferExtraFormatting: bindSetting('buffers.extra_formatting'),
         settingBufferTrafficAsActivity: bindSetting('buffers.traffic_as_activity'),
         settingBufferMuteSound: bindSetting('buffers.mute_sound'),
-        settingBufferShowNotifications: bindSetting('buffers.show_notifications'),
-        settingBufferShareTyping: bindSetting('buffers.share_typing'),
-        settingBufferIgnoreBots: bindSetting('buffers.ignore_bots'),
-        settingBufferLenientRerouting: bindSetting('buffers.lenient_rerouting'),
-        settingBufferShowRedactions: bindSetting('buffers.show_redactions'),
         settingDefaultBanMask: bindSetting('buffers.default_ban_mask'),
         settingDefaultKickReason: bindSetting('buffers.default_kick_reason'),
         settingBufferInlineLinkPreviews: {
@@ -507,59 +476,6 @@ export default {
                 this.$state.setting('buffers.messageLayout', l[newVal] || l.modern);
             },
         },
-        fileuploadServices() {
-            let network = this.$state.getActiveNetwork();
-            let saved = this.fileuploadServiceChoice;
-            return listUploadServices().filter((service) => {
-                if (service.id !== 'filehost') {
-                    return true;
-                }
-                return saved === 'filehost' || filehostAvailable(network);
-            });
-        },
-        fileuploadServiceChoice: {
-            get() {
-                let userVal = this.$state.getSetting('user_settings.fileupload.service');
-                return typeof userVal === 'undefined' ? '' : userVal;
-            },
-            set(newVal) {
-                if (!newVal) {
-                    this.$state.setSetting('user_settings.fileupload.service', null);
-                    return;
-                }
-                this.$state.setting('fileupload.service', newVal);
-            },
-        },
-        fileuploadRetentionOptions() {
-            let service = effectiveService(this.$state, this.$state.getActiveNetwork());
-            return (service && service.retentions) || [];
-        },
-        fileuploadRetentionChoice: {
-            get() {
-                let service = effectiveService(this.$state, this.$state.getActiveNetwork());
-                if (!service || !service.retentionSetting) {
-                    return '';
-                }
-                let userVal = this.$state.getSetting(
-                    'user_settings.' + service.retentionSetting,
-                );
-                return typeof userVal === 'undefined' ? '' : userVal;
-            },
-            set(newVal) {
-                let service = effectiveService(this.$state, this.$state.getActiveNetwork());
-                if (!service || !service.retentionSetting) {
-                    return;
-                }
-                if (!newVal) {
-                    this.$state.setSetting(
-                        'user_settings.' + service.retentionSetting,
-                        null,
-                    );
-                    return;
-                }
-                this.$state.setting(service.retentionSetting, newVal);
-            },
-        },
     },
     created() {
         this.listenForThemeSettings();
@@ -571,34 +487,6 @@ export default {
     methods: {
         closeSettings() {
             this.$state.$emit('active.component');
-        },
-        applyPersistencePreference() {
-            // Push a dropdown change to the server immediately against the
-            // last reported STATUS instead of waiting for the next one
-            // (servers only send STATUS on change or at connect).
-            let activeNetwork = this.$state.getActiveNetwork();
-            if (activeNetwork && activeNetwork.setPersistencePreference) {
-                activeNetwork.setPersistencePreference();
-            }
-        },
-        applyDesktopNotifications() {
-            // Turning desktop notifications off must also turn push
-            // off, reusing the normal unsubscribe flow.
-            if (!this.settingBufferShowNotifications && this.settingWebpushEnabled) {
-                this.settingWebpushEnabled = false;
-                let activeNetwork = this.$state.getActiveNetwork();
-                if (activeNetwork && activeNetwork.setWebpushEnabled) {
-                    activeNetwork.setWebpushEnabled();
-                }
-            }
-        },
-        applyWebpushEnabled() {
-            // (Un)subscribe immediately on toggle instead of waiting for
-            // the next connect.
-            let activeNetwork = this.$state.getActiveNetwork();
-            if (activeNetwork && activeNetwork.setWebpushEnabled) {
-                activeNetwork.setWebpushEnabled();
-            }
         },
         refreshTheme() {
             ThemeManager.instance().reload();
@@ -810,6 +698,12 @@ export default {
 
 .kiwi-appsettings-section {
     padding: 10px;
+}
+
+.kiwi-appsettings-webpush-error {
+    color: var(--brand-error);
+    padding: 0 10px 10px 10px;
+    font-size: 0.9em;
 }
 
 .kiwi-appsettings-block-aliases {

@@ -1,3 +1,4 @@
+import { stripAccountSuffix } from '@/helpers/LoginFields';
 import { acceptUploadUrl } from './url';
 
 export function usableFilehostToken(value, tls) {
@@ -14,10 +15,9 @@ export function usableFilehostToken(value, tls) {
     return url;
 }
 
-// The upload host is advertised as an ISUPPORT token. draft/FILEHOST is the
-// upstream server's own service; soju.im/FILEHOST is the bouncer's. Both can
-// appear on a bound connection, in which case the bouncer's wins: uploads go
-// through the bouncer session either way.
+// The upload host is advertised as a post-registration ISUPPORT token. Use
+// only the current network's own tokens; pre-BIND tokens belong to the
+// bouncer/controller.
 export function filehostToken(network) {
     if (!network || typeof network.supports !== 'function') {
         return null;
@@ -25,19 +25,10 @@ export function filehostToken(network) {
     let tls = !!(network.connection && network.connection.tls);
     let names = ['draft/FILEHOST', 'soju.im/FILEHOST'];
 
-    if (typeof network.bouncerSupports === 'function') {
-        for (let i = 0; i < names.length; i++) {
-            let url = usableFilehostToken(network.bouncerSupports(names[i]), tls);
-            if (url) {
-                return { name: names[i], url, plane: 'bouncer' };
-            }
-        }
-    }
-
     for (let i = 0; i < names.length; i++) {
         let url = usableFilehostToken(network.supports(names[i]), tls);
         if (url) {
-            return { name: names[i], url, plane: 'upstream' };
+            return { name: names[i], url };
         }
     }
 
@@ -49,30 +40,17 @@ export function filehostUploadUrl(network) {
     return token ? token.url : '';
 }
 
-// Credentials belong to whoever advertised the token. On a bouncer connection
-// the upstream login is performed by the bouncer, so the upstream account and
-// password stay empty until we can learn them.
+// FILEHOST uses the current connection's SASL credentials. Strip any
+// network/client suffix from the account so USER/NETWORK@CLIENT becomes USER.
 export function filehostCredentials(network) {
-    let token = filehostToken(network);
-    if (!network || !token) {
+    if (!network) {
         return { account: '', password: '' };
     }
 
-    let account = '';
-    let password = '';
-    if (token.plane === 'bouncer') {
-        account = typeof network.bouncerAccount === 'function' ? network.bouncerAccount() : '';
-        password = typeof network.bouncerPassword === 'function' ? network.bouncerPassword() : '';
-    } else {
-        account = typeof network.upstreamAccount === 'function' ?
-            network.upstreamAccount() :
-            (network.sasl_account || '');
-        password = typeof network.upstreamPassword === 'function' ?
-            network.upstreamPassword() :
-            (network.password || '');
-    }
-
-    return { account: account || '', password: password || '' };
+    return {
+        account: stripAccountSuffix(network.sasl_account || ''),
+        password: network.password || '',
+    };
 }
 
 export function filehostAvailable(network) {

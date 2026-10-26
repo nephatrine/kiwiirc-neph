@@ -225,7 +225,12 @@ function createNewState() {
                         network.name = importNetwork.name;
                         network.connection = { ...network.connection, ...importNetwork.connection };
                         network.auto_commands = importNetwork.auto_commands || '';
-                        network.settings = importNetwork.settings;
+                        // Keep defaults for settings added after a state was
+                        // saved (per-network capability settings).
+                        network.settings = {
+                            ...network.settings,
+                            ...(importNetwork.settings || {}),
+                        };
                         // First check importNetwork.nick as this was used in older versions
                         // TODO: Eventually remove this importNetwork.nick check
                         network.nick = importNetwork.nick || importNetwork.connection.nick;

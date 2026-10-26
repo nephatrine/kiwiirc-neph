@@ -49,6 +49,14 @@ and this project adheres to
 - **Icons**: Replaced Font Awesome 4.7 with a self-hosted Boxicons 2.1.4
   webfont. Icons now use `bx` and `bxs` classes, and the build emits only the
   woff2 font.
+- **Per-Network Settings**: Desktop Notifications, Persistence Preference, Share
+  Typing, Lenient Rerouting, Ignore Bots, Show Redactions, and file-upload
+  service/retention now belong to each network.
+- **Web Push**: Push notifications are now a per-network opt-in instead of a
+  global user setting. Turning desktop notifications off suspends only that
+  network's registration without clearing its opt-in.
+- **FILEHOST**: Account `/network` and `@client` suffixes are stripped from the
+  SASL account before HTTP Basic authentication.
 - **Themes**: NephDeck is now one theme with Amber, Green, and Cyan presets.
   Preset, CRT, and sound preferences persist under `plugin-nephdeck.*` instead
   of switching between three separate themes.
@@ -115,6 +123,13 @@ and this project adheres to
 
 ### Fixed
 
+- **SASL**: A `900` account reply arriving after `001` is now captured, so
+  direct Soju connections populate the SASL account and offer Web Push.
+- **Current Account**: Services UI and command suggestions now use a tracked
+  current account. It defaults to the stripped SASL account and updates from
+  explicit self WHO/WHOX/WHOIS/ACCOUNT/account-tag/extended-join reports.
+- **Ignore Bots**: The Ignore Bot Messages setting is now shown on networks that
+  advertise `BOT` and hidden on networks that do not.
 - **Connection**: Auto-reconnect no longer leaves a direct WebSocket network
   stuck in Connecting after the final attempt fails, and a connecting attempt
   can be cancelled from the network list, buffer, and network settings.

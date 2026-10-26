@@ -33,10 +33,6 @@ describe('bouncer feature planes', () => {
             'draft/account-registration',
             'draft/bouncer-networks',
         ];
-        bound.bouncer_isupport = {
-            'DRAFT/ACCOUNTREQUIRED': '',
-            'SOJU.IM/FILEHOST': 'https://bouncer.example/upload',
-        };
         bound.isupport = {
             'NETWORK': 'Libera.Chat',
             'DRAFT/FILEHOST': 'https://upstream.example/upload',
@@ -65,65 +61,77 @@ describe('bouncer feature planes', () => {
         expect(direct.isBouncerController()).toBe(false);
     });
 
-    it('treats the pre-bind CAP LS as the bouncer advert', () => {
-        expect(bound.bouncerHasCap('draft/webpush')).toBe(true);
-        expect(bound.bouncerHasCap('DRAFT/PERSISTENCE')).toBe(true);
-        expect(bound.bouncerHasCap('draft/chathistory')).toBe(false);
-        expect(direct.bouncerHasCap('draft/persistence')).toBe(false);
+    it('tracks the current account from SASL and explicit reports', () => {
+        expect(direct.currentAccount()).toBe('direct-account');
+        expect(bound.currentAccount()).toBe('');
+        expect(controller.currentAccount()).toBe('');
+
+        bound.sasl_account = 'USER/NETWORK@CLIENT';
+        expect(bound.currentAccount()).toBe('USER');
+
+        bound.setCurrentAccount('explicit/NETWORK@CLIENT');
+        expect(bound.currentAccount()).toBe('explicit');
+
+        bound.setCurrentAccount('*');
+        expect(bound.currentAccount()).toBe('');
+
+        bound.setCurrentAccount('explicit');
+        bound.resetCurrentAccount();
+        expect(bound.currentAccount()).toBe('USER');
+
+        controller.sasl_account = 'bouncer-account';
+        expect(controller.currentAccount()).toBe('bouncer-account');
     });
 
-    it('names the plane that advertised each cap', () => {
-        expect(bound.capPlane('draft/persistence')).toBe('bouncer');
-        expect(bound.capPlane('draft/chathistory')).toBe('upstream');
-        expect(bound.capPlane('echo-message')).toBe('none');
-        expect(direct.capPlane('draft/persistence')).toBe('upstream');
-    });
-
-    it('prefers the pre-bind tokens, then the controller tokens', () => {
-        expect(bound.bouncerSupports('DRAFT/ACCOUNTREQUIRED')).toBe('');
-        expect(bound.bouncerSupports('VAPID')).toBe('key');
-        expect(bound.bouncerSupports('draft/FILEHOST')).toBeUndefined();
-        expect(bound.tokenPlane('soju.im/FILEHOST')).toBe('bouncer');
-        expect(bound.tokenPlane('draft/FILEHOST')).toBe('upstream');
-        expect(bound.tokenPlane('NETWORK')).toBe('upstream');
-        expect(bound.tokenPlane('UNKNOWN')).toBe('none');
-    });
-
-    it('reads the bouncer account from the controller', () => {
-        expect(bound.bouncerAccount()).toBe('bouncer-account');
-        expect(bound.bouncerPassword()).toBe('bouncer-secret');
-        expect(controller.bouncerAccount()).toBe('bouncer-account');
-        expect(direct.bouncerAccount()).toBe('');
-        expect(direct.bouncerPassword()).toBe('');
-    });
-
-    it('reads the upstream account from the connection', () => {
-        expect(direct.upstreamAccount()).toBe('direct-account');
-        expect(direct.upstreamPassword()).toBe('direct-secret');
-        expect(bound.upstreamAccount()).toBe('');
-        bound.sasl_account = 'discovered-account';
-        expect(bound.upstreamAccount()).toBe('discovered-account');
-        bound.upstream_account = 'configured-account';
-        expect(bound.upstreamAccount()).toBe('configured-account');
-        expect(controller.upstreamAccount()).toBe('');
-    });
-
-    it('offers bouncer persistence only on the controller', () => {
+    it('offers persistence on every network that negotiated it', () => {
+        controller.sasl_account = 'bouncer-account';
+        bound.sasl_account = 'bouncer-account';
         expect(controller.persistencePreferenceAvailable()).toBe(true);
-        expect(bound.persistencePreferenceAvailable()).toBe(false);
+        expect(bound.persistencePreferenceAvailable()).toBe(true);
         expect(direct.persistencePreferenceAvailable()).toBe(true);
     });
 
-    it('offers bouncer webpush only on the controller', () => {
-        s.setting('buffers.show_notifications', true);
+    it('offers webpush on the controller and a bound network', () => {
+        controller.sasl_account = 'bouncer-account';
+        controller.setting('show_notifications', true);
+        bound.sasl_account = 'bouncer-account';
+        bound.setting('show_notifications', true);
+        bound.isupport.VAPID = 'bound-key';
         bound.persistence_status = { client: 'ON', effective: 'ON' };
+
         expect(controller.webpushAvailable()).toBe(true);
+        expect(bound.webpushAvailable()).toBe(true);
+    });
+
+    it('does not borrow the controller VAPID for a bound network', () => {
+        bound.sasl_account = 'bouncer-account';
+        bound.setting('show_notifications', true);
+        bound.persistence_status = { client: 'ON', effective: 'ON' };
+
+        expect(bound.webpushVapidKey()).toBe('');
         expect(bound.webpushAvailable()).toBe(false);
     });
 
-    it('ignores bouncer account registration on bound networks', () => {
-        expect(bound.capPlane('draft/account-registration')).toBe('bouncer');
-        expect(bound.accountRegistration()).toBeNull();
+    it('offers upstream webpush on a bound network', () => {
+        bound.sasl_account = 'bouncer-account';
+        bound.setting('show_notifications', true);
+        bound.advertised_caps = bound.advertised_caps.filter((cap) => (
+            cap !== 'draft/webpush'
+        ));
+        bound.isupport.VAPID = 'upstream-key';
+        bound.persistence_status = { client: 'ON', effective: 'ON' };
+
+        expect(bound.webpushAvailable()).toBe(true);
+    });
+
+    it('offers account registration on a bound network', () => {
+        expect(bound.accountRegistration()).toEqual({
+            beforeConnect: false,
+            customAccountName: false,
+            emailRequired: false,
+            minPasswordLength: 0,
+            maxPasswordLength: 0,
+        });
     });
 
     it('detects Soju by its version string', () => {

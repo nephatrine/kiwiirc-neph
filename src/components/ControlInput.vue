@@ -600,7 +600,7 @@ export default {
             }
             try {
                 let url = await service.upload(file, {
-                    retention: effectiveRetention(this.$state, service),
+                    retention: effectiveRetention(this.$state, service, network),
                     network,
                 });
                 buffer.say(url);
@@ -1059,8 +1059,7 @@ export default {
             // or non-oper. The syntax ghost still shows as reference.
             let firstFlags = NICKSERV_FLAGS[parsed.path[0]];
             if (firstFlags) {
-                if (firstFlags.auth && !(this.network.upstreamAccount &&
-                    this.network.upstreamAccount())) {
+                if (firstFlags.auth && !this.network.currentAccount()) {
                     return [];
                 }
                 if (firstFlags.capabs && !this.network.is_oper) {
@@ -1078,9 +1077,7 @@ export default {
             let suggestions = nickservArgSuggestions(parsed, {
                 oper: !!this.network.is_oper,
                 selfNick: this.network.nick,
-                selfAccount: this.network.upstreamAccount
-                    ? this.network.upstreamAccount() :
-                    this.network.sasl_account,
+                selfAccount: this.network.currentAccount(),
                 knownNicks: knownNicks,
                 knownAccounts: Object.keys(accounts).sort(Misc.strCompare),
             });
@@ -1103,8 +1100,7 @@ export default {
             // or non-oper. The syntax ghost still shows as reference.
             let firstFlags = CHANSERV_FLAGS[parsed.path[0]];
             if (firstFlags) {
-                if (firstFlags.auth && !(this.network.upstreamAccount &&
-                    this.network.upstreamAccount())) {
+                if (firstFlags.auth && !this.network.currentAccount()) {
                     return [];
                 }
                 if (firstFlags.capabs && !this.network.is_oper) {
@@ -1172,8 +1168,7 @@ export default {
             // or non-oper. The syntax ghost still shows as reference.
             let firstFlags = HOSTSERV_FLAGS[parsed.path[0]];
             if (firstFlags) {
-                if (firstFlags.auth && !(this.network.upstreamAccount &&
-                    this.network.upstreamAccount())) {
+                if (firstFlags.auth && !this.network.currentAccount()) {
                     return [];
                 }
                 if (firstFlags.capabs && !this.network.is_oper) {
@@ -1189,9 +1184,7 @@ export default {
             });
             let suggestions = hostservArgSuggestions(parsed, {
                 oper: !!this.network.is_oper,
-                selfAccount: this.network.upstreamAccount
-                    ? this.network.upstreamAccount() :
-                    this.network.sasl_account,
+                selfAccount: this.network.currentAccount(),
                 knownAccounts: Object.keys(accounts).sort(Misc.strCompare),
             });
             return suggestions.map((text) => ({
@@ -1213,8 +1206,7 @@ export default {
             // or non-oper. The syntax ghost still shows as reference.
             let firstFlags = HISTSERV_FLAGS[parsed.path[0]];
             if (firstFlags) {
-                if (firstFlags.auth && !(this.network.upstreamAccount &&
-                    this.network.upstreamAccount())) {
+                if (firstFlags.auth && !this.network.currentAccount()) {
                     return [];
                 }
                 if (firstFlags.capabs && !this.network.is_oper) {
@@ -1336,8 +1328,7 @@ export default {
 
             if (opts.nickserv) {
                 let oper = !!(this.network && this.network.is_oper);
-                let authenticated = !!(this.network && this.network.upstreamAccount &&
-                    this.network.upstreamAccount());
+                let authenticated = !!(this.network && this.network.currentAccount());
                 let cmds = nickservSubcommands({ oper: oper, authenticated: authenticated });
                 let nsList = cmds.map((cmd) => {
                     let desc = NICKSERV_SYNTAX[cmd] || (cmd + ' ...');
@@ -1353,8 +1344,7 @@ export default {
 
             if (opts.chanserv) {
                 let oper = !!(this.network && this.network.is_oper);
-                let authenticated = !!(this.network && this.network.upstreamAccount &&
-                    this.network.upstreamAccount());
+                let authenticated = !!(this.network && this.network.currentAccount());
                 let cmds = chanservSubcommands({ oper: oper, authenticated: authenticated });
                 let csList = cmds.map((cmd) => {
                     let desc = CHANSERV_SYNTAX[cmd] || (cmd + ' ...');
@@ -1370,8 +1360,7 @@ export default {
 
             if (opts.hostserv) {
                 let oper = !!(this.network && this.network.is_oper);
-                let authenticated = !!(this.network && this.network.upstreamAccount &&
-                    this.network.upstreamAccount());
+                let authenticated = !!(this.network && this.network.currentAccount());
                 let cmds = hostservSubcommands({ oper: oper, authenticated: authenticated });
                 let hsList = cmds.map((cmd) => {
                     let desc = HOSTSERV_SYNTAX[cmd] || (cmd + ' ...');
@@ -1387,8 +1376,7 @@ export default {
 
             if (opts.histserv) {
                 let oper = !!(this.network && this.network.is_oper);
-                let authenticated = !!(this.network && this.network.upstreamAccount &&
-                    this.network.upstreamAccount());
+                let authenticated = !!(this.network && this.network.currentAccount());
                 let cmds = histservSubcommands({ oper: oper, authenticated: authenticated });
                 let hisList = cmds.map((cmd) => {
                     let desc = HISTSERV_SYNTAX[cmd] || (cmd + ' ...');

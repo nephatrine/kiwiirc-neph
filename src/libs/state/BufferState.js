@@ -454,9 +454,18 @@ export default class BufferState {
             return result;
         }
 
+        // Settings that belong to the network (capability-dependent options
+        // and desktop notifications) fall back to that network before the
+        // global buffer defaults.
+        let network = this.getNetwork();
+        if (network && network.settings &&
+            typeof network.settings[name] !== 'undefined'
+        ) {
+            return network.settings[name];
+        }
+
         // Special default for the *raw buffer scrollback size
         if (name === 'scrollback_size' && this.isRaw()) {
-            let network = this.getNetwork();
             let rawSize = network ? network.setting('raw_scrollback_size') : 0;
             return rawSize || 500;
         }

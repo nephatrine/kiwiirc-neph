@@ -66,8 +66,7 @@ export function listenForNewMessages(state) {
             force: false,
         }, _opts);
 
-        const showNotifications = state.setting('buffers.show_notifications');
-        if (!isEnabled || !showNotifications || (state.ui.app_has_focus && !opts.force)) {
+        if (!isEnabled || (state.ui.app_has_focus && !opts.force)) {
             return;
         }
 

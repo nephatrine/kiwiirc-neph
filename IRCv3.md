@@ -66,7 +66,11 @@ Kiwi IRC requests the following capabilities during connection and again on
   User; changing those settings sends the metadata back so Soju stays in sync.
 
 SASL is negotiated when an account password is set. It is not in the
-always-requested list above. Kiwi IRC prefers `SCRAM-SHA-256` over `PLAIN`.
+always-requested list above. Kiwi IRC prefers `SCRAM-SHA-256` over `PLAIN`. The
+account is taken from the `900` reply; servers such as Soju may send `900` after
+`001`, so it is captured after registration as well. The current account is the
+stripped SASL account by default; a self WHO/WHOX/WHOIS/ACCOUNT, account-tag, or
+extended-join report replaces it.
 
 ### Helpers
 
@@ -85,25 +89,26 @@ always-requested list above. Kiwi IRC prefers `SCRAM-SHA-256` over `PLAIN`.
 - **draft/persistence**: Reports server-side client persistence with
   `PERSISTENCE STATUS <client-setting> <effective>` (in the registration burst
   and whenever it changes). Kiwi IRC assumes non-persistent until told
-  otherwise. A Preferred Persistence setting (Keep As-Is by default, otherwise
-  Server Default / Enabled / Disabled, shown only for account logins on servers
-  with the cap) sends `PERSISTENCE SET DEFAULT|ON|OFF` when it disagrees with
-  the reported client setting, and treats the next `STATUS` as the actual truth.
-  When the cap is negotiated for an account login, our post-001 channel joins
-  are held until the first STATUS arrives (5s backstop assumes non-persistent):
-  effectively ON suppresses our rejoins since the server kept us joined, while
-  OFF runs them normally. Guests and networks without the cap always join
-  immediately.
+  otherwise. A per-network Preferred Persistence setting (Keep As-Is by default,
+  otherwise Server Default / Enabled / Disabled, shown only for account logins
+  on servers with the cap) sends `PERSISTENCE SET DEFAULT|ON|OFF` when it
+  disagrees with the reported client setting, and treats the next `STATUS` as
+  the actual truth. When the cap is negotiated for an account login, our
+  post-001 channel joins are held until the first STATUS arrives (5s backstop
+  assumes non-persistent): effectively ON suppresses our rejoins since the
+  server kept us joined, while OFF runs them normally. Guests and networks
+  without the cap always join immediately.
 - **draft/webpush** (or **soju.im/webpush**): Browser push notifications. Kiwi
   IRC negotiates exactly one of the two names, preferring the draft form, and
-  never both in one request. Push Notifications is an opt-in checkbox (default
-  off), shown only for account logins on servers that negotiate a cap and send a
-  VAPID key. When enabled, the browser subscribes via its vendor push service
-  and Kiwi IRC sends WEBPUSH REGISTER with the endpoint and keys, renewing
-  daily; toggling off sends WEBPUSH UNREGISTER. Server FAILs only clear the
-  local registered flag (the message itself still surfaces) and never trigger a
-  retry loop. A dependency-free worker in static/sw.js turns each pushed IRC
-  line into a system notification.
+  never both in one request. Push Notifications is a per-network opt-in checkbox
+  (default off), shown only for account logins on servers that negotiate a cap
+  and send a VAPID key. The connection that negotiated the capability sends
+  WEBPUSH REGISTER with the endpoint and keys, renewing daily; toggling off
+  sends WEBPUSH UNREGISTER. Desktop notifications are per-network, so turning
+  them off suspends only that network's registration while keeping its opt-in.
+  Server FAILs only clear the local registered flag (the message itself still
+  surfaces) and never trigger a retry loop. A dependency-free worker in
+  static/sw.js turns each pushed IRC line into a system notification.
 - **draft/bouncer-networks** (or **soju.im/bouncer-networks**): Connects through
   a modern bouncer and manages its networks. Kiwi IRC negotiates exactly one of
   the two names, preferring the draft form, and never both in one request. See
@@ -259,19 +264,8 @@ netid still request the full set.
 ### Bouncer & Upstream Features
 
 A bound connection's `CAP LS` arrives before `BOUNCER BIND`, so it is the
-bouncer's own advertisement. Its pre-BIND `ISUPPORT` reply and the control
-connection's ISUPPORT describe the bouncer's tokens, while everything sent after
-registration belongs to the upstream network. `bouncerHasCap()` and
-`bouncerSupports()` expose that split and `capPlane()` / `tokenPlane()` name it.
-A control connection never negotiates metadata; metadata belongs to the upstream
-network.
-
-Persistence, webpush and FILEHOST follow the plane that advertised them. A
-bouncer-provided persistence or webpush setting is managed on the control
-connection and never offered on a bound network, because a bouncer cannot set it
-per network. A bouncer-provided FILEHOST signs uploads with the bouncer account.
-Otherwise the feature belongs to the upstream network and uses the upstream
-account, which stays empty until a bound connection can learn it.
+bouncer's own advertisement. A control connection never negotiates metadata;
+metadata belongs to the upstream network.
 
 `draft/ACCOUNTREQUIRED` is ignored on bouncer connections: the bouncer's own
 requirement was already satisfied by SASL, and an upstream that requires an
@@ -369,21 +363,23 @@ Keys are stored in uppercase.
 
 ## File Host Uploads
 
-When `fileupload.service` is `filehost`, Kiwi IRC uploads to the ISUPPORT URI.
-`draft/FILEHOST` is preferred. `soju.im/FILEHOST` is used only if the draft
-token is missing or unusable. Empty and non-string tokens are ignored.
+When `fileupload.service` is `filehost`, Kiwi IRC uploads to the current
+network's post-registration ISUPPORT URI. `draft/FILEHOST` is preferred.
+`soju.im/FILEHOST` is used only if the draft token is missing or unusable. Empty
+and non-string tokens are ignored.
 
 Plain `http` is refused when `connection.tls` is set. That flag means the client
 connection is TLS, including a TLS websocket to a gateway. It is not a separate
 check of the gateway's upstream IRC link.
 
 Uploads require a completed SASL login and the stored SASL password. A NickServ
-`ACCOUNT` notify is not enough. The request is an HTTP `POST` of the file body
-with `Content-Type` and `Content-Disposition: attachment`, using HTTP Basic.
-Kiwi IRC does not implement `OAUTHBEARER`, so Bearer auth is not used.
-`Content-Length` is left to the browser. Success is `201 Created` plus a
-`Location` header, resolved against the upload URL. Resumable uploads are not
-implemented.
+`ACCOUNT` notify is not enough. The SASL account has any `/network` or `@client`
+suffix stripped before use, so `USER/NETWORK@CLIENT` authenticates as `USER`.
+The request is an HTTP `POST` of the file body with `Content-Type` and
+`Content-Disposition: attachment`, using HTTP Basic. Kiwi IRC does not implement
+`OAUTHBEARER`, so Bearer auth is not used. `Content-Length` is left to the
+browser. Success is `201 Created` plus a `Location` header, resolved against the
+upload URL. Resumable uploads are not implemented.
 
 ## Operational Constraints
 

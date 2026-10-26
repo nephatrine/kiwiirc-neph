@@ -13,27 +13,12 @@ export default function webpushMiddleware(network, deps = {}) {
     let swMessageListening = false;
 
     return function middlewareFn(client, rawEvents, parsedEvents) {
-        const settingOn = () => {
-            try {
-                return !!network.appState.setting('webpushEnabled');
-            } catch (err) {
-                return false;
-            }
-        };
+        const settingOn = () => !!network.setting('webpushEnabled');
 
         const notificationsGranted = () => (
             typeof window !== 'undefined' &&
             'Notification' in window &&
             window.Notification.permission === 'granted'
-        );
-
-        // A push subscription registered with the bouncer is bouncer-wide:
-        // only the control connection may register or remove it.
-        const bouncerManaged = () => (
-            typeof network.bouncerHasCap === 'function' &&
-            !(typeof network.isBouncerController === 'function' &&
-                network.isBouncerController()) &&
-            network.bouncerHasCap(network.webpushCap())
         );
 
         const clearRenewTimer = () => {
@@ -55,7 +40,6 @@ export default function webpushMiddleware(network, deps = {}) {
 
         const ensureRegistered = async() => {
             if (
-                bouncerManaged() ||
                 !network.webpushAvailable() ||
                 !settingOn() ||
                 !notificationsGranted()
@@ -64,7 +48,7 @@ export default function webpushMiddleware(network, deps = {}) {
             }
             let sub = null;
             try {
-                sub = await subscriptionProvider(network.supports('VAPID'));
+                sub = await subscriptionProvider(network.webpushVapidKey());
             } catch (err) {
                 // No retry loop; the next connect or toggle tries again.
                 return;
@@ -148,10 +132,11 @@ export default function webpushMiddleware(network, deps = {}) {
         // gesture, which is the right moment to prompt for permission;
         // background paths (connect, renewal) stay silent.
         network.setWebpushEnabled = () => {
-            if (!settingOn()) {
+            if (!settingOn() || !network.webpushAvailable()) {
                 unregister();
                 return;
             }
+            network.webpush_error = '';
             listenForSubscriptionChange();
             if (notificationsGranted()) {
                 ensureRegistered();
@@ -165,6 +150,7 @@ export default function webpushMiddleware(network, deps = {}) {
         client.on('connecting', () => {
             clearRenewTimer();
             network.webpush_registered = false;
+            network.webpush_error = '';
         });
 
         client.on('connected', () => {
@@ -178,28 +164,24 @@ export default function webpushMiddleware(network, deps = {}) {
                 return;
             }
             const verb = (event.command || command || '').toUpperCase();
-            if (verb === 'PERSISTENCE' && bouncerManaged()) {
-                // The bouncer owns the endpoint: a bound connection must not
-                // unregister it or change the shared setting.
-                next();
-                return;
-            }
             if (verb === 'WEBPUSH') {
                 const subcommand = (event.params[0] || '').toUpperCase();
                 if (subcommand === 'REGISTER') {
                     network.webpush_registered = true;
+                    network.webpush_error = '';
                     scheduleRenewal();
                 } else if (subcommand === 'UNREGISTER') {
                     network.webpush_registered = false;
+                    network.webpush_error = '';
                     clearRenewTimer();
                 }
             } else if (verb === 'PERSISTENCE' &&
                 (event.params[0] || '').toUpperCase() === 'STATUS'
             ) {
-                // The server tells us this session is not persistent, so a
-                // webpush opt-in is meaningless: drop any registration and
-                // switch the setting off so it cannot silently re-arm.
-                // STATUS only arrives when the persistence cap is up.
+                // The server tells us this session is not persistent, so drop
+                // any registration. Keep the per-network opt-in so it can
+                // re-arm if persistence returns. STATUS only arrives when the
+                // persistence cap is up.
                 const statusTail = event.params.slice(-2).map((p) => (
                     (p || '').toUpperCase()
                 ));
@@ -216,9 +198,17 @@ export default function webpushMiddleware(network, deps = {}) {
                     clearRenewTimer();
                 }
             } else if (verb === 'FAIL' && (event.params[0] || '').toUpperCase() === 'WEBPUSH') {
-                // The failure itself surfaces via the normal FAIL path below;
-                // just stop claiming to be registered. No retry loop.
+                // The normal FAIL path still surfaces the server reply. Also
+                // uncheck the opt-in so the UI never claims success.
+                const code = event.params[1] || '';
+                const description = event.params.length > 4 ?
+                    event.params[event.params.length - 1] :
+                    '';
+                network.setting('webpushEnabled', false);
                 network.webpush_registered = false;
+                network.webpush_endpoint = '';
+                network.webpush_error = description || code;
+                clearRenewTimer();
             }
             next();
         });

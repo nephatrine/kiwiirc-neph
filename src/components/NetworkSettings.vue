@@ -252,6 +252,102 @@
                 </a>
             </div>
         </form>
+
+        <div
+            v-if="showNetworkPreferences"
+            class="kiwi-appsettings-block kiwi-networksettings-preferences"
+        >
+            <h3>{{ $t('settings_network_preferences') }}</h3>
+            <div class="kiwi-appsettings-section">
+                <label v-if="persistencePreferenceAvailable" class="kiwi-appsettings-persistence">
+                    <span>{{ $t('settings_persistence') }} </span>
+                    <select
+                        v-model="settingPersistencePreference"
+                        @change="applyPersistencePreference"
+                    >
+                        <option value="keep">{{ $t('settings_persistence_keep') }}</option>
+                        <option value="default">{{ $t('settings_persistence_default') }}</option>
+                        <option value="on">{{ $t('settings_persistence_enabled') }}</option>
+                        <option value="off">{{ $t('settings_persistence_disabled') }}</option>
+                    </select>
+                </label>
+                <label v-if="messageTagsSupported" class="u-checkbox-wrapper">
+                    <span>{{ $t('settings_share_typing') }} </span>
+                    <input v-model="settingBufferShareTyping" type="checkbox">
+                </label>
+                <label v-if="messageTagsSupported" class="u-checkbox-wrapper">
+                    <span>{{ $t('settings_lenient_rerouting') }} </span>
+                    <input v-model="settingBufferLenientRerouting" type="checkbox">
+                </label>
+                <label v-if="botSupportFound" class="u-checkbox-wrapper">
+                    <span>{{ $t('settings_ignore_bots') }} </span>
+                    <input v-model="settingBufferIgnoreBots" type="checkbox">
+                </label>
+                <label v-if="redactionsSupported" class="kiwi-appsettings-messagelistDisplay">
+                    <span>{{ $t('settings_show_redactions') }} </span>
+                    <select v-model="settingBufferShowRedactions">
+                        <option value="hidden">{{ $t('settings_show_redactions_hidden') }}</option>
+                        <option value="placeholder">{{ $t('settings_show_redactions_placeholder') }}</option>
+                        <option value="revealed">{{ $t('settings_show_redactions_revealed') }}</option>
+                    </select>
+                </label>
+                <label class="kiwi-appsettings-messagelistDisplay">
+                    <span>{{ $t('settings_fileupload_service') }} </span>
+                    <select v-model="fileuploadServiceChoice">
+                        <option value="">
+                            {{ $t('settings_fileupload_default') }}
+                        </option>
+                        <option value="none">
+                            {{ $t('settings_fileupload_none') }}
+                        </option>
+                        <option
+                            v-for="service in fileuploadServices"
+                            :key="service.id"
+                            :value="service.id"
+                        >
+                            {{ service.label }}
+                        </option>
+                    </select>
+                </label>
+                <label
+                    v-if="fileuploadRetentionOptions.length"
+                    class="kiwi-appsettings-messagelistDisplay"
+                >
+                    <span>{{ $t('settings_fileupload_retention') }} </span>
+                    <select v-model="fileuploadRetentionChoice">
+                        <option value="">
+                            {{ $t('settings_fileupload_default') }}
+                        </option>
+                        <option
+                            v-for="retention in fileuploadRetentionOptions"
+                            :key="retention"
+                            :value="retention"
+                        >
+                            {{ retention }}
+                        </option>
+                    </select>
+                </label>
+                <label class="u-checkbox-wrapper">
+                    <span>{{ $t('settings_show_notifications') }} </span>
+                    <input
+                        v-model="settingBufferShowNotifications"
+                        type="checkbox"
+                        @change="applyDesktopNotifications"
+                    >
+                </label>
+                <label v-if="webpushAvailable" class="u-checkbox-wrapper kiwi-appsettings-webpush">
+                    <span>{{ $t('settings_webpush') }} </span>
+                    <input
+                        v-model="settingWebpushEnabled"
+                        type="checkbox"
+                        @change="applyWebpushEnabled"
+                    >
+                </label>
+                <div v-if="webpushError" class="kiwi-appsettings-webpush-error">
+                    {{ $t('webpush_failed', { reason: webpushError }) }}
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -260,6 +356,7 @@
 
 import * as Misc from '@/helpers/Misc';
 import Captcha from '@/components/Captcha';
+import NetworkPreferencesMixin from './NetworkPreferencesMixin';
 import ServerSelector from './ServerSelector';
 import {
     compileNickPattern,
@@ -272,6 +369,7 @@ export default {
         ServerSelector,
         Captcha,
     },
+    mixins: [NetworkPreferencesMixin],
     props: ['network'],
     data() {
         return {
@@ -303,6 +401,9 @@ export default {
         },
         isConnected() {
             return this.network.state === 'connected';
+        },
+        showNetworkPreferences() {
+            return this.$state.networks.length > 1 && this.network.state === 'connected';
         },
         nickLen() {
             return this.supportLimit('NICKLEN');
@@ -540,6 +641,9 @@ export default {
         this.network_list = this.$state.setting('presetNetworks') || [];
     },
     methods: {
+        networkPreferencesTarget() {
+            return this.network;
+        },
         readableStateError(err) {
             return Misc.networkErrorMessage(err);
         },
