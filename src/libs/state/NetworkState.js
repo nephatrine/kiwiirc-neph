@@ -195,6 +195,11 @@ export default class NetworkState {
             return sanitized.replace('{size}', '64');
         }
 
+        const networkName = String(this.supports('NETWORK') || this.name || '').toLowerCase();
+        if (networkName === 'libera.chat') {
+            return '/static/libera.svg';
+        }
+
         if (this.isTwitch()) {
             return '/static/twitch.svg';
         }

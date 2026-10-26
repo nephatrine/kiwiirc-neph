@@ -141,6 +141,28 @@ describe('NetworkState', () => {
         expect(twitch.iconUrl).toBe('https://example.com/icon-64.png');
     });
 
+    it('uses the Libera icon for Libera.Chat unless DRAFT/ICON is advertised', () => {
+        let s = state.create();
+        let libera = s.addNetwork('Libera.Chat', 'nick', {
+            server: 'irc.libera.chat',
+        });
+
+        expect(libera.iconUrl).toBe('/static/libera.svg');
+
+        libera.isupport['DRAFT/ICON'] = 'https://example.com/icon-{size}.png';
+        expect(libera.iconUrl).toBe('https://example.com/icon-64.png');
+    });
+
+    it('uses the Libera icon from the NETWORK token after a rename', () => {
+        let s = state.create();
+        let network = s.addNetwork('Work', 'nick', {
+            server: 'irc.example.com',
+        });
+
+        network.isupport.NETWORK = 'Libera.Chat';
+        expect(network.iconUrl).toBe('/static/libera.svg');
+    });
+
     it('reports Twitch as the IRCd type', () => {
         let s = state.create();
         let twitch = s.addNetwork('Twitch', 'nick', {

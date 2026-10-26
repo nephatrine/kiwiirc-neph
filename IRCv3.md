@@ -364,8 +364,9 @@ Keys are stored in uppercase.
   registration round-trip, so the login page can collect credentials first.
 - **NETWORK**: Shows the network name in the server view.
 - **DRAFT/ICON**: Network icon URL. `{size}` is replaced with `64`. If the token
-  is missing and the server is Ergo (`IRCD` or numeric `002`), Kiwi IRC uses
-  `/static/ergo.svg`.
+  is missing and the network is Libera.Chat, Kiwi IRC uses `/static/libera.svg`;
+  if it is missing and the server is Ergo (`IRCD` or numeric `002`), Kiwi IRC
+  uses `/static/ergo.svg`.
 - **DRAFT/FILEHOST**: Preferred upload URI when `fileupload.service` is
   `filehost`. See File Host Uploads.
 - **SOJU.IM/FILEHOST**: Fallback upload URI when `draft/FILEHOST` is absent or
