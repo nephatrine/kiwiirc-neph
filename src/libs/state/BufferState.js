@@ -43,6 +43,7 @@ export default class BufferState {
             last_read_authoritative: 0,
             names_received: false,
             marker_received: false,
+            motd_history_done: false,
         };
         this.settings = { };
         this.metadata = {};
@@ -98,7 +99,8 @@ export default class BufferState {
         }
 
         function onNetworkMotd(event, network) {
-            if (network === this.getNetwork()) {
+            if (network === this.getNetwork() && !this.flags.motd_history_done) {
+                this.flags.motd_history_done = true;
                 this.initHistory();
             }
         }
@@ -122,6 +124,7 @@ export default class BufferState {
 
         if (this.getNetwork()?.state === 'connected') {
             this.initHistory();
+            this.flags.motd_history_done = true;
         }
     }
 
@@ -131,6 +134,7 @@ export default class BufferState {
         this.flags.chathistory_available = true;
         this.flags.names_received = false;
         this.flags.marker_received = false;
+        this.flags.motd_history_done = false;
     }
 
     initHistory() {
@@ -1121,12 +1125,9 @@ function maybeStartWhoLoop(bufferState) {
         let networkConnected = network.state === 'connected';
 
         if (whoLoop && networkConnected && canWho && !hasAwayNotify) {
-            network.ircClient.who(bufferState.name, () => {
-                nextLoop();
-            });
-        } else {
-            nextLoop();
+            network.ircClient.who(bufferState.name);
         }
+        nextLoop();
     }
 }
 

@@ -535,6 +535,7 @@ export default class BouncerProvider {
             // bouncer account is what authenticates it, and a BIND selects
             // which bouncer network the connection is for.
             let network = event.network;
+            network.motdWhoDone = false;
             if (this.bnc.enabled && this.rewriteConnections) {
                 let ircClient = network.ircClient;
                 ircClient.options.host = this.bnc.server;
@@ -560,6 +561,10 @@ export default class BouncerProvider {
             this.saveState();
         });
         state.$on('irc.motd', (event, network) => {
+            if (network.motdWhoDone) {
+                return;
+            }
+            network.motdWhoDone = true;
             network.buffers.forEach((buffer) => {
                 if (buffer.isChannel() && buffer.enabled && buffer.joined && !network.isTwitch()) {
                     network.ircClient.who(buffer.name);

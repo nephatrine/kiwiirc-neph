@@ -23,6 +23,7 @@ import batchMiddleware from './BatchMiddleware';
 import metadataMiddleware from './MetadataMiddleware';
 import persistenceMiddleware from './PersistenceMiddleware';
 import webpushMiddleware from './WebpushMiddleware';
+import WhoQueue from './WhoQueue';
 import chathistoryMiddleware from './ChathistoryMiddleware';
 import * as BatchHandlers from './BatchHandlers';
 import * as ServerConnection from './ServerConnection';
@@ -101,6 +102,8 @@ export function create(state, network) {
         enable_echomessage: true,
         message_max_length: 350,
     });
+
+    ircClient.whoQueue = new WhoQueue(ircClient);
 
     DESIRED_CAPS.forEach((cap) => {
         ircClient.requestCap(cap);
@@ -1038,6 +1041,16 @@ function clientMiddleware(state, network) {
     }
 
     function parsedEventsHandler(command, event, client, next) {
+        if (event &&
+            String(event.command || command) === '263' &&
+            event.params &&
+            (event.params[1] || '').toUpperCase() === 'WHO'
+        ) {
+            if (client.whoQueue) {
+                client.whoQueue.handleRateLimit();
+            }
+        }
+
         function relayMetaDeps() {
             return {
                 raw: network,
@@ -1149,7 +1162,7 @@ function clientMiddleware(state, network) {
 
             // Get some extra info about ourselves. Twitch does not support WHO.
             if (!network.isTwitch()) {
-                client.raw('WHO ' + event.nick);
+                client.who(event.nick);
             }
 
             if (network.auto_commands) {
