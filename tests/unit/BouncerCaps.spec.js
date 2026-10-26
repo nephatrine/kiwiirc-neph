@@ -44,6 +44,67 @@ describe('bouncer-networks capabilities', () => {
         expect(network.bouncerCap()).toBe('draft/bouncer-networks');
     });
 
+    it('prefers the notify cap matching the base family', () => {
+        network.enabled_caps = [
+            'draft/bouncer-networks',
+            'draft/bouncer-networks-notify',
+        ];
+        expect(network.bouncerNotifyCap()).toBe('draft/bouncer-networks-notify');
+
+        network.enabled_caps = [
+            'soju.im/bouncer-networks',
+            'soju.im/bouncer-networks-notify',
+        ];
+        expect(network.bouncerNotifyCap()).toBe('soju.im/bouncer-networks-notify');
+    });
+
+    it('requests the matching draft base and notify caps together', async() => {
+        const client = attachBouncer();
+        await emitRawLs(client, [
+            '*', 'LS', '*',
+            'draft/bouncer-networks draft/bouncer-networks-notify ' +
+                'soju.im/bouncer-networks soju.im/bouncer-networks-notify',
+        ]);
+        expect(client.request_extra_caps).toContain('draft/bouncer-networks');
+        expect(client.request_extra_caps).toContain('draft/bouncer-networks-notify');
+        expect(client.request_extra_caps).not.toContain('soju.im/bouncer-networks');
+        expect(client.request_extra_caps).not.toContain('soju.im/bouncer-networks-notify');
+    });
+
+    it('requests the matching soju base and notify caps together', async() => {
+        const client = attachBouncer();
+        await emitRawLs(client, [
+            '*', 'LS', '*',
+            'soju.im/bouncer-networks soju.im/bouncer-networks-notify',
+        ]);
+        expect(client.request_extra_caps).toContain('soju.im/bouncer-networks');
+        expect(client.request_extra_caps).toContain('soju.im/bouncer-networks-notify');
+        expect(client.request_extra_caps).not.toContain('draft/bouncer-networks');
+        expect(client.request_extra_caps).not.toContain('draft/bouncer-networks-notify');
+    });
+
+    it('does not request notify on a bound connection', async() => {
+        network.connection.bncnetid = '1';
+        const client = attachBouncer();
+        await emitRawLs(client, [
+            '*', 'LS', '*',
+            'draft/bouncer-networks draft/bouncer-networks-notify',
+        ]);
+        expect(client.request_extra_caps).toContain('draft/bouncer-networks');
+        expect(client.request_extra_caps).not.toContain('draft/bouncer-networks-notify');
+    });
+
+    it('does not mix draft and soju notify families', async() => {
+        const client = attachBouncer();
+        await emitRawLs(client, [
+            '*', 'LS', '*',
+            'draft/bouncer-networks soju.im/bouncer-networks-notify',
+        ]);
+        expect(client.request_extra_caps).toContain('draft/bouncer-networks');
+        expect(client.request_extra_caps).not.toContain('soju.im/bouncer-networks-notify');
+        expect(client.request_extra_caps).not.toContain('draft/bouncer-networks-notify');
+    });
+
     it('folds the draft cap and never the soju name when both are advertised', async() => {
         const client = attachBouncer();
         await emitRawLs(client, [

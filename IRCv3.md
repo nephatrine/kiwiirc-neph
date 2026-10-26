@@ -108,6 +108,10 @@ always-requested list above. Kiwi IRC prefers `SCRAM-SHA-256` over `PLAIN`.
   a modern bouncer and manages its networks. Kiwi IRC negotiates exactly one of
   the two names, preferring the draft form, and never both in one request. See
   Bouncer Networks.
+- **draft/bouncer-networks-notify** (or **soju.im/bouncer-networks-notify**):
+  The control connection receives the initial network list and incremental
+  add/change/remove notifications. Exactly one notify name is negotiated, using
+  the same draft/soju family as the base capability.
 
 ## Client Tags
 
@@ -196,10 +200,15 @@ by prefix. Kiwi IRC negotiates exactly one, preferring the draft name:
 1. `soju.im/bouncer-networks` — soju's vendored copy of the same protocol.
 
 The two are never requested together, and the legacy unprefixed `bouncer`
-capability is gone. `-notify` (`draft/bouncer-networks-notify` or
-`soju.im/bouncer-networks-notify`) is deliberately not requested yet, so network
-changes are read from a `LISTNETWORKS` snapshot and can be stale on a modern
-bouncer until reconnect.
+capability is gone. The matching `-notify` capability
+(`draft/bouncer-networks-notify` or `soju.im/bouncer-networks-notify`) is
+negotiated as a second pair, also exactly one, using the same draft/soju family
+as the base capability. It is requested only on the unbound control connection.
+
+With notify, the bouncer sends the initial network list automatically and then
+pushes `BOUNCER NETWORK` updates as networks are added, changed, or removed.
+`BOUNCER LISTNETWORKS` is only used when notify is unavailable. The initial
+batch and incremental notifications are both consumed without polling.
 
 ### Authentication & BIND
 
@@ -239,13 +248,13 @@ bouncer as a network.
 Only the capabilities a control connection can actually use are requested:
 `echo-message`, `message-tags`, `batch`, `server-time`, `standard-replies`,
 `cap-notify`, `draft/extended-isupport` and `draft/persistence`, plus one
-webpush name negotiated by preference, `sasl` and `draft/bouncer-networks` from
-their own middleware. Bouncers advertise capabilities they forward to their
-upstream networks, such as `labeled-response`, without supporting them on their
-own replies, so everything else is dropped from the request. Messages to
-`BouncerServ` are then confirmed by the unlabelled echo and its `msgid` instead
-of hanging until the confirm timeout. Connections bound to a netid still request
-the full set.
+webpush name negotiated by preference, `sasl`, and one bouncer-networks
+base/notify pair from their own middleware. Bouncers advertise capabilities they
+forward to their upstream networks, such as `labeled-response`, without
+supporting them on their own replies, so everything else is dropped from the
+request. Messages to `BouncerServ` are then confirmed by the unlabelled echo and
+its `msgid` instead of hanging until the confirm timeout. Connections bound to a
+netid still request the full set.
 
 ### Bouncer & Upstream Features
 
@@ -304,6 +313,12 @@ message-tag pairs:
 - `name`, `host`, `port`, `tls`, `nickname`, `username`, `realname`, `pass`
 - `state` (read-only: `connected`, `connecting`, or `disconnected`)
 - `error` (read-only, present only when the network could not connect)
+
+When notify is negotiated, the initial `BOUNCER NETWORK` batch is cached and
+used as the network list. Later unbatched notifications contain only changed
+attributes, which are merged into the existing local network. An attribute with
+an empty value is removed, and `BOUNCER NETWORK <netid> *` removes the network.
+Bouncer-driven removals never echo a `DELNETWORK` back to the server.
 
 `BOUNCER ADDNETWORK <attributes>` adds a network and is answered by
 `BOUNCER ADDNETWORK <netid>`, with the server generating the netid. Only `host`

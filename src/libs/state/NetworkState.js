@@ -573,6 +573,28 @@ export default class NetworkState {
         return '';
     }
 
+    // The negotiated bouncer-networks-notify capability. Prefer the family of
+    // the base capability, then fall back to whichever notify name is enabled.
+    bouncerNotifyCap() {
+        const base = this.bouncerCap();
+        const draft = 'draft/bouncer-networks-notify';
+        const soju = 'soju.im/bouncer-networks-notify';
+
+        if (base === 'draft/bouncer-networks' && this.hasCap(draft)) {
+            return draft;
+        }
+        if (base === 'soju.im/bouncer-networks' && this.hasCap(soju)) {
+            return soju;
+        }
+        if (this.hasCap(draft)) {
+            return draft;
+        }
+        if (this.hasCap(soju)) {
+            return soju;
+        }
+        return '';
+    }
+
     // The unbound connection used to talk to the bouncer itself. A bound
     // connection has a bncnetid and is an ordinary IRC connection.
     isBouncerController() {

@@ -29,6 +29,10 @@ and this project adheres to
   explicit Save and Connect/Reconnect actions, and the startup screen offers
   BNC, Account, and Register tabs based on the capability probe. Persistence,
   webpush, and FILEHOST uploads use the bouncer account when advertised.
+- **Bouncer**: Added `bouncer-networks-notify` support. The control connection
+  negotiates one matching `draft/` or `soju.im/` notify capability, consumes the
+  initial network list and incremental add/change/remove notifications, and
+  skips `LISTNETWORKS` when notifications are available.
 - **Metadata**: Servers advertising `max-keys=0` no longer receive Kiwi's own
   metadata requests, while Soju's pinned, muted, and blocked keys remain mapped
   to their settings.

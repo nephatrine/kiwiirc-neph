@@ -21,6 +21,7 @@ describe('BouncerProvider network saving', () => {
     let controller;
     let addNetwork;
     let saveNetwork;
+    let removeNetwork;
 
     beforeEach(() => {
         s = state.create();
@@ -28,6 +29,7 @@ describe('BouncerProvider network saving', () => {
 
         addNetwork = jest.fn();
         saveNetwork = jest.fn();
+        removeNetwork = jest.fn();
 
         controller = {
             id: 'bnc-controller',
@@ -38,6 +40,7 @@ describe('BouncerProvider network saving', () => {
                     hasNetwork: () => true,
                     addNetwork,
                     saveNetwork,
+                    removeNetwork,
                 },
             },
         };
@@ -90,6 +93,88 @@ describe('BouncerProvider network saving', () => {
         provider.onBouncerNetworks([]);
         expect(addNetworkSpy).not.toHaveBeenCalled();
         expect(controller.showServerBuffer).toHaveBeenCalledWith('messages');
+    });
+
+    it('does not remove the unbound control connection from an empty network list', () => {
+        s.getActiveBuffer = () => null;
+        let control = s.addNetwork('BNC', 'nick', {
+            server: 'bnc.example.com',
+            port: 6697,
+        });
+        control.is_bnc = true;
+
+        provider.onBouncerNetworks([]);
+
+        expect(s.networks).toContain(control);
+    });
+
+    it('merges a partial bouncer notification into an existing network', () => {
+        let network = s.addNetwork('OldName', 'nick', {
+            server: 'irc.example.com',
+            port: 6697,
+            tls: true,
+            bncnetid: '1',
+        });
+        network.connection.nick = 'nick';
+        network.username = 'ident';
+        network.gecos = 'Real Name';
+        network.bnc_state = 'disconnected';
+        network.bnc_error = 'certificate error';
+
+        provider.networksSnapshot = {
+            1: {
+                bncnetid: '1',
+                name: 'OldName',
+                host: 'irc.example.com',
+                port: 6697,
+                tls: true,
+                nickname: 'nick',
+                username: 'ident',
+                realname: 'Real Name',
+                pass: '',
+            },
+        };
+
+        provider.onBouncerNetwork({
+            netid: '1',
+            attrs: {
+                name: 'NewName',
+                state: 'connected',
+                error: '',
+            },
+            removed: false,
+        });
+
+        expect(network.name).toBe('NewName');
+        expect(network.bnc_state).toBe('connected');
+        expect(network.bnc_error).toBe('');
+        expect(network.connection.server).toBe('irc.example.com');
+        expect(provider.networksSnapshot['1'].name).toBe('NewName');
+    });
+
+    it('does not send DELNETWORK when the bouncer removes a network', () => {
+        provider.listenToState();
+
+        let network = s.addNetwork('Net', 'nick', {
+            server: 'irc.example.com',
+            port: 6697,
+            bncnetid: '1',
+        });
+        provider.networksSnapshot = {
+            1: {
+                bncnetid: '1',
+                name: 'Net',
+                host: 'irc.example.com',
+                port: 6697,
+                nickname: 'nick',
+            },
+        };
+
+        provider.onBouncerNetwork({ netid: '1', removed: true });
+
+        expect(s.networks).not.toContain(network);
+        expect(removeNetwork).not.toHaveBeenCalled();
+        expect(provider.networksSnapshot['1']).toBeUndefined();
     });
 
     it('removes stale control connections left over from a previous login', () => {

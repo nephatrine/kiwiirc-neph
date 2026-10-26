@@ -34,6 +34,7 @@ function makeHarness(options = {}) {
         bouncerCap: jest.fn(() => (
             typeof options.cap === 'undefined' ? 'draft/bouncer-networks' : options.cap
         )),
+        bouncerNotifyCap: jest.fn(() => options.notifyCap || ''),
         supports: jest.fn(() => options.netid),
     };
 
@@ -54,6 +55,12 @@ function bouncerLine(command, ...params) {
     return ['unknown command', { command, params }];
 }
 
+function bouncerBatchLine(batchType, command, ...params) {
+    const line = bouncerLine(command, ...params);
+    line[1].batch = { type: batchType };
+    return line;
+}
+
 function failLine(...params) {
     return bouncerLine('FAIL', ...params);
 }
@@ -63,7 +70,8 @@ describe('BouncerMiddleware wire format', () => {
         const h = makeHarness();
         const next = jest.fn();
 
-        h.parsed(...bouncerLine(
+        h.parsed(...bouncerBatchLine(
+            'soju.im/bouncer-networks',
             'BOUNCER',
             'NETWORK',
             '5',
@@ -98,7 +106,8 @@ describe('BouncerMiddleware wire format', () => {
     test('defaults a TLS network without a port to 6697', () => {
         const h = makeHarness();
 
-        h.parsed(...bouncerLine(
+        h.parsed(...bouncerBatchLine(
+            'soju.im/bouncer-networks',
             'BOUNCER',
             'NETWORK',
             '5',
@@ -115,7 +124,8 @@ describe('BouncerMiddleware wire format', () => {
     test('defaults a plain network without a port to 6667', () => {
         const h = makeHarness();
 
-        h.parsed(...bouncerLine(
+        h.parsed(...bouncerBatchLine(
+            'soju.im/bouncer-networks',
             'BOUNCER',
             'NETWORK',
             '5',
@@ -132,7 +142,8 @@ describe('BouncerMiddleware wire format', () => {
     test('keeps an explicit port when one is present', () => {
         const h = makeHarness();
 
-        h.parsed(...bouncerLine(
+        h.parsed(...bouncerBatchLine(
+            'soju.im/bouncer-networks',
             'BOUNCER',
             'NETWORK',
             '5',
@@ -149,7 +160,7 @@ describe('BouncerMiddleware wire format', () => {
     test('clears the accumulation after each batch', () => {
         const h = makeHarness();
 
-        h.parsed(...bouncerLine('BOUNCER', 'NETWORK', '1', 'name=one'), h.client, jest.fn());
+        h.parsed(...bouncerBatchLine('draft/bouncer-networks', 'BOUNCER', 'NETWORK', '1', 'name=one'), h.client, jest.fn());
         h.client.emit('kiwi.batch.end', { type: 'draft/bouncer-networks', id: 'b1' });
         h.client.emit('kiwi.batch.end', { type: 'draft/bouncer-networks', id: 'b2' });
 
@@ -159,7 +170,7 @@ describe('BouncerMiddleware wire format', () => {
     test('ignores batches that are not bouncer-networks', () => {
         const h = makeHarness();
 
-        h.parsed(...bouncerLine('BOUNCER', 'NETWORK', '1', 'name=one'), h.client, jest.fn());
+        h.parsed(...bouncerBatchLine('draft/bouncer-networks', 'BOUNCER', 'NETWORK', '1', 'name=one'), h.client, jest.fn());
         h.client.emit('kiwi.batch.end', { type: 'chathistory', id: 'b1' });
 
         expect(h.client.command_handler.emit)
@@ -311,6 +322,73 @@ describe('BouncerMiddleware BIND timing', () => {
         });
         noCap.raw('903', { params: [] }, '', noCap.client, jest.fn());
         expect(noCap.client.raw).not.toHaveBeenCalled();
+    });
+});
+
+describe('BouncerMiddleware notifications', () => {
+    test('uses the cached initial list without sending LISTNETWORKS', async() => {
+        const h = makeHarness({ notifyCap: 'draft/bouncer-networks-notify' });
+        h.client.bnc.lastNetworks = [{ netid: '1' }];
+
+        await expect(h.client.bnc.getNetworks()).resolves.toEqual([{ netid: '1' }]);
+        expect(h.client.raw).not.toHaveBeenCalledWith('BOUNCER LISTNETWORKS');
+    });
+
+    test('waits for the initial notify batch without sending LISTNETWORKS', async() => {
+        const h = makeHarness({ notifyCap: 'draft/bouncer-networks-notify' });
+        const promise = h.client.bnc.getNetworks();
+
+        expect(h.client.raw).not.toHaveBeenCalledWith('BOUNCER LISTNETWORKS');
+        h.client.command_handler.emit('bouncer networks', [{ netid: '1' }]);
+
+        await expect(promise).resolves.toEqual([{ netid: '1' }]);
+    });
+
+    test('emits an unbatched network update with only the provided attributes', () => {
+        const h = makeHarness({ notifyCap: 'draft/bouncer-networks-notify' });
+
+        h.parsed(...bouncerLine(
+            'BOUNCER',
+            'NETWORK',
+            '5',
+            'name=Renamed;state=connected'
+        ), h.client, jest.fn());
+
+        expect(h.client.command_handler.emit).toHaveBeenCalledWith(
+            'bouncer network',
+            expect.objectContaining({
+                netid: '5',
+                attrs: { name: 'Renamed', state: 'connected' },
+                removed: false,
+                network: expect.objectContaining({
+                    netid: '5',
+                    name: 'Renamed',
+                    state: 'connected',
+                }),
+            })
+        );
+    });
+
+    test('emits a network removal for the special * argument', () => {
+        const h = makeHarness({ notifyCap: 'draft/bouncer-networks-notify' });
+
+        h.parsed(...bouncerLine('BOUNCER', 'NETWORK', '5', '*'), h.client, jest.fn());
+
+        expect(h.client.command_handler.emit).toHaveBeenCalledWith('bouncer network', {
+            netid: '5',
+            removed: true,
+        });
+    });
+
+    test('ignores unbatched notifications when notify is not negotiated', () => {
+        const h = makeHarness();
+
+        h.parsed(...bouncerLine('BOUNCER', 'NETWORK', '5', 'state=connected'), h.client, jest.fn());
+
+        expect(h.client.command_handler.emit).not.toHaveBeenCalledWith(
+            'bouncer network',
+            expect.anything()
+        );
     });
 });
 

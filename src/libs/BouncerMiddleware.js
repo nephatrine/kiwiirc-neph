@@ -8,6 +8,10 @@ import { addAdvertisedCaps, foldPreferredCap, preferredCap } from './CapNegotiat
 // The bouncer-networks capability, preferring the draft name over soju's
 // vendor name. Exactly one is ever requested (see CapNegotiation.js).
 const BOUNCER_CAPS = ['draft/bouncer-networks', 'soju.im/bouncer-networks'];
+const BOUNCER_NOTIFY_CAPS = [
+    'draft/bouncer-networks-notify',
+    'soju.im/bouncer-networks-notify',
+];
 
 // Subcommands the server answers with a BOUNCER line of the same name.
 const REQUEST_SUBCOMMANDS = ['addnetwork', 'changenetwork', 'delnetwork'];
@@ -23,6 +27,17 @@ const NETWORK_ATTRS = [
     'realname',
     'pass',
 ];
+
+// Only the notify capability matching the selected base family is requested.
+function notifyCapsForBase(base) {
+    if (base === 'draft/bouncer-networks') {
+        return ['draft/bouncer-networks-notify'];
+    }
+    if (base === 'soju.im/bouncer-networks') {
+        return ['soju.im/bouncer-networks-notify'];
+    }
+    return [];
+}
 
 /**
  * Adds the IRCv3 bouncer-networks spec to irc-framework.
@@ -42,9 +57,17 @@ export default function bouncerMiddleware(network) {
         rawEvents.use(rawMiddleware);
         parsedEvents.use(parsedMiddleware);
 
-        // A LISTNETWORKS reply is a batch of BOUNCER NETWORK lines, and batch
-        // middleware swallows and later re-dispatches the lines it collects.
-        // Wait for the batch to close before flushing what was accumulated.
+        client.on('connecting', () => {
+            networks = [];
+            bindSent = false;
+            advertisedCaps.clear();
+            client.bnc.lastNetworks = null;
+        });
+
+        // A LISTNETWORKS reply and the initial notify batch are both batches of
+        // BOUNCER NETWORK lines. Batch middleware swallows and later
+        // re-dispatches the lines it collects, so wait for the batch to close
+        // before flushing what was accumulated.
         client.on('kiwi.batch.end', (batch) => {
             if (BOUNCER_CAPS.indexOf(batch.type) > -1) {
                 flushNetworks(client);
@@ -60,12 +83,30 @@ export default function bouncerMiddleware(network) {
             if (subcommand === 'LS') {
                 // A fresh CAP LS means a fresh registration, so allow a BIND.
                 bindSent = false;
+                client.bnc.lastNetworks = null;
 
                 addAdvertisedCaps(advertisedCaps, message);
-                if (network && !network.bouncerCap()) {
-                    const preferred = preferredCap(advertisedCaps, BOUNCER_CAPS);
-                    if (preferred) {
-                        foldPreferredCap(client, preferred, BOUNCER_CAPS);
+
+                const base = network && network.bouncerCap() ?
+                    network.bouncerCap() :
+                    preferredCap(advertisedCaps, BOUNCER_CAPS);
+
+                if (network && !network.bouncerCap() && base) {
+                    foldPreferredCap(client, base, BOUNCER_CAPS);
+                }
+
+                // Notify is only useful on the unbound control connection. It
+                // must use the same draft/soju family as the base capability.
+                if (
+                    network &&
+                    !network.connection.bncnetid &&
+                    base &&
+                    !network.bouncerNotifyCap()
+                ) {
+                    const notifyCaps = notifyCapsForBase(base);
+                    const preferredNotify = preferredCap(advertisedCaps, notifyCaps);
+                    if (preferredNotify) {
+                        foldPreferredCap(client, preferredNotify, BOUNCER_NOTIFY_CAPS);
                     }
                 }
             } else if (subcommand === 'ACK' && !saslCredentials(client)) {
@@ -93,7 +134,7 @@ export default function bouncerMiddleware(network) {
         const params = event.params || [];
 
         if (effectiveCommand === 'BOUNCER') {
-            handleBouncer(client, params);
+            handleBouncer(client, params, event);
         } else if (
             effectiveCommand === 'FAIL' &&
             (params[0] || '').toUpperCase() === 'BOUNCER'
@@ -104,11 +145,42 @@ export default function bouncerMiddleware(network) {
         next();
     }
 
-    function handleBouncer(client, params) {
+    function handleBouncer(client, params, event) {
         const subcommand = (params[0] || '').toUpperCase();
 
         if (subcommand === 'NETWORK') {
-            networks.push(networkFromAttrs(params[1], params[2]));
+            const netid = params[1] || '';
+            const attrString = params[2] || '';
+
+            if (attrString === '*') {
+                if (network && network.bouncerNotifyCap()) {
+                    client.command_handler.emit('bouncer network', {
+                        netid,
+                        removed: true,
+                    });
+                }
+                return;
+            }
+
+            const isInitialBatch = !!(
+                event &&
+                event.batch &&
+                BOUNCER_CAPS.indexOf(event.batch.type) > -1
+            );
+
+            if (isInitialBatch) {
+                networks.push(networkFromAttrs(netid, attrString));
+                return;
+            }
+
+            if (network && network.bouncerNotifyCap()) {
+                client.command_handler.emit('bouncer network', {
+                    netid,
+                    attrs: MessageTags.decode(attrString) || {},
+                    network: networkFromAttrs(netid, attrString),
+                    removed: false,
+                });
+            }
             return;
         }
 
@@ -137,6 +209,7 @@ export default function bouncerMiddleware(network) {
     function flushNetworks(client) {
         const result = networks;
         networks = [];
+        client.bnc.lastNetworks = result;
         client.command_handler.emit('bouncer networks', result);
     }
 
@@ -234,7 +307,9 @@ function requestNetwork(client, subcommand, buildLine) {
 }
 
 function addFunctionsToClient(client, network) {
-    const bnc = client.bnc = {};
+    const bnc = client.bnc = {
+        lastNetworks: null,
+    };
 
     // The bouncer announces the network this connection is bound to through
     // the BOUNCER_NETID ISUPPORT token, once a BIND has taken effect.
@@ -250,11 +325,22 @@ function addFunctionsToClient(client, network) {
         return !!bnc.netId();
     };
 
-    bnc.getNetworks = function getNetworks() {
+    bnc.getNetworks = function getNetworks(force) {
         return new Promise((resolve) => {
-            client.once('bouncer networks', (bncNetworks) => {
-                resolve(bncNetworks);
-            });
+            if (network && network.bouncerNotifyCap() && !force) {
+                // The server sends the full list automatically when notify is
+                // negotiated. Do not send LISTNETWORKS beside it, as two
+                // overlapping batches would corrupt the accumulator.
+                if (bnc.lastNetworks !== null) {
+                    resolve(bnc.lastNetworks);
+                    return;
+                }
+
+                client.once('bouncer networks', resolve);
+                return;
+            }
+
+            client.once('bouncer networks', resolve);
             client.raw('BOUNCER LISTNETWORKS');
         });
     };

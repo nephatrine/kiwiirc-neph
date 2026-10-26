@@ -45,6 +45,7 @@ export default class BouncerProvider {
 
         state.$on('irc.motd', this.onNetworkMotd.bind(this));
         state.$on('irc.bouncer networks', this.onBouncerNetworks.bind(this));
+        state.$on('irc.bouncer network', this.onBouncerNetwork.bind(this));
         state.$on('irc.bouncer error', this.onBouncerError.bind(this));
     }
 
@@ -169,15 +170,22 @@ export default class BouncerProvider {
         log.debug(`Got ${bncNetworks.length} networks from the BNC`, bncNetworks);
         bncNetworks.forEach((bncNet) => this.addNetworkToState(bncNet));
 
-        // Remove any networks we have locally but no longer exist on the BNC
+        // Remove any networks we have locally but no longer exist on the BNC.
+        // Networks without a bncnetid are the control connection or local
+        // networks that have not been saved yet; the bouncer list says nothing
+        // about them.
         this.state.networks.forEach((existingNet) => {
+            if (!existingNet.connection.bncnetid) {
+                return;
+            }
+
             let isNetworkInBncList = !!bncNetworks.find((n) => (
                 n.netid === existingNet.connection.bncnetid
             ));
 
             if (!existingNet.is_bnc && !isNetworkInBncList) {
                 log.debug(`Network '${existingNet.name}' (${existingNet.id}) was not in the BNC, removing locally`);
-                this.state.removeNetwork(existingNet.id);
+                this.state.removeNetwork(existingNet.id, 'bouncer');
             }
         });
 
@@ -197,13 +205,82 @@ export default class BouncerProvider {
         } else {
             for (let i = 0; i < this.state.networks.length; i++) {
                 const net = this.state.networks[i];
-                if (!net.is_bnc) {
-                    // The first network that is not the BNC control network
+                if (net.connection.bncnetid) {
+                    // The first real bouncer network
                     net.showServerBuffer('settings');
                     break;
                 }
             }
         }
+    }
+
+    onBouncerNetwork(event) {
+        if (!event || !event.netid) {
+            return;
+        }
+
+        if (event.removed) {
+            this.removeBouncerNetwork(event.netid);
+            return;
+        }
+
+        let net = this.state.getNetworkFromBncNetId(event.netid);
+        if (!net) {
+            if (event.network && event.network.host) {
+                net = this.addNetworkToState(event.network);
+                this.snapshotNetwork(net);
+            } else {
+                this.refreshBouncerNetworks();
+            }
+            return;
+        }
+
+        const merged = this.bouncerNetworkState(net);
+        Object.keys(event.attrs || {}).forEach((key) => {
+            if (Object.prototype.hasOwnProperty.call(merged, key)) {
+                merged[key] = event.attrs[key];
+            }
+        });
+
+        this.addNetworkToState(merged);
+        this.snapshotNetwork(net);
+    }
+
+    removeBouncerNetwork(netid) {
+        let net = this.state.getNetworkFromBncNetId(netid);
+        if (!net) {
+            return;
+        }
+
+        this.state.removeNetwork(net.id, 'bouncer');
+        delete this.networksSnapshot[netid];
+    }
+
+    refreshBouncerNetworks() {
+        let controller = this.getController();
+        if (!controller) {
+            return;
+        }
+
+        controller.ircClient.bnc.getNetworks(true).catch((err) => {
+            log.error(`Failed to refresh bouncer networks: ${(err && err.reason) || err}`);
+        });
+    }
+
+    bouncerNetworkState(net) {
+        return {
+            netid: net.connection.bncnetid,
+            name: net.name,
+            state: net.bnc_state,
+            host: net.connection.server,
+            port: net.connection.port,
+            tls: net.connection.tls,
+            nickname: net.connection.nick,
+            username: net.username,
+            realname: net.gecos,
+            pass: net.connection.password,
+            error: net.bnc_error,
+        };
     }
 
     addNetworkToState(bncNetwork) {
@@ -264,24 +341,25 @@ export default class BouncerProvider {
     // saving those changes.
     snapshotCurrentNetworks() {
         this.networksSnapshot = Object.create(null);
+        this.state.networks.forEach((network) => this.snapshotNetwork(network));
+    }
 
-        this.state.networks.forEach((network) => {
-            if (!network.connection.bncnetid) {
-                return;
-            }
+    snapshotNetwork(network) {
+        if (!network || !network.connection.bncnetid) {
+            return;
+        }
 
-            this.networksSnapshot[network.connection.bncnetid] = {
-                bncnetid: network.connection.bncnetid,
-                name: network.name,
-                host: network.connection.server,
-                port: network.connection.port,
-                tls: network.connection.tls,
-                nickname: network.connection.nick,
-                username: network.username,
-                realname: network.gecos,
-                pass: network.connection.password,
-            };
-        });
+        this.networksSnapshot[network.connection.bncnetid] = {
+            bncnetid: network.connection.bncnetid,
+            name: network.name,
+            host: network.connection.server,
+            port: network.connection.port,
+            tls: network.connection.tls,
+            nickname: network.connection.nick,
+            username: network.username,
+            realname: network.gecos,
+            pass: network.connection.password,
+        };
     }
 
     // Compare the current networks with our previously saved snapshot of
@@ -534,6 +612,10 @@ export default class BouncerProvider {
             let controller = this.getController();
             if (!controller) {
                 log.debug('No controller available to save network states');
+                return;
+            }
+
+            if (event.source === 'bouncer') {
                 return;
             }
 

@@ -402,7 +402,7 @@ function createNewState() {
                 return network;
             },
 
-            removeNetwork(networkid) {
+            removeNetwork(networkid, source) {
                 let network = this.getNetwork(networkid);
                 if (!network) {
                     return;
@@ -428,7 +428,7 @@ function createNewState() {
                     this.openLastActiveBuffer();
                 }
 
-                let eventObj = { network };
+                let eventObj = { network, source };
                 state.$emit('network.removed', eventObj);
             },
 
