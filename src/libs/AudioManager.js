@@ -55,6 +55,7 @@ export class AudioManager {
                 'mode',
                 'nick',
                 'ctcp',
+                'info',
             ];
             if (ignoreTypes.indexOf(message.type) > -1) {
                 return;

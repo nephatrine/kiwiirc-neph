@@ -62,6 +62,9 @@ and this project adheres to
 
 ### Changed
 
+- **Operator Login**: A successful `381` now posts a visible informational line
+  in the active buffer instead of only updating internal operator state.
+
 - **Bot Badges**: Bot badges now use Boxicons. Message and nicklist badges use
   the robot icon, while the user box uses a floppy-disk icon and shows the bot
   metadata value or "Bot user" when no value is available.

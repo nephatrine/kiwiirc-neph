@@ -1363,6 +1363,10 @@ msgstr "Operator"
 msgid "bot_user"
 msgstr "Bot user"
 
+#: Successful operator login
+msgid "oper_success"
+msgstr "You are now an IRC operator."
+
 #: Connected to {{server}} {{info}}
 msgid "user_server"
 msgstr "Connected to {{server}} {{info}}"

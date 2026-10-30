@@ -1007,6 +1007,23 @@ function clientMiddleware(state, network) {
 
         if (command === '381') {
             network.is_oper = true;
+
+            const params = (event && event.params) || [];
+            const activeBuffer = state.getActiveBuffer();
+            const buffer = activeBuffer &&
+                activeBuffer.networkid === networkid &&
+                !activeBuffer.isSpecial() ?
+                activeBuffer :
+                network.serverBuffer();
+            const text = String(params[params.length - 1] || '').trim() ||
+                TextFormatting.t('oper_success');
+
+            state.addMessage(buffer, {
+                time: Date.now(),
+                nick: '',
+                message: text,
+                type: 'info',
+            });
         }
 
         if (command === '002') {
@@ -1090,6 +1107,12 @@ function clientMiddleware(state, network) {
         );
 
         const effectiveCommand = getEffectiveCommand(command, event);
+        if (effectiveCommand === '381' ||
+            (command === 'unknown command' && event && event.command === '381')) {
+            next();
+            return;
+        }
+
         if (['FAIL', 'WARN', 'NOTE'].includes(effectiveCommand)) {
             handleStandardReply(command, event, network, state);
             next();

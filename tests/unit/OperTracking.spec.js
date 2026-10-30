@@ -61,6 +61,71 @@ describe('oper tracking', () => {
         expect(network.is_oper).toBe(true);
     });
 
+    it('posts operator feedback in the active buffer', async() => {
+        const buffer = s.addBuffer(network.id, '#test');
+        s.setActiveBuffer(network.id, '#test');
+
+        await emitRawLine(network.ircClient, '381', [
+            'TestNick',
+            'You are now an IRC operator',
+        ]);
+
+        const messages = buffer.getMessages();
+        expect(messages).toHaveLength(1);
+        expect(messages[0].type).toBe('info');
+        expect(messages[0].message).toBe('You are now an IRC operator');
+    });
+
+    it('does not notify for operator feedback', async() => {
+        const buffer = s.addBuffer(network.id, '#test');
+        s.setActiveBuffer(network.id, '#test');
+        buffer.setting('alert_on', 'message');
+        buffer.setting('show_notifications', true);
+        s.ui.app_has_focus = false;
+
+        const notifications = jest.fn();
+        const titleFlashes = jest.fn();
+        s.$on('notification.show', notifications);
+        s.$on('notification.title', titleFlashes);
+
+        await emitRawLine(network.ircClient, '381', [
+            'TestNick',
+            'You are now an IRC operator',
+        ]);
+
+        expect(notifications).not.toHaveBeenCalled();
+        expect(titleFlashes).not.toHaveBeenCalled();
+    });
+
+    it('does not duplicate 381 feedback from the parsed handler', async() => {
+        const buffer = s.addBuffer(network.id, '#test');
+        s.setActiveBuffer(network.id, '#test');
+
+        await emitRawLine(network.ircClient, '381', [
+            'TestNick',
+            'You are now an IRC operator',
+        ]);
+        await new Promise((resolve, reject) => {
+            network.ircClient.parsed_middleware.handle([
+                'unknown command',
+                {
+                    command: '381',
+                    params: ['TestNick', 'You are now an IRC operator'],
+                    tags: {},
+                },
+                network.ircClient,
+            ], (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+
+        expect(buffer.getMessages()).toHaveLength(1);
+    });
+
     it('clears is_oper on connecting', async() => {
         await emitRawLine(network.ircClient, '381', ['TestNick', 'You are now an IRC operator']);
         expect(network.is_oper).toBe(true);

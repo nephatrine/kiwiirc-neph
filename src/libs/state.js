@@ -1060,6 +1060,7 @@ function createNewState() {
                     message.type !== 'mode' &&
                     message.type !== 'traffic' &&
                     message.type !== 'ctcp' &&
+                    message.type !== 'info' &&
                     !buffer.isSpecial() &&
                     !bufferMessage.ignore &&
                     !isSelf
@@ -1110,6 +1111,7 @@ function createNewState() {
                     !isSelf &&
                     message.type !== 'traffic' &&
                     message.type !== 'ctcp' &&
+                    message.type !== 'info' &&
                     !buffer.isSpecial() &&
                     (
                         (buffer.setting('flash_title') === 'message') ||
