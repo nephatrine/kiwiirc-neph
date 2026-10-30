@@ -62,6 +62,9 @@ and this project adheres to
 
 ### Changed
 
+- **Localization**: Removed unused strings, aligned the development locale with
+  en-US, and corrected the `bot_user` fallback text to "bot user".
+
 - **CTCP**: Added automatic replies for `CLIENTINFO`, `VERSION`, `FINGER`,
   `USERINFO`, `PING`, `TIME`, and `SOURCE` when a request targets the client's
   nick. `VERSION` now includes the product version, `ACTION` is listed in
@@ -72,7 +75,7 @@ and this project adheres to
 
 - **Bot Badges**: Bot badges now use Boxicons. Message and nicklist badges use
   the robot icon, while the user box uses a floppy-disk icon and shows the bot
-  metadata value or "Bot user" when no value is available.
+  metadata value or "bot user" when no value is available.
 
 - **WebSocket**: Direct connections and the startup capability probe now
   explicitly request the IRCv3 `text.ircv3.net` subprotocol. Legacy fallback to

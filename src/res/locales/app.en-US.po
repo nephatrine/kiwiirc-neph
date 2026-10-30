@@ -75,10 +75,6 @@ msgstr "Connect"
 msgid "connecting"
 msgstr "Connecting..."
 
-#: Connected
-msgid "connected"
-msgstr "Connected"
-
 #: Settings
 msgid "settings"
 msgstr "Settings"
@@ -151,10 +147,6 @@ msgstr "Channel"
 msgid "channel_key"
 msgstr "Channel Key"
 
-#: Channels
-msgid "channels"
-msgstr "Channels"
-
 #: Messages
 msgid "messages"
 msgstr "Messages"
@@ -174,14 +166,6 @@ msgstr "Reply"
 #: Replying to:
 msgid "replying_to"
 msgstr "Replying To:"
-
-#: Networks
-msgid "networks"
-msgstr "Networks"
-
-#: Logging in...
-msgid "logging_in"
-msgstr "Logging in..."
 
 #: Invalid login
 msgid "invalid_login"
@@ -319,10 +303,6 @@ msgstr "This server requires an account to connect. Enter your account details o
 msgid "ignore_user"
 msgstr "Ignore User"
 
-#: Channel
-msgid "connection_channel"
-msgstr "Channel"
-
 #: Away
 msgid "away"
 msgstr "Away Mode"
@@ -415,10 +395,6 @@ msgstr "Use Monospace Font"
 msgid "settings_default_handler"
 msgstr "Set as Default IRC Client"
 
-#: Traditional IRC layout
-msgid "settings_layout_compact"
-msgstr "Traditional IRC Layout"
-
 #: Show autocomplete list
 msgid "settings_show_autocomplete"
 msgstr "Show Autocomplete List"
@@ -442,10 +418,6 @@ msgstr "Emoji Picker Version"
 #: Show all emoji versions
 msgid "settings_emoji_version_all"
 msgstr "All"
-
-#: Show emoticons
-msgid "settings_emoticons"
-msgstr "Show Emoticons"
 
 #: Block new Private messages
 msgid "settings_block_private"
@@ -638,10 +610,6 @@ msgstr "Invite"
 #: (Any registered user)
 msgid "invite_any_registered"
 msgstr "(Any Registered User)"
-
-#: Mods Only
-msgid "mods_only"
-msgstr "Mods Only"
 
 #: Topic
 msgid "channel_topic"
@@ -859,14 +827,6 @@ msgstr "Welcome to Kiwi IRC! Select a channel on the left."
 msgid "container_statebrowser"
 msgstr "Show Network Browser"
 
-#: Hide Topic
-msgid "hide_topic"
-msgstr "Hide Topic"
-
-#: Display Topic
-msgid "display_topic"
-msgstr "Display Topic"
-
 #: Channel Settings
 msgid "channel_settings"
 msgstr "Channel Settings"
@@ -875,21 +835,9 @@ msgstr "Channel Settings"
 msgid "container_join"
 msgstr "Join Channel"
 
-#: Not Connected
-msgid "container_notconnected"
-msgstr "Not Connected"
-
-#: Private conversation with {{user}}
-msgid "container_privmsg"
-msgstr "Conversation with {{user}}"
-
 #: Log out
 msgid "logout"
 msgstr "Log Out"
-
-#: Are you sure you want to log out?
-msgid "prompt_logout"
-msgstr "Are you sure you want to log out?"
 
 #: Remember me on this computer
 msgid "remember_settings"
@@ -918,18 +866,6 @@ msgstr "Strong"
 #: Send a message...
 msgid "input_placeholder"
 msgstr "Send a message..."
-
-#: This message looks like a command but is preceded by spaces.
-msgid "input_not_command"
-msgstr "This message looks like a command but is preceded by spaces."
-
-#: Send as text?
-msgid "input_send_text"
-msgstr "Send as text?"
-
-#: Loading {{url}}...
-msgid "media_loading"
-msgstr "Loading {{url}}..."
 
 #: Load previous messages
 msgid "messages_load"
@@ -996,18 +932,9 @@ msgstr "[Set SASL]"
 msgid "settings_bouncer_sasl_manual"
 msgstr "We cannot sync SASL credentials to this bouncer automatically. Configure them on the bouncer itself, otherwise this network may fail to authenticate."
 
-
 #: Changes are saved to the bouncer when you press Save or Connect.
 msgid "settings_bouncer_save_hint"
 msgstr "Changes are only saved to the bouncer when you press Save or (Re)-Connect."
-
-#: Your details
-msgid "settings_your_details"
-msgstr "Your Details"
-
-#: Nickname
-msgid "settings_nickname"
-msgstr "Nickname"
 
 #: Advanced
 msgid "settings_advanced"
@@ -1069,10 +996,6 @@ msgstr "Reconnect to continue talking with {{user}}."
 msgid "not_connected"
 msgstr "You are not currently connected!"
 
-#: Connection settings
-msgid "reconnect_settings"
-msgstr "Connection settings"
-
 #: We couldn't connect to that server :(
 msgid "network_noconnect"
 msgstr "We couldn't connect to that server."
@@ -1085,7 +1008,6 @@ msgstr "Connect"
 msgid "network_connecting"
 msgstr "Network Connecting..."
 
-
 #: Reconnect To Network
 msgid "network_reconnect"
 msgstr "Reconnect"
@@ -1097,14 +1019,6 @@ msgstr "Disconnect"
 #: Network Name
 msgid "network_name"
 msgstr "Network Name"
-
-#: Close options
-msgid "side_close"
-msgstr "Close Options"
-
-#: Channel options
-msgid "side_options"
-msgstr "Channel Options"
 
 #: Your settings
 msgid "side_settings"
@@ -1158,10 +1072,6 @@ msgstr "Topic set by {{who}} on {{when}}."
 msgid "created_on"
 msgstr "Created on {{when}}."
 
-#: Created at {{when}}
-msgid "created_at"
-msgstr "Created at {{when}}."
-
 #: Highlights
 msgid "highlights"
 msgstr "Highlights"
@@ -1178,10 +1088,6 @@ msgstr "There was an error starting Kiwi IRC."
 msgid "error_installed"
 msgstr "Make sure you have installed Kiwi IRC correctly and the configuration can be loaded."
 
-#: Leave {{name}}
-msgid "state_leave"
-msgstr "Leave {{name}}"
-
 #: Your account
 msgid "state_account"
 msgstr "Your Account"
@@ -1193,18 +1099,6 @@ msgstr "Your settings and networks will be remembered on this computer."
 #: Forget me
 msgid "state_forget"
 msgstr "Forget Me"
-
-#: No networks here yet.
-msgid "state_network"
-msgstr "No networks here yet."
-
-#: Add one?
-msgid "state_add"
-msgstr "Add network?"
-
-#: Available networks
-msgid "state_available"
-msgstr "Available Networks"
 
 #: Add Network
 msgid "add_network"
@@ -1446,26 +1340,6 @@ msgstr "{{nick}} has unbanned {{target}}."
 msgid "modes_other"
 msgstr "{{nick}} sets {{mode}} on {{target}}."
 
-#: Send a message
-msgid "command_msg"
-msgstr "Send Message"
-
-#: Do something physical
-msgid "command_action"
-msgstr "Perform Action"
-
-#: Join a channel
-msgid "command_join"
-msgstr "Join Channel"
-
-#: Leave a channel
-msgid "command_part"
-msgstr "Leave Channel"
-
-#: Leave, then re-join a channel
-msgid "command_cycle"
-msgstr "Cycle Channel"
-
 #: Troubleshooting
 msgid "troubleshooting"
 msgstr "Troubleshooting"
@@ -1481,94 +1355,6 @@ msgstr "Export Buffer"
 #: Download a JSON file containing the application state and recent logs to help developers troubleshoot issues.
 msgid "export_debug_description"
 msgstr "Download a JSON file containing the application state and recent logs to help developers troubleshoot issues."
-
-#: Change your nickname
-msgid "command_nick"
-msgstr "Change Nickname"
-
-#: Start a private conversation with someone
-msgid "command_query"
-msgstr "Message User"
-
-#: Invite somebody into the channel
-msgid "command_invite"
-msgstr "Invite User"
-
-#: Set the topic for this channel
-msgid "command_topic"
-msgstr "Set Topic"
-
-#: Send a notice
-msgid "command_notice"
-msgstr "Send Notice"
-
-#: Change your real name
-msgid "command_setname"
-msgstr "Change Real Name"
-
-#: Send a raw command to the IRC server
-msgid "command_quote"
-msgstr "Send Raw Command"
-
-#: Kick somebody from the channel
-msgid "command_kick"
-msgstr "Kick User"
-
-#: Clear all messages from this window
-msgid "command_clear"
-msgstr "Clear Buffer"
-
-#: Send a CTCP command to somebody
-msgid "command_ctcp"
-msgstr "Send CTCP Command"
-
-#: Disconnect from the IRC server
-msgid "command_quit"
-msgstr "Leave Network"
-
-#: Connect to a new IRC network
-msgid "command_server"
-msgstr "Connect Network"
-
-#: Request information on somebody
-msgid "command_whois"
-msgstr "Request Current User Information"
-
-#: Request information on somebody that disconnected recently
-msgid "command_whowas"
-msgstr "Request Recent User Information"
-
-#: Set yourself as away
-msgid "command_away"
-msgstr "Mark Away"
-
-#: Set yourself as active
-msgid "command_back"
-msgstr "Mark Available"
-
-#: Change your connection encoding
-msgid "command_encoding"
-msgstr "Change Encoding"
-
-#: Ignore messages from somebody
-msgid "command_ignore"
-msgstr "Ignore User"
-
-#: Stop ignoring somebody
-msgid "command_unignore"
-msgstr "Unignore User"
-
-#: Roll a Dice
-msgid "command_dice"
-msgstr "Roll Dice"
-
-#: Rolls a {{sides}} sided dice and gets {{number}}
-msgid "dice_roll"
-msgstr "Rolls a {{sides}} sided dice and gets {{number}}."
-
-#: Roll dice
-msgid "command_roll"
-msgstr "Roll Dice"
 
 #: Rolls {{expression}} and gets {{number}}
 msgid "dice_roll_result"
@@ -1670,9 +1456,6 @@ msgstr "Use Background"
 msgid "styling_tools"
 msgstr "Text Styling"
 
- #: Timed out waiting for server confirmation.
-
-
 msgid "error_confirm_timeout"
 msgstr "Timed out waiting for server confirmation."
 
@@ -1699,10 +1482,6 @@ msgstr "Revealed"
 #: Redact
 msgid "redact"
 msgstr "Redact"
-
-#: Redact Message
-msgid "redact_message"
-msgstr "Redact Message"
 
 #: Redaction Reason (optional)
 msgid "redaction_reason"
@@ -1764,26 +1543,6 @@ msgstr "Temporarily connect to this network."
 msgid "personal_saved"
 msgstr "Saved Networks"
 
-#: Kiwi IRC (next gen) - Rizon preview
-msgid "rizon_title"
-msgstr "Kiwi IRC (NG) - Rizon Preview"
-
-#: Direct websockets. No Kiwi server or webirc involved.
-msgid "rizon_websockets"
-msgstr "Direct Websockets. No Kiwi server or WebIRC involved."
-
-#: (Thanks to Adam @Rizon for the development websocket server support!)
-msgid "rizon_thanks"
-msgstr "(Thanks to Adam @Rizon for the development websocket server support!)"
-
-#: Give the developer version of Kiwi IRC a try!
-msgid "rizon_dev"
-msgstr "Give the developer version of Kiwi IRC a try!"
-
-#: Disconnected
-msgid "disconnected"
-msgstr "Disconnected"
-
 #: Connected to {{network}}!
 msgid "connected_to"
 msgstr "Connected to {{network}}!"
@@ -1842,7 +1601,7 @@ msgstr "Operator"
 
 #: Bot user label
 msgid "bot_user"
-msgstr "Bot user"
+msgstr "bot user"
 
 #: Successful operator login
 msgid "oper_success"
@@ -1920,18 +1679,6 @@ msgstr "Tools"
 msgid "settings_auto_reconnect"
 msgstr "Auto Reconnect"
 
-#: Reconnect wait (ms)
-msgid "settings_auto_reconnect_wait"
-msgstr "Max Reconnect Delay (ms)"
-
-#: Max reconnect retries
-msgid "settings_auto_reconnect_max_retries"
-msgstr "Max Reconnect Retries"
-
-#: Default SASL mechanism
-msgid "settings_default_sasl_mechanism"
-msgstr "Default SASL Mechanism"
-
 #: Connection details locked
 msgid "settings_server_details_locked"
 msgstr "Connection details are locked by the administrator."
@@ -1951,10 +1698,6 @@ msgstr "Server Information"
 #: Network name label
 msgid "info_network_name"
 msgstr "Network Name"
-
-#: Network icon label
-msgid "info_network_icon"
-msgstr "Network Icon"
 
 #: IRCd type label
 msgid "info_ircd"
@@ -2036,10 +1779,6 @@ msgstr "Channel Branding"
 msgid "channel_metadata_warning"
 msgstr "Channel metadata may not persist if the channel is not registered and all users leave."
 
-#: No description set
-msgid "no_description_set"
-msgstr "No description set."
-
 #: Set status message...
 msgid "no_status_set"
 msgstr "Set status message..."
@@ -2091,8 +1830,6 @@ msgstr "None"
 #: Retention
 msgid "settings_fileupload_retention"
 msgstr "Retention"
-
-
 
 #: Preferred Persistence
 msgid "settings_persistence"
@@ -2210,10 +1947,6 @@ msgstr "Channel Deletion"
 msgid "chanserv_transfer"
 msgstr "Transfer Ownership"
 
-#: Channel Settings
-msgid "chanserv_settings_title"
-msgstr "Channel Settings"
-
 #: Enable VHost
 msgid "hostserv_on"
 msgstr "Enable VHost"
@@ -2233,3 +1966,104 @@ msgstr "Play Back History"
 #: Delete Message
 msgid "histserv_delete"
 msgstr "Delete Message"
+
+
+#: Send a message
+msgid "command_msg"
+msgstr "Send Message"
+
+#: Do something physical
+msgid "command_action"
+msgstr "Perform Action"
+
+#: Join a channel
+msgid "command_join"
+msgstr "Join Channel"
+
+#: Leave a channel
+msgid "command_part"
+msgstr "Leave Channel"
+
+#: Leave, then re-join a channel
+msgid "command_cycle"
+msgstr "Cycle Channel"
+
+#: Change your nickname
+msgid "command_nick"
+msgstr "Change Nickname"
+
+#: Start a private conversation with someone
+msgid "command_query"
+msgstr "Message User"
+
+#: Invite somebody into the channel
+msgid "command_invite"
+msgstr "Invite User"
+
+#: Set the topic for this channel
+msgid "command_topic"
+msgstr "Set Topic"
+
+#: Send a notice
+msgid "command_notice"
+msgstr "Send Notice"
+
+#: Send a raw command to the IRC server
+msgid "command_quote"
+msgstr "Send Raw Command"
+
+#: Kick somebody from the channel
+msgid "command_kick"
+msgstr "Kick User"
+
+#: Clear all messages from this window
+msgid "command_clear"
+msgstr "Clear Buffer"
+
+#: Send a CTCP command to somebody
+msgid "command_ctcp"
+msgstr "Send CTCP Command"
+
+#: Disconnect from the IRC server
+msgid "command_quit"
+msgstr "Leave Network"
+
+#: Connect to a new IRC network
+msgid "command_server"
+msgstr "Connect Network"
+
+#: Request information on somebody
+msgid "command_whois"
+msgstr "Request Current User Information"
+
+#: Request information on somebody that disconnected recently
+msgid "command_whowas"
+msgstr "Request Recent User Information"
+
+#: Set yourself as away
+msgid "command_away"
+msgstr "Mark Away"
+
+#: Set yourself as active
+msgid "command_back"
+msgstr "Mark Available"
+
+#: Change your connection encoding
+msgid "command_encoding"
+msgstr "Change Encoding"
+
+#: Ignore messages from somebody
+msgid "command_ignore"
+msgstr "Ignore User"
+
+#: Stop ignoring somebody
+msgid "command_unignore"
+msgstr "Unignore User"
+
+#: Change your real name
+msgid "command_setname"
+msgstr "Change Real Name"
+
+#: Roll dice
+msgid "command_roll"
+msgstr "Roll Dice"
