@@ -2739,7 +2739,7 @@ function clientMiddleware(state, network) {
                     server_time: serverTime,
                     nick: '',
                     message: messageBody,
-                    type: 'error',
+                    type: 'ctcp',
                 });
             }
 

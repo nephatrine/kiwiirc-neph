@@ -972,7 +972,11 @@ function createNewState() {
                     includeAsActivity = true;
                 }
 
-                if (buffer.setting('server_as_activity') && buffer.isServer()) {
+                if (
+                    buffer.setting('server_as_activity') &&
+                    buffer.isServer() &&
+                    message.type !== 'ctcp'
+                ) {
                     includeAsActivity = true;
                 }
 
@@ -1049,6 +1053,7 @@ function createNewState() {
                     message.type !== 'nick' &&
                     message.type !== 'mode' &&
                     message.type !== 'traffic' &&
+                    message.type !== 'ctcp' &&
                     !buffer.isSpecial() &&
                     !bufferMessage.ignore &&
                     !isSelf
@@ -1097,6 +1102,7 @@ function createNewState() {
                 if (
                     !state.ui.app_has_focus &&
                     message.type !== 'traffic' &&
+                    message.type !== 'ctcp' &&
                     !buffer.isSpecial() &&
                     (
                         (buffer.setting('flash_title') === 'message') ||

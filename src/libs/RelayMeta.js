@@ -228,6 +228,11 @@ function handleClientInfo(rec, event) {
 
 function handleRelayMeta(rec, event) {
     let parts = String(event.message || '').split(' ');
+    // CTCP responses include the command name; accept bare bodies from older
+    // senders and tests as well.
+    if ((parts[0] || '').toUpperCase() === 'RELAYMETA') {
+        parts.shift();
+    }
     let verb = (parts[0] || '').toUpperCase();
     let target = parts[1] || '';
     if ((verb !== 'DATA' && verb !== 'ERR') || !target) {

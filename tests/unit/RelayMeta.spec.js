@@ -84,7 +84,7 @@ describe('relaymeta', () => {
         let consumed = RelayMeta.handleCtcp(net, net.id, {
             nick: BOT,
             type: 'RELAYMETA',
-            message: 'DATA ' + SPOOF + ' display-name=Some\\sOne avatar=https://cdn.example/a.png',
+            message: 'RELAYMETA DATA ' + SPOOF + ' display-name=Some\\sOne avatar=https://cdn.example/a.png',
         });
         expect(consumed).toBe(true);
         expect(spoof.metadata['display-name']).toBe('Some One');
@@ -106,7 +106,7 @@ describe('relaymeta', () => {
         let consumed = RelayMeta.handleCtcp(net, net.id, {
             nick: BOT,
             type: 'RELAYMETA',
-            message: 'ERR ' + SPOOF + ' UNKNOWN_TARGET no such user',
+            message: 'RELAYMETA ERR ' + SPOOF + ' UNKNOWN_TARGET no such user',
         });
         expect(consumed).toBe(true);
 
@@ -193,7 +193,7 @@ describe('relaymeta', () => {
         RelayMeta.handleCtcp(net, net.id, {
             nick: BOT,
             type: 'RELAYMETA',
-            message: 'DATA ' + SPOOF + ' display-name=A\\:\\\\sB',
+            message: 'RELAYMETA DATA ' + SPOOF + ' display-name=A\\:\\\\sB',
         });
         expect(spoof.metadata['display-name']).toBe('A;\\sB');
     });

@@ -136,6 +136,11 @@ and this project adheres to
 
 ### Fixed
 
+- **CTCP**: Automatic relay metadata `CLIENTINFO` and `RELAYMETA` responses are
+  consumed instead of being posted to the network buffer. Remaining CTCP traffic
+  no longer triggers desktop notifications, title flashes, alert sounds, or
+  unread server activity, and is no longer styled as an error.
+
 - **SASL**: A `900` account reply arriving after `001` is now captured, so
   direct Soju connections populate the SASL account and offer Web Push.
 
