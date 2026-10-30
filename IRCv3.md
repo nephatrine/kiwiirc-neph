@@ -23,6 +23,8 @@ Kiwi IRC requests the following capabilities during connection and again on
 - **draft/message-redaction**: Removes message content from the log.
 - **draft/read-marker**: Syncs read status across clients. Informational
   `MARKREAD` requests set a boundary for query buffers, which have no `JOIN`.
+- **draft/oper-tag**: Marks messages sent by IRC operators. Messages carrying
+  `draft/oper` show an operator lock badge unless they also carry the `bot` tag.
 - **draft/relaymsg**: Marks messages relayed from another network. The relayer's
   nick arrives in the `draft/relaymsg` tag on the rewritten message.
 

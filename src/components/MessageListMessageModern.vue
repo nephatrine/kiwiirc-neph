@@ -73,7 +73,13 @@
                 </span>
             </div>
             <div class="kiwi-messagelist-top">
-                <span v-if="props.message.is_bot" :title="props.ml.$t('bot')" class="kiwi-messagelist-nick-bot">🤖</span><span
+                <span v-if="props.message.is_bot" :title="props.ml.$t('bot')" class="kiwi-messagelist-nick-bot">🤖</span>
+                <span
+                    v-if="props.message.is_oper && !props.message.is_bot"
+                    :title="props.ml.$t('operator')"
+                    class="kiwi-messagelist-nick-oper"
+                ><i class="bx bx-lock-alt" aria-hidden="true" /></span>
+                <span
                     v-if="props.message.is_rerouted"
                     :title="props.ml.$t('rerouted')"
                     class="kiwi-messagelist-nick-rerouted"
@@ -446,6 +452,7 @@ export default {
 }
 
 .kiwi-messagelist-nick-bot,
+.kiwi-messagelist-nick-oper,
 .kiwi-messagelist-nick-rerouted {
     font-size: 1.1em;
 }

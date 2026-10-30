@@ -153,6 +153,11 @@
 
         <span v-if="props.message.is_bot" :title="props.ml.$t('bot')" class="kiwi-messagelist-nick-bot">🤖</span>
         <span
+            v-if="props.message.is_oper && !props.message.is_bot"
+            :title="props.ml.$t('operator')"
+            class="kiwi-messagelist-nick-oper"
+        ><i class="bx bx-lock-alt" aria-hidden="true" /></span>
+        <span
             v-if="props.message.is_rerouted"
             :title="props.ml.$t('rerouted')"
             class="kiwi-messagelist-nick-rerouted"
@@ -281,6 +286,7 @@ export default {
 }
 
 .kiwi-messagelist-nick-bot,
+.kiwi-messagelist-nick-oper,
 .kiwi-messagelist-nick-rerouted {
     position: absolute;
     right: 72px;
@@ -292,7 +298,8 @@ export default {
     right: 90px;
 }
 
-.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-nick-bot {
+.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-nick-bot,
+.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-nick-oper {
     right: 10px;
 }
 
@@ -301,6 +308,7 @@ export default {
 }
 
 .kiwi-messagelist-message--compact:hover .kiwi-messagelist-nick-bot,
+.kiwi-messagelist-message--compact:hover .kiwi-messagelist-nick-oper,
 .kiwi-messagelist-message--compact:hover .kiwi-messagelist-nick-rerouted {
     display: none;
 }

@@ -53,6 +53,7 @@ const DESIRED_CAPS = [
     'draft/extended-isupport',
     'draft/message-redaction',
     'draft/read-marker',
+    'draft/oper-tag',
     'draft/relaymsg',
     'standard-replies',
     'draft/account-registration',

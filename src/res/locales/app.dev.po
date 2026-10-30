@@ -1355,6 +1355,10 @@ msgstr "Is available for help"
 msgid "user_op"
 msgstr "Is an operator"
 
+#: Operator badge tooltip
+msgid "operator"
+msgstr "Operator"
+
 #: Connected to {{server}} {{info}}
 msgid "user_server"
 msgstr "Connected to {{server}} {{info}}"

@@ -850,6 +850,10 @@ function createNewState() {
                         // Found by label!
                         m.irc_id = msgid;
                         m.tags = message.tags;
+                        m.is_oper = !!(
+                            message.tags &&
+                            typeof message.tags['draft/oper'] !== 'undefined'
+                        );
                         m.is_pending = false;
                         if (msgid) {
                             Vue.set(buffer.messagesObj.messageIds, msgid, m);
@@ -884,6 +888,10 @@ function createNewState() {
                             Vue.set(buffer.messagesObj.messageIds, msgid, m);
                         }
                         m.tags = message.tags;
+                        m.is_oper = !!(
+                            message.tags &&
+                            typeof message.tags['draft/oper'] !== 'undefined'
+                        );
                         m.is_pending = false;
                         return m;
                     };

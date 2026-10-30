@@ -61,6 +61,10 @@ export default class Message {
         this.bodyTemplateProps = message.bodyTemplateProps || {};
         this.isHighlight = false;
         this.is_bot = !!(message.tags && typeof message.tags.bot !== 'undefined');
+        this.is_oper = !!(
+            message.tags &&
+            typeof message.tags['draft/oper'] !== 'undefined'
+        );
         this.bridged_nick = '';
         if (this.is_bot && typeof this.message === 'string') {
             let bridged = /^<([^<>\s][^<>]{0,63})>\s+/.exec(this.message);

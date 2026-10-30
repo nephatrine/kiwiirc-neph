@@ -1836,6 +1836,10 @@ msgstr "{{nick}} changed the channel topic to: {{topic}}."
 msgid "bot"
 msgstr "Bot"
 
+#: Operator badge tooltip
+msgid "operator"
+msgstr "Operator"
+
 #: Rerouted message
 msgid "rerouted"
 msgstr "Rerouted Message"

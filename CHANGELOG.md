@@ -10,6 +10,9 @@ and this project adheres to
 
 ### Added
 
+- **Operators**: Added `draft/oper-tag` support. Messages from IRC operators
+  show a lock icon unless they also carry the bot tag.
+
 - **Themes**: Added NephWave, a standalone theme with the optional NephWave
   Desktop shell plugin.
 
