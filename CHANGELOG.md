@@ -10,6 +10,11 @@ and this project adheres to
 
 ### Added
 
+- **Channel Rename**: Added incoming `draft/channel-rename` support. A
+  server-sent `RENAME` moves the existing buffer to the new name, preserving its
+  messages, members, topic, modes, and settings, and posts an informational line
+  plus a desktop notification. Kiwi IRC does not send `RENAME`.
+
 - **Operators**: Added `draft/oper-tag` support. Messages from IRC operators
   show a lock icon unless they also carry the bot tag.
 

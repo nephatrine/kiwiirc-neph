@@ -1545,6 +1545,18 @@ msgstr "{{nick}} has joined."
 msgid "has_reconnected"
 msgstr "{{nick}} has reconnected."
 
+#: {{old}} was renamed to {{new}}
+msgid "channel_renamed"
+msgstr "{{old}} was renamed to {{new}}."
+
+#: {{old}} was renamed to {{new}} ({{reason}})
+msgid "channel_renamed_reason"
+msgstr "{{old}} was renamed to {{new}} ({{reason}})."
+
+#: Channel Renamed
+msgid "channel_renamed_title"
+msgstr "Channel Renamed"
+
 #: {{nick}} kicked you from {{channel}}
 msgid "kicked_you_from"
 msgstr "{{nick}} kicked you from {{channel}}."

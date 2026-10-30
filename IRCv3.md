@@ -18,6 +18,9 @@ Kiwi IRC requests the following capabilities during connection and again on
   playback.
 - **server-time**: Uses server-provided UTC timestamps.
 - **draft/chathistory**: Retrieves backlog with `BEFORE`, `AFTER`, and `LATEST`.
+- **draft/channel-rename**: Handles a server-sent `RENAME` by moving the
+  existing buffer to the new name, preserving its messages, members, topic,
+  modes, and settings. Kiwi IRC does not send `RENAME`.
 - **draft/event-playback**: Includes joins, parts, and modes in history.
 - **draft/multiline**: Sends long messages as one batch.
 - **draft/message-redaction**: Removes message content from the log.

@@ -479,17 +479,60 @@ export default class BufferState {
 
     rename(newName) {
         let network = this.getNetwork();
+        if (!network) {
+            return;
+        }
+
         let oldName = this.name;
-        let setActive = this.state.getActiveBuffer() === this;
+        let oldNameLower = oldName.toLowerCase();
+        let wasActive = this.state.getActiveBuffer() === this;
 
         this.name = newName;
-        if (setActive) {
-            this.state.setActiveBuffer(network.id, newName);
+        if (wasActive) {
+            // Updating the name directly avoids recording this same buffer in
+            // the back-history under its old name.
+            this.state.ui.active_buffer = newName;
+        }
+
+        // Update any name-keyed references that would otherwise point at the
+        // old channel.
+        let lastActive = this.state.ui.last_active_buffers;
+        if (Array.isArray(lastActive)) {
+            lastActive.forEach((entry) => {
+                if (entry.networkid === network.id &&
+                    String(entry.bufferName || '').toLowerCase() === oldNameLower
+                ) {
+                    entry.bufferName = newName;
+                }
+            });
+        }
+
+        let metadataSubs = network.active_metadata_subs;
+        if (metadataSubs) {
+            Object.keys(metadataSubs).forEach((key) => {
+                if (key.toLowerCase() !== oldNameLower || key === newName) {
+                    return;
+                }
+
+                this.state.$set(metadataSubs, newName, metadataSubs[key]);
+                delete metadataSubs[key];
+            });
+        }
+
+        let metadataTargets = network.metadata_label_targets;
+        if (metadataTargets && typeof metadataTargets.forEach === 'function') {
+            metadataTargets.forEach((target, label) => {
+                if (String(target).toLowerCase() === oldNameLower) {
+                    metadataTargets.set(label, newName);
+                }
+            });
         }
 
         // update the buffer name on our messages
         let bufferMessages = find(this.messageDict, { networkid: network.id, buffer: oldName });
-        bufferMessages.buffer = newName;
+        if (bufferMessages) {
+            bufferMessages.buffer = newName;
+        }
     }
 
     flag(name, val) {

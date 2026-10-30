@@ -41,6 +41,7 @@ const DESIRED_CAPS = [
     'batch',
     'draft/multiline',
     'draft/chathistory',
+    'draft/channel-rename',
     'draft/event-playback',
     'away-notify',
     'invite-notify',
@@ -1135,6 +1136,46 @@ function clientMiddleware(state, network) {
             if (event.tags && event.tags.label) {
                 state.promotePendingLabel(networkid, event.tags.label);
             }
+            next();
+            return;
+        }
+
+        if (effectiveCommand === 'RENAME') {
+            // draft/channel-rename: the server sends the old name, new name,
+            // and a reason (which may be an empty string). Keep the existing
+            // buffer object so members, topic, modes, settings, and history
+            // all survive the rename.
+            const params = (event && event.params) || [];
+            const oldName = params[0] || '';
+            const newName = params[1] || '';
+            const reason = params[2] || '';
+            const buffer = oldName ? state.getBufferByName(networkid, oldName) : null;
+            const existing = newName ? state.getBufferByName(networkid, newName) : null;
+
+            // A rename should never collide with another buffer. If it does,
+            // leave both channels alone rather than creating duplicate names.
+            if (buffer && newName && (!existing || existing === buffer)) {
+                buffer.rename(newName);
+
+                const messageBody = TextFormatting.t(
+                    reason ? 'channel_renamed_reason' : 'channel_renamed',
+                    { old: oldName, new: newName, reason }
+                );
+
+                state.addMessage(buffer, {
+                    time: eventTime,
+                    server_time: serverTime,
+                    nick: '',
+                    message: messageBody,
+                    type: 'info',
+                });
+
+                state.$emit('notification.show', messageBody, {
+                    title: TextFormatting.t('channel_renamed_title'),
+                    onclick: () => state.setActiveBuffer(networkid, newName),
+                });
+            }
+
             next();
             return;
         }
