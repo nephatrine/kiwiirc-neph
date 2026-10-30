@@ -155,6 +155,10 @@ and this project adheres to
 
 ### Fixed
 
+- **Roll Command**: `/roll` now sends through the normal action path, so the
+  server echo confirms the optimistic message instead of adding a duplicate and
+  the local line is formatted as an action.
+
 - **CTCP**: Automatic relay metadata `CLIENTINFO` and `RELAYMETA` responses are
   consumed instead of being posted to the network buffer. Remaining CTCP traffic
   no longer triggers desktop notifications, title flashes, alert sounds, or

@@ -301,13 +301,7 @@ inputCommands.roll = function inputCommandRoll(event, command, line, context) {
     }
 
     const msg = formatRoll(result, TextFormatting.t, TextFormatting.formatNumber);
-    network.ircClient.action(buffer.name, msg);
-    this.state.addMessage(buffer, {
-        time: Date.now(),
-        nick: network.nick,
-        message: msg,
-        type: 'action',
-    });
+    handleMessage.call(this, 'action', event, command, buffer.name + ' ' + msg, context);
 };
 
 inputCommands.ctcp = function inputCommandCtcp(event, command, line, context) {
