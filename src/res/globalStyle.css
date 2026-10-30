@@ -242,6 +242,12 @@ select {
     color: var(--brand-default-fg) !important;
     background-color: var(--brand-default-bg) !important;
 }
+
+.kiwi-spoiler a {
+    color: inherit !important;
+    cursor: inherit;
+    text-decoration: none;
+}
 /* stylelint-enable declaration-no-important */
 
 .kiwi-formatting-extras-invisible {

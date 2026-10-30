@@ -155,6 +155,10 @@ and this project adheres to
 
 ### Fixed
 
+- **Spoilers**: Links inside spoiler blocks now inherit the hidden spoiler
+  colour and no longer show preview handles, automatic inline previews, or
+  Message Info preview buttons.
+
 - **Roll Command**: `/roll` now sends through the normal action path, so the
   server echo confirms the optimistic message instead of adding a duplicate and
   the local line is formatted as an action.

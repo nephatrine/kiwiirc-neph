@@ -2,7 +2,7 @@
 
 import Vue from 'vue';
 import parseMessage from '@/libs/MessageParser';
-import { stripStyles, sanitizeUrl, canPreviewUrl } from '@/helpers/Misc';
+import { stripStyles, sanitizeUrl, canPreviewUrl, isSpoilerBlock } from '@/helpers/Misc';
 import toHtml from '@/libs/renderers/Html';
 import GlobalApi from '@/libs/GlobalApi';
 import getState from './state';
@@ -168,7 +168,9 @@ export default class Message {
             userList
         );
 
-        this.mentioned_urls = blocks.filter((block) => block.type === 'url').map((block) => block.meta.url);
+        this.mentioned_urls = blocks
+            .filter((block) => block.type === 'url' && !isSpoilerBlock(block))
+            .map((block) => block.meta.url);
         this.maybeAutoEmbed(buffer);
 
         state.$emit('message.blocks', { message: this, blocks: blocks });

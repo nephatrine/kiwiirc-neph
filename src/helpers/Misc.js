@@ -283,6 +283,18 @@ export function canPreviewUrl(url) {
 }
 
 /**
+ * Whether a message block belongs to a spoiler.
+ * @param {object} block Parsed message block
+ * @returns {boolean}
+ */
+export function isSpoilerBlock(block) {
+    return !!block &&
+        !!block.styles &&
+        !!block.styles.color &&
+        block.styles.color === block.styles.background;
+}
+
+/**
  * Replace IRC control characters with visible Unicode glyphs
  * @param {string} str The string to process
  */

@@ -11,6 +11,15 @@ function urlBlock(url) {
     }];
 }
 
+function spoilerBlock(url) {
+    return [{
+        type: 'url',
+        content: url,
+        meta: { url },
+        styles: { color: 'black', background: 'black' },
+    }];
+}
+
 function messageBuffer() {
     return {
         users: {},
@@ -19,13 +28,13 @@ function messageBuffer() {
     };
 }
 
-function autoEmbed(url) {
+function autoEmbed(url, extras = false) {
     const message = new Message({
         message: url,
         nick: 'tester',
         type: 'privmsg',
     });
-    message.toBlocks(messageBuffer(), false);
+    message.toBlocks(messageBuffer(), extras);
     return message.embed.payload;
 }
 
@@ -65,5 +74,36 @@ describe('link preview rendering', () => {
 
     it('does not auto-embed lookalike hosts', () => {
         expect(autoEmbed('https://notx.com/images/media-preview/2115941753798692948')).toBeNull();
+    });
+
+    it('does not add a preview handle to a spoiler URL', () => {
+        let html = toHtml(spoilerBlock('https://example.com/image.jpg'), false);
+        expect(html).toContain('kiwi-spoiler');
+        expect(html).not.toContain('data-url');
+    });
+
+    it('does not auto-embed a spoiler URL', () => {
+        expect(autoEmbed('||https://example.com/image.jpg||', true)).toBeNull();
+    });
+
+    it('does not auto-embed a colour-coded spoiler URL', () => {
+        expect(autoEmbed('\x0301,01https://example.com/image.jpg\x03')).toBeNull();
+    });
+
+    it('auto-embeds a normal URL after a spoiler URL', () => {
+        expect(autoEmbed(
+            '||https://example.com/spoiler.jpg|| https://example.com/image.jpg',
+            true
+        )).toBe('https://example.com/image.jpg');
+    });
+
+    it('excludes spoiler URLs from mentioned_urls', () => {
+        const message = new Message({
+            message: '||https://example.com/spoiler.jpg|| https://example.com/image.jpg',
+            nick: 'tester',
+            type: 'privmsg',
+        });
+        message.toBlocks(messageBuffer(), true);
+        expect(message.mentioned_urls).toEqual(['https://example.com/image.jpg']);
     });
 });
