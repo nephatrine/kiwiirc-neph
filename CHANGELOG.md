@@ -59,6 +59,10 @@ and this project adheres to
 
 ### Changed
 
+- **Highlights**: Team highlights now use `@everyone` instead of `@everybody`,
+  matching other platforms and the original setting name. `@everybody` is no
+  longer recognized.
+
 - **Replies**: Consecutive messages from the same user that reply to the same
   message now show the reply preview only on the first message.
 
@@ -154,6 +158,14 @@ and this project adheres to
   Native media previews are unchanged.
 
 ### Fixed
+
+- **Self Mentions**: Genuine self messages no longer trigger team or nickname
+  highlight notifications, title flashes, or alert sounds. Bridged and relayed
+  users remain distinct users even when their displayed names match.
+
+- **Highlights**: Team highlights such as `@here` and `@channel` now use the
+  same word-boundary rules as nickname highlights, so trailing punctuation no
+  longer prevents them.
 
 - **Redactions**: Redacting a message now closes any open inline preview, while
   a preview manually reopened on an already-redacted message stays open.

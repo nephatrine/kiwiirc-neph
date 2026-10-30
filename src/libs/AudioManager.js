@@ -2,6 +2,8 @@
 
 /** @module */
 
+import * as Misc from '@/helpers/Misc';
+
 /**
  * Plays alert sounds
  */
@@ -68,8 +70,7 @@ export class AudioManager {
             }
 
             const network = buffer.getNetwork();
-            const isSelf = network && network.nick === message.nick;
-            if (isSelf) {
+            if (Misc.isSelfMessage(network, message)) {
                 return;
             }
 

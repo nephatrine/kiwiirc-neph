@@ -980,7 +980,7 @@ function createNewState() {
                     includeAsActivity = true;
                 }
 
-                let isSelf = !network ? false : message.nick === network.nick;
+                let isSelf = Misc.isSelfMessage(network, bufferMessage);
 
                 let isHighlight = !network || buffer.isRaw() || isSelf ?
                     false :
@@ -1007,16 +1007,14 @@ function createNewState() {
 
                 if (!isSelf && !buffer.isRaw() && state.setting('teamHighlights')) {
                     let m = bufferMessage.message;
-                    let patterns = {
-                        everyone: /(^|\s)@everybody($|\s|[,.;])/,
-                        channel: /(^|\s)@channel($|\s|[,.;])/,
-                        here: /(^|\s)@here($|\s|[,.;])/,
-                    };
-                    if (m.match(patterns.everyone) || m.match(patterns.channel)) {
+                    if (
+                        Misc.mentionsWord(m, '@everyone') ||
+                        Misc.mentionsWord(m, '@channel')
+                    ) {
                         isHighlight = true;
                     }
 
-                    if (m.match(patterns.here) && network && !network.away) {
+                    if (Misc.mentionsWord(m, '@here') && network && !network.away) {
                         isHighlight = true;
                     }
                 }
@@ -1101,6 +1099,7 @@ function createNewState() {
 
                 if (
                     !state.ui.app_has_focus &&
+                    !isSelf &&
                     message.type !== 'traffic' &&
                     message.type !== 'ctcp' &&
                     !buffer.isSpecial() &&

@@ -314,20 +314,69 @@ export function controlCharsToGlyphs(str) {
 }
 
 /**
+ * Does a string mention a word using nickname-style boundaries?
+ * @param {string} input The string to search within
+ * @param {string} word The word to search for
+ */
+export function mentionsWord(input, word) {
+    if (!input || !word) {
+        return false;
+    }
+
+    if (input.toLowerCase().indexOf(word.toLowerCase()) === -1) {
+        return false;
+    }
+    let punc = '\\s,.!:;+()\\[\\]?¿\\/<>@-';
+    let escapedWord = escapeRegExp(word);
+    let stylesStrippedInput = stripStyles(input);
+    let withoutUrls = stylesStrippedInput.replace(new RegExp(urlRegex.source, 'gi'), ' ');
+    let r = new RegExp(`(^|[${punc}])${escapedWord}([${punc}]|$)`, 'i');
+    return r.test(withoutUrls);
+}
+
+/**
  * Does a string mention a nickname?
  * @param {string} input The string to search within
  * @param {string} nick The nick to search for
  */
 export function mentionsNick(input, nick) {
-    if (input.toLowerCase().indexOf(nick.toLowerCase()) === -1) {
+    return mentionsWord(input, nick);
+}
+
+/**
+ * Whether a message was sent by the local IRC user.
+ * Bridged and relayed identities are intentionally excluded: sharing a
+ * displayed name with a local user does not make them the same user.
+ * @param {object} network Network state
+ * @param {object} message Message object
+ */
+export function isSelfMessage(network, message) {
+    if (!network || !message) {
         return false;
     }
-    let punc = '\\s,.!:;+()\\[\\]?¿\\/<>@-';
-    let escapedNick = escapeRegExp(nick);
-    let stylesStrippedInput = stripStyles(input);
-    let withoutUrls = stylesStrippedInput.replace(new RegExp(urlRegex.source, 'gi'), ' ');
-    let r = new RegExp(`(^|[${punc}])${escapedNick}([${punc}]|$)`, 'i');
-    return r.test(withoutUrls);
+
+    if (message.bridged_nick ||
+        (message.tags && message.tags['draft/relaymsg'])) {
+        return false;
+    }
+
+    const selfNick = String(
+        network.nick || (network.connection && network.connection.nick) || ''
+    ).toLowerCase();
+    const nick = String(message.nick || '').toLowerCase();
+
+    if (selfNick && nick === selfNick) {
+        return true;
+    }
+
+    const selfAccount = typeof network.currentAccount === 'function' ?
+        String(network.currentAccount() || '').toLowerCase() :
+        '';
+    if (selfAccount && message.tags && message.tags.account) {
+        return String(message.tags.account).toLowerCase() === selfAccount;
+    }
+
+    return false;
 }
 
 /**
