@@ -176,6 +176,23 @@ The first `CHATHISTORY` request waits until the buffer is ready:
 Reactions and redactions are accepted when the sender is in either the buffer
 where the message is shown or the buffer it was sent to.
 
+## CTCP
+
+Kiwi IRC automatically answers supported CTCP requests only when the request
+targets its own nick. Channel-directed requests are displayed but not answered.
+
+- `CLIENTINFO` returns:
+  `ACTION CLIENTINFO FINGER PING SOURCE TIME USERINFO VERSION`
+- `VERSION` returns `Kiwi IRC <version>`
+- `FINGER` returns the current realname
+- `USERINFO` returns `<nickname> (<realname>)`
+- `PING` echoes its parameters
+- `TIME` returns an ISO 8601 UTC timestamp
+- `SOURCE` returns `https://code.nephatrine.net/nephatrine/kiwiirc`
+
+`ACTION` is displayed as an action and receives no reply. `DCC` and `RELAYMETA`
+requests are not implemented.
+
 ## Relay Metadata
 
 Relayed users created by `draft/relaymsg` are not real IRC users, so the

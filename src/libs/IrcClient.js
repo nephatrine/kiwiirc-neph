@@ -31,6 +31,9 @@ import * as RelayMeta from './RelayMeta';
 import { IRC_WEBSOCKET_PROTOCOL } from './WebSocketProtocol';
 import { addAdvertisedCaps, dropCap, foldPreferredCap, preferredCap } from './CapNegotiation';
 
+const CTCP_CLIENTINFO = 'ACTION CLIENTINFO FINGER PING SOURCE TIME USERINFO VERSION';
+const CTCP_SOURCE_URL = 'https://code.nephatrine.net/nephatrine/kiwiirc';
+
 const DESIRED_CAPS = [
     'echo-message',
     'labeled-response',
@@ -356,6 +359,15 @@ export function create(state, network) {
 function getEffectiveCommand(command, event) {
     const rawVerb = (event && (event.command || event.verb)) || command;
     return (typeof rawVerb === 'string') ? rawVerb.toUpperCase() : '';
+}
+
+function ctcpVersionString() {
+    const version = typeof __VERSION__ !== 'undefined' ? __VERSION__ : ''; // eslint-disable-line no-undef
+    return version ? `Kiwi IRC ${version}` : 'Kiwi IRC';
+}
+
+function ctcpRealname(client, network) {
+    return (client.user && client.user.gecos) || network.gecos || 'Kiwi IRC';
 }
 
 export function handleStandardReply(command, event, network, state) {
@@ -2783,11 +2795,51 @@ function clientMiddleware(state, network) {
                 });
             }
 
-            if (effectiveCommand === 'CTCP REQUEST' && event.type === 'VERSION') {
-                let target = event.from_server ?
-                    event.hostname :
+            if (effectiveCommand === 'CTCP REQUEST') {
+                const ownNick = client.user.nick || '';
+                const targetIsUs = event.target && ownNick &&
+                    event.target.toLowerCase() === ownNick.toLowerCase();
+                const replyTarget = event.from_server ?
+                    (event.hostname || event.nick) :
                     event.nick;
-                client.ctcpResponse(target, 'VERSION', 'Kiwi IRC');
+                const type = String(event.type || '').toUpperCase();
+                const message = String(event.message || '');
+                const args = message.slice(type.length).trim();
+
+                if (targetIsUs && replyTarget) {
+                    const realname = ctcpRealname(client, network);
+                    const nick = client.user.nick || network.nick || '';
+
+                    switch (type) {
+                    case 'CLIENTINFO':
+                        client.ctcpResponse(replyTarget, 'CLIENTINFO', CTCP_CLIENTINFO);
+                        break;
+                    case 'VERSION':
+                        client.ctcpResponse(replyTarget, 'VERSION', ctcpVersionString());
+                        break;
+                    case 'FINGER':
+                        client.ctcpResponse(replyTarget, 'FINGER', realname);
+                        break;
+                    case 'USERINFO':
+                        client.ctcpResponse(replyTarget, 'USERINFO', `${nick} (${realname})`);
+                        break;
+                    case 'PING':
+                        if (args) {
+                            client.ctcpResponse(replyTarget, 'PING', args);
+                        } else {
+                            client.ctcpResponse(replyTarget, 'PING');
+                        }
+                        break;
+                    case 'TIME':
+                        client.ctcpResponse(replyTarget, 'TIME', new Date().toISOString());
+                        break;
+                    case 'SOURCE':
+                        client.ctcpResponse(replyTarget, 'SOURCE', CTCP_SOURCE_URL);
+                        break;
+                    default:
+                        break;
+                    }
+                }
             }
         }
 

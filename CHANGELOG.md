@@ -62,6 +62,11 @@ and this project adheres to
 
 ### Changed
 
+- **CTCP**: Added automatic replies for `CLIENTINFO`, `VERSION`, `FINGER`,
+  `USERINFO`, `PING`, `TIME`, and `SOURCE` when a request targets the client's
+  nick. `VERSION` now includes the product version, `ACTION` is listed in
+  `CLIENTINFO`, and `DCC`/`RELAYMETA` remain unimplemented.
+
 - **Operator Login**: A successful `381` now posts a visible informational line
   in the active buffer instead of only updating internal operator state.
 

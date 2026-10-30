@@ -17,6 +17,11 @@ describe('IrcClient CTCP messages', () => {
         network.nick = 'TestNick';
         client = network.ircClient;
         client.user.nick = 'TestNick';
+        client.user.gecos = 'Test User';
+        client.ctcpResponse = jest.fn();
+        network.gecos = 'Test User';
+        /* eslint-disable-next-line no-underscore-dangle */
+        global.__VERSION__ = 'test-version';
     });
 
     function dispatchCtcp(command, event) {
@@ -52,7 +57,7 @@ describe('IrcClient CTCP messages', () => {
             nick: 'Other',
             type: 'TIME',
             message: 'TIME',
-            target: 'TestNick',
+            target: '#test',
             time: Date.now(),
             tags: {},
         });
@@ -60,6 +65,100 @@ describe('IrcClient CTCP messages', () => {
         let message = lastServerMessage();
         expect(message.type).toBe('ctcp');
         expect(message.message).toContain('[CTCP Other]');
+    });
+
+    describe('automatic CTCP replies', () => {
+        function request(type, message, overrides = {}) {
+            dispatchCtcp('ctcp request', {
+                nick: 'Other',
+                type,
+                message,
+                target: 'TestNick',
+                time: Date.now(),
+                tags: {},
+                ...overrides,
+            });
+        }
+
+        it('replies to supported metadata queries', () => {
+            request('CLIENTINFO', 'CLIENTINFO');
+            expect(client.ctcpResponse).toHaveBeenLastCalledWith(
+                'Other',
+                'CLIENTINFO',
+                'ACTION CLIENTINFO FINGER PING SOURCE TIME USERINFO VERSION'
+            );
+
+            request('VERSION', 'VERSION');
+            expect(client.ctcpResponse).toHaveBeenLastCalledWith(
+                'Other',
+                'VERSION',
+                'Kiwi IRC test-version'
+            );
+
+            request('FINGER', 'FINGER');
+            expect(client.ctcpResponse).toHaveBeenLastCalledWith('Other', 'FINGER', 'Test User');
+
+            request('USERINFO', 'USERINFO');
+            expect(client.ctcpResponse).toHaveBeenLastCalledWith(
+                'Other',
+                'USERINFO',
+                'TestNick (Test User)'
+            );
+
+            request('SOURCE', 'SOURCE');
+            expect(client.ctcpResponse).toHaveBeenLastCalledWith(
+                'Other',
+                'SOURCE',
+                'https://code.nephatrine.net/nephatrine/kiwiirc'
+            );
+        });
+
+        it('echoes PING parameters exactly', () => {
+            request('PING', 'PING 123 456');
+            expect(client.ctcpResponse).toHaveBeenLastCalledWith('Other', 'PING', '123 456');
+        });
+
+        it('replies to TIME with an ISO 8601 timestamp', () => {
+            request('TIME', 'TIME');
+            expect(client.ctcpResponse).toHaveBeenLastCalledWith(
+                'Other',
+                'TIME',
+                expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/)
+            );
+        });
+
+        it('does not reply to ACTION or undocumented USERNAME', () => {
+            request('ACTION', 'ACTION waves');
+            request('USERNAME', 'USERNAME');
+            expect(client.ctcpResponse).not.toHaveBeenCalled();
+        });
+
+        it('replies when a request targets our own nick', () => {
+            request('VERSION', 'VERSION', { nick: 'TestNick' });
+            expect(client.ctcpResponse).toHaveBeenCalledWith(
+                'TestNick',
+                'VERSION',
+                'Kiwi IRC test-version'
+            );
+        });
+
+        it('does not reply when the target is another nick or a channel', () => {
+            request('VERSION', 'VERSION', { target: 'OtherClient' });
+            request('VERSION', 'VERSION', { target: '#test' });
+            expect(client.ctcpResponse).not.toHaveBeenCalled();
+        });
+
+        it('replies to a server request through the server hostname', () => {
+            request('VERSION', 'VERSION', {
+                from_server: true,
+                hostname: 'server.example',
+            });
+            expect(client.ctcpResponse).toHaveBeenCalledWith(
+                'server.example',
+                'VERSION',
+                'Kiwi IRC test-version'
+            );
+        });
     });
 
     it('consumes automatic CLIENTINFO and RELAYMETA responses', () => {
