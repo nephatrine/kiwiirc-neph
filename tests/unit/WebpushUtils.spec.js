@@ -221,6 +221,28 @@ describe('webpush browser helpers', () => {
         await expect(promise).resolves.toBe(registration);
     });
 
+    it('updates and activates a waiting worker beside an active one', async() => {
+        const registration = makeRegistration(makeSubscription());
+        registration.update = jest.fn(async() => {});
+        registration.waiting = {
+            state: 'installed',
+            postMessage: jest.fn(),
+        };
+        setServiceWorker({
+            register: jest.fn(async() => registration),
+        });
+
+        await ensureServiceWorker({
+            stateKey: 'kiwi-state',
+            networkId: 1,
+        });
+
+        expect(registration.update).toHaveBeenCalledTimes(1);
+        expect(registration.waiting.postMessage).toHaveBeenCalledWith({
+            type: 'SKIP_WAITING',
+        });
+    });
+
     it('retries subscribe once when the worker is not active yet', async() => {
         const key = new Uint8Array([1, 2, 3]);
         const subscription = makeSubscription({ keyBytes: key });
@@ -263,6 +285,7 @@ describe('webpush browser helpers', () => {
 
         expect(serviceWorker.register).toHaveBeenCalledWith('static/sw.js', {
             scope: 'static/webpush/kiwi-state/1/',
+            updateViaCache: 'none',
         });
         expect(registration.pushManager.subscribe).not.toHaveBeenCalled();
         expect(result.endpoint).toBe(subscription.endpoint);

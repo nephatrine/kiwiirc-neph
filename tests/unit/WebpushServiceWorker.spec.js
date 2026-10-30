@@ -62,6 +62,24 @@ describe('webpush service worker notifications', () => {
         expect(note.data.target).toBe('TestNick');
     });
 
+    it('ignores CTCP responses', () => {
+        expect(swUtils.buildNotification(
+            ':bot!user@host NOTICE TestNick ' +
+            ':\x01RELAYMETA ERR target UNKNOWN_TARGET\x01'
+        )).toBeNull();
+        expect(swUtils.buildNotification(
+            ':bot!user@host NOTICE TestNick :\x01CLIENTINFO ACTION VERSION\x01'
+        )).toBeNull();
+    });
+
+    it('still builds ACTION notifications', () => {
+        const note = swUtils.buildNotification(
+            ':nick!user@host PRIVMSG #chan :\x01ACTION waves\x01'
+        );
+        expect(note).not.toBeNull();
+        expect(note.title).toBe('nick');
+    });
+
     it('builds a useful INVITE notification', () => {
         const note = swUtils.buildNotification(
             ':nick!user@host INVITE TestNick #chan'
@@ -90,6 +108,22 @@ describe('webpush service worker notifications', () => {
         expect(swUtils.buildNotification(
             ':nick!user@host PRIVMSG #chan :'
         )).toBeNull();
+    });
+});
+
+describe('webpush service worker focus handling', () => {
+    it('suppresses pushes while a window is focused', () => {
+        expect(swUtils.shouldSuppressPush([{ focused: true }])).toBe(true);
+        expect(swUtils.shouldSuppressPush([
+            { focused: false },
+            { focused: true },
+        ])).toBe(true);
+    });
+
+    it('does not suppress pushes when no window is focused', () => {
+        expect(swUtils.shouldSuppressPush()).toBe(false);
+        expect(swUtils.shouldSuppressPush([])).toBe(false);
+        expect(swUtils.shouldSuppressPush([{ focused: false }])).toBe(false);
     });
 });
 

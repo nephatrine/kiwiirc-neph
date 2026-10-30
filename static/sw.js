@@ -4,7 +4,8 @@
    One registration/scope exists per network so different VAPID keys can
    coexist. The tiny parser lives in sw-utils.js so it stays testable. */
 
-importScripts('sw-utils.js');
+// Bump this version when sw-utils.js changes so browsers install a new worker.
+importScripts('sw-utils.js?v=3');
 
 const utils = self.KiwiSwUtils;
 const stateKey = utils.stateKeyFromScope(self.registration.scope);
@@ -84,7 +85,18 @@ self.addEventListener('push', (event) => {
         return;
     }
 
-    event.waitUntil(showNotification(note));
+    event.waitUntil((async() => {
+        const clients = await self.clients.matchAll({
+            type: 'window',
+            includeUncontrolled: true,
+        });
+
+        if (utils.shouldSuppressPush(clients)) {
+            return;
+        }
+
+        await showNotification(note);
+    })());
 });
 
 self.addEventListener('notificationclick', (event) => {

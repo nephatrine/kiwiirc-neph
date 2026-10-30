@@ -115,6 +115,23 @@ describe('IrcClient CTCP messages', () => {
             });
             expect(network.serverBuffer().getMessages()).toHaveLength(0);
             expect(relayed.metadata['display-name']).toBe('Some One');
+
+            const notifications = jest.fn();
+            const titleFlashes = jest.fn();
+            s.$on('notification.show', notifications);
+            s.$on('notification.title', titleFlashes);
+
+            dispatchCtcp('ctcp response', {
+                nick: 'DiscordBot',
+                type: 'RELAYMETA',
+                message: 'RELAYMETA ERR relayuser UNKNOWN_TARGET',
+                target: 'TestNick',
+                time: Date.now(),
+                tags: {},
+            });
+            expect(network.serverBuffer().getMessages()).toHaveLength(0);
+            expect(notifications).not.toHaveBeenCalled();
+            expect(titleFlashes).not.toHaveBeenCalled();
         } finally {
             jest.useRealTimers();
         }

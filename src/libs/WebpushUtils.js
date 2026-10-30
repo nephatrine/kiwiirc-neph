@@ -203,9 +203,18 @@ export async function ensureServiceWorker({ stateKey, networkId } = {}) {
     // verbatim to dist/static/ by the build.
     const registration = await navigator.serviceWorker.register('static/sw.js', {
         scope: serviceWorkerScope(stateKey, networkId),
+        updateViaCache: 'none',
     });
 
-    if (!registration.active && registration.waiting) {
+    if (typeof registration.update === 'function') {
+        try {
+            await registration.update();
+        } catch {
+            // The normal registration/wait path still applies.
+        }
+    }
+
+    if (registration.waiting) {
         try {
             registration.waiting.postMessage({ type: 'SKIP_WAITING' });
         } catch {

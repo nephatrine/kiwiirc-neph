@@ -118,6 +118,19 @@
             if (!text || target === '*' || target.charAt(0) === '$') {
                 return null;
             }
+
+            // CTCP responses are machine traffic. Actions remain eligible for
+            // notifications because they are user-visible messages.
+            const isCtcp = text.length > 1 &&
+                text.charAt(0) === '\x01' &&
+                text.charAt(text.length - 1) === '\x01';
+            const ctcpType = isCtcp ?
+                text.slice(1, -1).split(' ')[0].toUpperCase() :
+                '';
+            if (ctcpType && ctcpType !== 'ACTION') {
+                return null;
+            }
+
             return {
                 title: message.nick || 'Kiwi IRC',
                 body: text,
@@ -205,6 +218,10 @@
             String(networkId) + ':' + String(msgid);
     }
 
+    function shouldSuppressPush(clients) {
+        return (clients || []).some((client) => client && client.focused);
+    }
+
     return {
         parseIrcMessage: parseIrcMessage,
         buildNotification: buildNotification,
@@ -212,5 +229,6 @@
         networkIdFromScope: networkIdFromScope,
         appRootFromScope: appRootFromScope,
         notificationTag: notificationTag,
+        shouldSuppressPush: shouldSuppressPush,
     };
 }));

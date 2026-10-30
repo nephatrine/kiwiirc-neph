@@ -170,6 +170,13 @@ and this project adheres to
 
 ### Fixed
 
+- **Web Push**: Push notifications are suppressed while a Kiwi window is
+  focused, matching the in-page notification behavior.
+
+- **Web Push**: CTCP responses no longer produce Web Push notifications, and the
+  service worker is refreshed explicitly so the filter reaches existing
+  installations. Actions remain eligible for notifications.
+
 - **Notices**: Multiline notices now show the notice prefix on every logical
   line instead of only the first.
 
