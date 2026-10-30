@@ -22,6 +22,20 @@ describe('Media Detection', () => {
         expect(Misc.getMediaInfo(formeScience).type).toBe('image');
     });
 
+    it('should detect X media previews', () => {
+        const preview = 'https://jf.x.com/images/media-preview/2115941753798692948';
+        expect(Misc.getMediaInfo(preview).type).toBe('image');
+        expect(Misc.getMediaInfo(preview + '?format=jpg').type).toBe('image');
+        expect(Misc.getMediaInfo('https://JF.X.COM/images/media-preview/2115941753798692948').type).toBe('image');
+        expect(Misc.getMediaInfo('https://x.com/images/media-preview/2115941753798692948').type).toBe('image');
+
+        // Only the exact media-preview path with a numeric ID is detected
+        expect(Misc.getMediaInfo(preview + '/').type).toBe('');
+        expect(Misc.getMediaInfo('https://jf.x.com/images/media-preview/notanumber').type).toBe('');
+        expect(Misc.getMediaInfo('https://notx.com/images/media-preview/2115941753798692948').type).toBe('');
+        expect(Misc.getMediaInfo('https://x.com.evil.com/images/media-preview/2115941753798692948').type).toBe('');
+    });
+
     it('should detect audio', () => {
         expect(Misc.getMediaInfo('https://example.com/music.mp3').type).toBe('audio');
         expect(Misc.getMediaInfo('https://example.com/podcast.ogg').type).toBe('audio');

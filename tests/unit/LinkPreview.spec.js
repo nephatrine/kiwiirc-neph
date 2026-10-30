@@ -52,4 +52,18 @@ describe('link preview rendering', () => {
         expect(autoEmbed('https://example.com/image.jpg'))
             .toBe('https://example.com/image.jpg');
     });
+
+    it('adds preview handles to extensionless X media previews', () => {
+        expect(toHtml(urlBlock('https://jf.x.com/images/media-preview/2115941753798692948'), false))
+            .toContain('data-url');
+    });
+
+    it('auto-embeds extensionless X media previews', () => {
+        expect(autoEmbed('https://jf.x.com/images/media-preview/2115941753798692948'))
+            .toBe('https://jf.x.com/images/media-preview/2115941753798692948');
+    });
+
+    it('does not auto-embed lookalike hosts', () => {
+        expect(autoEmbed('https://notx.com/images/media-preview/2115941753798692948')).toBeNull();
+    });
 });

@@ -115,6 +115,14 @@ export function getMediaInfo(url) {
     }
 
     const cleanUrl = url.split('?')[0].split('#')[0].toLowerCase();
+
+    // X/Twitter media previews are extensionless but return image/* for valid
+    // media IDs. Invalid IDs return 404, which UrlEmbed discards on @error.
+    if (/^https?:\/\/(?:[^/]+\.)?x\.com\/images\/media-preview\/\d+$/.test(cleanUrl)) {
+        info.type = 'image';
+        return info;
+    }
+
     const isImage = cleanUrl.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i) ||
                    url.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp)([?#]|$)/i);
 

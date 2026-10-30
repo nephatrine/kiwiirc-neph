@@ -12,6 +12,7 @@ and this project adheres to
 
 - **Themes**: Added NephWave, a standalone theme with the optional NephWave
   Desktop shell plugin.
+
 - **Twitch**: Added Twitch IRC support, requesting `twitch.tv/commands`,
   `twitch.tv/tags`, and `twitch.tv/membership` when advertised. Twitch tags
   drive message IDs, display names, colors, timestamps, replies, reroute
@@ -23,26 +24,38 @@ and this project adheres to
   client PING, `LIST`, `WHO`, and `WHOIS`, show the Twitch icon and channel
   topic, display owner/mod/VIP/subscriber prefixes, and send `/me` and replies
   in Twitch's format.
+
 - **Bouncer**: Added IRCv3 `bouncer-networks` support (`draft/bouncer-networks`,
   else `soju.im/bouncer-networks`) for modern bouncers such as Soju. The control
   connection appears as an always-visible "BNC" network, managed networks use
   explicit Save and Connect/Reconnect actions, and the startup screen offers
   BNC, Account, and Register tabs based on the capability probe. Persistence,
   webpush, and FILEHOST uploads use the bouncer account when advertised.
+
 - **Bouncer**: Added `bouncer-networks-notify` support. The control connection
   negotiates one matching `draft/` or `soju.im/` notify capability, consumes the
   initial network list and incremental add/change/remove notifications, and
   skips `LISTNETWORKS` when notifications are available.
+
 - **Metadata**: Servers advertising `max-keys=0` no longer receive Kiwi's own
   metadata requests, while Soju's pinned, muted, and blocked keys remain mapped
   to their settings.
+
 - **Plugins**: Added an app-level `addUi('app', ...)` mount point, an
   `input.activity` event, and a generic media playback registry.
+
 - **Accounts & Login**: The Welcome screen's Anonymous, Account, and Register
   tabs now have independent Advanced fields, with server-advertised length
   limits, SASL/server-password validation, a password-strength meter, and nick
   suggestions. The user box registration form uses the same password rules and
   autocomplete hints.
+
+- **Link Previews**: Extensionless X/Twitter media preview URLs
+  (`*.x.com/images/media-preview/<id>`) are now recognised as images, adding the
+  preview handle and enabling auto-embed where the whitelist allows it.
+
+- **Icons**: Networks named `Libera.Chat` now use the bundled Libera logo when
+  the server does not advertise `DRAFT/ICON`.
 
 ### Changed
 
@@ -125,38 +138,72 @@ and this project adheres to
 
 - **SASL**: A `900` account reply arriving after `001` is now captured, so
   direct Soju connections populate the SASL account and offer Web Push.
+
 - **Current Account**: Services UI and command suggestions now use a tracked
   current account. It defaults to the stripped SASL account and updates from
   explicit self WHO/WHOX/WHOIS/ACCOUNT/account-tag/extended-join reports.
+
 - **Ignore Bots**: The Ignore Bot Messages setting is now shown on networks that
   advertise `BOT` and hidden on networks that do not.
+
 - **Connection**: Auto-reconnect no longer leaves a direct WebSocket network
   stuck in Connecting after the final attempt fails, and a connecting attempt
   can be cancelled from the network list, buffer, and network settings.
+
 - **History**: Pending chathistory requests are cleared on disconnect and
   reconnect, so "Loading previous messages..." no longer sticks and later
   requests are not queued behind a dead batch.
+
 - **Link Previews**: Links with no native media type no longer show preview
   handles, inline cards, or Message Info preview buttons. Native media embeds
   are unchanged.
+
 - **Reconnect Notice**: A first-time channel join after an early reconnect uses
   the normal join message instead of "has reconnected."
+
 - **Sidebar**: Link preview handles in sidebar topic, description, and realname
   text now open the URL in the pinned media viewer instead of doing nothing.
+
 - **Login**: Reusing a saved network now adopts the current startup transport
   settings, so switching a deployment from a gateway to a direct websocket no
   longer keeps trying the old gateway and requesting `/info`.
+
 - Servers that echo messages without a `msgid` no longer show duplicate sends or
   report them as unconfirmed. History echoes never confirm a send, and rewritten
   text is matched when exactly one message is pending.
+
 - **Network Settings**: Disconnecting a live network now updates the network and
   channel state immediately, so channels show as disconnected and the Connect
   button returns. Stale socket closes during a reconnect attempt are ignored.
+
 - The Information tab shows the server software from the `004` reply when the
   `002` reply names no version.
+
 - Uncaught errors and promise rejections are logged and shown in the active
   buffer, and the startup error screen shows the error message instead of being
   blank.
+
+- **Web Push**: Per-network service workers now wait for activation before
+  subscribing, retry once a service worker becomes active, and remove the legacy
+  shared registration. Notifications are coalesced by message ID, clicks route
+  to the matching buffer, and registration/failure state is shared across tabs.
+  A per-network Reset Browser Push action clears broken subscriptions.
+
+- **Network Preferences**: Option labels in Network Settings now stack instead
+  of sharing the app-settings label layout, so each preference reads on its own
+  line.
+
+- **WHO**: WHO requests now use a per-network throttled queue that sends one at
+  a time, deduplicates targets, and backs off after a `263` rate limit. The
+  periodic loop no longer stalls without a WHO reply, and MOTD handling no
+  longer repeats history/WHO bursts on `/motd`.
+
+- **NephWave**: Unread, mention, and error notification counts now use distinct
+  colors, including the drawer badge, instead of sharing one style.
+
+- **Startup**: A configured `greetingText` now stays in place when the probe
+  reports a `NETWORK` name, while probe `DRAFT/ICON` URLs still render and
+  replace `{size}` with `64`.
 
 ## [2.0.0] - 2026-10-17
 
