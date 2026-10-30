@@ -1,6 +1,7 @@
 import Irc from 'irc-framework';
 import WsTransport from 'irc-framework/src/transports/websocket';
 import * as ServerConnection from './ServerConnection';
+import { IRC_WEBSOCKET_PROTOCOL } from './WebSocketProtocol';
 
 // Pre-login information gathering for single-network deployments. Opens a
 // throwaway connection, reads CAP LS (and ISUPPORT when the server offers
@@ -29,6 +30,7 @@ export function createProbeTransport({ direct, kiwiServer, sessionId, host, port
             port: port,
             tls: tls,
             path: path,
+            websocket_protocol: IRC_WEBSOCKET_PROTOCOL,
         });
     }
 

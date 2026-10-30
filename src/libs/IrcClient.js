@@ -28,6 +28,7 @@ import chathistoryMiddleware from './ChathistoryMiddleware';
 import * as BatchHandlers from './BatchHandlers';
 import * as ServerConnection from './ServerConnection';
 import * as RelayMeta from './RelayMeta';
+import { IRC_WEBSOCKET_PROTOCOL } from './WebSocketProtocol';
 import { addAdvertisedCaps, dropCap, foldPreferredCap, preferredCap } from './CapNegotiation';
 
 const DESIRED_CAPS = [
@@ -101,6 +102,7 @@ export function create(state, network) {
         enable_setname: true,
         enable_echomessage: true,
         message_max_length: 350,
+        websocket_protocol: IRC_WEBSOCKET_PROTOCOL,
     });
 
     ircClient.whoQueue = new WhoQueue(ircClient);

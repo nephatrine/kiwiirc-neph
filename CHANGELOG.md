@@ -59,6 +59,10 @@ and this project adheres to
 
 ### Changed
 
+- **WebSocket**: Direct connections and the startup capability probe now
+  explicitly request the IRCv3 `text.ircv3.net` subprotocol. Legacy fallback to
+  no subprotocol is unchanged; binary frames remain unsupported.
+
 - **Highlights**: Team highlights now use `@everyone` instead of `@everybody`,
   matching other platforms and the original setting name. `@everybody` is no
   longer recognized.

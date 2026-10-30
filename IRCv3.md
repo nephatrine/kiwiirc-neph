@@ -392,6 +392,19 @@ The request is an HTTP `POST` of the file body with `Content-Type` and
 browser. Success is `201 Created` plus a `Location` header, resolved against the
 upload URL. Resumable uploads are not implemented.
 
+## WebSocket Transport
+
+Direct IRC connections use the IRCv3 WebSocket transport and request the
+`text.ircv3.net` subprotocol. Messages are sent as text frames containing one
+IRC line without a trailing `\r\n`. Incoming text frames may contain more than
+one line to remain tolerant of legacy servers. If the subprotocol handshake
+fails, the transport retries without a subprotocol so legacy servers still work.
+The `binary.ircv3.net` subprotocol is not supported.
+
+The startup capability probe uses the same text subprotocol for direct
+connections. Gateway connections use the SockJS channel protocol instead and are
+not IRCv3 WebSocket connections.
+
 ## Operational Constraints
 
 ### History Limits
