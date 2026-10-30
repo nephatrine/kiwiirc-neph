@@ -81,7 +81,7 @@
         </a>
 
         <div class="kiwi-messagelist-body-container">
-            <div v-if="props.message.reply" class="kiwi-messagelist-reply-preview" @click="props.ml.maybeScrollToId(props.message.reply)">
+            <div v-if="props.ml.shouldShowReplyPreview(props.message, props.idx)" class="kiwi-messagelist-reply-preview" @click="props.ml.maybeScrollToId(props.message.reply)">
                 <i class="bx bx-reply" aria-hidden="true" />
                 <span v-if="props.m().getReplyMessage(props.message.reply)" class="kiwi-messagelist-reply-preview-nick">
                     <emoji-text

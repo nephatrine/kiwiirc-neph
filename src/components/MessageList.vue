@@ -363,6 +363,9 @@ export default {
             let showInfoForTypes = ['privmsg', 'notice', 'action'];
             return showInfoForTypes.indexOf(message.type) > -1;
         },
+        shouldShowReplyPreview(message, idx) {
+            return bufferTools.shouldShowReplyPreview(this.filteredMessages, message, idx);
+        },
         bufferSetting(key) {
             return this.buffer.setting(key);
         },

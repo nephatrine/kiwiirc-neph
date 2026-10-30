@@ -59,58 +59,75 @@ and this project adheres to
 
 ### Changed
 
+- **Replies**: Consecutive messages from the same user that reply to the same
+  message now show the reply preview only on the first message.
+
 - **Icons**: Replaced Font Awesome 4.7 with a self-hosted Boxicons 2.1.4
   webfont. Icons now use `bx` and `bxs` classes, and the build emits only the
   woff2 font.
+
 - **Per-Network Settings**: Desktop Notifications, Persistence Preference, Share
   Typing, Lenient Rerouting, Ignore Bots, Show Redactions, and file-upload
   service/retention now belong to each network.
+
 - **Web Push**: Push notifications are now a per-network opt-in instead of a
   global user setting. Turning desktop notifications off suspends only that
   network's registration without clearing its opt-in.
+
 - **FILEHOST**: Account `/network` and `@client` suffixes are stripped from the
   SASL account before HTTP Basic authentication.
+
 - **Themes**: NephDeck is now one theme with Amber, Green, and Cyan presets.
   Preset, CRT, and sound preferences persist under `plugin-nephdeck.*` instead
   of switching between three separate themes.
+
 - **Plugins**: Renamed the bundled channels sidebar file to
   `static/plugins/channels-sidebar.html`; update custom `plugins` URLs that used
   the old `plugin-channels-sidebar.html` name.
+
 - **Login**: Field labels now describe the underlying value ("IRC Nick", "IRC
   User", "Real Name", "SASL Account", "SASL Password", "Channel Key"), and a
   saved anonymous network starts on the Anonymous tab while first-time and
   account networks start on Account.
+
 - **Custom Server**: The preset picker is labelled Network, and normal IRC
   connections now use the Welcome-style Anonymous and Account tabs with the same
   Advanced fields and validation. Preset endpoints are probed once per endpoint
   to choose which tabs to show; custom endpoints skip the probe and keep the
   manual Bouncer tab. Bouncer presets use the Bouncer page's BNC and Account
   tabs, validation, and probe-driven availability, but never offer Register.
+
 - **Connection Picker**: When no `kiwiServer` gateway is configured, `IRC` and
   `IRCS` are no longer offered. Custom endpoints, presets, and pasted gateway
   URIs use direct `WS`/`WSS` instead. Bouncer-managed network settings keep
   their IRC/IRCS TLS labels.
+
 - **Network Settings**: Server Details now groups credentials into IRC Auth and
   SASL Auth, allows live edits where the server supports them, locks fields that
   require a reconnect, and limits restricted mode to the server endpoint.
   Bouncer-managed networks use IRC/IRCS, default a missing port to 6697 or 6667,
   and keep the IRC user and real name separate from SASL credentials.
+
 - **Network Settings**: The Advanced section now orders Auto Commands (On
   Connect), Raw Buffer (Requires Reload), Direct Websocket, Protocol Encoding,
   and SASL Mechanism. Raw scrollback and the Direct Websocket URL appear only
   when their option is enabled.
+
 - Reduced the client bundle by roughly 86 KB by replacing several third-party
   libraries (`lodash`, `htmlparser2`, `xhr`, `ip-regex`, `murmurhash3js`, and
   `compare-versions`) with native APIs and small in-house helpers, and upgrading
   `i18next-http-backend` to v4.
+
 - **Metadata**: Subscriptions now use one per-connection key list sent at
   connect, instead of a separate `METADATA <channel|nick> SUB` for every joined
   channel and user. Joined channels are no longer polled every 30 minutes; only
   a stale query buffer is refreshed.
+
 - **Themes**: Action buttons use consistent online/primary/warning colors and
   hover states, disabled form controls are visibly dimmed, and NephDeck no
   longer applies a background to the input wrapper or shows its power button on
   startup screens.
+
 - **Radio**: Moved the station player into the bundled
   `static/plugins/radio.html` plugin, loaded by default. Its settings now use
   `plugin-radio.*` instead of `radio.*`; rename existing config keys manually.
@@ -118,12 +135,14 @@ and this project adheres to
   file quietly disables the player. Plugins can expose and consume named
   services with `kiwi.registerService()` and `kiwi.getService()`; NephWave uses
   the new `radio` service.
+
 - **Emoji**: Emoji categories, shortnames, aliases, and variation selectors now
   follow JoyPixels emoji-toolkit metadata. The picker can limit emoji to a
   maximum Unicode version with `emojiPickerMaxVersion`; the setting appears only
   while the picker is enabled. Known emoji in messages, display names,
   descriptions, and other metadata are wrapped in `kiwi-emoji` spans with an
   emoji font stack and a shortcode tooltip.
+
 - **Build**: Production builds now minify theme CSS, plugin HTML/CSS/JS, and
   locale JSON in `dist/static/`. Config files, station lists, and other static
   data remain readable.

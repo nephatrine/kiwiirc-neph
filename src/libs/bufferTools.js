@@ -155,6 +155,27 @@ export function orderedMessages(buffer, opts = {}) {
     return list.reverse();
 }
 
+export function isConsecutiveMessage(prev, message) {
+    return !!prev &&
+        prev.condenseKey() === message.condenseKey() &&
+        message.time - prev.time < 60000 &&
+        prev.type !== 'traffic' &&
+        message.type !== 'traffic' &&
+        message.type === prev.type &&
+        message.day_num === prev.day_num;
+}
+
+export function shouldShowReplyPreview(messages, message, idx) {
+    if (!message.reply) {
+        return false;
+    }
+
+    let prev = messages[idx - 1];
+    return !prev ||
+        prev.reply !== message.reply ||
+        !isConsecutiveMessage(prev, message);
+}
+
 export function getNextBuffer() {
     return getBufferFromDirection(1);
 }
