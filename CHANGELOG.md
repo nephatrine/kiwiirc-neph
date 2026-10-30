@@ -67,6 +67,14 @@ and this project adheres to
 
 ### Changed
 
+- **Bridged Messages**: `+avatar` and `+display-name` are now only accepted on
+  bot messages, have IRC formatting stripped, and bridged display names are
+  capped at 64 characters.
+
+- **Relay Metadata**: RELAYMETA now requests and applies the `bot` and `color`
+  keys alongside avatar and display-name, using the same sanitisation as draft
+  metadata.
+
 - **Localization**: Removed unused strings, aligned the development locale with
   en-US, and corrected the `bot_user` fallback text to "bot user".
 

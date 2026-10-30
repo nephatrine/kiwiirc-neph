@@ -1,12 +1,13 @@
 import Vue from 'vue';
 import { sanitizeUrl } from '@/helpers/Misc';
 import * as MetadataCache from '@/libs/MetadataCache';
+import { sanitizeMetadata } from '@/libs/MetadataMiddleware';
 
 export const RESPONSE_TIMEOUT = 30000;
 export const MAX_ATTEMPTS = 2;
 export const PUMP_MS = 5000;
 const MAX_QUEUE = 200;
-const META_KEYS = ['avatar', 'display-name'];
+const META_KEYS = ['avatar', 'display-name', 'bot', 'color'];
 
 const nets = new Map();
 
@@ -198,6 +199,18 @@ function applyData(rec, target, rest) {
             let avatar = sanitizeUrl(pair.value);
             if (avatar) {
                 Vue.set(user.metadata, 'avatar', avatar);
+                touched = true;
+            }
+        } else if (pair.name === 'bot') {
+            let bot = sanitizeMetadata('bot', pair.value);
+            if (bot) {
+                Vue.set(user.metadata, 'bot', bot);
+                touched = true;
+            }
+        } else if (pair.name === 'color') {
+            let color = sanitizeMetadata('color', pair.value);
+            if (color) {
+                Vue.set(user.metadata, 'color', color);
                 touched = true;
             }
         }

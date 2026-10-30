@@ -54,7 +54,7 @@ afterEach(() => {
 });
 
 describe('relaymeta', () => {
-    test('probes with CLIENTINFO then requests avatar and display-name', () => {
+    test('probes with CLIENTINFO then requests all relay metadata keys', () => {
         let net = makeNet({ [BOT]: botUser(), [SPOOF]: spoofUser() });
         RelayMeta.noteRelay(net, net.id, BOT, SPOOF);
         jest.advanceTimersByTime(PUMP_MS);
@@ -69,11 +69,13 @@ describe('relaymeta', () => {
             'GET',
             SPOOF,
             'avatar',
-            'display-name'
+            'display-name',
+            'bot',
+            'color'
         );
     });
 
-    test('DATA applies display-name and avatar and is never re-requested', () => {
+    test('DATA applies display-name, avatar, bot, and color and is never re-requested', () => {
         let spoof = spoofUser();
         let net = makeNet({ [BOT]: botUser(), [SPOOF]: spoof });
         RelayMeta.noteRelay(net, net.id, BOT, SPOOF);
@@ -84,16 +86,57 @@ describe('relaymeta', () => {
         let consumed = RelayMeta.handleCtcp(net, net.id, {
             nick: BOT,
             type: 'RELAYMETA',
-            message: 'RELAYMETA DATA ' + SPOOF + ' display-name=Some\\sOne avatar=https://cdn.example/a.png',
+            message: 'RELAYMETA DATA ' + SPOOF +
+                ' display-name=Some\\sOne avatar=https://cdn.example/a.png' +
+                ' bot=Sopel\\s8.0 color=#FF00AA',
         });
         expect(consumed).toBe(true);
         expect(spoof.metadata['display-name']).toBe('Some One');
         expect(spoof.metadata.avatar).toBe('https://cdn.example/a.png');
+        expect(spoof.metadata.bot).toBe('Sopel 8.0');
+        expect(spoof.metadata.color).toBe('#ff00aa');
         expect(rememberUser).toHaveBeenCalledWith(net.raw, spoof);
 
         RelayMeta.noteRelay(net, net.id, BOT, SPOOF);
         jest.advanceTimersByTime(PUMP_MS + RESPONSE_TIMEOUT * MAX_ATTEMPTS + PUMP_MS);
         expect(net.ctcpRequest).toHaveBeenCalledTimes(2);
+    });
+
+    test('ignores invalid relay color values', () => {
+        let spoof = spoofUser();
+        let net = makeNet({ [BOT]: botUser(), [SPOOF]: spoof });
+        RelayMeta.noteRelay(net, net.id, BOT, SPOOF);
+        jest.advanceTimersByTime(PUMP_MS);
+        advertise(net);
+        jest.advanceTimersByTime(PUMP_MS);
+
+        RelayMeta.handleCtcp(net, net.id, {
+            nick: BOT,
+            type: 'RELAYMETA',
+            message: 'RELAYMETA DATA ' + SPOOF + ' bot=Sopel color=red',
+        });
+
+        expect(spoof.metadata.bot).toBe('Sopel');
+        expect(spoof.metadata.color).toBeUndefined();
+    });
+
+    test('strips control characters from relay bot and color values', () => {
+        let spoof = spoofUser();
+        let net = makeNet({ [BOT]: botUser(), [SPOOF]: spoof });
+        RelayMeta.noteRelay(net, net.id, BOT, SPOOF);
+        jest.advanceTimersByTime(PUMP_MS);
+        advertise(net);
+        jest.advanceTimersByTime(PUMP_MS);
+
+        RelayMeta.handleCtcp(net, net.id, {
+            nick: BOT,
+            type: 'RELAYMETA',
+            message: 'RELAYMETA DATA ' + SPOOF +
+                ' bot=Sopel\x018.0 color=\x01#00FF00',
+        });
+
+        expect(spoof.metadata.bot).toBe('Sopel8.0');
+        expect(spoof.metadata.color).toBe('#00ff00');
     });
 
     test('ERR marks the target done without further requests', () => {

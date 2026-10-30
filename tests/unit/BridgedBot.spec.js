@@ -28,6 +28,60 @@ describe('bridged bot messages', () => {
         expect(message.message).toBe('<Alice> hello');
     });
 
+    test('uses +display-name for a bot message', () => {
+        let message = taggedMessage('hello', {
+            'bot': 'x',
+            '+display-name': 'Alice',
+        });
+        expect(message.bridged_nick).toBe('Alice');
+        expect(message.message).toBe('hello');
+    });
+
+    test('prefers +display-name over the angle prefix while removing it', () => {
+        let message = taggedMessage('<Alice> hello', {
+            'bot': 'x',
+            '+display-name': 'Alice B',
+        });
+        expect(message.bridged_nick).toBe('Alice B');
+        expect(message.message).toBe('hello');
+    });
+
+    test('strips formatting from +display-name', () => {
+        let c = colour();
+        let message = taggedMessage('hello', {
+            'bot': 'x',
+            '+display-name': c + '04Alice' + c,
+        });
+        expect(message.bridged_nick).toBe('Alice');
+    });
+
+    test('ignores an empty +display-name and keeps the angle prefix name', () => {
+        let message = taggedMessage('<Alice> hello', {
+            'bot': 'x',
+            '+display-name': '',
+        });
+        expect(message.bridged_nick).toBe('Alice');
+        expect(message.message).toBe('hello');
+    });
+
+    test('ignores formatting-only +display-name', () => {
+        let c = colour();
+        let message = taggedMessage('<Alice> hello', {
+            'bot': 'x',
+            '+display-name': c + '04' + c,
+        });
+        expect(message.bridged_nick).toBe('Alice');
+        expect(message.message).toBe('hello');
+    });
+
+    test('ignores +display-name on non-bot messages', () => {
+        let message = taggedMessage('<Alice> hello', {
+            '+display-name': 'Mallory',
+        });
+        expect(message.bridged_nick).toBe('');
+        expect(message.message).toBe('<Alice> hello');
+    });
+
     test('leaves bot messages without a valid prefix alone', () => {
         let message = botMessage('hello world');
         expect(message.bridged_nick).toBe('');
@@ -59,6 +113,22 @@ describe('bridged bot messages', () => {
         let message = botMessage(text);
         expect(message.bridged_nick).toBe('');
         expect(message.message).toBe(text);
+    });
+
+    test('truncates long angle-prefix names but still removes the prefix', () => {
+        let longName = 'A'.repeat(70);
+        let message = botMessage('<' + longName + '> hello');
+        expect(message.bridged_nick).toBe('A'.repeat(64));
+        expect(message.message).toBe('hello');
+    });
+
+    test('truncates long +display-name values', () => {
+        let longName = 'A'.repeat(70);
+        let message = taggedMessage('hello', {
+            'bot': 'x',
+            '+display-name': longName,
+        });
+        expect(message.bridged_nick).toBe('A'.repeat(64));
     });
 
     test('condense key matches for the same bridged user', () => {
@@ -93,6 +163,15 @@ describe('bridged bot messages', () => {
         expect(message.bridged_avatar).toBe('https://example.com/avatars/alice.png');
     });
 
+    test('strips formatting from +avatar tags', () => {
+        let c = colour();
+        let message = taggedMessage('<Alice> hello', {
+            'bot': 'x',
+            '+avatar': c + '04https://example.com/avatars/alice.png' + c,
+        });
+        expect(message.bridged_avatar).toBe('https://example.com/avatars/alice.png');
+    });
+
     test('rejects unsafe +avatar tag values', () => {
         let unsafeUrl = ['java', 'script:alert(1)'].join('');
         let message = taggedMessage('<Alice> hello', {
@@ -102,9 +181,35 @@ describe('bridged bot messages', () => {
         expect(message.bridged_avatar).toBe('');
     });
 
+    test('ignores +avatar on non-bot messages', () => {
+        let message = taggedMessage('<Alice> hello', {
+            '+avatar': 'https://example.com/avatars/alice.png',
+        });
+        expect(message.bridged_avatar).toBe('');
+    });
+
     test('ignores missing or empty +avatar tags', () => {
         expect(botMessage('<Alice> hello').bridged_avatar).toBe('');
         let message = taggedMessage('<Alice> hello', { 'bot': 'x', '+avatar': '' });
         expect(message.bridged_avatar).toBe('');
+    });
+
+    test('ignores formatting-only +avatar tags', () => {
+        let c = colour();
+        let message = taggedMessage('<Alice> hello', {
+            'bot': 'x',
+            '+avatar': c + '04' + c,
+        });
+        expect(message.bridged_avatar).toBe('');
+    });
+
+    test('uses +display-name and +avatar together', () => {
+        let message = taggedMessage('hello', {
+            'bot': 'x',
+            '+display-name': 'Alice',
+            '+avatar': 'https://example.com/avatars/alice.png',
+        });
+        expect(message.bridged_nick).toBe('Alice');
+        expect(message.bridged_avatar).toBe('https://example.com/avatars/alice.png');
     });
 });

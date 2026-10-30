@@ -8,12 +8,25 @@ import GlobalApi from '@/libs/GlobalApi';
 import getState from './state';
 
 let nextId = 0;
+const MAX_BRIDGED_NICK_LENGTH = 64;
 
 function def(target, key, value) {
     Object.defineProperty(target, key, {
         writable: true,
         value,
     });
+}
+
+function cleanBridgedName(value) {
+    if (typeof value !== 'string') {
+        return '';
+    }
+
+    const cleaned = stripStyles(value)
+        .replace(/[\x00-\x1F\x7F-\x9F]/g, '')
+        .trim();
+
+    return Array.from(cleaned).slice(0, MAX_BRIDGED_NICK_LENGTH).join('');
 }
 
 export default class Message {
@@ -66,20 +79,33 @@ export default class Message {
             typeof message.tags['draft/oper'] !== 'undefined'
         );
         this.bridged_nick = '';
-        if (this.is_bot && typeof this.message === 'string') {
-            let bridged = /^<([^<>\s][^<>]{0,63})>\s+/.exec(this.message);
-            if (bridged) {
-                let cleanNick = stripStyles(bridged[1]).trim();
-                if (cleanNick) {
-                    this.bridged_nick = cleanNick;
-                    this.message = this.message.slice(bridged[0].length);
+        if (this.is_bot) {
+            // Bridged messages may carry the sender's name inside the body.
+            // Strip that prefix even when +display-name overrides it below.
+            if (typeof this.message === 'string') {
+                let bridged = /^<([^<>\s][^<>]*)>\s+/.exec(this.message);
+                if (bridged) {
+                    let cleanNick = cleanBridgedName(bridged[1]);
+                    if (cleanNick) {
+                        this.bridged_nick = cleanNick;
+                        this.message = this.message.slice(bridged[0].length);
+                    }
                 }
             }
+
+            // Platform bridges use client-only tags for the real sender. The
+            // tag takes precedence over the <Nick> prefix.
+            let displayNameTag = message.tags && message.tags['+display-name'];
+            let cleanDisplayName = cleanBridgedName(displayNameTag);
+            if (cleanDisplayName) {
+                this.bridged_nick = cleanDisplayName;
+            }
         }
+
         this.bridged_avatar = '';
         let avatarTag = message.tags && message.tags['+avatar'];
-        if (typeof avatarTag === 'string' && avatarTag) {
-            let cleanAvatar = sanitizeUrl(avatarTag);
+        if (this.is_bot && typeof avatarTag === 'string' && avatarTag) {
+            let cleanAvatar = sanitizeUrl(stripStyles(avatarTag));
             if (cleanAvatar) {
                 this.bridged_avatar = cleanAvatar;
             }

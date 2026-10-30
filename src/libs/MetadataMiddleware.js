@@ -652,7 +652,7 @@ function updateMetadataState(network, target, key, value, event, isAuth) {
     }
 }
 
-function sanitizeMetadata(key, value) {
+export function sanitizeMetadata(key, value) {
     if (value === '') {
         return '';
     }

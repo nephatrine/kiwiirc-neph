@@ -201,7 +201,9 @@ describe('IrcClient CTCP messages', () => {
                 'GET',
                 'relayuser',
                 'avatar',
-                'display-name'
+                'display-name',
+                'bot',
+                'color'
             );
 
             dispatchCtcp('ctcp response', {
