@@ -59,6 +59,10 @@ export function theMiddleware(network, command, message, client, next) {
         }
     }
 
+    if (!targetMessage.is_redacted) {
+        targetMessage.closeEmbed?.();
+    }
+
     targetMessage.is_redacted = true;
     targetMessage.redacted_by = message.nick;
     targetMessage.redaction_reason = reason;

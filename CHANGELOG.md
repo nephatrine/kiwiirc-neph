@@ -155,6 +155,9 @@ and this project adheres to
 
 ### Fixed
 
+- **Redactions**: Redacting a message now closes any open inline preview, while
+  a preview manually reopened on an already-redacted message stays open.
+
 - **Spoilers**: Links inside spoiler blocks now inherit the hidden spoiler
   colour and no longer show preview handles, automatic inline previews, or
   Message Info preview buttons.

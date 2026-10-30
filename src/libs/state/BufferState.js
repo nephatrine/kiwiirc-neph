@@ -860,6 +860,10 @@ export default class BufferState {
             return;
         }
 
+        if (!message.is_redacted) {
+            message.closeEmbed?.();
+        }
+
         let tags = {};
         let hasEcho = network.hasCap('echo-message');
         let hasLabel = network.hasCap('labeled-response');

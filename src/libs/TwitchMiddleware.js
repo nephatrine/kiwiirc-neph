@@ -173,6 +173,7 @@ function redactTwitchMessage(network, buffer, message, reason) {
         return;
     }
 
+    message.closeEmbed?.();
     message.is_redacted = true;
     message.redacted_by = 'Twitch';
     message.redaction_reason = reason;

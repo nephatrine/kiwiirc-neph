@@ -181,6 +181,10 @@ export default class Message {
     }
 
     maybeAutoEmbed(buffer) {
+        if (this.is_redacted) {
+            return;
+        }
+
         if (!this.mentioned_urls || this.mentioned_urls.length === 0) {
             return;
         }
@@ -211,6 +215,10 @@ export default class Message {
 
         this.embed.payload = url;
         this.embed.type = 'url';
+    }
+
+    closeEmbed() {
+        this.embed.payload = '';
     }
 
     serialise() {
