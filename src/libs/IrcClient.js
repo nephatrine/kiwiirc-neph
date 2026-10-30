@@ -1441,12 +1441,26 @@ function clientMiddleware(state, network) {
                 messageTags['+reply'] = messageTags['reply-parent-msg-id'];
             }
 
-            let messageBody = TextFormatting.formatText(textFormatType, {
+            const formatParams = {
                 nick: event.nick,
                 username: event.ident,
                 host: event.hostname,
-                text: twitchText,
-            });
+            };
+            let messageBody;
+            if (textFormatType === 'notice') {
+                messageBody = String(twitchText || '')
+                    .split('\n')
+                    .map((line) => TextFormatting.formatText('notice', {
+                        ...formatParams,
+                        text: line,
+                    }))
+                    .join('\n');
+            } else {
+                messageBody = TextFormatting.formatText(textFormatType, {
+                    ...formatParams,
+                    text: twitchText,
+                });
+            }
 
             let message = {
                 time: twitchTime || eventTime,

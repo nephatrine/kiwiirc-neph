@@ -50,6 +50,35 @@ describe('BatchHandlers.js', () => {
             // Part 2 should be after a newline
             expect(syntheticEvent.params[1]).toBe('Part 1 continued\nPart 2');
         });
+
+        it('should join logical NOTICE lines and concatenate continued lines', () => {
+            const batch = {
+                tags: {},
+                commands: [
+                    {
+                        command: 'NOTICE',
+                        params: ['#channel', 'Part 1'],
+                        tags: {},
+                    },
+                    {
+                        command: 'NOTICE',
+                        params: ['#channel', ' continued'],
+                        tags: { 'draft/multiline-concat': '' },
+                    },
+                    {
+                        command: 'NOTICE',
+                        params: ['#channel', 'Part 2'],
+                        tags: {},
+                    },
+                ],
+            };
+
+            const results = BatchHandlers.handleMultilineBatch(network, client, batch);
+
+            expect(results.length).toBe(1);
+            expect(results[0].command).toBe('NOTICE');
+            expect(results[0].params[1]).toBe('Part 1 continued\nPart 2');
+        });
     });
 
     describe('sendMultiline', () => {

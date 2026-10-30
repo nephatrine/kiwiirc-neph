@@ -159,6 +159,9 @@ and this project adheres to
 
 ### Fixed
 
+- **Notices**: Multiline notices now show the notice prefix on every logical
+  line instead of only the first.
+
 - **Self Mentions**: Genuine self messages no longer trigger team or nickname
   highlight notifications, title flashes, or alert sounds. Bridged and relayed
   users remain distinct users even when their displayed names match.
