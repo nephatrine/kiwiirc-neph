@@ -62,6 +62,10 @@ and this project adheres to
 
 ### Changed
 
+- **Bot Badges**: Bot badges now use Boxicons. Message and nicklist badges use
+  the robot icon, while the user box uses a floppy-disk icon and shows the bot
+  metadata value or "Bot user" when no value is available.
+
 - **WebSocket**: Direct connections and the startup capability probe now
   explicitly request the IRCv3 `text.ircv3.net` subprotocol. Legacy fallback to
   no subprotocol is unchanged; binary frames remain unsupported.

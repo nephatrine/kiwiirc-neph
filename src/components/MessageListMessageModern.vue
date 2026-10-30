@@ -73,7 +73,7 @@
                 </span>
             </div>
             <div class="kiwi-messagelist-top">
-                <span v-if="props.message.is_bot" :title="props.ml.$t('bot')" class="kiwi-messagelist-nick-bot">🤖</span>
+                <span v-if="props.message.is_bot" :title="props.ml.$t('bot')" class="kiwi-messagelist-nick-bot"><i class="bx bx-bot" aria-hidden="true" /></span>
                 <span
                     v-if="props.message.is_oper && !props.message.is_bot"
                     :title="props.ml.$t('operator')"

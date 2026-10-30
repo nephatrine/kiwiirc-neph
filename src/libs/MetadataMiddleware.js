@@ -41,6 +41,7 @@ export default function metadataMiddleware(network) {
         'homepage',
         'status',
         'color',
+        'bot',
     ];
 
     const initialSync = () => {

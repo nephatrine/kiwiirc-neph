@@ -235,6 +235,10 @@ describe('metadata capabilities', () => {
         // The key list is subscribed with the wildcard target, not per target.
         let sub = commands.find((cmd) => cmd.params[1] === 'SUB');
         expect(sub.params[0]).toBe('*');
+        expect(sub.params.slice(2)).toContain('bot');
+
+        let get = commands.find((cmd) => cmd.params[1] === 'GET');
+        expect(get.params.slice(2)).toContain('bot');
     });
 
     it('retries with SYNC after a 775 rate limit delay', () => {

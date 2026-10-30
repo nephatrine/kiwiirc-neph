@@ -48,13 +48,13 @@ Kiwi IRC requests the following capabilities during connection and again on
   server's message. Successful registrations authenticate like SASL logins and
   persist under Remember Me.
 - **draft/metadata-2**: Syncs public user and channel metadata (`display-name`,
-  `pronouns`, `description`, `homepage`, `status`, `color`). Kiwi IRC respects
-  `max-subs`, `max-keys`, and `max-value-bytes`. The subscription is a single
-  per-connection key list (`METADATA * SUB`), sent once at connect; joining a
-  channel then delivers that channel's metadata and its members' metadata for
-  those keys. A stale query buffer is refreshed after 30 minutes. Social colours
-  are adjusted to at least 4.5:1 contrast against the theme background. An IRC
-  away message takes precedence over the social `status` key.
+  `pronouns`, `description`, `homepage`, `status`, `color`, `bot`). Kiwi IRC
+  respects `max-subs`, `max-keys`, and `max-value-bytes`. The subscription is a
+  single per-connection key list (`METADATA * SUB`), sent once at connect;
+  joining a channel then delivers that channel's metadata and its members'
+  metadata for those keys. A stale query buffer is refreshed after 30 minutes.
+  Social colours are adjusted to at least 4.5:1 contrast against the theme
+  background. An IRC away message takes precedence over the social `status` key.
 - **draft/metadata-3**: Preferred over `draft/metadata-2` when a server
   advertises both; only one metadata capability is ever requested. Channel joins
   deliver the metadata for the subscribed keys without an explicit `GET` (or a

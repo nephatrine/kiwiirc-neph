@@ -1359,6 +1359,10 @@ msgstr "Is an operator"
 msgid "operator"
 msgstr "Operator"
 
+#: Bot user label
+msgid "bot_user"
+msgstr "Bot user"
+
 #: Connected to {{server}} {{info}}
 msgid "user_server"
 msgstr "Connected to {{server}} {{info}}"

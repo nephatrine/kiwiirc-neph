@@ -29,7 +29,7 @@
             :style="{ color: userColour }"
             class="kiwi-nicklist-user-nick"
         >{{ user.displayName() }} </span>
-        <span v-if="user.is_bot" :title="$t('bot')" class="kiwi-nicklist-user-bot">🤖</span>
+        <span v-if="user.is_bot" :title="$t('bot')" class="kiwi-nicklist-user-bot"><i class="bx bx-bot" aria-hidden="true" /></span>
         <i
             v-else-if="user.statusMessage()"
             :title="user.statusMessage()"

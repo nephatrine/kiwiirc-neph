@@ -24,7 +24,12 @@
                 ><emoji-text :text="user.nick" /> (irc)</span>
                 <span v-if="realname" class="kiwi-userbox-realname" v-html="formattedRealname" />
                 <span v-if="user.username || user.host" class="kiwi-userbox-usermask">{{ user.username }}@{{ user.host }}</span>
-                <span v-if="user.is_bot" :title="$t('bot')" class="kiwi-userbox-bot">🤖</span>
+                <span v-if="user.is_bot" class="kiwi-userbox-bot">
+                    <i class="bx bx-save" aria-hidden="true" />
+                    <span class="kiwi-userbox-bot-label">
+                        <emoji-text :text="botLabel" />
+                    </span>
+                </span>
             </div>
         </div>
 
@@ -643,6 +648,11 @@ export default {
         realname() {
             return (this.user.realname || '').trim();
         },
+        botLabel() {
+            const value = this.user.metadata && this.user.metadata.bot;
+            const label = value ? String(value).trim() : '';
+            return label || this.$t('bot_user');
+        },
         formattedRealname() {
             let blocks = parseMessage(this.realname, { extras: false });
             let content = toHtml(blocks, false);
@@ -915,6 +925,7 @@ export default {
                     'description',
                     'homepage',
                     'status',
+                    'bot',
                 ]);
             }
         },
@@ -1167,10 +1178,20 @@ export default {
 }
 
 .kiwi-userbox-bot {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     margin-top: 4px;
-    font-size: 1.2em;
     cursor: default;
+}
+
+.kiwi-userbox-bot i {
+    font-size: 1.2em;
+}
+
+.kiwi-userbox-bot-label {
+    font-size: 0.9em;
+    overflow-wrap: anywhere;
 }
 
 .kiwi-userbox-realname {

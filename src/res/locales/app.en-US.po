@@ -1840,6 +1840,10 @@ msgstr "Bot"
 msgid "operator"
 msgstr "Operator"
 
+#: Bot user label
+msgid "bot_user"
+msgstr "Bot user"
+
 #: Rerouted message
 msgid "rerouted"
 msgstr "Rerouted Message"
