@@ -122,6 +122,7 @@ import * as Misc from '@/helpers/Misc';
 import { createNickColour } from '@/helpers/TextFormatting';
 import Logger from '@/libs/Logger';
 import * as bufferTools from '@/libs/bufferTools';
+import { isPreviewCard } from '@/helpers/BridgeCard';
 import RemoveBeforeUpdate from './utils/RemoveBeforeUpdate';
 import MessageListMessageCompact from './MessageListMessageCompact';
 import MessageListMessageModern from './MessageListMessageModern';
@@ -218,7 +219,11 @@ export default {
             return days;
         },
         filteredMessages() {
-            return bufferTools.orderedMessages(this.buffer);
+            let messages = bufferTools.orderedMessages(this.buffer);
+            if (this.buffer.setting('hide_preview_cards')) {
+                messages = messages.filter((message) => !isPreviewCard(message));
+            }
+            return messages;
         },
         shouldShowJoiningLoader() {
             return this.buffer.isChannel() &&

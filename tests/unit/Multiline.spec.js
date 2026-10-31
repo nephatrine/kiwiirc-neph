@@ -51,6 +51,34 @@ describe('BatchHandlers.js', () => {
             expect(syntheticEvent.params[1]).toBe('Part 1 continued\nPart 2');
         });
 
+        it('should mark bridge card multiline batches', () => {
+            const batch = {
+                tags: {},
+                commands: [
+                    {
+                        command: 'PRIVMSG',
+                        params: ['#channel', '[PREVIEW]'],
+                        tags: {},
+                    },
+                    {
+                        command: 'PRIVMSG',
+                        params: ['#channel', 'Title: A title'],
+                        tags: {},
+                    },
+                    {
+                        command: 'PRIVMSG',
+                        params: ['#channel', 'Body'],
+                        tags: {},
+                    },
+                ],
+            };
+
+            const results = BatchHandlers.handleMultilineBatch(network, client, batch);
+
+            expect(results[0].tags['kiwi-bridge-card']).toBe('1');
+            expect(results[0].params[1]).toBe('[PREVIEW]\nTitle: A title\nBody');
+        });
+
         it('should join logical NOTICE lines and concatenate continued lines', () => {
             const batch = {
                 tags: {},

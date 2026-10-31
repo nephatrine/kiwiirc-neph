@@ -28,6 +28,7 @@ import chathistoryMiddleware from './ChathistoryMiddleware';
 import * as BatchHandlers from './BatchHandlers';
 import * as ServerConnection from './ServerConnection';
 import * as RelayMeta from './RelayMeta';
+import { BRIDGE_CARD_TAG, parseBridgeCard } from '@/helpers/BridgeCard';
 import { IRC_WEBSOCKET_PROTOCOL } from './WebSocketProtocol';
 import { addAdvertisedCaps, dropCap, foldPreferredCap, preferredCap } from './CapNegotiation';
 
@@ -1516,6 +1517,12 @@ function clientMiddleware(state, network) {
                 : event.message;
             const messageTags = isTwitch ? Object.assign({}, twitchTags) : twitchTags;
 
+            let bridgeCard = null;
+            if (messageTags[BRIDGE_CARD_TAG]) {
+                bridgeCard = parseBridgeCard(event.message);
+                delete messageTags[BRIDGE_CARD_TAG];
+            }
+
             if (messageTags['reply-parent-msg-id'] && !messageTags['+reply']) {
                 messageTags['+reply'] = messageTags['reply-parent-msg-id'];
             }
@@ -1525,9 +1532,10 @@ function clientMiddleware(state, network) {
                 username: event.ident,
                 host: event.hostname,
             };
+            const messageText = bridgeCard ? bridgeCard.body : twitchText;
             let messageBody;
-            if (textFormatType === 'notice') {
-                messageBody = String(twitchText || '')
+            if (textFormatType === 'notice' && !bridgeCard) {
+                messageBody = String(messageText || '')
                     .split('\n')
                     .map((line) => TextFormatting.formatText('notice', {
                         ...formatParams,
@@ -1535,9 +1543,9 @@ function clientMiddleware(state, network) {
                     }))
                     .join('\n');
             } else {
-                messageBody = TextFormatting.formatText(textFormatType, {
+                messageBody = TextFormatting.formatText(bridgeCard ? 'privmsg' : textFormatType, {
                     ...formatParams,
-                    text: twitchText,
+                    text: messageText,
                 });
             }
 
@@ -1546,12 +1554,13 @@ function clientMiddleware(state, network) {
                 server_time: twitchTime || serverTime,
                 nick: event.nick,
                 message: messageBody,
-                raw_text: event.message,
+                raw_text: bridgeCard ? bridgeCard.body : event.message,
                 type: isTwitchNoticeError(twitchNoticeId) ? 'error' : event.type,
                 tags: messageTags,
                 irc_id: isTwitch ? twitchTags.id : undefined,
                 is_rerouted: isRerouted || (isTwitch && isTwitchRerouted(twitchTags)),
                 protocol_target: protocolTarget,
+                bridge_card: bridgeCard,
             };
 
             // If ignore_bots is enabled and the user is a known bot or the message has a bot tag,

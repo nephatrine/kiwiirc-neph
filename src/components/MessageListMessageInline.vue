@@ -169,7 +169,7 @@ const methods = {
     displayNick() {
         let props = this.props;
         let suffix = props.message.nick ?
-            ':' :
+            ': ' :
             '';
 
         let nick = props.ml.displayNickFor(props.message);
@@ -288,6 +288,14 @@ export default {
     display: inline;
     padding: 0;
     white-space: pre-wrap;
+}
+
+.kiwi-messagelist-message--text .kiwi-messagelist-body.kiwi-bridge-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 10px 12px;
+    white-space: normal;
 }
 
 .kiwi-messagelist-reply-preview {

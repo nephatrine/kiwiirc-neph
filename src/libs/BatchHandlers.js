@@ -2,6 +2,7 @@
 
 import Irc from 'irc-framework';
 import * as TextFormatting from '@/helpers/TextFormatting';
+import { BRIDGE_CARD_TAG, isBridgeCardText } from '@/helpers/BridgeCard';
 
 /**
  * Handlers for specialized IRCv3 BATCH types.
@@ -48,6 +49,12 @@ export function handleMultilineBatch(network, client, batch) {
 
     // Tags on the BATCH command apply to all messages in the batch.
     const tags = { ...firstMsg.tags, ...batch.tags };
+
+    // This is an internal marker only. IrcClient parses the card and removes
+    // it before the message reaches the rest of the app.
+    if (isBridgeCardText(combinedText)) {
+        tags[BRIDGE_CARD_TAG] = '1';
+    }
 
     // Create a synthetic message event
     const syntheticEvent = new Irc.Message(firstMsg.command, target, combinedText);

@@ -20,11 +20,14 @@ function spoilerBlock(url) {
     }];
 }
 
-function messageBuffer() {
+function messageBuffer(resolveMessage) {
     return {
         users: {},
         isSpecial: () => false,
         setting: (name) => (name === 'inline_link_auto_preview_whitelist' ? '.*' : undefined),
+        getNetwork: () => ({
+            resolveMessage: resolveMessage || (() => null),
+        }),
     };
 }
 
@@ -35,6 +38,20 @@ function autoEmbed(url, extras = false) {
         type: 'privmsg',
     });
     message.toBlocks(messageBuffer(), extras);
+    return message.embed.payload;
+}
+
+function autoEmbedReply(text, original, tags) {
+    const buffer = messageBuffer(() => (
+        original ? { message: original, buffer } : null
+    ));
+    const message = new Message({
+        message: text,
+        nick: 'tester',
+        type: 'privmsg',
+        tags,
+    });
+    message.toBlocks(buffer, false);
     return message.embed.payload;
 }
 
@@ -60,6 +77,69 @@ describe('link preview rendering', () => {
     it('auto-embeds native media', () => {
         expect(autoEmbed('https://example.com/image.jpg'))
             .toBe('https://example.com/image.jpg');
+    });
+
+    it('does not auto-embed a [PREVIEW] reply when the original preview is open', () => {
+        const original = {
+            embed: { payload: 'https://example.com/image.jpg' },
+        };
+        expect(autoEmbedReply(
+            '[PREVIEW] https://example.com/image.jpg',
+            original,
+            { '+reply': 'original-msgid' }
+        )).toBeNull();
+    });
+
+    it('does not auto-embed a [FWD] [PREVIEW] reply when the original preview is open', () => {
+        const original = {
+            embed: { payload: 'https://example.com/image.jpg' },
+        };
+        expect(autoEmbedReply(
+            '[FWD] [PREVIEW] https://example.com/image.jpg',
+            original,
+            { '+reply': 'original-msgid' }
+        )).toBeNull();
+    });
+
+    it('auto-embeds a [PREVIEW] reply when the original preview is closed', () => {
+        const original = {
+            embed: { payload: '' },
+        };
+        expect(autoEmbedReply(
+            '[PREVIEW] https://example.com/image.jpg',
+            original,
+            { '+reply': 'original-msgid' }
+        )).toBe('https://example.com/image.jpg');
+    });
+
+    it('auto-embeds a [PREVIEW] reply when the original cannot be resolved', () => {
+        expect(autoEmbedReply(
+            '[PREVIEW] https://example.com/image.jpg',
+            null,
+            { '+reply': 'missing-msgid' }
+        )).toBe('https://example.com/image.jpg');
+    });
+
+    it('auto-embeds a [PREVIEW] message without a reply tag', () => {
+        const original = {
+            embed: { payload: 'https://example.com/image.jpg' },
+        };
+        expect(autoEmbedReply(
+            '[PREVIEW] https://example.com/image.jpg',
+            original,
+            {}
+        )).toBe('https://example.com/image.jpg');
+    });
+
+    it('does not treat [PREVIEW] in the middle of a message as a bridge preview', () => {
+        const original = {
+            embed: { payload: 'https://example.com/image.jpg' },
+        };
+        expect(autoEmbedReply(
+            'See [PREVIEW] https://example.com/image.jpg',
+            original,
+            { '+reply': 'original-msgid' }
+        )).toBe('https://example.com/image.jpg');
     });
 
     it('adds preview handles to extensionless X media previews', () => {

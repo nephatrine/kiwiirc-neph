@@ -5,6 +5,7 @@ import parseMessage from '@/libs/MessageParser';
 import { stripStyles, sanitizeUrl, canPreviewUrl, isSpoilerBlock } from '@/helpers/Misc';
 import toHtml from '@/libs/renderers/Html';
 import GlobalApi from '@/libs/GlobalApi';
+import BridgeCard from '@/components/BridgeCard';
 import getState from './state';
 
 let nextId = 0;
@@ -72,6 +73,11 @@ export default class Message {
         // bodyTemplate should be null or a Vue component to render in the body of the message
         this.bodyTemplate = message.bodyTemplate || null;
         this.bodyTemplateProps = message.bodyTemplateProps || {};
+        this.bridge_card = message.bridge_card || null;
+        if (this.bridge_card) {
+            this.bodyTemplate = BridgeCard;
+            this.bodyTemplateProps = { card: this.bridge_card };
+        }
         this.isHighlight = false;
         this.is_bot = !!(message.tags && typeof message.tags.bot !== 'undefined');
         this.is_oper = !!(
@@ -210,6 +216,19 @@ export default class Message {
         return blocks;
     }
 
+    isBridgePreview() {
+        if (this.bridge_card) {
+            return this.bridge_card.marker === 'preview';
+        }
+
+        if (typeof this.message !== 'string') {
+            return false;
+        }
+
+        return this.message.startsWith('[PREVIEW]') ||
+            this.message.startsWith('[FWD] [PREVIEW]');
+    }
+
     maybeAutoEmbed(buffer) {
         if (this.is_redacted) {
             return;
@@ -224,6 +243,24 @@ export default class Message {
         const type = (this.type || '').toLowerCase();
         if (type !== 'privmsg' && type !== 'message') {
             return;
+        }
+
+        // A bridge may relay the original message's preview as a [PREVIEW]
+        // reply. If the replied-to message already has an open preview, don't
+        // duplicate it here.
+        if (this.reply && this.isBridgePreview()) {
+            const network = buffer && buffer.getNetwork ? buffer.getNetwork() : null;
+            const resolved = network ?
+                network.resolveMessage(this.reply, buffer, this.nick) :
+                null;
+            if (
+                resolved &&
+                resolved.message &&
+                resolved.message.embed &&
+                resolved.message.embed.payload
+            ) {
+                return;
+            }
         }
 
         let url = this.mentioned_urls[0];
@@ -271,6 +308,7 @@ export default class Message {
             redacted_by: this.redacted_by,
             redaction_reason: this.redaction_reason,
             is_redacted_revealed: this.is_redacted_revealed,
+            bridge_card: this.bridge_card,
         };
     }
 }

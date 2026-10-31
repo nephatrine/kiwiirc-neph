@@ -75,6 +75,17 @@ and this project adheres to
   keys alongside avatar and display-name, using the same sanitisation as draft
   metadata.
 
+- **Link Previews**: Bridge `[PREVIEW]` and `[FWD] [PREVIEW]` replies no longer
+  auto-embed a second media preview when the replied-to message already has one
+  open.
+
+- **Bridge Cards**: Multiline `[PREVIEW]`/`[EMBED]` bridge messages now render
+  author, title, fields, thumbnails, footer, and body content as rich cards.
+  Thumbnails keep their aspect ratio at 128px high and open in the full-screen
+  lightbox. Inline layout cards are rendered as blocks, and App Settings can
+  hide `[PREVIEW]` cards without affecting `[EMBED]` cards. Card lines are
+  trimmed, with lone `.` lines treated as blank separators.
+
 - **Localization**: Removed unused strings, aligned the development locale with
   en-US, and corrected the `bot_user` fallback text to "bot user".
 
