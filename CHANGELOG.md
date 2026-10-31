@@ -45,6 +45,9 @@ and this project adheres to
   initial network list and incremental add/change/remove notifications, and
   skips `LISTNETWORKS` when notifications are available.
 
+- **Bouncer**: Added Soju BouncerServ command completion for `/msg BouncerServ`
+  and a BouncerServ command cheatsheet in the user box.
+
 - **Metadata**: Servers advertising `max-keys=0` no longer receive Kiwi's own
   metadata requests, while Soju's pinned, muted, and blocked keys remain mapped
   to their settings.

@@ -1973,6 +1973,46 @@ msgstr "Play Back History"
 msgid "histserv_delete"
 msgstr "Delete Message"
 
+#: BouncerServ Commands
+msgid "bouncerserv_cheatsheet_title"
+msgstr "BouncerServ Commands"
+
+#: These commands can be sent with <code>/msg BouncerServ</code>.
+msgid "bouncerserv_cheatsheet_hint"
+msgstr "These commands can be sent with <code>/msg BouncerServ</code>."
+
+#: Create Network
+msgid "bouncerserv_network_create"
+msgstr "Create Network"
+
+#: Get Network Status
+msgid "bouncerserv_network_status"
+msgstr "Get Network Status"
+
+#: Update Network
+msgid "bouncerserv_network_update"
+msgstr "Update Network"
+
+#: Delete Network
+msgid "bouncerserv_network_delete"
+msgstr "Delete Network"
+
+#: Send Raw Command
+msgid "bouncerserv_network_quote"
+msgstr "Send Raw Command"
+
+#: Get SASL Status
+msgid "bouncerserv_sasl_status"
+msgstr "Get SASL Status"
+
+#: Set SASL Credentials
+msgid "bouncerserv_sasl_set_plain"
+msgstr "Set SASL Credentials"
+
+#: Reset SASL Credentials
+msgid "bouncerserv_sasl_reset"
+msgstr "Reset SASL Credentials"
+
 
 #: Send a message
 msgid "command_msg"

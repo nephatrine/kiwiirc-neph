@@ -422,6 +422,21 @@
             </dl>
         </div>
 
+        <div v-if="showBouncerservCheatsheet" class="kiwi-userbox-services">
+            <h3>{{ $t('bouncerserv_cheatsheet_title') }}</h3>
+            <p class="kiwi-userbox-services-hint" v-html="$t('bouncerserv_cheatsheet_hint')" />
+            <dl class="kiwi-userbox-service-list">
+                <div
+                    v-for="command in bouncerservCommands"
+                    :key="command.path"
+                    class="kiwi-userbox-service-row"
+                >
+                    <dt>{{ $t(command.labelKey) }}</dt>
+                    <dd>{{ command.syntax }}</dd>
+                </div>
+            </dl>
+        </div>
+
         <div
             v-if="whoisRequested && !user.relayed_by"
             :class="[whoisLoading ? 'kiwi-userbox-whois--loading' : '']"
@@ -569,6 +584,7 @@ import { passwordScore } from '@/helpers/PasswordStrength';
 import { effectiveRetention, effectiveService } from '@/libs/fileupload';
 import { NICKSERV_SETTINGS } from '@/libs/ErgoServices';
 import { CHANSERV_SETTINGS } from '@/libs/ErgoChanServ';
+import { BOUNCERSERV_CHEATSHEET, BOUNCERSERV_SYNTAX } from '@/libs/SojuServices';
 import UserAvatar from './UserAvatar';
 import AwayStatusIndicator from './AwayStatusIndicator';
 
@@ -883,6 +899,25 @@ export default {
         },
         showHistServicesCheatsheet() {
             return this.isHistServCard;
+        },
+        isSojuNetwork() {
+            return !!(this.network && typeof this.network.isSoju === 'function' && this.network.isSoju());
+        },
+        isBouncerServCard() {
+            return !this.isSelf &&
+                this.isSojuNetwork &&
+                !!this.user &&
+                typeof this.user.nick === 'string' &&
+                this.user.nick.toLowerCase() === 'bouncerserv';
+        },
+        showBouncerservCheatsheet() {
+            return this.isBouncerServCard;
+        },
+        bouncerservCommands() {
+            return BOUNCERSERV_CHEATSHEET.map((command) => ({
+                ...command,
+                syntax: BOUNCERSERV_SYNTAX[command.path],
+            }));
         },
     },
     watch: {

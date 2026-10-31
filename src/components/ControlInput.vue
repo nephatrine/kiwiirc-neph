@@ -246,6 +246,14 @@ import {
     histservArgSuggestions,
     histservSyntaxFor
 } from '@/libs/ErgoHistServ';
+import {
+    BOUNCERSERV_SUBCOMMANDS,
+    BOUNCERSERV_SYNTAX,
+    isBouncerservSubcommandPosition,
+    parseBouncerservInput,
+    bouncerservArgSuggestions,
+    bouncerservSyntaxFor
+} from '@/libs/SojuServices';
 import GlobalApi from '@/libs/GlobalApi';
 import { effectiveRetention, effectiveService } from '@/libs/fileupload';
 import AutoComplete from './AutoComplete';
@@ -750,11 +758,14 @@ export default {
                     items = this.buildAutoCompleteItems({ hostserv: true });
                 } else if (this.shouldCompleteHistserv(inputText)) {
                     items = this.buildAutoCompleteItems({ histserv: true });
+                } else if (this.shouldCompleteBouncerserv(inputText)) {
+                    items = this.buildAutoCompleteItems({ bouncerserv: true });
                 } else {
                     let nsArgItems = this.nsArgContextItems(inputText);
                     let csArgItems = this.csArgContextItems(inputText);
                     let hsArgItems = this.hsArgContextItems(inputText);
                     let histArgItems = this.histArgContextItems(inputText);
+                    let bncArgItems = this.bouncerservArgContextItems(inputText);
                     if (nsArgItems.length > 0) {
                         // Completing a NickServ argument, not the subcommand
                         items = nsArgItems;
@@ -767,6 +778,9 @@ export default {
                     } else if (histArgItems.length > 0) {
                         // Completing a HistServ argument, not the subcommand
                         items = histArgItems;
+                    } else if (bncArgItems.length > 0) {
+                        // Completing a BouncerServ argument, not the subcommand
+                        items = bncArgItems;
                     } else {
                         items = this.buildAutoCompleteItems({
                             users: true,
@@ -817,6 +831,7 @@ export default {
             let csArgItems = this.csArgContextItems(inputVal);
             let hsArgItems = this.hsArgContextItems(inputVal);
             let histArgItems = this.histArgContextItems(inputVal);
+            let bncArgItems = this.bouncerservArgContextItems(inputVal);
 
             if (event.key === 'Escape' && this.autocomplete_open) {
                 this.autocomplete_open = false;
@@ -827,10 +842,12 @@ export default {
                 !this.shouldCompleteChanserv(inputVal) &&
                 !this.shouldCompleteHostserv(inputVal) &&
                 !this.shouldCompleteHistserv(inputVal) &&
+                !this.shouldCompleteBouncerserv(inputVal) &&
                 nsArgItems.length === 0 &&
                 csArgItems.length === 0 &&
                 hsArgItems.length === 0 &&
-                histArgItems.length === 0
+                histArgItems.length === 0 &&
+                bncArgItems.length === 0
             ) {
                 // Empty token closes the list, unless a service completion
                 // still wants it open (subcommand or argument suggestions).
@@ -869,6 +886,9 @@ export default {
             } else if (this.shouldCompleteHistserv(inputVal)) {
                 this.openAutoComplete(this.buildAutoCompleteItems({ histserv: true }));
                 this.autocomplete_filtering = true;
+            } else if (this.shouldCompleteBouncerserv(inputVal)) {
+                this.openAutoComplete(this.buildAutoCompleteItems({ bouncerserv: true }));
+                this.autocomplete_filtering = true;
             } else if (nsArgItems.length > 0) {
                 // Completing a NickServ argument: suggest argument values
                 // instead of subcommand names
@@ -888,6 +908,10 @@ export default {
                 // Completing a HistServ argument: suggest argument values
                 // instead of subcommand names
                 this.openAutoComplete(histArgItems);
+                this.autocomplete_filtering = true;
+            } else if (bncArgItems.length > 0) {
+                // Completing a BouncerServ argument: suggest subcommands
+                this.openAutoComplete(bncArgItems);
                 this.autocomplete_filtering = true;
             } else if (
                 event.key === 'Tab'
@@ -1045,6 +1069,15 @@ export default {
                 return false;
             }
             return isHostservSubcommandPosition(inputVal);
+        },
+        shouldCompleteBouncerserv(inputVal) {
+            if (!inputVal || !this.network || !this.network.isSoju) {
+                return false;
+            }
+            if (typeof this.network.isSoju !== 'function' || !this.network.isSoju()) {
+                return false;
+            }
+            return isBouncerservSubcommandPosition(inputVal);
         },
         nsArgContextItems(inputVal) {
             if (!this.network || typeof this.network.isErgo !== 'function' || !this.network.isErgo()) {
@@ -1236,8 +1269,29 @@ export default {
                 type: 'command',
             }));
         },
+        bouncerservArgContextItems(inputVal) {
+            if (!this.network || typeof this.network.isSoju !== 'function' || !this.network.isSoju()) {
+                return [];
+            }
+            let parsed = parseBouncerservInput(inputVal);
+            if (!parsed) {
+                return [];
+            }
+            let ghost = bouncerservSyntaxFor(parsed.path);
+            let suggestions = bouncerservArgSuggestions(parsed);
+            return suggestions.map((text) => ({
+                text: text,
+                description: ghost,
+                type: 'command',
+            }));
+        },
         serviceArgGhost() {
-            if (!this.network || typeof this.network.isErgo !== 'function' || !this.network.isErgo()) {
+            if (!this.network) {
+                return '';
+            }
+            let isErgo = typeof this.network.isErgo === 'function' && this.network.isErgo();
+            let isSoju = typeof this.network.isSoju === 'function' && this.network.isSoju();
+            if (!isErgo && !isSoju) {
                 return '';
             }
             if (!this.$refs.input) {
@@ -1252,21 +1306,29 @@ export default {
                 return '';
             }
             let plainText = this.$refs.input.getRawText();
-            let parsed = parseNickservInput(plainText);
-            if (parsed) {
-                return nickservSyntaxFor(parsed.path);
+            if (isErgo) {
+                let parsed = parseNickservInput(plainText);
+                if (parsed) {
+                    return nickservSyntaxFor(parsed.path);
+                }
+                parsed = parseChanservInput(plainText);
+                if (parsed) {
+                    return chanservSyntaxFor(parsed.path);
+                }
+                parsed = parseHostservInput(plainText);
+                if (parsed) {
+                    return hostservSyntaxFor(parsed.path);
+                }
+                parsed = parseHistservInput(plainText);
+                if (parsed) {
+                    return histservSyntaxFor(parsed.path);
+                }
             }
-            parsed = parseChanservInput(plainText);
-            if (parsed) {
-                return chanservSyntaxFor(parsed.path);
-            }
-            parsed = parseHostservInput(plainText);
-            if (parsed) {
-                return hostservSyntaxFor(parsed.path);
-            }
-            parsed = parseHistservInput(plainText);
-            if (parsed) {
-                return histservSyntaxFor(parsed.path);
+            if (isSoju) {
+                let parsed = parseBouncerservInput(plainText);
+                if (parsed) {
+                    return bouncerservSyntaxFor(parsed.path);
+                }
             }
             return '';
         },
@@ -1388,6 +1450,15 @@ export default {
                     };
                 });
                 list = list.concat(hisList);
+            }
+
+            if (opts.bouncerserv) {
+                let bncList = BOUNCERSERV_SUBCOMMANDS.map((cmd) => ({
+                    text: cmd,
+                    description: BOUNCERSERV_SYNTAX[cmd] || (cmd + ' ...'),
+                    type: 'command',
+                }));
+                list = list.concat(bncList);
             }
 
             if (opts.settings) {

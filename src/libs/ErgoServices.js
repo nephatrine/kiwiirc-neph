@@ -283,7 +283,8 @@ export function parseServiceInput(input, opts) {
     if (tokens.length === 0) {
         return null;
     }
-    let cmd = tokens[0].toUpperCase();
+    let normalise = opts.preserveCase ? (value) => value : (value) => value.toUpperCase();
+    let cmd = normalise(tokens[0]);
     if (opts.aliases[cmd]) {
         cmd = opts.aliases[cmd];
     }
@@ -298,7 +299,7 @@ export function parseServiceInput(input, opts) {
         return { path: [cmd], argIndex: 0, args: [], partial: '' };
     }
     if (spec.length > 0 && spec[0] && spec[0].subcommands) {
-        let sub = tokens[1].toUpperCase();
+        let sub = normalise(tokens[1]);
         if (tokens.length === 2 && !trailingSpace) {
             return { path: [cmd], argIndex: 0, args: [], partial: tokens[1] };
         }
