@@ -27,4 +27,5 @@ export default [
     { command: 'unignore', alias: [], description: 'locale_id_command_unignore' },
     { command: 'setname', alias: [], description: 'locale_id_command_setname' },
     { command: 'roll', alias: [], description: 'locale_id_command_roll' },
+    { command: 'lim', alias: [], description: 'locale_id_command_lim' },
 ];

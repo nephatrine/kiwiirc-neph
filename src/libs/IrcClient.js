@@ -5,6 +5,7 @@ import Irc from 'irc-framework';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import { each, find } from '@/helpers/Utils';
 import typingMiddleware from './TypingMiddleware';
+import limnoriaMiddleware from './LimnoriaMiddleware';
 import reactionMiddleware from './ReactionMiddleware';
 import redactionMiddleware from './RedactionMiddleware';
 import twitchMiddleware, { isTwitchNoticeError } from './TwitchMiddleware';
@@ -119,6 +120,7 @@ export function create(state, network) {
 
     ircClient.use(chathistoryMiddleware(network));
     ircClient.use(typingMiddleware(network));
+    ircClient.use(limnoriaMiddleware(network));
     ircClient.use(reactionMiddleware(network));
     ircClient.use(redactionMiddleware(network));
     ircClient.use(twitchMiddleware(network));

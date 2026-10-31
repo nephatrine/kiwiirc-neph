@@ -21,7 +21,11 @@
                 class="u-link kiwi-autocomplete-item-details"
             ><emoji-text :text="item.description" /></span>
             <span
-                v-else-if="item.type === 'user'"
+                v-if="item.type === 'command' && item.help"
+                class="kiwi-autocomplete-item-help"
+            ><emoji-text :text="item.help" /></span>
+            <span
+                v-if="item.type === 'user'"
                 class="u-link kiwi-autocomplete-item-details"
                 @click.stop="openQuery(item.text)"
             >{{ $t('send_message') }}</span>
@@ -146,6 +150,9 @@ export default {
         this.tempCurrentItem();
     },
     methods: {
+        resetSelection() {
+            this.selected_idx = 0;
+        },
         handleOnKeyDown(event) {
             let handled = false;
 
@@ -162,6 +169,12 @@ export default {
                 // to do its default action as if the autocomplete box isn't active.
                 if (!this.selectedItem) {
                     this.cancel();
+                } else if (event.key === ' ' &&
+                    /\s/.test(this.selectedItem.value || this.selectedItem.text || '')
+                ) {
+                    // A space should not replace the input with a multi-word
+                    // suggestion. Let the space be typed instead.
+                    return false;
                 } else {
                     this.selectCurrentItem();
                     if (event.key === 'Enter') {
@@ -288,6 +301,14 @@ export default {
     }
 }
 
+.kiwi-autocomplete-item-help {
+    display: block;
+    font-size: 0.85em;
+    line-height: 1.3;
+    margin-top: 2px;
+    opacity: 0.8;
+}
+
 .kiwi-autocomplete-badge {
     display: inline-block;
     font-size: 0.7em;
@@ -353,6 +374,10 @@ export default {
         .kiwi-autocomplete-item-details {
             margin-left: unset;
             grid-column: span 2;
+        }
+
+        .kiwi-autocomplete-item-help {
+            grid-column: span 3;
         }
     }
 

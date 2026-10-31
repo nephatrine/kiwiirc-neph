@@ -255,6 +255,13 @@ export default Vue.component('irc-input', {
             this.value = newVal;
             this.$refs.editor.innerHTML = newVal;
         },
+        setPlainText(text) {
+            this.$refs.editor.textContent = text || '';
+            this.value = this.$refs.editor.innerHTML;
+            this.$refs.editor.focus();
+            this.selectionToEnd();
+            this.maybeEmitInput();
+        },
         getValue() {
             return this.$refs.editor.innerHTML;
         },
@@ -606,13 +613,13 @@ export default Vue.component('irc-input', {
             let endPos = toPosition ? pos - startPos : space;
 
             return {
-                word: val.substr(startPos, endPos),
+                word: cleanVal.substr(startPos, endPos),
                 position: pos - startPos,
             };
         },
 
         getRawText() {
-            return this.$refs.editor.innerText;
+            return this.$refs.editor.innerText.replace(/\u00A0/g, ' ');
         },
 
         getCaretIdx() {

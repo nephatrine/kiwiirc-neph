@@ -81,6 +81,23 @@ the service and retention in settings. `none` does not lock out a user override.
 available only after SASL login. Plain `http` is refused when `connection.tls`
 is set.
 
+## Limnoria
+
+```json
+"limnoria": {
+    "suggestions": true,
+    "prefix": "!",
+    "name": "SupyBot",
+    "plugins": "Admin, Channel, Config, Misc, Owner, User"
+}
+```
+
+`plugins` is a comma- or space-separated list of plugin names used for local
+`/lim` command suggestions and help. It defaults to the six core plugins above.
+An empty value disables local command suggestions. Per-network settings override
+this default. Manually typed `/lim` commands still work when their plugin is not
+listed.
+
 ## Connection
 
 | Key                       | Default            |                                            |

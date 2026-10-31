@@ -437,6 +437,30 @@ msgstr "Show Image Previews"
 msgid "settings_hide_preview_cards"
 msgstr "Hide Preview Cards"
 
+#: Limnoria
+msgid "settings_limnoria"
+msgstr "Limnoria"
+
+#: Limnoria Suggestions
+msgid "settings_limnoria_suggestions"
+msgstr "Limnoria Suggestions"
+
+#: Limnoria Name
+msgid "settings_limnoria_name"
+msgstr "Limnoria Name"
+
+#: Limnoria Prefix
+msgid "settings_limnoria_prefix"
+msgstr "Limnoria Prefix"
+
+#: Limnoria Plugins
+msgid "settings_limnoria_plugins"
+msgstr "Limnoria Plugins"
+
+#: Comma or space separated plugin names.
+msgid "settings_limnoria_plugins_hint"
+msgstr "Comma or space separated plugin names."
+
 #: Include join/part messages as activity
 msgid "settings_show_joinpart"
 msgstr "Notify on Join/Part Activity"
@@ -2113,3 +2137,23 @@ msgstr "Change Real Name"
 #: Roll dice
 msgid "command_roll"
 msgstr "Roll Dice"
+
+#: Limnoria command
+msgid "command_lim"
+msgstr "Limnoria Command"
+
+#: Limnoria suggestions are disabled for this network.
+msgid "limnoria_disabled"
+msgstr "Limnoria suggestions are disabled for this network."
+
+#: Set a Limnoria Name in Network Settings first.
+msgid "limnoria_name_required"
+msgstr "Set a Limnoria Name in Network Settings first."
+
+#: Enter a Limnoria command after /lim.
+msgid "limnoria_command_required"
+msgstr "Enter a Limnoria command after /lim."
+
+#: Limnoria prefix commands require a channel with the bot present.
+msgid "limnoria_prefix_unavailable"
+msgstr "Limnoria prefix commands require a channel with the bot present."

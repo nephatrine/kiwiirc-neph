@@ -173,6 +173,13 @@ export const configTemplates = {
         // 'keep' leaves the server setting alone, 'default' follows the server
         // default, 'on'/'off' request persistence enabled/disabled.
         persistencePreference: 'keep',
+        // Defaults for new networks. Users can override these per network.
+        limnoria: {
+            suggestions: false,
+            prefix: '!',
+            name: 'SupyBot',
+            plugins: 'Admin, Channel, Config, Misc, Owner, User',
+        },
         autoReconnectMaxWait: 30000,
         autoReconnectMaxRetries: 10,
         disconnectOnSaslFail: true,

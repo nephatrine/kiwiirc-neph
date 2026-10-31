@@ -15,6 +15,39 @@ and this project adheres to
   messages, members, topic, modes, and settings, and posts an informational line
   plus a desktop notification. Kiwi IRC does not send `RENAME`.
 
+- **Limnoria**: Added per-network Limnoria settings and `/lim` command support.
+  Defaults can be configured in `config.json`. The `limnoria.plugins` list
+  controls which plugins appear in local command suggestions and help, and
+  per-network settings can override it. Commands use private `/msg` delivery by
+  default, with channel-context commands using the configured prefix, and
+  autocomplete requests use the IRCv3 autocomplete client tags. Autocomplete
+  also works for `/msg <bot>` and the configured Limnoria prefix while still
+  sending requests privately. `/lim` shows local completion and help for core
+  Admin, Aka, Alias, Anonymous, BadWords, Channel, ChannelStats, Conditional,
+  Config, Ctcp, DDG, Debug, Dict, Dunno, Factoids, Fediverse, Filter, Format,
+  Games, Geography, GPG, Google, Hashes, Herald, Internet, Karma, Lart, Later,
+  Math, MessageParser, Misc, MoobotFactoids, Network, News, NickAuth,
+  Nickometer, Note, Owner, Plugin, PluginDownloader, Poll, Praise, Quote,
+  QuoteGrabs, Relay, Reply, RSS, Scheduler, Seen, Services, ShrinkUrl, Status,
+  String, Success, Time, Todo, Topic, URL, Unix, User, Utilities, and Web
+  commands, including plugin-prefixed forms; Dunno, Lart, Praise, Quote, and
+  Success include the inherited database commands. Ambiguous shortcuts are
+  omitted when multiple plugins share a command name or a plugin and command
+  share a name. Channel, ChannelStats, Ctcp, Dunno, Factoids, Games, Herald,
+  Karma, Lart, MessageParser, MoobotFactoids, News, Poll, Praise, Quote,
+  QuoteGrabs, Relay, Scheduler, Seen, Success, Topic, and URL commands, plus
+  Services `op`, `voice`, `unban`, and `invite`, such as `channel mode`,
+  `channelstats stats`, `ctcp version`, `factoids learn`, `games dice`,
+  `herald default`, `karma load`, `lart lart`, `messageparser list`,
+  `moobotfactoids most`, `news news`, `poll add`, `praise praise`,
+  `quote random`, `quotegrabs grab`, `relay join`, `scheduler add`,
+  `services op`, `success add`, `topic add`, `url last`, and `seen user`, along
+  with `rss announce add`, `config config`, and `debug channeldb`, use the
+  configured prefix, while private-preferred commands continue through `/msg`.
+  Local completion is token-by-token, sorted by plugin and command, and never
+  offers multi-word commands. A syntax hint stays visible after a command
+  resolves. It still queries Limnoria on Tab for data Kiwi cannot know.
+
 - **Operators**: Added `draft/oper-tag` support. Messages from IRC operators
   show a lock icon unless they also carry the bot tag.
 
@@ -207,6 +240,10 @@ and this project adheres to
   Native media previews are unchanged.
 
 ### Fixed
+
+- **Input**: Normalize non-breaking spaces from the contenteditable editor so
+  `/lim` and other slash commands parse correctly instead of falling through to
+  raw IRC.
 
 - **Web Push**: Push notifications are suppressed while a Kiwi window is
   focused, matching the in-page notification behavior.

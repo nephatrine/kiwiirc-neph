@@ -1,4 +1,5 @@
 import { effectiveService, filehostAvailable, listUploadServices } from '@/libs/fileupload';
+import { LIMNORIA_DEFAULT_PLUGINS } from '@/libs/Limnoria';
 
 function bindNetworkSetting(settingName, fallback) {
     return {
@@ -56,6 +57,9 @@ export default {
         },
     },
     computed: {
+        networkPreferencesAvailable() {
+            return !!this.networkPreferencesTarget();
+        },
         persistencePreferenceAvailable() {
             const network = this.networkPreferencesTarget();
             return network && network.persistencePreferenceAvailable();
@@ -89,6 +93,13 @@ export default {
         settingBufferIgnoreBots: bindNetworkSetting('ignore_bots', false),
         settingBufferLenientRerouting: bindNetworkSetting('lenient_rerouting', true),
         settingBufferShowRedactions: bindNetworkSetting('show_redactions', 'placeholder'),
+        settingLimnoriaSuggestions: bindNetworkSetting('limnoriaSuggestions', false),
+        settingLimnoriaPrefix: bindNetworkSetting('limnoriaPrefix', '!'),
+        settingLimnoriaName: bindNetworkSetting('limnoriaName', 'SupyBot'),
+        settingLimnoriaPlugins: bindNetworkSetting(
+            'limnoriaPlugins',
+            LIMNORIA_DEFAULT_PLUGINS
+        ),
         fileuploadServices() {
             const network = this.networkPreferencesTarget();
             const saved = this.fileuploadServiceChoice;

@@ -6,6 +6,8 @@ import { rollDice, formatRoll } from '@/helpers/Dice';
 import { each } from '@/helpers/Utils';
 import AliasRewriter from './AliasRewriter';
 import { addTwitchUserNotice } from './TwitchMiddleware';
+import { limnoriaSettings } from './Limnoria';
+import { limnoriaCommandDelivery, limnoriaCommandPath } from './LimnoriaCommands';
 
 // Map of commandName=commandHandlerFn
 const inputCommands = {};
@@ -83,7 +85,7 @@ export default class InputHandler {
     processLine(rawLine, context = this.defaultContext()) {
         this.validateContext(context);
         const { network, buffer } = context;
-        let line = rawLine;
+        let line = rawLine.replace(/\u00A0/g, ' ');
         let stylesStrippedLine = Misc.stripStyles(line);
 
         // If no command specified, server buffers = send raw, channels/queries = send message
@@ -302,6 +304,65 @@ inputCommands.roll = function inputCommandRoll(event, command, line, context) {
 
     const msg = formatRoll(result, TextFormatting.t, TextFormatting.formatNumber);
     handleMessage.call(this, 'action', event, command, buffer.name + ' ' + msg, context);
+};
+
+inputCommands.lim = function inputCommandLim(event, command, line, context) {
+    event.handled = true;
+
+    const { network, buffer } = context;
+    const limnoria = limnoriaSettings(network);
+    const commandText = line.trim();
+
+    const addError = (message) => {
+        this.state.addMessage(buffer, {
+            time: Date.now(),
+            nick: '*',
+            message,
+            type: 'error',
+        });
+    };
+
+    if (!limnoria.suggestions) {
+        addError(TextFormatting.t('limnoria_disabled'));
+        return;
+    }
+    if (!limnoria.name) {
+        addError(TextFormatting.t('limnoria_name_required'));
+        return;
+    }
+    if (!commandText) {
+        addError(TextFormatting.t('limnoria_command_required'));
+        return;
+    }
+
+    const commandPath = limnoriaCommandPath(commandText);
+    const delivery = limnoriaCommandDelivery(commandPath);
+
+    if (delivery === 'prefix' && limnoria.prefix) {
+        if (!buffer.isChannel() || !buffer.hasNick(limnoria.name)) {
+            addError(TextFormatting.t('limnoria_prefix_unavailable'));
+            return;
+        }
+
+        handleMessage.call(
+            this,
+            'privmsg',
+            event,
+            command,
+            buffer.name + ' ' + limnoria.prefix + commandText,
+            context
+        );
+        return;
+    }
+
+    handleMessage.call(
+        this,
+        'privmsg',
+        event,
+        command,
+        limnoria.name + ' ' + commandText,
+        context
+    );
 };
 
 inputCommands.ctcp = function inputCommandCtcp(event, command, line, context) {

@@ -291,6 +291,26 @@
                         <option value="revealed">{{ $t('settings_show_redactions_revealed') }}</option>
                     </select>
                 </label>
+                <label class="u-checkbox-wrapper">
+                    <span>{{ $t('settings_limnoria_suggestions') }} </span>
+                    <input v-model="settingLimnoriaSuggestions" type="checkbox">
+                </label>
+                <label v-if="settingLimnoriaSuggestions" class="kiwi-appsettings-messagelistDisplay">
+                    <span>{{ $t('settings_limnoria_name') }} </span>
+                    <input v-model="settingLimnoriaName" class="u-input">
+                </label>
+                <label v-if="settingLimnoriaSuggestions" class="kiwi-appsettings-messagelistDisplay">
+                    <span>{{ $t('settings_limnoria_prefix') }} </span>
+                    <input v-model="settingLimnoriaPrefix" class="u-input">
+                </label>
+                <label v-if="settingLimnoriaSuggestions" class="kiwi-appsettings-messagelistDisplay">
+                    <span>{{ $t('settings_limnoria_plugins') }} </span>
+                    <input
+                        v-model="settingLimnoriaPlugins"
+                        class="u-input"
+                        :placeholder="$t('settings_limnoria_plugins_hint')"
+                    >
+                </label>
                 <label class="kiwi-appsettings-messagelistDisplay">
                     <span>{{ $t('settings_fileupload_service') }} </span>
                     <select v-model="fileuploadServiceChoice">

@@ -185,6 +185,32 @@
                         </div>
                     </div>
 
+                    <div v-if="networkPreferencesAvailable" class="kiwi-appsettings-block">
+                        <h3>{{ $t('settings_limnoria') }}</h3>
+                        <div class="kiwi-appsettings-section">
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_limnoria_suggestions') }} </span>
+                                <input v-model="settingLimnoriaSuggestions" type="checkbox">
+                            </label>
+                            <label v-if="settingLimnoriaSuggestions" class="kiwi-appsettings-full">
+                                <span>{{ $t('settings_limnoria_name') }} </span>
+                                <input v-model="settingLimnoriaName" class="u-input">
+                            </label>
+                            <label v-if="settingLimnoriaSuggestions" class="kiwi-appsettings-full">
+                                <span>{{ $t('settings_limnoria_prefix') }} </span>
+                                <input v-model="settingLimnoriaPrefix" class="u-input">
+                            </label>
+                            <label v-if="settingLimnoriaSuggestions" class="kiwi-appsettings-full">
+                                <span>{{ $t('settings_limnoria_plugins') }} </span>
+                                <input
+                                    v-model="settingLimnoriaPlugins"
+                                    class="u-input"
+                                    :placeholder="$t('settings_limnoria_plugins_hint')"
+                                >
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="kiwi-appsettings-block">
                         <h3>{{ $t('settings_fileupload') }}</h3>
                         <div class="kiwi-appsettings-section">
