@@ -16,9 +16,11 @@ function makeHarness({
     appState,
     name = 'TestNetwork',
     nick = 'TestNick',
+    registrationDelayMs = 0,
 } = {}) {
     const s = appState || state.create();
     const network = s.addNetwork(name, nick, {});
+    network.state = 'connected';
     network.setting('webpushEnabled', enabled);
     network.setting('show_notifications', true);
     network.enabled_caps = ['draft/webpush'];
@@ -66,6 +68,7 @@ function makeHarness({
         subscriptionProvider: stubProvider,
         unsubscribeProvider,
         ipc,
+        registrationDelayMs,
     });
     useMiddleware(client, rawEvents, parsedEvents);
     return {
@@ -80,6 +83,12 @@ function makeHarness({
         },
         async emitConnected() {
             await Promise.all((handlers.connected || []).map((fn) => fn()));
+            await new Promise((resolve) => {
+                setTimeout(resolve, 0);
+            });
+            await new Promise((resolve) => {
+                setTimeout(resolve, 0);
+            });
         },
         emitWebpush(params) {
             parsed('unknown command', {
@@ -128,6 +137,30 @@ describe('webpush registration', () => {
         await h.emitConnected();
         expect(h.stubProvider).toHaveBeenCalledWith(expect.objectContaining({ vapidPublicKey: 'test-vapid-key' }));
         expect(h.registers()).toEqual([['WEBPUSH', 'REGISTER', ENDPOINT, KEYS]]);
+    });
+
+    it('defers registration until after the initial connect burst', async() => {
+        const h = makeHarness({ registrationDelayMs: 25 });
+
+        await h.emitConnected();
+        expect(h.stubProvider).not.toHaveBeenCalled();
+        expect(h.registers()).toEqual([]);
+
+        await new Promise((resolve) => {
+            setTimeout(resolve, 40);
+        });
+        expect(h.stubProvider).toHaveBeenCalled();
+        expect(h.registers()).toHaveLength(1);
+    });
+
+    it('does not send a duplicate REGISTER for the same endpoint', async() => {
+        const h = makeHarness();
+
+        await h.emitConnected();
+        expect(h.registers()).toHaveLength(1);
+
+        await h.emitConnected();
+        expect(h.registers()).toHaveLength(1);
     });
 
     it('reads VAPID from ISUPPORT, never from cap values', async() => {

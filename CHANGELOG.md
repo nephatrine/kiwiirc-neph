@@ -244,6 +244,14 @@ and this project adheres to
 - **Emoji Picker**: Category highlighting now follows the topmost visible
   section and no longer jumps through categories during programmatic scrolling.
 
+- **Web Push**: Registration is deferred until the initial network and history
+  setup is ready, duplicate registrations are suppressed, and an unanswered
+  REGISTER is not retried until the next connection. This avoids a startup race
+  that could leave history loading until the next reconnect.
+
+- **History**: History requests now time out instead of leaving a buffer stuck
+  on the loading state when a server never sends the matching batch.
+
 - **Input**: Normalize non-breaking spaces from the contenteditable editor so
   `/lim` and other slash commands parse correctly instead of falling through to
   raw IRC.

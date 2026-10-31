@@ -13,7 +13,16 @@ export default function webpushMiddleware(network, deps = {}) {
     const unsubscribeProvider = deps.unsubscribeProvider ||
         WebpushUtils.unsubscribeBrowserSubscription;
     const ipc = deps.ipc || IPC;
+    const registrationDelayMs = typeof deps.registrationDelayMs === 'number' ?
+        deps.registrationDelayMs :
+        3000;
+    const registrationMaxWaitMs = typeof deps.registrationMaxWaitMs === 'number' ?
+        deps.registrationMaxWaitMs :
+        15000;
     let renewTimer = null;
+    let registerTimer = null;
+    let registerStartedAt = 0;
+    let registerPending = false;
     let swMessageListening = false;
     let onSwMessage = null;
 
@@ -41,6 +50,55 @@ export default function webpushMiddleware(network, deps = {}) {
                 clearTimeout(renewTimer);
                 renewTimer = null;
             }
+        };
+
+        const clearRegisterTimer = () => {
+            if (registerTimer) {
+                clearTimeout(registerTimer);
+                registerTimer = null;
+            }
+        };
+
+        const historySettled = () => {
+            if (!network.isReadyForHistory) {
+                return false;
+            }
+            return network.buffers.every((buffer) => (
+                !buffer.isChannel() || buffer.getLoadingState() !== 'loading'
+            ));
+        };
+
+        const scheduleRegistration = () => {
+            if (registerTimer ||
+                registerPending ||
+                client.connected === false ||
+                !settingOn() ||
+                !network.webpushAvailable()
+            ) {
+                return;
+            }
+
+            if (!registerStartedAt) {
+                registerStartedAt = Date.now();
+            }
+
+            registerTimer = setTimeout(() => {
+                registerTimer = null;
+                if (client.connected === false ||
+                    registerPending ||
+                    !settingOn() ||
+                    !network.webpushAvailable()
+                ) {
+                    return;
+                }
+                if (!historySettled() &&
+                    Date.now() - registerStartedAt < registrationMaxWaitMs
+                ) {
+                    scheduleRegistration();
+                    return;
+                }
+                ensureRegistered();
+            }, registrationDelayMs);
         };
 
         const scheduleRenewal = () => {
@@ -71,6 +129,9 @@ export default function webpushMiddleware(network, deps = {}) {
             reason = '',
         } = {}) => {
             clearRenewTimer();
+            clearRegisterTimer();
+            registerStartedAt = 0;
+            registerPending = false;
 
             const endpoints = [network.webpush_endpoint, network.webpush_pending_endpoint]
                 .filter(Boolean)
@@ -140,11 +201,14 @@ export default function webpushMiddleware(network, deps = {}) {
         const doEnsureRegistered = async() => {
             if (
                 client.connected === false ||
+                registerPending ||
                 !network.webpushAvailable() ||
                 !settingOn()
             ) {
                 return;
             }
+
+            clearRegisterTimer();
 
             if (!notificationsGranted()) {
                 // A default permission can only be requested from a user
@@ -192,6 +256,16 @@ export default function webpushMiddleware(network, deps = {}) {
                 return;
             }
 
+            if (network.webpush_registered &&
+                network.webpush_endpoint === sub.endpoint
+            ) {
+                return;
+            }
+
+            if (network.webpush_pending_endpoint === sub.endpoint) {
+                return;
+            }
+
             try {
                 if (
                     network.webpush_endpoint &&
@@ -201,9 +275,11 @@ export default function webpushMiddleware(network, deps = {}) {
                 }
 
                 network.webpush_pending_endpoint = sub.endpoint;
+                registerPending = true;
                 client.raw('WEBPUSH', 'REGISTER', sub.endpoint, sub.keys);
             } catch {
                 // The connection went away; the next connect will retry.
+                registerPending = false;
             }
         };
 
@@ -244,6 +320,9 @@ export default function webpushMiddleware(network, deps = {}) {
 
         const handleSubscriptionChange = () => {
             clearRenewTimer();
+            clearRegisterTimer();
+            registerStartedAt = Date.now();
+            registerPending = false;
             network.webpush_registered = false;
             network.webpush_endpoint = '';
             network.webpush_pending_endpoint = '';
@@ -393,10 +472,16 @@ export default function webpushMiddleware(network, deps = {}) {
                 navigator.serviceWorker.removeEventListener('message', onSwMessage);
             }
             clearRenewTimer();
+            clearRegisterTimer();
+            registerStartedAt = 0;
+            registerPending = false;
         };
 
         client.on('connecting', () => {
             clearRenewTimer();
+            clearRegisterTimer();
+            registerStartedAt = 0;
+            registerPending = false;
             network.webpush_registered = false;
             network.webpush_endpoint = '';
             network.webpush_pending_endpoint = '';
@@ -405,7 +490,9 @@ export default function webpushMiddleware(network, deps = {}) {
 
         client.on('connected', () => {
             listenForSubscriptionChange();
-            ensureRegistered();
+            registerStartedAt = Date.now();
+            registerPending = false;
+            scheduleRegistration();
         });
 
         parsedEvents.use((command, event, clientArg, next) => {
@@ -418,6 +505,7 @@ export default function webpushMiddleware(network, deps = {}) {
             if (verb === 'WEBPUSH') {
                 const subcommand = (event.params[0] || '').toUpperCase();
                 if (subcommand === 'REGISTER') {
+                    registerPending = false;
                     const endpoint = event.params[1] ||
                         network.webpush_pending_endpoint || '';
                     network.webpush_pending_endpoint = '';
@@ -441,6 +529,7 @@ export default function webpushMiddleware(network, deps = {}) {
                         broadcast('webpush-registered', { endpoint });
                     }
                 } else if (subcommand === 'UNREGISTER') {
+                    registerPending = false;
                     network.webpush_registered = false;
                     network.webpush_endpoint = '';
                     network.webpush_pending_endpoint = '';
@@ -461,9 +550,7 @@ export default function webpushMiddleware(network, deps = {}) {
                     ['ON', 'OFF'].includes(statusTail[1])
                 ) {
                     if (statusTail[1] === 'ON') {
-                        if (settingOn() && network.webpushAvailable()) {
-                            ensureRegistered();
-                        }
+                        scheduleRegistration();
                     } else if (
                         network.webpush_registered ||
                         network.webpush_endpoint ||

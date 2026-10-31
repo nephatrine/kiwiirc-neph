@@ -12,6 +12,8 @@ import { each, find } from '@/helpers/Utils';
 
 let nextBufferId = 0;
 
+const HISTORY_REQUEST_TIMEOUT_MS = 15000;
+
 /** The IRC buffer instance */
 export default class BufferState {
     constructor(name, networkid, state, messageDict) {
@@ -1189,7 +1191,18 @@ function getBufferHistory(buffer, chathistoryFuncName, time, depth = 0) {
     }
     buffer.chathistory_request_count += 1;
     let existingMessageIds = Object.assign({}, buffer.messagesObj.messageIds);
-    return ircClient.chathistory[chathistoryFuncName](buffer.name, time).then((event) => {
+    const request = ircClient.chathistory[chathistoryFuncName](buffer.name, time);
+    let timeoutId = null;
+    const timeout = new Promise((resolve) => {
+        timeoutId = setTimeout(() => {
+            resolve({
+                error: 'timeout',
+                reason: 'History request timed out',
+            });
+        }, HISTORY_REQUEST_TIMEOUT_MS);
+    });
+
+    return Promise.race([request, timeout]).then((event) => {
         if (!event) {
             buffer.flag('chathistory_available', false);
             return;
@@ -1250,6 +1263,9 @@ function getBufferHistory(buffer, chathistoryFuncName, time, depth = 0) {
             }
         }
     }).finally(() => {
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+        }
         if (depth === 0) {
             buffer.flag('is_requesting_chathistory', false);
         }

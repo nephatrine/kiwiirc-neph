@@ -22,6 +22,31 @@ describe('buffer history reconnect state', () => {
         expect(buffer.chathistory_request_count).toBe(0);
     });
 
+    it('stops loading when a history request never resolves', async() => {
+        jest.useFakeTimers();
+        const appState = state.create();
+        const network = appState.addNetwork('TestNetwork', 'TestNick', {
+            server: 'irc.example.com',
+            port: 6697,
+            tls: true,
+        });
+        network.state = 'connected';
+        const buffer = appState.addBuffer(network.id, '#test');
+        network.ircClient.chathistory = {
+            isSupported: () => true,
+            supportedRefTypes: () => ['timestamp'],
+            latest: jest.fn(() => new Promise(() => {})),
+        };
+
+        buffer.requestLatestScrollback();
+
+        expect(buffer.flags.is_requesting_chathistory).toBe(true);
+        await jest.advanceTimersByTimeAsync(15000);
+        expect(buffer.flags.is_requesting_chathistory).toBe(false);
+        expect(buffer.flags.chathistory_available).toBe(false);
+        jest.useRealTimers();
+    });
+
     it('resets history state on an irc-framework auto-reconnect', () => {
         const appState = state.create();
         const network = appState.addNetwork('TestNetwork', 'TestNick', {
