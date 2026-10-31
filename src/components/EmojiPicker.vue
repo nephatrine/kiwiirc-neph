@@ -82,6 +82,9 @@ export default {
             categories,
             emojiData,
             activeCategory: categories[0].id,
+            scrollTarget: null,
+            scrollTargetTop: null,
+            scrollTimer: null,
         };
     },
     computed: {
@@ -115,6 +118,8 @@ export default {
             this.$state.ui.emoji_picker.ircinput = opts.ircinput || null;
             this.$state.ui.emoji_picker.visible = true;
             this.filter = '';
+            this.activeCategory = this.categories[0].id;
+            this.clearScrollTarget();
         });
 
         this.listen(this.$state, 'document.keydown', (event) => {
@@ -123,8 +128,12 @@ export default {
             }
         });
     },
+    beforeDestroy() {
+        this.clearScrollTarget();
+    },
     methods: {
         close() {
+            this.clearScrollTarget();
             this.$state.ui.emoji_picker.visible = false;
         },
         onEmojiClick(emojiChar) {
@@ -136,31 +145,59 @@ export default {
             }
             this.close();
         },
-        scrollToCategory(catId) {
-            const el = this.$refs[`cat-${catId}`][0];
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth' });
+        clearScrollTarget() {
+            if (this.scrollTimer) {
+                clearTimeout(this.scrollTimer);
             }
+            this.scrollTimer = null;
+            this.scrollTarget = null;
+            this.scrollTargetTop = null;
+        },
+        scrollToCategory(catId) {
+            const el = this.$refs[`cat-${catId}`] &&
+                this.$refs[`cat-${catId}`][0];
             this.activeCategory = catId;
+            if (!el || !this.$refs.scroller) {
+                return;
+            }
+
+            const scroller = this.$refs.scroller;
+            const scrollerRect = scroller.getBoundingClientRect();
+            const elRect = el.getBoundingClientRect();
+            const target = scroller.scrollTop + (elRect.top - scrollerRect.top);
+
+            this.clearScrollTarget();
+            this.scrollTarget = catId;
+            this.scrollTargetTop = target;
+            scroller.scrollTo({ top: target, behavior: 'smooth' });
+            this.scrollTimer = setTimeout(() => {
+                this.clearScrollTarget();
+                this.onScroll();
+            }, 600);
         },
         onScroll() {
             if (this.filter) return;
 
             const scroller = this.$refs.scroller;
-            const scrollPos = scroller.scrollTop + (scroller.offsetHeight / 2);
+            if (!scroller) return;
 
-            for (let i = 0; i < this.categories.length; i++) {
-                const catId = this.categories[i].id;
-                const el = this.$refs[`cat-${catId}`][0];
-                if (
-                    el &&
-                    el.offsetTop <= scrollPos &&
-                    (el.offsetTop + el.offsetHeight) > scrollPos
-                ) {
-                    this.activeCategory = catId;
-                    break;
+            if (this.scrollTarget) {
+                if (Math.abs(scroller.scrollTop - this.scrollTargetTop) > 1) {
+                    return;
                 }
+                this.clearScrollTarget();
             }
+
+            const scrollerTop = scroller.getBoundingClientRect().top;
+            let active = this.categories[0].id;
+            this.categories.forEach((cat) => {
+                const el = this.$refs[`cat-${cat.id}`] &&
+                    this.$refs[`cat-${cat.id}`][0];
+                if (el && el.getBoundingClientRect().top <= scrollerTop + 1) {
+                    active = cat.id;
+                }
+            });
+            this.activeCategory = active;
         },
     },
 };

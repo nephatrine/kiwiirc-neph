@@ -241,6 +241,9 @@ and this project adheres to
 
 ### Fixed
 
+- **Emoji Picker**: Category highlighting now follows the topmost visible
+  section and no longer jumps through categories during programmatic scrolling.
+
 - **Input**: Normalize non-breaking spaces from the contenteditable editor so
   `/lim` and other slash commands parse correctly instead of falling through to
   raw IRC.
