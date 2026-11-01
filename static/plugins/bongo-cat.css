@@ -57,6 +57,15 @@
     overflow: visible;
 }
 
+.kiwi-bongo-cat__variant {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.kiwi-bongo-cat__variant--active {
+    visibility: visible;
+}
+
 .kiwi-bongo-cat__body {
     transform-box: view-box;
     transform-origin: 80px 130px;

@@ -75,6 +75,23 @@ from:
 No plugin code changes are needed. Add the assets, edit the relevant JSON, and
 reload the page. `static/` is copied to `dist/static/` on a production build.
 
+### Image Optimization
+
+The plugin loads lossy WebP files at runtime. Artists provide full-canvas PNG
+sources, and `npm run optimize:bongo` generates sibling `.webp` files with
+ImageMagick:
+
+```bash
+npm run optimize:bongo
+WEBP_QUALITY=82 npm run optimize:bongo
+npm run optimize:bongo -- --force
+```
+
+The default quality is 85 with full-quality alpha. The script skips up-to-date
+outputs unless `--force` is given, and `--verbose` lists each conversion.
+Commit both formats: the PNGs remain the editable source and are used by the
+standalone artboard, while the `.webp` files are what the companion loads.
+
 ### Adding Skins
 
 1. Create `static/plugins/bongo-cat/<skin-id>/` for the images.
@@ -88,52 +105,52 @@ Skin JSON:
 {
   "name": "My Companion",
   "assets": {
-    "body": "body.png",
-    "head": "head.png",
+    "body": "body.webp",
+    "head": "head.webp",
     "hands": {
       "left": {
-        "up1": "hand_l_up1.png",
-        "up2": "hand_l_up2.png",
-        "down": "hand_l_down.png"
+        "up1": "hand_l_up1.webp",
+        "up2": "hand_l_up2.webp",
+        "down": "hand_l_down.webp"
       },
       "right": {
-        "up1": "hand_r_up1.png",
-        "up2": "hand_r_up2.png",
-        "down": "hand_r_down.png"
+        "up1": "hand_r_up1.webp",
+        "up2": "hand_r_up2.webp",
+        "down": "hand_r_down.webp"
       }
     },
     "eyes": {
-      "open": "eyes.png",
-      "blink": "eyes_blink.png",
-      "tired": "eyes_tired.png",
-      "happy": "eyes_happy.png",
-      "worried": "eyes_worried.png",
-      "sleep": "eyes_sleep.png",
-      "grumpy": "eyes_grumpy.png"
+      "open": "eyes.webp",
+      "blink": "eyes_blink.webp",
+      "tired": "eyes_tired.webp",
+      "happy": "eyes_happy.webp",
+      "worried": "eyes_worried.webp",
+      "sleep": "eyes_sleep.webp",
+      "grumpy": "eyes_grumpy.webp"
     },
     "mouth": {
-      "neutral": "mouth.png",
-      "smile": "mouth_smile.png",
-      "frown": "mouth_frown.png",
-      "yawn": "mouth_yawn.png",
-      "open": "mouth_open.png"
+      "neutral": "mouth.webp",
+      "smile": "mouth_smile.webp",
+      "frown": "mouth_frown.webp",
+      "yawn": "mouth_yawn.webp",
+      "open": "mouth_open.webp"
     },
     "legs": {
-      "idle1": "legs_idle1.png",
-      "idle2": "legs_idle2.png",
-      "sleep": "legs_sleep.png"
+      "idle1": "legs_idle1.webp",
+      "idle2": "legs_idle2.webp",
+      "sleep": "legs_sleep.webp"
     },
     "ears": {
-      "neutral": "ears.png",
-      "perked": "ears_perked.png",
-      "tucked": "ears_tucked.png"
+      "neutral": "ears.webp",
+      "perked": "ears_perked.webp",
+      "tucked": "ears_tucked.webp"
     },
     "tail": {
-      "normal": "tail.png",
-      "happy": "tail_happy.png",
-      "tired": "tail_tired.png",
-      "grumpy": "tail_grumpy.png",
-      "tucked": "tail_tucked.png"
+      "normal": "tail.webp",
+      "happy": "tail_happy.webp",
+      "tired": "tail_tired.webp",
+      "grumpy": "tail_grumpy.webp",
+      "tucked": "tail_tucked.webp"
     }
   },
   "features": {
@@ -176,27 +193,28 @@ Required assets:
 
 | Asset      | Files                                                                                                                     |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Body       | `body.png`                                                                                                                |
-| Head       | `head.png`                                                                                                                |
-| Eyes       | `eyes.png`, `eyes_blink.png`, `eyes_tired.png`, `eyes_happy.png`, `eyes_worried.png`, `eyes_sleep.png`, `eyes_grumpy.png` |
-| Mouth      | `mouth.png`, `mouth_smile.png`, `mouth_frown.png`, `mouth_yawn.png`, `mouth_open.png`                                     |
-| Left hand  | `hand_l_up1.png`, `hand_l_up2.png`, `hand_l_down.png`                                                                     |
-| Right hand | `hand_r_up1.png`, `hand_r_up2.png`, `hand_r_down.png`                                                                     |
+| Body       | `body.webp`                                                                                                                |
+| Head       | `head.webp`                                                                                                                |
+| Eyes       | `eyes.webp`, `eyes_blink.webp`, `eyes_tired.webp`, `eyes_happy.webp`, `eyes_worried.webp`, `eyes_sleep.webp`, `eyes_grumpy.webp` |
+| Mouth      | `mouth.webp`, `mouth_smile.webp`, `mouth_frown.webp`, `mouth_yawn.webp`, `mouth_open.webp`                                     |
+| Left hand  | `hand_l_up1.webp`, `hand_l_up2.webp`, `hand_l_down.webp`                                                                     |
+| Right hand | `hand_r_up1.webp`, `hand_r_up2.webp`, `hand_r_down.webp`                                                                     |
 
 Feature-dependent assets:
 
 | Feature | Required files                                                                       |
 | ------- | ------------------------------------------------------------------------------------ |
-| `legs`  | `legs_idle1.png`, `legs_idle2.png`, `legs_sleep.png`                                 |
-| `ears`  | `ears.png`, `ears_perked.png`, `ears_tucked.png`                                     |
-| `tail`  | `tail.png`, `tail_happy.png`, `tail_tired.png`, `tail_grumpy.png`, `tail_tucked.png` |
+| `legs`  | `legs_idle1.webp`, `legs_idle2.webp`, `legs_sleep.webp`                                 |
+| `ears`  | `ears.webp`, `ears_perked.webp`, `ears_tucked.webp`                                     |
+| `tail`  | `tail.webp`, `tail_happy.webp`, `tail_tired.webp`, `tail_grumpy.webp`, `tail_tucked.webp` |
 
 Feature flags default to `false` when omitted. `earsInFront` moves the ears
 after the hat but before the eyes.
 
 Asset creation:
 
-- Use transparent RGBA PNGs.
+- Provide transparent RGBA PNGs as source art. Run `npm run optimize:bongo` to
+  generate the `.webp` runtime files, and reference those in the skin JSON.
 - Export at 640×620, a 4× render of the `160 × 155` companion art area.
 - The full artboard is `160 × 170` with viewBox `0 -15 160 170`.
 - Keep every pose on the same full canvas so parts line up when swapped.
@@ -223,9 +241,9 @@ settings tab shows an error, and the dropdown remains available. There is no
 fallback companion.
 
 The standalone artboard at `static/plugins/bongo-cat-artboard.html` is hardcoded
-to Crabstacean but remains useful for inspecting layer order, positions, and
-pivot points. It also previews optional tail images from
-`static/plugins/bongo-cat/crabstacean/` when they exist.
+to Crabstacean and uses the full-canvas PNG sources. It remains useful for
+inspecting layer order, positions, and pivot points. It also previews optional
+tail images from `static/plugins/bongo-cat/crabstacean/` when they exist.
 
 ### Adding Snacks
 
@@ -238,15 +256,15 @@ Edit `static/plugins/bongo-cat/snacks.json` and add images under
     {
       "id": "my_overlay",
       "name": "My Overlay Snack",
-      "image": "my_overlay.png",
+      "image": "my_overlay.webp",
       "type": "food",
       "render": "overlay",
-      "bitten": "my_overlay_bite.png"
+      "bitten": "my_overlay_bite.webp"
     },
     {
       "id": "my_rain",
       "name": "My Rain Snack",
-      "image": "my_rain.png",
+      "image": "my_rain.webp",
       "type": "drink",
       "render": "rain"
     }
@@ -267,6 +285,8 @@ Fields:
 
 Asset creation:
 
+- Provide transparent RGBA PNGs as source art and reference the generated
+  `.webp` files in `snacks.json`.
 - Overlay images: 640×620 RGBA, drawn at `160 × 155`, transparent background.
 - Rain images: 640×310 RGBA, drawn at `160 × 77.5`, transparent background.
 - Both render at full width and are topmost above the companion and effects.
@@ -295,7 +315,7 @@ Edit `static/plugins/bongo-cat/hats.json` and add images under
     {
       "name": "My Hat",
       "id": "my_hat",
-      "file": "my_hat.png"
+      "file": "my_hat.webp"
     }
   ]
 }
@@ -311,7 +331,8 @@ Fields:
 
 Asset creation:
 
-- Use transparent RGBA PNGs at 640×240.
+- Provide transparent RGBA PNGs at 640×240 as source art and reference the
+  generated `.webp` files in `hats.json`.
 - Hats draw at `160 × 60` with `y = -15` plus the skin's `hatOffset`.
 - They occupy the top 60 units of the `160 × 170` artboard.
 - The hat layer renders inside the head group, after the head and before the

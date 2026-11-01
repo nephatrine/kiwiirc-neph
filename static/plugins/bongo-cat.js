@@ -139,18 +139,18 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
     };
     var DEFAULT_SKIN = {
         name: 'Crabstacean',
-        body: SKIN_DIR + 'body.png',
-        head: SKIN_DIR + 'head.png',
+        body: SKIN_DIR + 'body.webp',
+        head: SKIN_DIR + 'head.webp',
         hands: {
             left: {
-                up1: SKIN_DIR + 'hand_l_up1.png',
-                up2: SKIN_DIR + 'hand_l_up2.png',
-                down: SKIN_DIR + 'hand_l_down.png',
+                up1: SKIN_DIR + 'hand_l_up1.webp',
+                up2: SKIN_DIR + 'hand_l_up2.webp',
+                down: SKIN_DIR + 'hand_l_down.webp',
             },
             right: {
-                up1: SKIN_DIR + 'hand_r_up1.png',
-                up2: SKIN_DIR + 'hand_r_up2.png',
-                down: SKIN_DIR + 'hand_r_down.png',
+                up1: SKIN_DIR + 'hand_r_up1.webp',
+                up2: SKIN_DIR + 'hand_r_up2.webp',
+                down: SKIN_DIR + 'hand_r_down.webp',
             },
         },
         tail: {
@@ -161,30 +161,30 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
             tucked: '',
         },
         legs: {
-            idle1: SKIN_DIR + 'legs_idle1.png',
-            idle2: SKIN_DIR + 'legs_idle2.png',
-            sleep: SKIN_DIR + 'legs_sleep.png',
+            idle1: SKIN_DIR + 'legs_idle1.webp',
+            idle2: SKIN_DIR + 'legs_idle2.webp',
+            sleep: SKIN_DIR + 'legs_sleep.webp',
         },
         ears: {
-            neutral: SKIN_DIR + 'ears.png',
-            perked: SKIN_DIR + 'ears_perked.png',
-            tucked: SKIN_DIR + 'ears_tucked.png',
+            neutral: SKIN_DIR + 'ears.webp',
+            perked: SKIN_DIR + 'ears_perked.webp',
+            tucked: SKIN_DIR + 'ears_tucked.webp',
         },
         eyes: {
-            open: SKIN_DIR + 'eyes.png',
-            blink: SKIN_DIR + 'eyes_blink.png',
-            tired: SKIN_DIR + 'eyes_tired.png',
-            happy: SKIN_DIR + 'eyes_happy.png',
-            worried: SKIN_DIR + 'eyes_worried.png',
-            sleep: SKIN_DIR + 'eyes_sleep.png',
-            grumpy: SKIN_DIR + 'eyes_grumpy.png',
+            open: SKIN_DIR + 'eyes.webp',
+            blink: SKIN_DIR + 'eyes_blink.webp',
+            tired: SKIN_DIR + 'eyes_tired.webp',
+            happy: SKIN_DIR + 'eyes_happy.webp',
+            worried: SKIN_DIR + 'eyes_worried.webp',
+            sleep: SKIN_DIR + 'eyes_sleep.webp',
+            grumpy: SKIN_DIR + 'eyes_grumpy.webp',
         },
         mouth: {
-            neutral: SKIN_DIR + 'mouth.png',
-            smile: SKIN_DIR + 'mouth_smile.png',
-            frown: SKIN_DIR + 'mouth_frown.png',
-            yawn: SKIN_DIR + 'mouth_yawn.png',
-            open: SKIN_DIR + 'mouth_open.png',
+            neutral: SKIN_DIR + 'mouth.webp',
+            smile: SKIN_DIR + 'mouth_smile.webp',
+            frown: SKIN_DIR + 'mouth_frown.webp',
+            yawn: SKIN_DIR + 'mouth_yawn.webp',
+            open: SKIN_DIR + 'mouth_open.webp',
         },
         features: {
             tail: false,
@@ -518,6 +518,16 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
 
     function clamp(value, min, max) {
         return Math.min(max, Math.max(min, value));
+    }
+
+    function uniqueImages(images) {
+        var unique = [];
+        images.forEach(function(image) {
+            if (image && unique.indexOf(image) === -1) {
+                unique.push(image);
+            }
+        });
+        return unique;
     }
 
     function numberOr(value, fallback) {
@@ -1081,6 +1091,50 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     return skinConfig.mouth.smile;
                 }
                 return skinConfig.mouth.neutral;
+            },
+            eyeVariants: function() {
+                return uniqueImages([
+                    skinConfig.eyes.open,
+                    skinConfig.eyes.blink,
+                    skinConfig.eyes.happy,
+                    this.eyeImage,
+                ]);
+            },
+            mouthVariants: function() {
+                return uniqueImages([
+                    skinConfig.mouth.neutral,
+                    skinConfig.mouth.smile,
+                    skinConfig.mouth.open,
+                    this.mouthImage,
+                ]);
+            },
+            earVariants: function() {
+                return uniqueImages([
+                    skinConfig.ears.neutral,
+                    skinConfig.ears.perked,
+                    this.earImage,
+                ]);
+            },
+            leftHandVariants: function() {
+                return uniqueImages([
+                    skinConfig.hands.left.up1,
+                    skinConfig.hands.left.up2,
+                    skinConfig.hands.left.down,
+                ]);
+            },
+            rightHandVariants: function() {
+                return uniqueImages([
+                    skinConfig.hands.right.up1,
+                    skinConfig.hands.right.up2,
+                    skinConfig.hands.right.down,
+                ]);
+            },
+            legsVariants: function() {
+                return uniqueImages([
+                    skinConfig.legs.idle1,
+                    skinConfig.legs.idle2,
+                    this.legsImage,
+                ]);
             },
             radioPlaying: function() {
                 return !!(kiwi.media && kiwi.media.playing);

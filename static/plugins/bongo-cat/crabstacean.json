@@ -1,45 +1,45 @@
 {
   "name": "Crabstacean",
   "assets": {
-    "body": "body.png",
-    "head": "head.png",
+    "body": "body.webp",
+    "head": "head.webp",
     "hands": {
       "left": {
-        "up1": "hand_l_up1.png",
-        "up2": "hand_l_up2.png",
-        "down": "hand_l_down.png"
+        "up1": "hand_l_up1.webp",
+        "up2": "hand_l_up2.webp",
+        "down": "hand_l_down.webp"
       },
       "right": {
-        "up1": "hand_r_up1.png",
-        "up2": "hand_r_up2.png",
-        "down": "hand_r_down.png"
+        "up1": "hand_r_up1.webp",
+        "up2": "hand_r_up2.webp",
+        "down": "hand_r_down.webp"
       }
     },
     "legs": {
-      "idle1": "legs_idle1.png",
-      "idle2": "legs_idle2.png",
-      "sleep": "legs_sleep.png"
+      "idle1": "legs_idle1.webp",
+      "idle2": "legs_idle2.webp",
+      "sleep": "legs_sleep.webp"
     },
     "ears": {
-      "neutral": "ears.png",
-      "perked": "ears_perked.png",
-      "tucked": "ears_tucked.png"
+      "neutral": "ears.webp",
+      "perked": "ears_perked.webp",
+      "tucked": "ears_tucked.webp"
     },
     "eyes": {
-      "open": "eyes.png",
-      "blink": "eyes_blink.png",
-      "tired": "eyes_tired.png",
-      "happy": "eyes_happy.png",
-      "worried": "eyes_worried.png",
-      "sleep": "eyes_sleep.png",
-      "grumpy": "eyes_grumpy.png"
+      "open": "eyes.webp",
+      "blink": "eyes_blink.webp",
+      "tired": "eyes_tired.webp",
+      "happy": "eyes_happy.webp",
+      "worried": "eyes_worried.webp",
+      "sleep": "eyes_sleep.webp",
+      "grumpy": "eyes_grumpy.webp"
     },
     "mouth": {
-      "neutral": "mouth.png",
-      "smile": "mouth_smile.png",
-      "frown": "mouth_frown.png",
-      "yawn": "mouth_yawn.png",
-      "open": "mouth_open.png"
+      "neutral": "mouth.webp",
+      "smile": "mouth_smile.webp",
+      "frown": "mouth_frown.webp",
+      "yawn": "mouth_yawn.webp",
+      "open": "mouth_open.webp"
     }
   },
   "features": {

@@ -10,6 +10,13 @@ and this project adheres to
 
 ### Added
 
+- **NGINX**: Added `deploy/nginx.conf.example` with caching, MIME, and WebSocket
+  reverse-proxy guidance.
+
+- **Bongo Companion**: Added `npm run optimize:bongo` and switched runtime skin,
+  hat, and snack assets to lossy WebP. PNG sources remain for editing and the
+  standalone artboard.
+
 - **Channel Rename**: Added incoming `draft/channel-rename` support. A
   server-sent `RENAME` moves the existing buffer to the new name, preserving its
   messages, members, topic, modes, and settings, and posts an informational line
@@ -240,6 +247,9 @@ and this project adheres to
   Native media previews are unchanged.
 
 ### Fixed
+
+- **Bongo Companion**: Frequent animation frames are preloaded and toggled by
+  visibility instead of swapping image URLs. Hats and snacks remain on demand.
 
 - **Modern Layout**: Hover padding now applies to the message content column
   instead of the embed wrapper, so preview cards are no longer padded inside.

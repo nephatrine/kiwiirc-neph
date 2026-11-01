@@ -327,8 +327,11 @@
                 <g class="kiwi-bongo-cat__body">
                     <g v-if="showLegs" class="kiwi-bongo-cat__legs">
                         <image
-                            class="kiwi-bongo-cat__legs-layer"
-                            :href="legsImage"
+                            v-for="image in legsVariants"
+                            :key="image"
+                            class="kiwi-bongo-cat__legs-layer kiwi-bongo-cat__variant"
+                            :class="{ 'kiwi-bongo-cat__variant--active': image === legsImage }"
+                            :href="image"
                             x="0"
                             y="0"
                             width="160"
@@ -346,15 +349,19 @@
                     />
 
                     <g class="kiwi-bongo-cat__head" :style="{ transformOrigin: headPivot }">
-                        <image
-                            v-if="showEars && !earsInFront"
-                            class="kiwi-bongo-cat__ear-layer"
-                            :href="earImage"
-                            x="0"
-                            y="0"
-                            width="160"
-                            height="155"
-                        />
+                        <g v-if="showEars && !earsInFront">
+                            <image
+                                v-for="image in earVariants"
+                                :key="image"
+                                class="kiwi-bongo-cat__ear-layer kiwi-bongo-cat__variant"
+                                :class="{ 'kiwi-bongo-cat__variant--active': image === earImage }"
+                                :href="image"
+                                x="0"
+                                y="0"
+                                width="160"
+                                height="155"
+                            />
+                        </g>
 
                         <image
                             class="kiwi-bongo-cat__skin kiwi-bongo-cat__skin--head"
@@ -376,10 +383,26 @@
                             />
                         </g>
 
+                        <g v-if="showEars && earsInFront">
+                            <image
+                                v-for="image in earVariants"
+                                :key="image"
+                                class="kiwi-bongo-cat__ear-layer kiwi-bongo-cat__variant"
+                                :class="{ 'kiwi-bongo-cat__variant--active': image === earImage }"
+                                :href="image"
+                                x="0"
+                                y="0"
+                                width="160"
+                                height="155"
+                            />
+                        </g>
+
                         <image
-                            v-if="showEars && earsInFront"
-                            class="kiwi-bongo-cat__ear-layer"
-                            :href="earImage"
+                            v-for="image in eyeVariants"
+                            :key="image"
+                            class="kiwi-bongo-cat__eye-layer kiwi-bongo-cat__variant"
+                            :class="{ 'kiwi-bongo-cat__variant--active': image === eyeImage }"
+                            :href="image"
                             x="0"
                             y="0"
                             width="160"
@@ -387,17 +410,11 @@
                         />
 
                         <image
-                            class="kiwi-bongo-cat__eye-layer"
-                            :href="eyeImage"
-                            x="0"
-                            y="0"
-                            width="160"
-                            height="155"
-                        />
-
-                        <image
-                            class="kiwi-bongo-cat__mouth-layer"
-                            :href="mouthImage"
+                            v-for="image in mouthVariants"
+                            :key="image"
+                            class="kiwi-bongo-cat__mouth-layer kiwi-bongo-cat__variant"
+                            :class="{ 'kiwi-bongo-cat__variant--active': image === mouthImage }"
+                            :href="image"
                             x="0"
                             y="0"
                             width="160"
@@ -406,27 +423,41 @@
                     </g>
                 </g>
 
-                <image
+                <g
                     class="kiwi-bongo-cat__hand kiwi-bongo-cat__hand--left"
                     :class="{ 'kiwi-bongo-cat__hand--down': leftHandDown }"
                     :style="{ transformOrigin: leftArmPivot }"
-                    :href="leftHandImage"
-                    x="0"
-                    y="0"
-                    width="160"
-                    height="155"
-                />
+                >
+                    <image
+                        v-for="image in leftHandVariants"
+                        :key="image"
+                        class="kiwi-bongo-cat__variant"
+                        :class="{ 'kiwi-bongo-cat__variant--active': image === leftHandImage }"
+                        :href="image"
+                        x="0"
+                        y="0"
+                        width="160"
+                        height="155"
+                    />
+                </g>
 
-                <image
+                <g
                     class="kiwi-bongo-cat__hand kiwi-bongo-cat__hand--right"
                     :class="{ 'kiwi-bongo-cat__hand--down': rightHandDown }"
                     :style="{ transformOrigin: rightArmPivot }"
-                    :href="rightHandImage"
-                    x="0"
-                    y="0"
-                    width="160"
-                    height="155"
-                />
+                >
+                    <image
+                        v-for="image in rightHandVariants"
+                        :key="image"
+                        class="kiwi-bongo-cat__variant"
+                        :class="{ 'kiwi-bongo-cat__variant--active': image === rightHandImage }"
+                        :href="image"
+                        x="0"
+                        y="0"
+                        width="160"
+                        height="155"
+                    />
+                </g>
 
                 <g v-if="petted" class="kiwi-bongo-cat__heart-wrap">
                     <text x="80" y="28" text-anchor="middle" class="kiwi-bongo-cat__heart">&#9829;</text>

@@ -1,0 +1,87 @@
+# Example NGINX server block for a Kiwi IRC deployment.
+#
+# Adjust root, server_name, proxy_pass, and the WebSocket location to match
+# your installation. This block assumes Kiwi IRC is served from the domain root
+# and the websocket/gateway is reachable at 127.0.0.1:8080.
+
+server {
+    listen 443 ssl http2;
+    server_name irc.example.com;
+
+    root /var/www/kiwiirc/dist;
+    index index.html;
+
+    # Hashed webpack bundles can be cached forever.
+    location ~* ^/static/(?:js|css)/.+\.[0-9a-f]{8}\.(?:js|css)$ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        try_files $uri =404;
+    }
+
+    # The entry document must revalidate on every deploy.
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+        try_files $uri =404;
+    }
+
+    # Service workers must not be cached aggressively.
+    location = /static/sw.js {
+        add_header Cache-Control "no-cache";
+        add_header Service-Worker-Allowed "/";
+        try_files $uri =404;
+    }
+
+    location = /static/sw-utils.js {
+        add_header Cache-Control "no-cache";
+        try_files $uri =404;
+    }
+
+    # Public config may change on deploy.
+    location ~* ^/static/config.*\.json$ {
+        add_header Cache-Control "no-cache";
+        try_files $uri =404;
+    }
+
+    # Unhashed locales, plugins, and themes should revalidate quickly.
+    location ~* ^/static/(?:locales|plugins|themes)/ {
+        add_header Cache-Control "public, max-age=300, must-revalidate";
+        try_files $uri =404;
+    }
+
+    # Images, audio, fonts, and icons are stable but not content-hashed.
+    location ~* ^/static/.+\.(?:png|jpe?g|gif|webp|svg|ico|wav|mp3|ogg|woff2?)$ {
+        add_header Cache-Control "public, max-age=604800, must-revalidate";
+        try_files $uri =404;
+    }
+
+    # WebSocket / gateway endpoint. Change this to match your deployment.
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600s;
+        proxy_buffering off;
+    }
+
+    # If Kiwi IRC is served directly by NGINX and only the gateway is proxied,
+    # use the following instead of the location / block above:
+    #
+    # location / {
+    #     try_files $uri $uri/ /index.html;
+    # }
+    #
+    # location /webirc {
+    #     proxy_pass http://127.0.0.1:8080;
+    #     proxy_http_version 1.1;
+    #     proxy_set_header Upgrade $http_upgrade;
+    #     proxy_set_header Connection "upgrade";
+    #     proxy_set_header Host $host;
+    #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    #     proxy_set_header X-Forwarded-Proto $scheme;
+    #     proxy_read_timeout 3600s;
+    #     proxy_buffering off;
+    # }
+}

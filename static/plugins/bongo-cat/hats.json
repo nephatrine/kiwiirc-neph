@@ -1,19 +1,19 @@
 {
   "hats": [
-    { "name": "Reverse Ballcap", "id": "cap", "file": "cap.png" },
-    { "name": "Beanie", "id": "beanie", "file": "beanie.png" },
-    { "name": "Beret", "id": "beret", "file": "beret.png" },
-    { "name": "Striped Wizard Hat", "id": "striped", "file": "striped.png" },
-    { "name": "Chef Hat", "id": "chef", "file": "chef.png" },
-    { "name": "Cowboy Hat", "id": "cowboy", "file": "cowboy.png" },
-    { "name": "Crown", "id": "crown", "file": "crown.png" },
-    { "name": "Sherlock's Hat", "id": "sherlock", "file": "sherlock.png" },
-    { "name": "Dwarf Helmet", "id": "dwarf", "file": "dwarf.png" },
-    { "name": "Nurse Hat", "id": "nurse", "file": "nurse.png" },
-    { "name": "Pirate Hat", "id": "pirate", "file": "pirate.png" },
-    { "name": "Propeller Hat", "id": "propeller", "file": "propeller.png" },
-    { "name": "Robin Hood's Hat", "id": "graham", "file": "graham.png" },
-    { "name": "Straw Hat", "id": "straw", "file": "straw.png" },
-    { "name": "Top Hat", "id": "tophat", "file": "tophat.png" }
+    { "name": "Reverse Ballcap", "id": "cap", "file": "cap.webp" },
+    { "name": "Beanie", "id": "beanie", "file": "beanie.webp" },
+    { "name": "Beret", "id": "beret", "file": "beret.webp" },
+    { "name": "Striped Wizard Hat", "id": "striped", "file": "striped.webp" },
+    { "name": "Chef Hat", "id": "chef", "file": "chef.webp" },
+    { "name": "Cowboy Hat", "id": "cowboy", "file": "cowboy.webp" },
+    { "name": "Crown", "id": "crown", "file": "crown.webp" },
+    { "name": "Sherlock's Hat", "id": "sherlock", "file": "sherlock.webp" },
+    { "name": "Dwarf Helmet", "id": "dwarf", "file": "dwarf.webp" },
+    { "name": "Nurse Hat", "id": "nurse", "file": "nurse.webp" },
+    { "name": "Pirate Hat", "id": "pirate", "file": "pirate.webp" },
+    { "name": "Propeller Hat", "id": "propeller", "file": "propeller.webp" },
+    { "name": "Robin Hood's Hat", "id": "graham", "file": "graham.webp" },
+    { "name": "Straw Hat", "id": "straw", "file": "straw.webp" },
+    { "name": "Top Hat", "id": "tophat", "file": "tophat.webp" }
   ]
 }
