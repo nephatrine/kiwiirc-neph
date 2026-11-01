@@ -40,6 +40,7 @@
     --comp-sidebar-fg: #22231f;
     --comp-scroller-bg: #f0f0f0;
     --comp-scroller-fg: #cdcdcd;
+    --comp-scroller-statebrowser-fg: #666;
     --comp-aboutbuffer-bg: rgba(0, 0, 0, 0.03);
     --comp-aboutbuffer-header-bg: #826958;
 

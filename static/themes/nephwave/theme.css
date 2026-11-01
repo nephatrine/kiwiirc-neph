@@ -336,7 +336,7 @@ body.nephwave-active .kiwi-wrap {
 
 .kiwi-wrap ::-webkit-scrollbar-track,
 .nephwave-chrome ::-webkit-scrollbar-track {
-    background: var(--nw-panel-light);
+    background: var(--nw-scrollbar-track, var(--nw-panel-light));
     border: 1px solid var(--nw-panel-dark);
 }
 
@@ -460,6 +460,19 @@ textarea::placeholder {
 .u-button-warning {
     color: #fff;
     background-color: var(--nw-error);
+}
+
+.kiwi-wrap a.u-button {
+    color: var(--nw-ink);
+}
+
+.kiwi-wrap a.u-button-primary {
+    color: #111;
+}
+
+.kiwi-wrap a.u-button-online,
+.kiwi-wrap a.u-button-warning {
+    color: #fff;
 }
 
 .u-form input[type='checkbox'],
@@ -736,6 +749,12 @@ body.nephwave-active .kiwi-personal {
     border-right: 2px solid var(--nw-panel-dark);
 }
 
+.kiwi-wrap .kiwi-header-name-container {
+    margin-left: 0;
+    padding: 0 2px;
+    overflow: hidden;
+}
+
 .kiwi-header-name {
     color: var(--nw-ink);
     font-family: var(--nw-font-ui);
@@ -1004,11 +1023,19 @@ body.nephwave-active .kiwi-personal {
     background: var(--nw-panel);
 }
 
+.kiwi-container-content {
+    position: relative;
+}
+
 .kiwi-container-toggledraw-statebrowser,
 .kiwi-container-toggledraw-sidebar {
     color: var(--nw-ink);
     background: var(--nw-panel);
-    border: 2px outset var(--nw-panel);
+    border: 0;
+    box-shadow:
+        inset 1px 1px 0 var(--nw-bevel-light),
+        inset -1px -1px 0 var(--nw-bevel-dark);
+    height: 44px;
 }
 
 .kiwi-container-toggledraw-sidebar--disabled {
@@ -1021,16 +1048,60 @@ body.nephwave-active .kiwi-personal {
     border: 1px solid #000;
 }
 
+.kiwi-container-toggledraw-statebrowser-messagecount::before {
+    content: ' ';
+    position: absolute;
+    left: -16px;
+    top: 20%;
+    width: 0;
+    height: 0;
+    border: 0.6em solid transparent;
+    border-right-color: #000;
+    pointer-events: none;
+}
+
+.kiwi-container-toggledraw-statebrowser-messagecount::after {
+    border-right-color: var(--nw-cyan);
+}
+
 .kiwi-container-toggledraw-statebrowser-messagecount--highlight {
     color: var(--nw-ink);
     background: var(--nw-pink);
     border: 1px solid #000;
 }
 
+.kiwi-container-toggledraw-statebrowser-messagecount--highlight::after {
+    border-right-color: var(--nw-pink);
+}
+
 .kiwi-container-toggledraw-statebrowser-messagecount--error {
     color: #fff;
     background: var(--nw-error);
     border: 1px solid #000;
+}
+
+.kiwi-container-toggledraw-statebrowser-messagecount--error::after {
+    border-right-color: var(--nw-error);
+}
+
+.kiwi-wrap--statebrowser-drawopen .kiwi-container-toggledraw-statebrowser-messagecount::before {
+    right: -16px;
+    left: auto;
+    border-right-color: transparent;
+    border-left-color: #000;
+}
+
+.kiwi-wrap--statebrowser-drawopen .kiwi-container-toggledraw-statebrowser-messagecount::after {
+    border: 0.6em solid transparent;
+    border-left-color: var(--nw-cyan);
+}
+
+.kiwi-wrap--statebrowser-drawopen .kiwi-container-toggledraw-statebrowser-messagecount--highlight::after {
+    border-left-color: var(--nw-pink);
+}
+
+.kiwi-wrap--statebrowser-drawopen .kiwi-container-toggledraw-statebrowser-messagecount--error::after {
+    border-left-color: var(--nw-error);
 }
 
 .kiwi-container-empty .u-button {
@@ -1041,6 +1112,8 @@ body.nephwave-active .kiwi-personal {
  * Message list
  * ==================================================================== */
 .kiwi-messagelist {
+    --nw-scrollbar-track: var(--nw-content);
+
     color: var(--nw-ink);
     background: var(--nw-content);
     border-top: 2px solid var(--nw-panel-dark);
@@ -1049,6 +1122,7 @@ body.nephwave-active .kiwi-personal {
     border-bottom: 2px solid var(--nw-bevel-light);
     font-family: var(--nw-font-mono);
     font-size: 0.92rem;
+    scrollbar-color: var(--nw-panel-dark) var(--nw-content);
 }
 
 .kiwi-messagelist-message {
@@ -1252,6 +1326,7 @@ body.nephwave-active .kiwi-personal {
  * Sidebar, nicklist, userbox, radio
  * ==================================================================== */
 .kiwi-sidebar {
+    top: 0;
     color: var(--nw-ink);
     background: var(--nw-panel);
     border-left: 2px solid var(--nw-panel-dark);
@@ -1275,8 +1350,11 @@ body.nephwave-active .kiwi-personal {
 }
 
 .kiwi-nicklist-users {
+    --nw-scrollbar-track: #fff;
+
     background: #fff;
     border: 2px inset var(--nw-panel);
+    scrollbar-color: var(--nw-panel-dark) #fff;
 }
 
 .kiwi-nicklist-user {
@@ -1597,10 +1675,13 @@ body.nephwave-preset-platinum .kiwi-radio-browser-header {
 }
 
 .kiwi-aboutbuffer {
+    --nw-scrollbar-track: var(--nw-content);
+
     color: var(--nw-ink);
     background: var(--nw-content);
     border: 2px inset var(--nw-panel);
     font-family: var(--nw-font-mono);
+    scrollbar-color: var(--nw-panel-dark) var(--nw-content);
 }
 
 .kiwi-aboutbuffer h3,
@@ -2323,7 +2404,7 @@ body.nephwave-preset-platinum .nephwave-bezel {
 body.nephwave-active .kiwi-workspace {
     top: var(--nw-frame-top);
     height: calc(100% - var(--nw-frame-top) - var(--nw-frame-bottom));
-    margin-left: calc(220px + var(--nw-frame-left) + 2px);
+    margin-left: calc(220px + var(--nw-frame-left));
     margin-right: var(--nw-frame-right);
     transition:
         left 0.2s,
@@ -2438,6 +2519,16 @@ body.nephwave-minimized .kiwi-statebrowser {
 
     body.nephwave-active .kiwi-startup-common {
         padding: var(--nw-frame-top) 6px var(--nw-frame-bottom);
+    }
+
+    body.nephwave-active .kiwi-appsettings {
+        inset: var(--nw-frame-top) var(--nw-frame-right) var(--nw-frame-bottom) var(--nw-frame-left);
+        width: auto;
+        height: auto;
+    }
+
+    .kiwi-wrap .kiwi-header-name-container {
+        padding: 0 2px 0 52px;
     }
 
     .nephwave-task span:last-child {

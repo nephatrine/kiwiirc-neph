@@ -34,6 +34,7 @@
     --comp-sidebar-fg: #696c77;
     --comp-scroller-bg: #dcdfe4;
     --comp-scroller-fg: #a0a1a7;
+    --comp-scroller-statebrowser-fg: #5c6370;
     --comp-aboutbuffer-bg: #f0f0f0;
     --comp-aboutbuffer-header-bg: var(--brand-primary);
     --brand-link-normal: #4078f2;

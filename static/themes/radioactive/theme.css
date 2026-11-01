@@ -172,7 +172,7 @@
 }
 
 .u-button-primary, .u-button-online {
-    color: #fff;
+    color: var(--brand-default-bg);
     background-color: #00e3b5;
     border: none;
     border-bottom: 1px solid #00e4b3;
@@ -376,6 +376,9 @@
 .kiwi-header {
   background: #032f17;
 }
+.kiwi-header-name-container {
+    overflow: hidden;
+}
 .kiwi-header-name {
     color: #fff;
     text-shadow: 0 0 4px #fff;
@@ -435,7 +438,7 @@
 }
 
 .kiwi-header-server-connection .u-button {
-    color: #14fdce;
+    color: var(--brand-default-bg);
     text-decoration: underline;
 }
 
@@ -475,11 +478,18 @@
 .kiwi-statebrowser-channel-leave {
     background-color: #5dd895;
 }
+
+.kiwi-statebrowser-channel-leave {
+    color: #031e11;
+}
+
 .kiwi-statebrowser-channel-settings:hover{
     background-color: #6a7b8e;
 }
+
 .kiwi-statebrowser-channel-leave:hover{
     background: #c54d53;
+    color: #fff;
 }
 
 .kiwi-controlinput-button {
@@ -561,7 +571,7 @@
     font-style: italic;
 }
 .kiwi-messagelist-message--highlight {
-    background-color: #629477;
+    background-color: #155d36;
 }
 
 /* Standard username and usertime styling */
@@ -582,7 +592,11 @@
 
 /* When hovering over a users messages */
 .kiwi-messagelist-message--hover{
-    background-color: #629477;
+    background-color: #155d36;
+}
+
+.kiwi-messagelist-message.kiwi-messagelist-message--highlight {
+    background-color: #155d36;
 }
 
 /* The shadow over the main text area that displays when the sidebar is open */
@@ -802,6 +816,43 @@
     background-color: #031e11;
 }
 
+.kiwi-aboutbuffer,
+.kiwi-sidebar-buffersettings .u-tabbed-content,
+.kiwi-userbox,
+.kiwi-serverview .u-tabbed-content,
+.kiwi-network-info,
+.kiwi-sidebar .kiwi-channellist-table {
+    scrollbar-width: thin;
+    scrollbar-color: #14fdce #031e11;
+}
+
+.kiwi-aboutbuffer::-webkit-scrollbar,
+.kiwi-sidebar-buffersettings .u-tabbed-content::-webkit-scrollbar,
+.kiwi-userbox::-webkit-scrollbar,
+.kiwi-serverview .u-tabbed-content::-webkit-scrollbar,
+.kiwi-network-info::-webkit-scrollbar,
+.kiwi-sidebar .kiwi-channellist-table::-webkit-scrollbar {
+    width: 8px;
+}
+
+.kiwi-aboutbuffer::-webkit-scrollbar-thumb,
+.kiwi-sidebar-buffersettings .u-tabbed-content::-webkit-scrollbar-thumb,
+.kiwi-userbox::-webkit-scrollbar-thumb,
+.kiwi-serverview .u-tabbed-content::-webkit-scrollbar-thumb,
+.kiwi-network-info::-webkit-scrollbar-thumb,
+.kiwi-sidebar .kiwi-channellist-table::-webkit-scrollbar-thumb {
+    background-color: #14fdce;
+}
+
+.kiwi-aboutbuffer::-webkit-scrollbar-track,
+.kiwi-sidebar-buffersettings .u-tabbed-content::-webkit-scrollbar-track,
+.kiwi-userbox::-webkit-scrollbar-track,
+.kiwi-serverview .u-tabbed-content::-webkit-scrollbar-track,
+.kiwi-network-info::-webkit-scrollbar-track,
+.kiwi-sidebar .kiwi-channellist-table::-webkit-scrollbar-track {
+    background-color: #031e11;
+}
+
 .kiwi-nicklist-user:hover {
     border-left-color: #14fdce;
 }
@@ -913,6 +964,24 @@
     color: #fff;
     border-right: 1px solid #033e32;
 }
+
+.kiwi-statebrowser::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    pointer-events: none;
+    background: linear-gradient(
+        to bottom,
+        rgb(255 255 255 / 0%),
+        rgb(255 255 255 / 0%) 50%,
+        rgb(0 0 0 / 20%) 70%,
+        rgb(0 0 0 / 60%)
+    );
+    background-size: 100% 0.3rem;
+    opacity: 0.5;
+}
+
 .kiwi-statebrowser-divider {
     background: rgba(255, 255, 255, 0.3);
 }
@@ -1058,7 +1127,39 @@
 /* Statebrowser list */
 .kiwi-statebrowser-scrollarea {
     border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    scrollbar-color: #9e9e9e transparent;
 }
+
+.kiwi-statebrowser-scrollarea::-webkit-scrollbar {
+    width: 8px;
+}
+
+.kiwi-statebrowser-scrollarea::-webkit-scrollbar-thumb {
+    background-color: #9e9e9e;
+    border-radius: 3px;
+}
+
+.kiwi-statebrowser-scrollarea::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+.kiwi-appsettings {
+    scrollbar-color: #9e9e9e transparent;
+}
+
+.kiwi-appsettings::-webkit-scrollbar {
+    width: 8px;
+}
+
+.kiwi-appsettings::-webkit-scrollbar-thumb {
+    background-color: #9e9e9e;
+    border-radius: 3px;
+}
+
+.kiwi-appsettings::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
 .kiwi-statebrowser-scrollarea h4,
 .kiwi-statebrowser-scrollarea h4 {
     border-top: 1px solid rgba(255, 255, 255, 0.3);
@@ -1409,6 +1510,11 @@
     .kiwi-appsettings {
         background-color: #294234;
     }
+}
+
+.kiwi-messagelist {
+    scrollbar-width: thin;
+    scrollbar-color: #9e9e9e transparent;
 }
 
 .kiwi-messagelist::-webkit-scrollbar-thumb {

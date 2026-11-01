@@ -23,6 +23,7 @@
     --cd-accent: #ff5f00;
     --cd-accent-glow: #ffa040;
     --cd-accent-deep: #9a3412;
+    --cd-away: #ffa040;
     --cd-glow-rgb: 255 95 0;
 
     --cd-bezel: #0b0d10;
@@ -396,6 +397,7 @@ body.nephnet-deck-active .kiwi-welcome-simple-error {
 
 .kiwi-header-name-container {
     color: var(--comp-header-name-fg);
+    overflow: hidden;
 }
 
 .kiwi-header-name {
@@ -550,6 +552,66 @@ body.nephnet-deck-active .kiwi-welcome-simple-error {
     background: var(--comp-statebrowser-bg);
     color: var(--comp-statebrowser-fg);
     border-right: 1px solid var(--cd-rim);
+}
+
+.kiwi-statebrowser-scrollarea {
+    scrollbar-color: var(--comp-scroller-fg) var(--comp-statebrowser-bg);
+}
+
+.kiwi-statebrowser-scrollarea::-webkit-scrollbar {
+    width: 8px;
+}
+
+.kiwi-statebrowser-scrollarea::-webkit-scrollbar-thumb {
+    background-color: var(--comp-scroller-fg);
+    border-radius: 3px;
+}
+
+.kiwi-statebrowser-scrollarea::-webkit-scrollbar-track {
+    background-color: var(--comp-statebrowser-bg);
+}
+
+.kiwi-sidebar-buffersettings .u-tabbed-content,
+.kiwi-userbox,
+.kiwi-radio-browser-list,
+.kiwi-serverview .u-tabbed-content,
+.kiwi-network-info,
+.kiwi-sidebar .kiwi-channellist-table {
+    scrollbar-color: var(--comp-scroller-fg) transparent;
+}
+
+.kiwi-aboutbuffer::-webkit-scrollbar,
+.kiwi-appsettings::-webkit-scrollbar,
+.kiwi-sidebar-buffersettings .u-tabbed-content::-webkit-scrollbar,
+.kiwi-userbox::-webkit-scrollbar,
+.kiwi-radio-browser-list::-webkit-scrollbar,
+.kiwi-serverview .u-tabbed-content::-webkit-scrollbar,
+.kiwi-network-info::-webkit-scrollbar,
+.kiwi-sidebar .kiwi-channellist-table::-webkit-scrollbar {
+    width: 8px;
+}
+
+.kiwi-aboutbuffer::-webkit-scrollbar-thumb,
+.kiwi-appsettings::-webkit-scrollbar-thumb,
+.kiwi-sidebar-buffersettings .u-tabbed-content::-webkit-scrollbar-thumb,
+.kiwi-userbox::-webkit-scrollbar-thumb,
+.kiwi-radio-browser-list::-webkit-scrollbar-thumb,
+.kiwi-serverview .u-tabbed-content::-webkit-scrollbar-thumb,
+.kiwi-network-info::-webkit-scrollbar-thumb,
+.kiwi-sidebar .kiwi-channellist-table::-webkit-scrollbar-thumb {
+    background-color: var(--comp-scroller-fg);
+    border-radius: 3px;
+}
+
+.kiwi-aboutbuffer::-webkit-scrollbar-track,
+.kiwi-appsettings::-webkit-scrollbar-track,
+.kiwi-sidebar-buffersettings .u-tabbed-content::-webkit-scrollbar-track,
+.kiwi-userbox::-webkit-scrollbar-track,
+.kiwi-radio-browser-list::-webkit-scrollbar-track,
+.kiwi-serverview .u-tabbed-content::-webkit-scrollbar-track,
+.kiwi-network-info::-webkit-scrollbar-track,
+.kiwi-sidebar .kiwi-channellist-table::-webkit-scrollbar-track {
+    background-color: transparent;
 }
 
 .kiwi-statebrowser-usermenu--open {
@@ -865,6 +927,7 @@ body.nephnet-deck-active .kiwi-welcome-simple-error {
 
 .kiwi-aboutbuffer {
     background: var(--comp-aboutbuffer-bg);
+    scrollbar-color: var(--comp-scroller-fg) transparent;
 }
 
 .kiwi-aboutbuffer h3 {
@@ -1052,6 +1115,7 @@ body.nephnet-deck-active .kiwi-welcome-simple-error {
  * ==================================================================== */
 .kiwi-appsettings {
     background: var(--brand-default-bg);
+    scrollbar-color: var(--comp-scroller-fg) transparent;
 }
 
 .kiwi-appsettings-block {
@@ -1421,8 +1485,8 @@ body.nephnet-deck-active .kiwi-welcome-simple-error {
 
 .kiwi-awaystatusindicator.kiwi-awaystatusindicator--away,
 .kiwi-avatar-status--away {
-    background-color: var(--brand-warning);
-    fill: var(--brand-warning);
+    background-color: var(--cd-away);
+    fill: var(--cd-away);
 }
 
 .kiwi-awaystatusindicator.kiwi-awaystatusindicator--offline,
