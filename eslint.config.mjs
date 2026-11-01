@@ -300,6 +300,20 @@ export default [
     },
 
     {
+        files: ['static/plugins/**/*.js'],
+        languageOptions: {
+            sourceType: 'script',
+            globals: {
+                kiwi: 'readonly',
+            },
+        },
+        rules: {
+            'strict': 'off',
+            'vars-on-top': 'off',
+        },
+    },
+
+    {
         files: ['**/__tests__/*.{js,ts}', '**/tests/unit/**/*.spec.{js,ts}'],
         languageOptions: {
             globals: { ...globals.jest },

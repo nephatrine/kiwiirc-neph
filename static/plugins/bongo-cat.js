@@ -1,12 +1,12 @@
-kiwi.plugin('bongo-cat', function(kiwi, log) {
-    var PLUGIN_SKINS_SETTING = 'plugin-bongo-cat.skins';
-    var DEFAULT_SKIN_ID = 'crabstacean';
+kiwi.plugin('bongo-cat', (kiwi, log) => {
+    let PLUGIN_SKINS_SETTING = 'plugin-bongo-cat.skins';
+    let DEFAULT_SKIN_ID = 'crabstacean';
 
     function normalizeSkinId(value) {
         if (typeof value !== 'string') {
             return '';
         }
-        var id = value.trim();
+        let id = value.trim();
         return /^[A-Za-z0-9_-]+$/.test(id) ? id : '';
     }
 
@@ -14,9 +14,9 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
         if (!Array.isArray(value)) {
             return [];
         }
-        var ids = [];
-        value.forEach(function(item) {
-            var id = normalizeSkinId(item);
+        let ids = [];
+        value.forEach((item) => {
+            let id = normalizeSkinId(item);
             if (id && ids.indexOf(id) === -1) {
                 ids.push(id);
             }
@@ -24,8 +24,8 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
         return ids;
     }
 
-    var skinsSetting = kiwi.state.setting(PLUGIN_SKINS_SETTING);
-    var configuredSkins = typeof skinsSetting === 'undefined'
+    let skinsSetting = kiwi.state.setting(PLUGIN_SKINS_SETTING);
+    let configuredSkins = typeof skinsSetting === 'undefined'
         ? [DEFAULT_SKIN_ID]
         : normalizeSkinIds(skinsSetting);
 
@@ -91,7 +91,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
         },
     });
 
-    var AppSettings = null;
+    let AppSettings = null;
 
     try {
         AppSettings = kiwi.require('components/AppSettings');
@@ -99,37 +99,37 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
         log.error('Unable to load app settings for Bongo Companion', err);
     }
 
-    var SETTINGS_TAB_NAME = 'Bongo Companion';
-    var STORAGE_KEY = 'kiwiirc.bongo-cat';
-    var LEGACY_STORAGE_PREFIX = 'kiwiirc.bongo-cat.v';
-    var DEFAULT_NAME = 'Bongo';
-    var DEFAULT_HUNGER = 20;
-    var DEFAULT_TIREDNESS = 20;
-    var DEFAULT_MOOD = 80;
-    var DEFAULT_VOLUME = 0.5;
-    var MIN_HUNGER = 0;
-    var MIN_TIREDNESS = 0;
-    var MIN_MOOD = 0;
-    var XP_PER_LEVEL = 100;
-    var MAX_LEVEL = 20;
-    var MAX_XP = (MAX_LEVEL - 1) * XP_PER_LEVEL;
-    var DAILY_XP = 10;
-    var ACTIVE_XP_POINTS = 5;
-    var ACTIVE_XP_MS = 10 * 60 * 1000;
-    var ACTIVE_XP_CAP_MS = 30 * 60 * 1000;
-    var ACTIVE_XP_DAILY_CAP = 60;
-    var VIBE_XP_POINTS = 1;
-    var VIBE_XP_MS = 10 * 60 * 1000;
-    var VIBE_XP_CAP_MS = 30 * 60 * 1000;
-    var HATS_CONFIG_PATH = 'static/plugins/bongo-cat/hats.json';
-    var HATS_DIR = 'static/plugins/bongo-cat/hats/';
-    var hatCatalog = kiwi.Vue.observable({
+    let SETTINGS_TAB_NAME = 'Bongo Companion';
+    let STORAGE_KEY = 'kiwiirc.bongo-cat';
+    let LEGACY_STORAGE_PREFIX = 'kiwiirc.bongo-cat.v';
+    let DEFAULT_NAME = 'Bongo';
+    let DEFAULT_HUNGER = 20;
+    let DEFAULT_TIREDNESS = 20;
+    let DEFAULT_MOOD = 80;
+    let DEFAULT_VOLUME = 0.5;
+    let MIN_HUNGER = 0;
+    let MIN_TIREDNESS = 0;
+    let MIN_MOOD = 0;
+    let XP_PER_LEVEL = 100;
+    let MAX_LEVEL = 20;
+    let MAX_XP = (MAX_LEVEL - 1) * XP_PER_LEVEL;
+    let DAILY_XP = 10;
+    let ACTIVE_XP_POINTS = 5;
+    let ACTIVE_XP_MS = 10 * 60 * 1000;
+    let ACTIVE_XP_CAP_MS = 30 * 60 * 1000;
+    let ACTIVE_XP_DAILY_CAP = 60;
+    let VIBE_XP_POINTS = 1;
+    let VIBE_XP_MS = 10 * 60 * 1000;
+    let VIBE_XP_CAP_MS = 30 * 60 * 1000;
+    let HATS_CONFIG_PATH = 'static/plugins/bongo-cat/hats.json';
+    let HATS_DIR = 'static/plugins/bongo-cat/hats/';
+    let hatCatalog = kiwi.Vue.observable({
         options: [],
         map: Object.create(null),
     });
-    var SKINS_DIR = 'static/plugins/bongo-cat/';
-    var SKIN_DIR = SKINS_DIR + DEFAULT_SKIN_ID + '/';
-    var DEFAULT_SOUNDS = {
+    let SKINS_DIR = 'static/plugins/bongo-cat/';
+    let SKIN_DIR = SKINS_DIR + DEFAULT_SKIN_ID + '/';
+    let DEFAULT_SOUNDS = {
         eat: 'static/plugins/bongo-cat/default/eat.wav',
         drink: 'static/plugins/bongo-cat/default/drink.wav',
         laugh: 'static/plugins/bongo-cat/default/laugh.wav',
@@ -137,7 +137,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
         wow: 'static/plugins/bongo-cat/default/yippee.wav',
         yawn: 'static/plugins/bongo-cat/default/yawn.wav',
     };
-    var DEFAULT_SKIN = {
+    let DEFAULT_SKIN = {
         name: 'Crabstacean',
         body: SKIN_DIR + 'body.webp',
         head: SKIN_DIR + 'head.webp',
@@ -230,22 +230,22 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
             return 'Skin configuration is not an object';
         }
 
-        var assets = data.assets && typeof data.assets === 'object' ? data.assets : {};
-        var hands = assets.hands && typeof assets.hands === 'object' ? assets.hands : {};
-        var left = hands.left && typeof hands.left === 'object' ? hands.left : {};
-        var right = hands.right && typeof hands.right === 'object' ? hands.right : {};
-        var eyes = assets.eyes && typeof assets.eyes === 'object' ? assets.eyes : {};
-        var mouth = assets.mouth && typeof assets.mouth === 'object' ? assets.mouth : {};
-        var tail = assets.tail && typeof assets.tail === 'object' ? assets.tail : {};
-        var legs = assets.legs && typeof assets.legs === 'object' ? assets.legs : {};
-        var ears = assets.ears && typeof assets.ears === 'object' ? assets.ears : {};
-        var features = data.features && typeof data.features === 'object'
+        let assets = data.assets && typeof data.assets === 'object' ? data.assets : {};
+        let hands = assets.hands && typeof assets.hands === 'object' ? assets.hands : {};
+        let left = hands.left && typeof hands.left === 'object' ? hands.left : {};
+        let right = hands.right && typeof hands.right === 'object' ? hands.right : {};
+        let eyes = assets.eyes && typeof assets.eyes === 'object' ? assets.eyes : {};
+        let mouth = assets.mouth && typeof assets.mouth === 'object' ? assets.mouth : {};
+        let tail = assets.tail && typeof assets.tail === 'object' ? assets.tail : {};
+        let legs = assets.legs && typeof assets.legs === 'object' ? assets.legs : {};
+        let ears = assets.ears && typeof assets.ears === 'object' ? assets.ears : {};
+        let features = data.features && typeof data.features === 'object'
             ? data.features
             : {};
-        var missing = [];
+        let missing = [];
 
         function requireAssets(group, keys, prefix) {
-            keys.forEach(function(key) {
+            keys.forEach((key) => {
                 if (!skinHasAsset(group, key)) {
                     missing.push(prefix + '.' + key);
                 }
@@ -279,42 +279,42 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
     }
 
     function buildSkinConfig(data, skinId) {
-        var source = data && typeof data === 'object' ? data : {};
-        var assets = source.assets && typeof source.assets === 'object'
+        let source = data && typeof data === 'object' ? data : {};
+        let assets = source.assets && typeof source.assets === 'object'
             ? source.assets
             : {};
-        var hands = assets.hands && typeof assets.hands === 'object'
+        let hands = assets.hands && typeof assets.hands === 'object'
             ? assets.hands
             : {};
-        var left = hands.left && typeof hands.left === 'object' ? hands.left : {};
-        var right = hands.right && typeof hands.right === 'object' ? hands.right : {};
-        var tail = assets.tail && typeof assets.tail === 'object' ? assets.tail : {};
-        var legs = assets.legs && typeof assets.legs === 'object' ? assets.legs : {};
-        var ears = assets.ears && typeof assets.ears === 'object' ? assets.ears : {};
-        var eyes = assets.eyes && typeof assets.eyes === 'object' ? assets.eyes : {};
-        var mouth = assets.mouth && typeof assets.mouth === 'object' ? assets.mouth : {};
-        var features = source.features && typeof source.features === 'object'
+        let left = hands.left && typeof hands.left === 'object' ? hands.left : {};
+        let right = hands.right && typeof hands.right === 'object' ? hands.right : {};
+        let tail = assets.tail && typeof assets.tail === 'object' ? assets.tail : {};
+        let legs = assets.legs && typeof assets.legs === 'object' ? assets.legs : {};
+        let ears = assets.ears && typeof assets.ears === 'object' ? assets.ears : {};
+        let eyes = assets.eyes && typeof assets.eyes === 'object' ? assets.eyes : {};
+        let mouth = assets.mouth && typeof assets.mouth === 'object' ? assets.mouth : {};
+        let features = source.features && typeof source.features === 'object'
             ? source.features
             : {};
-        var pivots = source.pivots && typeof source.pivots === 'object'
+        let pivots = source.pivots && typeof source.pivots === 'object'
             ? source.pivots
             : {};
-        var headPivot = pivots.head && typeof pivots.head === 'object'
+        let headPivot = pivots.head && typeof pivots.head === 'object'
             ? pivots.head
             : {};
-        var tailPivot = pivots.tail && typeof pivots.tail === 'object'
+        let tailPivot = pivots.tail && typeof pivots.tail === 'object'
             ? pivots.tail
             : {};
-        var arms = pivots.arms && typeof pivots.arms === 'object' ? pivots.arms : {};
-        var leftPivot = arms.left && typeof arms.left === 'object' ? arms.left : {};
-        var rightPivot = arms.right && typeof arms.right === 'object' ? arms.right : {};
-        var sounds = {};
-        Object.keys(DEFAULT_SOUNDS).forEach(function(key) {
+        let arms = pivots.arms && typeof pivots.arms === 'object' ? pivots.arms : {};
+        let leftPivot = arms.left && typeof arms.left === 'object' ? arms.left : {};
+        let rightPivot = arms.right && typeof arms.right === 'object' ? arms.right : {};
+        let sounds = {};
+        Object.keys(DEFAULT_SOUNDS).forEach((key) => {
             sounds[key] = DEFAULT_SOUNDS[key];
         });
         if (source.sounds && typeof source.sounds === 'object') {
-            Object.keys(DEFAULT_SOUNDS).forEach(function(key) {
-                var file = source.sounds[key];
+            Object.keys(DEFAULT_SOUNDS).forEach((key) => {
+                let file = source.sounds[key];
                 if (typeof file === 'string' && file) {
                     sounds[key] = file.indexOf('static/') === 0
                         ? file
@@ -406,18 +406,18 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
     }
 
     function applySkinData(data, skinId) {
-        var config = buildSkinConfig(data, skinId);
-        Object.keys(config).forEach(function(key) {
+        let config = buildSkinConfig(data, skinId);
+        Object.keys(config).forEach((key) => {
             skinConfig[key] = config[key];
         });
         skinState.id = skinId;
     }
 
-    var skinLoadToken = 0;
+    let skinLoadToken = 0;
 
     function loadSkinById(skinId) {
-        var id = normalizeSkinId(skinId);
-        var token = skinLoadToken + 1;
+        let id = normalizeSkinId(skinId);
+        let token = skinLoadToken + 1;
 
         skinLoadToken = token;
         skinState.ready = false;
@@ -433,17 +433,17 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
         }
 
         return window.fetch(skinConfigPath(id))
-            .then(function(response) {
+            .then((response) => {
                 if (!response.ok) {
                     throw new Error('HTTP ' + response.status);
                 }
                 return response.json();
             })
-            .then(function(data) {
+            .then((data) => {
                 if (token !== skinLoadToken) {
                     return false;
                 }
-                var problem = validateSkinConfig(data);
+                let problem = validateSkinConfig(data);
                 if (problem) {
                     throw new Error(problem);
                 }
@@ -454,7 +454,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 persist();
                 return true;
             })
-            .catch(function(err) {
+            .catch((err) => {
                 if (token !== skinLoadToken) {
                     return false;
                 }
@@ -465,15 +465,15 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
             });
     }
 
-    var skinState = kiwi.Vue.observable({
+    const skinState = kiwi.Vue.observable({
         id: configuredSkins[0],
         ready: false,
         failedSkin: '',
     });
-    var skinConfig = kiwi.Vue.observable(JSON.parse(JSON.stringify(DEFAULT_SKIN)));
-    var SNACKS_CONFIG_PATH = 'static/plugins/bongo-cat/snacks.json';
-    var SNACKS_DIR = 'static/plugins/bongo-cat/snacks/';
-    var SAMPLE_GAIN = {
+    const skinConfig = kiwi.Vue.observable(JSON.parse(JSON.stringify(DEFAULT_SKIN)));
+    let SNACKS_CONFIG_PATH = 'static/plugins/bongo-cat/snacks.json';
+    let SNACKS_DIR = 'static/plugins/bongo-cat/snacks/';
+    let SAMPLE_GAIN = {
         eat: 0.85,
         drink: 1.4,
         laugh: 1.2,
@@ -481,48 +481,47 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
         wow: 1.2,
         yawn: 1.1,
     };
-    var MOOD_HAPPY_MIN = 75;
-    var MOOD_CONTENT_MIN = 50;
-    var MOOD_LOW_MIN = 35;
-    var SLEEP_ENERGIZED_MS = 90000;
-    var SLEEP_STEADY_MS = 60000;
-    var SLEEP_TIRED_MS = 30000;
-    var SLEEP_EXHAUSTED_MS = 10000;
-    var TAP_THROTTLE_MS = 75;
-    var PAW_DOWN_MS = 170;
-    var CARE_TICK_MS = 10000;
-    var HUNGER_DECAY_MS = 12 * 60 * 1000;
-    var TIREDNESS_DECAY_MS = 10 * 60 * 1000;
-    var MOOD_DECAY_MS = 18 * 60 * 1000;
-    var MUSIC_EFFECT_MS = 10 * 60 * 1000;
-    var MUSIC_EFFECT_CAP_MS = 30 * 60 * 1000;
-    var OFFLINE_DECAY_CAP_MS = 8 * 60 * 60 * 1000;
-    var SNACK_COOLDOWN_MS = 10 * 60 * 1000;
-    var NAP_COOLDOWN_MS = 30 * 60 * 1000;
-    var PET_COOLDOWN_MS = 60 * 1000;
-    var NAP_DURATION_MS = 10000;
-    var FOOD_RAIN_MS = 450;
-    var DRINK_MS = 1300;
-    var PET_SOUND_MS = 400;
-    var MESSAGE_REACTION_MS = 10000;
-    var HIGHLIGHT_REACTION_MS = 30000;
-    var NOTICE_REACTION_MS = 20000;
-    var WORRIED_REACTION_MS = 30000;
-    var CONNECT_REACTION_MS = 10000;
-    var LISTEN_DURATION_MS = 1400;
-    var CELEBRATE_DURATION_MS = 2400;
-    var WORRIED_DURATION_MS = 6000;
-    var EVIL_DURATION_MS = 24000;
-    var EVIL_COOLDOWN_MS = 60000;
-    var EVIL_CHANCE = 1 / 36;
+    let MOOD_HAPPY_MIN = 75;
+    let MOOD_CONTENT_MIN = 50;
+    let MOOD_LOW_MIN = 35;
+    let SLEEP_STEADY_MS = 60000;
+    let SLEEP_TIRED_MS = 30000;
+    let SLEEP_EXHAUSTED_MS = 10000;
+    let TAP_THROTTLE_MS = 75;
+    let PAW_DOWN_MS = 170;
+    let CARE_TICK_MS = 10000;
+    let HUNGER_DECAY_MS = 12 * 60 * 1000;
+    let TIREDNESS_DECAY_MS = 10 * 60 * 1000;
+    let MOOD_DECAY_MS = 18 * 60 * 1000;
+    let MUSIC_EFFECT_MS = 10 * 60 * 1000;
+    let MUSIC_EFFECT_CAP_MS = 30 * 60 * 1000;
+    let OFFLINE_DECAY_CAP_MS = 8 * 60 * 60 * 1000;
+    let SNACK_COOLDOWN_MS = 10 * 60 * 1000;
+    let NAP_COOLDOWN_MS = 30 * 60 * 1000;
+    let PET_COOLDOWN_MS = 60 * 1000;
+    let NAP_DURATION_MS = 10000;
+    let FOOD_RAIN_MS = 450;
+    let DRINK_MS = 1300;
+    let PET_SOUND_MS = 400;
+    let MESSAGE_REACTION_MS = 10000;
+    let HIGHLIGHT_REACTION_MS = 30000;
+    let NOTICE_REACTION_MS = 20000;
+    let WORRIED_REACTION_MS = 30000;
+    let CONNECT_REACTION_MS = 10000;
+    let LISTEN_DURATION_MS = 1400;
+    let CELEBRATE_DURATION_MS = 2400;
+    let WORRIED_DURATION_MS = 6000;
+    let EVIL_DURATION_MS = 24000;
+    let EVIL_COOLDOWN_MS = 60000;
+    let EVIL_CHANCE = 1 / 36;
 
     function clamp(value, min, max) {
         return Math.min(max, Math.max(min, value));
     }
 
     function uniqueImages(images) {
-        var unique = [];
-        images.forEach(function(image) {
+        let unique = [];
+        images.forEach((image) => {
             if (image && unique.indexOf(image) === -1) {
                 unique.push(image);
             }
@@ -531,18 +530,18 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
     }
 
     function numberOr(value, fallback) {
-        var number = Number(value);
-        return isFinite(number) ? number : fallback;
+        let number = Number(value);
+        return Number.isFinite(number) ? number : fallback;
     }
 
     function timestampOr(value, fallback) {
-        var number = Number(value);
-        return isFinite(number) && number > 0 ? number : fallback;
+        let number = Number(value);
+        return Number.isFinite(number) && number > 0 ? number : fallback;
     }
 
     function readStoredState(key) {
         try {
-            var stored = JSON.parse(window.localStorage.getItem(key) || 'null');
+            let stored = JSON.parse(window.localStorage.getItem(key) || 'null');
             return stored && typeof stored === 'object' ? stored : null;
         } catch (err) {
             return null;
@@ -559,14 +558,14 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
 
     function cleanupLegacyState() {
         try {
-            var keys = [];
-            for (var i = 0; i < window.localStorage.length; i += 1) {
-                var key = window.localStorage.key(i);
+            let keys = [];
+            for (let i = 0; i < window.localStorage.length; i += 1) {
+                let key = window.localStorage.key(i);
                 if (key && key.indexOf(LEGACY_STORAGE_PREFIX) === 0) {
                     keys.push(key);
                 }
             }
-            keys.forEach(function(key) {
+            keys.forEach((key) => {
                 window.localStorage.removeItem(key);
             });
         } catch (err) {
@@ -575,27 +574,25 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
     }
 
     function loadState() {
-        var now = Date.now();
+        let now = Date.now();
         cleanupLegacyState();
-        var stored = readStoredState(STORAGE_KEY);
+        let stored = readStoredState(STORAGE_KEY);
 
         if (!stored) {
             stored = {};
         }
 
-        var name = typeof stored.name === 'string' ? stored.name.trim().slice(0, 20) : '';
-        var lastCareAt = stored.lastCareAt && typeof stored.lastCareAt === 'object'
+        let name = typeof stored.name === 'string' ? stored.name.trim().slice(0, 20) : '';
+        let lastCareAt = stored.lastCareAt && typeof stored.lastCareAt === 'object'
             ? stored.lastCareAt
             : {};
-        var hatsUnlocked = Array.isArray(stored.hatsUnlocked)
-            ? stored.hatsUnlocked.filter(function(id, index, list) {
-                return typeof id === 'string' && list.indexOf(id) === index;
-            })
+        let hatsUnlocked = Array.isArray(stored.hatsUnlocked)
+            ? stored.hatsUnlocked.filter((id, index, list) => typeof id === 'string' && list.indexOf(id) === index)
             : [];
-        var selectedHat = typeof stored.selectedHat === 'string'
+        let selectedHat = typeof stored.selectedHat === 'string'
             ? stored.selectedHat
             : '';
-        var hatRollsUsed = Math.max(0, Math.floor(numberOr(stored.hatRollsUsed, 0)));
+        let hatRollsUsed = Math.max(0, Math.floor(numberOr(stored.hatRollsUsed, 0)));
 
         return {
             name: name || DEFAULT_NAME,
@@ -639,10 +636,10 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
         };
     }
 
-    var store = kiwi.Vue.observable(loadState());
+    const store = kiwi.Vue.observable(loadState());
 
     function resetCareClocks(now) {
-        var time = typeof now === 'number' ? now : Date.now();
+        let time = typeof now === 'number' ? now : Date.now();
         store.lastHungerAt = time;
         store.lastTirednessAt = time;
         store.lastMoodAt = time;
@@ -651,7 +648,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
     }
 
     function addXp(amount) {
-        var before = store.xp;
+        let before = store.xp;
         store.xp = Math.min(MAX_XP, before + amount);
         return store.xp - before;
     }
@@ -698,7 +695,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
     }
     skinState.id = store.skin;
 
-    var audioContext = null;
+    let audioContext = null;
 
     function getAudioContext() {
         if (audioContext) {
@@ -708,7 +705,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
             return audioContext;
         }
 
-        var AudioContext = window.AudioContext || window.webkitAudioContext;
+        let AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) {
             return null;
         }
@@ -731,14 +728,14 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
             return;
         }
 
-        var ctx = getAudioContext();
+        let ctx = getAudioContext();
         if (!ctx) {
             return;
         }
 
-        var now = ctx.currentTime;
-        var oscillator = ctx.createOscillator();
-        var gain = ctx.createGain();
+        let now = ctx.currentTime;
+        let oscillator = ctx.createOscillator();
+        let gain = ctx.createGain();
 
         oscillator.type = 'triangle';
         oscillator.frequency.setValueAtTime(high ? 190 : 145, now);
@@ -754,8 +751,8 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
         oscillator.stop(now + 0.13);
     }
 
-    var sampleBuffers = {};
-    var sampleLoading = {};
+    let sampleBuffers = {};
+    let sampleLoading = {};
 
     function loadSample(name) {
         if (!skinConfig.sounds[name]) {
@@ -768,27 +765,25 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
             return sampleLoading[name];
         }
 
-        var ctx = getAudioContext();
+        let ctx = getAudioContext();
         if (!ctx || !window.fetch) {
             return Promise.resolve(null);
         }
 
         sampleLoading[name] = window.fetch(skinConfig.sounds[name])
-            .then(function(response) {
+            .then((response) => {
                 if (!response.ok) {
                     throw new Error('HTTP ' + response.status);
                 }
                 return response.arrayBuffer();
             })
-            .then(function(data) {
-                return ctx.decodeAudioData(data);
-            })
-            .then(function(buffer) {
+            .then((data) => ctx.decodeAudioData(data))
+            .then((buffer) => {
                 sampleBuffers[name] = buffer;
                 sampleLoading[name] = null;
                 return buffer;
             })
-            .catch(function(err) {
+            .catch((err) => {
                 sampleLoading[name] = null;
                 log.error('Unable to load Bongo Companion sound', err);
                 return null;
@@ -802,18 +797,18 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
             return;
         }
 
-        var ctx = getAudioContext();
+        let ctx = getAudioContext();
         if (!ctx) {
             return;
         }
 
-        loadSample(name).then(function(buffer) {
+        loadSample(name).then((buffer) => {
             if (!buffer || !store.sound || store.volume <= 0 || store.hidden) {
                 return;
             }
 
-            var source = ctx.createBufferSource();
-            var gain = ctx.createGain();
+            let source = ctx.createBufferSource();
+            let gain = ctx.createGain();
             source.buffer = buffer;
             source.loop = false;
             gain.gain.value = store.volume * (SAMPLE_GAIN[name] || 1);
@@ -823,7 +818,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
         });
     }
 
-    var BongoCat = kiwi.Vue.extend({
+    let BongoCat = kiwi.Vue.extend({
         template: '#kiwi-bongo-cat',
         props: {
             network: {
@@ -907,8 +902,8 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     return '';
                 }
 
-                var tail = skinConfig.tail;
-                var image = '';
+                let tail = skinConfig.tail;
+                let image = '';
                 if (this.asleep) {
                     image = tail.tucked;
                 } else if (this.moodBand === 'grumpy' || this.worried) {
@@ -927,7 +922,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 return skinConfig.features.tail && !!this.tailImage;
             },
             tailPivot: function() {
-                var pivot = skinConfig.pivots.tail;
+                let pivot = skinConfig.pivots.tail;
                 return pivot.x + 'px ' + pivot.y + 'px';
             },
             showLegs: function() {
@@ -943,15 +938,15 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 return -15 + skinConfig.hatOffset;
             },
             headPivot: function() {
-                var pivot = skinConfig.pivots.head;
+                let pivot = skinConfig.pivots.head;
                 return pivot.x + 'px ' + pivot.y + 'px';
             },
             leftArmPivot: function() {
-                var pivot = skinConfig.pivots.arms.left;
+                let pivot = skinConfig.pivots.arms.left;
                 return pivot.x + 'px ' + pivot.y + 'px';
             },
             rightArmPivot: function() {
-                var pivot = skinConfig.pivots.arms.right;
+                let pivot = skinConfig.pivots.arms.right;
                 return pivot.x + 'px ' + pivot.y + 'px';
             },
             store: function() {
@@ -981,7 +976,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     store.hatsUnlocked.indexOf(store.selectedHat) !== -1);
             },
             hatImage: function() {
-                var hat = hatCatalog.map[store.selectedHat];
+                let hat = hatCatalog.map[store.selectedHat];
                 return hat ? hat.file : '';
             },
             baseEyeImage: function() {
@@ -1164,7 +1159,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 return 'rested';
             },
             moodDecayMultiplier: function() {
-                var multiplier = 1;
+                let multiplier = 1;
                 if (store.hunger >= 50) {
                     multiplier += 0.25;
                 }
@@ -1275,10 +1270,10 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
             },
         },
         watch: {
-            dancing: function() {
+            'dancing': function() {
                 this.rescheduleLimbSwaps();
             },
-            evilMode: function(active) {
+            'evilMode': function(active) {
                 if (!active && this.evil) {
                     this.endEvil();
                 }
@@ -1349,9 +1344,9 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
         },
         methods: {
             isToolbarOpen: function() {
-                var inline = document.querySelector('.kiwi-controlinput--show-tools--inline');
-                var tools = document.querySelector('.kiwi-controlinput-tools-container');
-                var active = document.querySelector('.kiwi-controlinput-active-tool');
+                let inline = document.querySelector('.kiwi-controlinput--show-tools--inline');
+                let tools = document.querySelector('.kiwi-controlinput-tools-container');
+                let active = document.querySelector('.kiwi-controlinput-active-tool');
                 return (!!tools && !inline) || !!(active && active.firstElementChild);
             },
             updateToolbarOffset: function() {
@@ -1361,34 +1356,34 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 if (this.toolbarCheckTimer) {
                     return;
                 }
-                this.toolbarCheckTimer = window.setTimeout(function() {
+                this.toolbarCheckTimer = window.setTimeout(() => {
                     this.toolbarCheckTimer = null;
                     this.updateToolbarOffset();
-                }.bind(this), 0);
+                }, 0);
             },
             isToolbarMutationRelevant: function(mutations) {
-                var selector = '.kiwi-controlinput-tools-container, ' +
+                let selector = '.kiwi-controlinput-tools-container, ' +
                     '.kiwi-controlinput-active-tool';
-                var isRelevantNode = function(node) {
+                let isRelevantNode = function(node) {
                     return !!(node && node.nodeType === 1 &&
                         (node.matches(selector) || node.querySelector(selector)));
                 };
 
-                for (var i = 0; i < mutations.length; i += 1) {
-                    var target = mutations[i].target;
+                for (let i = 0; i < mutations.length; i += 1) {
+                    let target = mutations[i].target;
                     if (target && target.nodeType === 1 && target.closest(selector)) {
                         return true;
                     }
 
-                    var added = mutations[i].addedNodes;
-                    for (var j = 0; j < added.length; j += 1) {
+                    let added = mutations[i].addedNodes;
+                    for (let j = 0; j < added.length; j += 1) {
                         if (isRelevantNode(added[j])) {
                             return true;
                         }
                     }
 
-                    var removed = mutations[i].removedNodes;
-                    for (var k = 0; k < removed.length; k += 1) {
+                    let removed = mutations[i].removedNodes;
+                    for (let k = 0; k < removed.length; k += 1) {
                         if (isRelevantNode(removed[k])) {
                             return true;
                         }
@@ -1414,7 +1409,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 });
             },
             cooldownRemaining: function(lastAt, duration) {
-                var remaining = (lastAt || 0) + duration - this.now;
+                let remaining = (lastAt || 0) + duration - this.now;
                 return remaining > 0 ? remaining : 0;
             },
             cooldownLabel: function(remaining) {
@@ -1442,33 +1437,33 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 this.ensureSmileScheduled();
             },
             applyDecay: function() {
-                var now = Date.now();
+                let now = Date.now();
                 if (store.hidden) {
                     resetCareClocks(now);
                     return;
                 }
 
-                var lastHunger = Math.min(timestampOr(store.lastHungerAt, now), now);
-                var lastTiredness = Math.min(timestampOr(store.lastTirednessAt, now), now);
-                var lastMood = Math.min(timestampOr(store.lastMoodAt, now), now);
-                var hungerElapsed = Math.min(
+                let lastHunger = Math.min(timestampOr(store.lastHungerAt, now), now);
+                let lastTiredness = Math.min(timestampOr(store.lastTirednessAt, now), now);
+                let lastMood = Math.min(timestampOr(store.lastMoodAt, now), now);
+                let hungerElapsed = Math.min(
                     Math.max(now - lastHunger, 0),
                     OFFLINE_DECAY_CAP_MS
                 );
-                var tirednessElapsed = Math.min(
+                let tirednessElapsed = Math.min(
                     Math.max(now - lastTiredness, 0),
                     OFFLINE_DECAY_CAP_MS
                 );
-                var moodElapsed = Math.min(
+                let moodElapsed = Math.min(
                     Math.max(now - lastMood, 0),
                     OFFLINE_DECAY_CAP_MS
                 );
-                var hungerGain = Math.floor(hungerElapsed / HUNGER_DECAY_MS);
-                var tirednessGain = this.asleep
+                let hungerGain = Math.floor(hungerElapsed / HUNGER_DECAY_MS);
+                let tirednessGain = this.asleep
                     ? 0
                     : Math.floor(tirednessElapsed / TIREDNESS_DECAY_MS);
-                var multiplier = this.moodDecayMultiplier;
-                var moodLoss = Math.floor((moodElapsed * multiplier) / MOOD_DECAY_MS);
+                let multiplier = this.moodDecayMultiplier;
+                let moodLoss = Math.floor((moodElapsed * multiplier) / MOOD_DECAY_MS);
 
                 if (this.asleep) {
                     store.lastTirednessAt = now;
@@ -1495,15 +1490,15 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 persist();
             },
             applyMusicEffects: function() {
-                var now = Date.now();
+                let now = Date.now();
                 if (store.hidden || this.asleep || !this.radioPlaying) {
                     this.lastMusicAt = now;
                     return;
                 }
 
-                var last = Math.min(timestampOr(this.lastMusicAt, now), now);
-                var elapsed = Math.min(Math.max(now - last, 0), MUSIC_EFFECT_CAP_MS);
-                var points = Math.floor(elapsed / MUSIC_EFFECT_MS);
+                let last = Math.min(timestampOr(this.lastMusicAt, now), now);
+                let elapsed = Math.min(Math.max(now - last, 0), MUSIC_EFFECT_CAP_MS);
+                let points = Math.floor(elapsed / MUSIC_EFFECT_MS);
 
                 if (points === 0) {
                     return;
@@ -1524,9 +1519,9 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     (this.radioMode === 'jam' || this.radioMode === 'tired-jam');
             },
             applyProgression: function() {
-                var now = Date.now();
-                var today = dayKey(new Date(now));
-                var changed = false;
+                let now = Date.now();
+                let today = dayKey(new Date(now));
+                let changed = false;
 
                 if (store.lastXpDay !== today) {
                     store.lastXpDay = today;
@@ -1549,20 +1544,20 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     return;
                 }
 
-                var activeAwarded = false;
-                var last = Math.min(timestampOr(store.lastActiveXpAt, now), now);
-                var elapsed = Math.min(Math.max(now - last, 0), ACTIVE_XP_CAP_MS);
-                var points = Math.floor(elapsed / ACTIVE_XP_MS);
-                var hasActivity = this.lastUserActivityAt >= last;
+                let activeAwarded = false;
+                let last = Math.min(timestampOr(store.lastActiveXpAt, now), now);
+                let elapsed = Math.min(Math.max(now - last, 0), ACTIVE_XP_CAP_MS);
+                let points = Math.floor(elapsed / ACTIVE_XP_MS);
+                let hasActivity = this.lastUserActivityAt >= last;
 
                 if (points > 0) {
-                    var activeCapLeft = ACTIVE_XP_DAILY_CAP - store.activeXpToday;
+                    let activeCapLeft = ACTIVE_XP_DAILY_CAP - store.activeXpToday;
                     if (hasActivity && activeCapLeft > 0) {
-                        var activeAmount = Math.min(
+                        let activeAmount = Math.min(
                             points * ACTIVE_XP_POINTS,
                             activeCapLeft
                         );
-                        var activeGained = addXp(activeAmount);
+                        let activeGained = addXp(activeAmount);
                         if (activeGained > 0) {
                             store.activeXpToday += activeGained;
                             activeAwarded = true;
@@ -1574,15 +1569,15 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     store.lastActiveXpAt = now;
                 }
 
-                var vibing = this.isVibing();
-                var vibeLast = Math.min(timestampOr(store.lastVibeXpAt, now), now);
-                var vibeElapsed = Math.min(Math.max(now - vibeLast, 0), VIBE_XP_CAP_MS);
-                var vibePoints = Math.floor(vibeElapsed / VIBE_XP_MS);
+                let vibing = this.isVibing();
+                let vibeLast = Math.min(timestampOr(store.lastVibeXpAt, now), now);
+                let vibeElapsed = Math.min(Math.max(now - vibeLast, 0), VIBE_XP_CAP_MS);
+                let vibePoints = Math.floor(vibeElapsed / VIBE_XP_MS);
 
                 if (vibePoints > 0) {
-                    var vibeCapLeft = ACTIVE_XP_DAILY_CAP - store.activeXpToday;
+                    let vibeCapLeft = ACTIVE_XP_DAILY_CAP - store.activeXpToday;
                     if (!activeAwarded && vibing && vibeCapLeft > 0) {
-                        var vibeGained = addXp(
+                        let vibeGained = addXp(
                             Math.min(vibePoints * VIBE_XP_POINTS, vibeCapLeft)
                         );
                         if (vibeGained > 0) {
@@ -1602,16 +1597,16 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
             showHeart: function(duration) {
                 this.petted = true;
                 window.clearTimeout(this.pettedTimer);
-                this.pettedTimer = window.setTimeout(function() {
+                this.pettedTimer = window.setTimeout(() => {
                     this.petted = false;
-                }.bind(this), duration);
+                }, duration);
             },
             listen: function(duration) {
                 this.listening = true;
                 window.clearTimeout(this.listeningTimer);
-                this.listeningTimer = window.setTimeout(function() {
+                this.listeningTimer = window.setTimeout(() => {
                     this.listening = false;
-                }.bind(this), duration);
+                }, duration);
             },
             celebrate: function(duration) {
                 this.wake();
@@ -1621,23 +1616,23 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 this.playSound('wow');
                 this.showHeart(900);
                 window.clearTimeout(this.celebratingTimer);
-                this.celebratingTimer = window.setTimeout(function() {
+                this.celebratingTimer = window.setTimeout(() => {
                     this.celebrating = false;
-                }.bind(this), duration);
+                }, duration);
             },
             worry: function(duration) {
                 this.worried = true;
                 window.clearTimeout(this.worriedTimer);
-                this.worriedTimer = window.setTimeout(function() {
+                this.worriedTimer = window.setTimeout(() => {
                     this.worried = false;
-                }.bind(this), duration);
+                }, duration);
             },
             acknowledge: function() {
                 this.acknowledging = true;
                 window.clearTimeout(this.acknowledgeTimer);
-                this.acknowledgeTimer = window.setTimeout(function() {
+                this.acknowledgeTimer = window.setTimeout(() => {
                     this.acknowledging = false;
-                }.bind(this), 1000);
+                }, 1000);
             },
             shouldBlink: function() {
                 if (window.matchMedia &&
@@ -1652,8 +1647,8 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     return;
                 }
 
-                var delay = 4000 + Math.floor(Math.random() * 4000);
-                this.blinkLoopTimer = window.setTimeout(function() {
+                let delay = 4000 + Math.floor(Math.random() * 4000);
+                this.blinkLoopTimer = window.setTimeout(() => {
                     if (this.asleep || !this.shouldBlink()) {
                         this.scheduleBlink();
                         return;
@@ -1661,11 +1656,11 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
 
                     this.blinking = true;
                     window.clearTimeout(this.blinkTimer);
-                    this.blinkTimer = window.setTimeout(function() {
+                    this.blinkTimer = window.setTimeout(() => {
                         this.blinking = false;
                         this.scheduleBlink();
-                    }.bind(this), 140);
-                }.bind(this), delay);
+                    }, 140);
+                }, delay);
             },
             shouldYawn: function() {
                 if (store.hidden || this.asleep ||
@@ -1691,8 +1686,8 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     return;
                 }
 
-                var delay = 20000 + Math.floor(Math.random() * 20000);
-                this.yawnLoopTimer = window.setTimeout(function() {
+                let delay = 20000 + Math.floor(Math.random() * 20000);
+                this.yawnLoopTimer = window.setTimeout(() => {
                     this.yawnLoopTimer = null;
                     if (!this.shouldYawn()) {
                         this.ensureYawnScheduled();
@@ -1702,12 +1697,12 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     this.yawning = true;
                     this.playSound('yawn');
                     window.clearTimeout(this.yawnTimer);
-                    this.yawnTimer = window.setTimeout(function() {
+                    this.yawnTimer = window.setTimeout(() => {
                         this.yawnTimer = null;
                         this.yawning = false;
                         this.ensureYawnScheduled();
-                    }.bind(this), 1200);
-                }.bind(this), delay);
+                    }, 1200);
+                }, delay);
             },
             canEnterEvil: function() {
                 return this.shouldSmile() &&
@@ -1728,10 +1723,10 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 this.smiling = false;
                 this.evil = true;
                 window.clearTimeout(this.evilTimer);
-                this.evilTimer = window.setTimeout(function() {
+                this.evilTimer = window.setTimeout(() => {
                     this.evilTimer = null;
                     this.endEvil();
-                }.bind(this), EVIL_DURATION_MS);
+                }, EVIL_DURATION_MS);
                 return true;
             },
             endEvil: function() {
@@ -1772,8 +1767,8 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     return;
                 }
 
-                var delay = 8000 + Math.floor(Math.random() * 8000);
-                this.smileLoopTimer = window.setTimeout(function() {
+                let delay = 8000 + Math.floor(Math.random() * 8000);
+                this.smileLoopTimer = window.setTimeout(() => {
                     this.smileLoopTimer = null;
                     if (!this.shouldSmile()) {
                         this.ensureSmileScheduled();
@@ -1788,12 +1783,12 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
 
                     this.smiling = true;
                     window.clearTimeout(this.smileTimer);
-                    this.smileTimer = window.setTimeout(function() {
+                    this.smileTimer = window.setTimeout(() => {
                         this.smileTimer = null;
                         this.smiling = false;
                         this.ensureSmileScheduled();
-                    }.bind(this), 1500);
-                }.bind(this), delay);
+                    }, 1500);
+                }, delay);
             },
             shouldSwapLimbs: function() {
                 if (store.hidden || this.asleep) {
@@ -1814,9 +1809,9 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 this.scheduleLegSwap();
             },
             scheduleHandSwap: function(side) {
-                var timerKey = side === 'left' ? 'leftHandTimer' : 'rightHandTimer';
+                let timerKey = side === 'left' ? 'leftHandTimer' : 'rightHandTimer';
                 window.clearTimeout(this[timerKey]);
-                this[timerKey] = window.setTimeout(function() {
+                this[timerKey] = window.setTimeout(() => {
                     this[timerKey] = null;
                     if (this.shouldSwapLimbs() && this.pawDownSide !== side) {
                         if (side === 'left') {
@@ -1826,17 +1821,17 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                         }
                     }
                     this.scheduleHandSwap(side);
-                }.bind(this), this.limbSwapDelay());
+                }, this.limbSwapDelay());
             },
             scheduleLegSwap: function() {
                 window.clearTimeout(this.legsTimer);
-                this.legsTimer = window.setTimeout(function() {
+                this.legsTimer = window.setTimeout(() => {
                     this.legsTimer = null;
                     if (this.shouldSwapLimbs()) {
                         this.legsIdle = this.legsIdle === 1 ? 2 : 1;
                     }
                     this.scheduleLegSwap();
-                }.bind(this), this.limbSwapDelay());
+                }, this.limbSwapDelay());
             },
             onMessage: function(event) {
                 if (store.hidden || !event || !event.message || !event.buffer) {
@@ -1846,7 +1841,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     return;
                 }
 
-                var message = event.message;
+                let message = event.message;
                 if (!message.is_new || message.ignore) {
                     return;
                 }
@@ -1857,7 +1852,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     return;
                 }
 
-                var now = Date.now();
+                let now = Date.now();
                 if (message.isHighlight) {
                     if (now - this.lastHighlightReactionAt < HIGHLIGHT_REACTION_MS) {
                         return;
@@ -1889,7 +1884,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     return;
                 }
 
-                var now = Date.now();
+                let now = Date.now();
                 if (now - this.lastNoticeReactionAt < NOTICE_REACTION_MS) {
                     return;
                 }
@@ -1904,7 +1899,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     return;
                 }
 
-                var now = Date.now();
+                let now = Date.now();
                 if (state === 'disconnected') {
                     if (now - this.lastWorriedReactionAt < WORRIED_REACTION_MS) {
                         return;
@@ -1925,8 +1920,8 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 }
             },
             wake: function() {
-                var now = Date.now();
-                var wasAsleep = this.sleeping || this.napping;
+                let now = Date.now();
+                let wasAsleep = this.sleeping || this.napping;
                 this.lastActivityAt = now;
                 if (wasAsleep) {
                     store.lastTirednessAt = now;
@@ -1971,14 +1966,14 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 this.typing = true;
 
                 window.clearTimeout(this.pawDownTimer);
-                this.pawDownTimer = window.setTimeout(function() {
+                this.pawDownTimer = window.setTimeout(() => {
                     this.pawDownSide = '';
-                }.bind(this), PAW_DOWN_MS);
+                }, PAW_DOWN_MS);
 
                 window.clearTimeout(this.typingTimer);
-                this.typingTimer = window.setTimeout(function() {
+                this.typingTimer = window.setTimeout(() => {
                     this.typing = false;
-                }.bind(this), 520);
+                }, 520);
 
                 if (store.sound && Date.now() - this.lastSoundAt > TAP_THROTTLE_MS) {
                     this.lastSoundAt = Date.now();
@@ -1998,7 +1993,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 }
 
                 kiwi.state.$emit('active.component', AppSettings);
-                window.setTimeout(function() {
+                window.setTimeout(() => {
                     kiwi.state.$emit('settings.tab.show', SETTINGS_TAB_NAME);
                 }, 0);
             },
@@ -2013,7 +2008,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 }
 
                 if (this.cooldownRemaining(store.lastCareAt.pet, PET_COOLDOWN_MS) === 0) {
-                    var moodGain = store.hunger >= 75 || store.tiredness >= 75 ? 3 : 6;
+                    let moodGain = store.hunger >= 75 || store.tiredness >= 75 ? 3 : 6;
                     store.mood = clamp(store.mood + moodGain, MIN_MOOD, 100);
                     store.lastCareAt.pet = Date.now();
                     persist();
@@ -2035,11 +2030,11 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 return loadSkinById(store.skin);
             },
             normalizeHatConfig: function(data) {
-                var list = data && Array.isArray(data.hats) ? data.hats : [];
-                var seen = Object.create(null);
-                var options = [];
+                let list = data && Array.isArray(data.hats) ? data.hats : [];
+                let seen = Object.create(null);
+                let options = [];
 
-                list.forEach(function(item) {
+                list.forEach((item) => {
                     if (!item || typeof item !== 'object') {
                         return;
                     }
@@ -2064,17 +2059,15 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 return options;
             },
             applyHatCatalog: function(options) {
-                var map = Object.create(null);
-                options.forEach(function(hat) {
+                let map = Object.create(null);
+                options.forEach((hat) => {
                     map[hat.id] = hat;
                 });
                 hatCatalog.options = options;
                 hatCatalog.map = map;
 
-                var unlocked = store.hatsUnlocked.filter(function(id) {
-                    return !!map[id];
-                });
-                var selected = map[store.selectedHat] &&
+                let unlocked = store.hatsUnlocked.filter((id) => !!map[id]);
+                let selected = map[store.selectedHat] &&
                     unlocked.indexOf(store.selectedHat) !== -1
                     ? store.selectedHat
                     : '';
@@ -2093,26 +2086,26 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 }
 
                 window.fetch(HATS_CONFIG_PATH)
-                    .then(function(response) {
+                    .then((response) => {
                         if (!response.ok) {
                             throw new Error('HTTP ' + response.status);
                         }
                         return response.json();
                     })
-                    .then(function(data) {
+                    .then((data) => {
                         this.applyHatCatalog(this.normalizeHatConfig(data));
-                    }.bind(this))
-                    .catch(function(err) {
+                    })
+                    .catch((err) => {
                         this.applyHatCatalog([]);
                         log.error('Unable to load Bongo Companion hats', err);
-                    }.bind(this));
+                    });
             },
             normalizeSnackConfig: function(data) {
-                var list = data && Array.isArray(data.snacks) ? data.snacks : [];
-                var seen = Object.create(null);
-                var options = [];
+                let list = data && Array.isArray(data.snacks) ? data.snacks : [];
+                let seen = Object.create(null);
+                let options = [];
 
-                list.forEach(function(item) {
+                list.forEach((item) => {
                     if (!item || typeof item !== 'object') {
                         return;
                     }
@@ -2132,7 +2125,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                         return;
                     }
 
-                    var bitten = typeof item.bitten === 'string' && item.bitten
+                    let bitten = typeof item.bitten === 'string' && item.bitten
                         ? SNACKS_DIR + item.bitten
                         : '';
                     seen[item.id] = true;
@@ -2154,19 +2147,19 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 }
 
                 window.fetch(SNACKS_CONFIG_PATH)
-                    .then(function(response) {
+                    .then((response) => {
                         if (!response.ok) {
                             throw new Error('HTTP ' + response.status);
                         }
                         return response.json();
                     })
-                    .then(function(data) {
+                    .then((data) => {
                         this.snackOptions = this.normalizeSnackConfig(data);
-                    }.bind(this))
-                    .catch(function(err) {
+                    })
+                    .catch((err) => {
                         this.snackOptions = [];
                         log.error('Unable to load Bongo Companion snacks', err);
-                    }.bind(this));
+                    });
             },
             pickSnack: function() {
                 if (!this.snackOptions.length) {
@@ -2184,8 +2177,8 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 this.wake();
                 this.now = Date.now();
 
-                var snack = this.pickSnack();
-                var food = snack ? snack.type !== 'drink' : true;
+                let snack = this.pickSnack();
+                let food = snack ? snack.type !== 'drink' : true;
                 store.hunger = clamp(
                     store.hunger - (food ? 30 : 20),
                     MIN_HUNGER,
@@ -2207,19 +2200,19 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
 
                 if (snack) {
                     if (snack.render === 'rain') {
-                        this.feedingTimer = window.setTimeout(function() {
+                        this.feedingTimer = window.setTimeout(() => {
                             this.feeding = null;
-                        }.bind(this), FOOD_RAIN_MS);
+                        }, FOOD_RAIN_MS);
                     } else {
                         if (snack.bittenImage) {
-                            this.feedingSwapTimer = window.setTimeout(function() {
+                            this.feedingSwapTimer = window.setTimeout(() => {
                                 this.feedingBitten = true;
-                            }.bind(this), DRINK_MS / 2);
+                            }, DRINK_MS / 2);
                         }
-                        this.feedingTimer = window.setTimeout(function() {
+                        this.feedingTimer = window.setTimeout(() => {
                             this.feeding = null;
                             this.feedingBitten = false;
-                        }.bind(this), DRINK_MS);
+                        }, DRINK_MS);
                     }
                 }
 
@@ -2235,7 +2228,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 this.napping = true;
                 this.napUntil = this.lastActivityAt + NAP_DURATION_MS;
                 this.now = this.lastActivityAt;
-                var rest = store.hunger >= 75 ? 20 : 35;
+                let rest = store.hunger >= 75 ? 20 : 35;
                 store.tiredness = clamp(store.tiredness - rest, MIN_TIREDNESS, 100);
                 store.lastTirednessAt = this.now;
                 store.mood = clamp(store.mood + 8, MIN_MOOD, 100);
@@ -2260,7 +2253,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
         },
     });
 
-    var SettingsPanel = kiwi.Vue.extend({
+    let SettingsPanel = kiwi.Vue.extend({
         template: '#kiwi-bongo-cat-settings',
         data: function() {
             return {
@@ -2289,9 +2282,9 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 return XP_PER_LEVEL;
             },
             hatOptions: function() {
-                return hatCatalog.options.filter(function(hat) {
-                    return store.hatsUnlocked.indexOf(hat.id) !== -1;
-                });
+                return hatCatalog.options.filter(
+                    (hat) => store.hatsUnlocked.indexOf(hat.id) !== -1,
+                );
             },
             hatRollsRemaining: function() {
                 return Math.max(0, this.level - store.hatRollsUsed);
@@ -2313,7 +2306,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
         },
         methods: {
             saveName: function() {
-                var name = (this.draftName || '').trim().slice(0, 20);
+                let name = (this.draftName || '').trim().slice(0, 20);
                 if (!name) {
                     name = DEFAULT_NAME;
                 }
@@ -2358,7 +2351,7 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                 }
                 store.skin = value;
                 persist();
-                return loadSkinById(value);
+                loadSkinById(value);
             },
             selectHat: function(value) {
                 if (value !== '' && store.hatsUnlocked.indexOf(value) === -1) {
@@ -2372,10 +2365,10 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
                     return;
                 }
 
-                var hat = hatCatalog.options[
+                let hat = hatCatalog.options[
                     Math.floor(Math.random() * hatCatalog.options.length)
                 ];
-                var isNew = store.hatsUnlocked.indexOf(hat.id) === -1;
+                let isNew = store.hatsUnlocked.indexOf(hat.id) === -1;
                 store.hatRollsUsed += 1;
 
                 if (isNew) {
@@ -2399,16 +2392,16 @@ kiwi.plugin('bongo-cat', function(kiwi, log) {
 
                 persist();
                 window.clearTimeout(this.hatRollTimer);
-                this.hatRollTimer = window.setTimeout(function() {
+                this.hatRollTimer = window.setTimeout(() => {
                     this.hatRollResult = null;
-                }.bind(this), 4000);
+                }, 4000);
             },
             reset: function() {
                 if (!window.confirm(this.$t('bongo-cat:reset_confirm'))) {
                     return;
                 }
 
-                var now = Date.now();
+                let now = Date.now();
                 store.hunger = DEFAULT_HUNGER;
                 store.tiredness = DEFAULT_TIREDNESS;
                 store.mood = DEFAULT_MOOD;

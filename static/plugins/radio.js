@@ -1,8 +1,8 @@
-kiwi.plugin('radio', function(kiwi, log) {
+kiwi.plugin('radio', (kiwi, log) => {
     'use strict';
 
-    var SETTING_PREFIX = 'plugin-radio.';
-    var DEFAULTS = {
+    let SETTING_PREFIX = 'plugin-radio.';
+    let DEFAULTS = {
         url: 'static/plugins/radio/stations.json',
         volume: 0.4,
         starred: [],
@@ -13,22 +13,22 @@ kiwi.plugin('radio', function(kiwi, log) {
         reloadOnOpen: false,
         forceShowClose: false,
     };
-    var POLL_MS = 30000;
-    var STALL_CHECK_MS = 5000;
-    var STALL_MS = 15000;
-    var MAX_STALL_ATTEMPTS = 3;
-    var MAX_NETWORK_FAILS = 3;
-    var radio = null;
+    let POLL_MS = 30000;
+    let STALL_CHECK_MS = 5000;
+    let STALL_MS = 15000;
+    let MAX_STALL_ATTEMPTS = 3;
+    let MAX_NETWORK_FAILS = 3;
+    let radio = null;
 
-    var Misc = kiwi.require('helpers/Misc');
-    var TextFormatting = kiwi.require('helpers/TextFormatting');
-    var Utils = kiwi.require('helpers/Utils');
+    let Misc = kiwi.require('helpers/Misc');
+    let TextFormatting = kiwi.require('helpers/TextFormatting');
+    let Utils = kiwi.require('helpers/Utils');
 
     kiwi.setConfigDefaults('plugin-radio', DEFAULTS);
 
     function setting(name, fallback) {
         try {
-            var value = kiwi.state.setting(SETTING_PREFIX + name);
+            let value = kiwi.state.setting(SETTING_PREFIX + name);
             return typeof value === 'undefined' ? fallback : value;
         } catch (err) {
             return fallback;
@@ -61,7 +61,7 @@ kiwi.plugin('radio', function(kiwi, log) {
     }
 
     function acceptStreamUrl(url, pageHref) {
-        var clean = Misc.sanitizeUrl(typeof url === 'string' ? url : '');
+        let clean = Misc.sanitizeUrl(typeof url === 'string' ? url : '');
         if (!clean || !/^https?:\/\//i.test(clean)) {
             return '';
         }
@@ -72,7 +72,7 @@ kiwi.plugin('radio', function(kiwi, log) {
     }
 
     function acceptImageUrl(url) {
-        var clean = Misc.sanitizeUrl(typeof url === 'string' ? url : '');
+        let clean = Misc.sanitizeUrl(typeof url === 'string' ? url : '');
         if (!clean) {
             return '';
         }
@@ -87,12 +87,12 @@ kiwi.plugin('radio', function(kiwi, log) {
             return [];
         }
 
-        var stations = [];
-        list.forEach(function(item) {
+        let stations = [];
+        list.forEach((item) => {
             if (!item || typeof item !== 'object') {
                 return;
             }
-            var source = acceptStreamUrl(item.source, pageHref);
+            let source = acceptStreamUrl(item.source, pageHref);
             if (!source) {
                 return;
             }
@@ -115,13 +115,13 @@ kiwi.plugin('radio', function(kiwi, log) {
     }
 
     async function fetchStationList(url, options) {
-        var opts = options || {};
+        let opts = options || {};
         if (!url) {
             return { stations: [], error: '', missing: false };
         }
 
-        var doFetch = opts.fetch || fetch;
-        var response = await doFetch(url, { credentials: 'omit' });
+        let doFetch = opts.fetch || fetch;
+        let response = await doFetch(url, { credentials: 'omit' });
         if (!response.ok) {
             if (response.status === 404 || response.status === 410) {
                 return { stations: [], error: '', missing: true };
@@ -129,8 +129,8 @@ kiwi.plugin('radio', function(kiwi, log) {
             return { stations: [], error: 'load_failed', missing: false };
         }
 
-        var text = await response.text();
-        var parsed = kiwi.JSON5 ? kiwi.JSON5.parse(text) : JSON.parse(text);
+        let text = await response.text();
+        let parsed = kiwi.JSON5 ? kiwi.JSON5.parse(text) : JSON.parse(text);
         return {
             stations: prepareStations(parsed, opts.pageHref),
             error: '',
@@ -140,7 +140,7 @@ kiwi.plugin('radio', function(kiwi, log) {
 
     function statusUrlFor(streamUrl) {
         try {
-            var url = new URL(streamUrl);
+            let url = new URL(streamUrl);
             url.pathname = '/status-json.xsl';
             url.search = '';
             url.hash = '';
@@ -157,7 +157,7 @@ kiwi.plugin('radio', function(kiwi, log) {
         try {
             return new URL(value).pathname.split('/').filter(Boolean).pop() || '';
         } catch (err) {
-            var parts = value.split('/');
+            let parts = value.split('/');
             return parts[parts.length - 1].split('?')[0] || '';
         }
     }
@@ -166,7 +166,7 @@ kiwi.plugin('radio', function(kiwi, log) {
         if (typeof value !== 'string') {
             return '';
         }
-        var title = value.trim();
+        let title = value.trim();
         if (!title || title === '-') {
             return '';
         }
@@ -174,7 +174,7 @@ kiwi.plugin('radio', function(kiwi, log) {
     }
 
     function sourcesFrom(json) {
-        var source = json && json.icestats && json.icestats.source;
+        let source = json && json.icestats && json.icestats.source;
         if (!source) {
             return [];
         }
@@ -192,22 +192,18 @@ kiwi.plugin('radio', function(kiwi, log) {
     }
 
     function titleFromStatus(json, streamUrl) {
-        var want = fileName(streamUrl).toLowerCase();
+        let want = fileName(streamUrl).toLowerCase();
         if (!want) {
             return '';
         }
-        var sources = sourcesFrom(json);
-        var exact = sources.find(function(source) {
-            return fileName(source.listenurl).toLowerCase() === want;
-        });
-        var title = cleanTitle(exact && exact.title);
-        var mp3Name = siblingMp3(want);
+        let sources = sourcesFrom(json);
+        let exact = sources.find((source) => fileName(source.listenurl).toLowerCase() === want);
+        let title = cleanTitle(exact && exact.title);
+        let mp3Name = siblingMp3(want);
         if (!mp3Name) {
             return title || '';
         }
-        var mp3 = sources.find(function(source) {
-            return fileName(source.listenurl).toLowerCase() === mp3Name;
-        });
+        let mp3 = sources.find((source) => fileName(source.listenurl).toLowerCase() === mp3Name);
         return cleanTitle(mp3 && mp3.title) || title || '';
     }
 
@@ -226,16 +222,16 @@ kiwi.plugin('radio', function(kiwi, log) {
     }
 
     async function fetchNowPlaying(station, fetchImpl) {
-        var url = nowPlayingUrl(station);
+        let url = nowPlayingUrl(station);
         if (!url) {
             return '';
         }
-        var doFetch = fetchImpl || fetch;
-        var response = await doFetch(url, { credentials: 'omit' });
+        let doFetch = fetchImpl || fetch;
+        let response = await doFetch(url, { credentials: 'omit' });
         if (!response.ok) {
             return null;
         }
-        var json = await response.json();
+        let json = await response.json();
         if (json && json.icestats) {
             return titleFromStatus(json, station.source);
         }
@@ -243,7 +239,7 @@ kiwi.plugin('radio', function(kiwi, log) {
     }
 
     function adminVolume() {
-        var value = kiwi.state.getSetting('settings.plugin-radio.volume');
+        let value = kiwi.state.getSetting('settings.plugin-radio.volume');
         return typeof value === 'number' ? value : 0.4;
     }
 
@@ -255,7 +251,7 @@ kiwi.plugin('radio', function(kiwi, log) {
     }
 
     function createRadio() {
-        var ui = kiwi.Vue.observable({
+        let ui = kiwi.Vue.observable({
             stations: [],
             error: '',
             loading: false,
@@ -275,15 +271,15 @@ kiwi.plugin('radio', function(kiwi, log) {
         def(ui, 'analyser', null);
         def(ui, 'waveFrame', 0);
 
-        var recovering = false;
-        var trackTimer = null;
-        var trackGen = 0;
-        var trackNetFails = 0;
-        var stallTimer = null;
-        var stallGen = 0;
-        var lastStreamTime = 0;
-        var lastAdvanceAt = 0;
-        var stallAttempts = 0;
+        let recovering = false;
+        let trackTimer = null;
+        let trackGen = 0;
+        let trackNetFails = 0;
+        let stallTimer = null;
+        let stallGen = 0;
+        let lastStreamTime = 0;
+        let lastAdvanceAt = 0;
+        let stallAttempts = 0;
 
         function enabled() {
             return !!setting('url', '') && !ui.missing;
@@ -293,7 +289,7 @@ kiwi.plugin('radio', function(kiwi, log) {
             if (setting('forceVolume', false) && !ui.volumeUnlocked) {
                 return adminVolume();
             }
-            var value = setting('volume', 0.4);
+            let value = setting('volume', 0.4);
             return typeof value === 'number' ? value : 0.4;
         }
 
@@ -328,7 +324,7 @@ kiwi.plugin('radio', function(kiwi, log) {
             if (ui.audio) {
                 return ui.audio;
             }
-            var audio = document.createElement('audio');
+            let audio = document.createElement('audio');
             audio.playsInline = true;
             audio.setAttribute('playsinline', '');
             if (withWave) {
@@ -340,7 +336,7 @@ kiwi.plugin('radio', function(kiwi, log) {
             audio.style.width = '1px';
             audio.style.height = '1px';
             audio.style.opacity = '0';
-            audio.addEventListener('error', function() {
+            audio.addEventListener('error', () => {
                 if (recovering) {
                     return;
                 }
@@ -352,7 +348,7 @@ kiwi.plugin('radio', function(kiwi, log) {
                     markFailed(ui.currentName);
                 }
             });
-            audio.addEventListener('pause', function() {
+            audio.addEventListener('pause', () => {
                 setPlaying(false);
                 clearSession();
             });
@@ -386,19 +382,19 @@ kiwi.plugin('radio', function(kiwi, log) {
                 return;
             }
             recovering = true;
-            var src = ui.audio && (ui.audio.currentSrc || ui.audio.src);
-            var name = ui.currentName;
+            let src = ui.audio && (ui.audio.currentSrc || ui.audio.src);
+            let name = ui.currentName;
             discardAudio();
             if (!src) {
                 recovering = false;
                 return;
             }
-            var audio = ensureAudio(false);
+            let audio = ensureAudio(false);
             audio.src = src;
             applyVolume();
-            var started = audio.play();
+            let started = audio.play();
             if (started && started.then) {
-                started.then(function() {
+                started.then(() => {
                     recovering = false;
                     setPlaying(true);
                     if (name) {
@@ -406,7 +402,7 @@ kiwi.plugin('radio', function(kiwi, log) {
                     }
                     startTrackPoll(current());
                     startStallWatch();
-                }).catch(function() {
+                }).catch(() => {
                     recovering = false;
                     if (name) {
                         markFailed(name);
@@ -424,17 +420,17 @@ kiwi.plugin('radio', function(kiwi, log) {
             if (!ui.audio.crossOrigin) {
                 return;
             }
-            var AudioCtx = window.AudioContext || window.webkitAudioContext;
+            let AudioCtx = window.AudioContext || window.webkitAudioContext;
             if (!AudioCtx) {
                 return;
             }
             try {
-                var ctx = ui.audioCtx || new AudioCtx();
+                let ctx = ui.audioCtx || new AudioCtx();
                 if (ctx.state === 'suspended') {
                     ctx.resume();
                 }
-                var source = ctx.createMediaElementSource(ui.audio);
-                var analyser = ctx.createAnalyser();
+                let source = ctx.createMediaElementSource(ui.audio);
+                let analyser = ctx.createAnalyser();
                 analyser.fftSize = 64;
                 source.connect(analyser);
                 analyser.connect(ctx.destination);
@@ -448,11 +444,11 @@ kiwi.plugin('radio', function(kiwi, log) {
         }
 
         function setSession(station) {
-            var session = navigator.mediaSession;
+            let session = navigator.mediaSession;
             if (!session || typeof window.MediaMetadata !== 'function') {
                 return;
             }
-            var artwork = (station.image && /^https?:\/\//i.test(station.image))
+            let artwork = (station.image && /^https?:\/\//i.test(station.image))
                 ? [{ src: station.image }]
                 : [];
             session.metadata = new window.MediaMetadata({
@@ -462,16 +458,16 @@ kiwi.plugin('radio', function(kiwi, log) {
             });
             session.playbackState = 'playing';
             try {
-                session.setActionHandler('play', function() {
+                session.setActionHandler('play', () => {
                     playCurrent();
                 });
-                session.setActionHandler('pause', function() {
+                session.setActionHandler('pause', () => {
                     pause();
                 });
-                session.setActionHandler('previoustrack', function() {
+                session.setActionHandler('previoustrack', () => {
                     skip(-1);
                 });
-                session.setActionHandler('nexttrack', function() {
+                session.setActionHandler('nexttrack', () => {
                     skip(1);
                 });
             } catch (err) {
@@ -480,13 +476,13 @@ kiwi.plugin('radio', function(kiwi, log) {
         }
 
         function clearSession() {
-            var session = navigator.mediaSession;
+            let session = navigator.mediaSession;
             if (!session) {
                 return;
             }
             session.metadata = null;
             session.playbackState = 'none';
-            ['play', 'pause', 'previoustrack', 'nexttrack'].forEach(function(action) {
+            ['play', 'pause', 'previoustrack', 'nexttrack'].forEach((action) => {
                 try {
                     session.setActionHandler(action, null);
                 } catch (err) {
@@ -496,13 +492,11 @@ kiwi.plugin('radio', function(kiwi, log) {
         }
 
         function current() {
-            return ui.stations.find(function(station) {
-                return station.name === ui.currentName;
-            }) || null;
+            return ui.stations.find((station) => station.name === ui.currentName) || null;
         }
 
         async function loadStations() {
-            var url = setting('url', '');
+            let url = setting('url', '');
             if (!url) {
                 ui.stations = [];
                 ui.error = '';
@@ -513,7 +507,7 @@ kiwi.plugin('radio', function(kiwi, log) {
             ui.error = '';
             ui.missing = false;
             try {
-                var result = await fetchStationList(url);
+                let result = await fetchStationList(url);
                 if (!result.error && !result.missing) {
                     ui.stations = result.stations;
                     ui.error = '';
@@ -540,11 +534,11 @@ kiwi.plugin('radio', function(kiwi, log) {
             if (!station || !station.source) {
                 return;
             }
-            var useWave = !!setting('showWave', true);
+            let useWave = !!setting('showWave', true);
             stopTrackPoll();
             stopStallWatch();
             stallAttempts = 0;
-            var audio = ensureAudio(useWave);
+            let audio = ensureAudio(useWave);
             ui.currentName = station.name;
             setSetting('active', station.name);
             kiwi.Vue.delete(ui.failed, station.name);
@@ -552,9 +546,9 @@ kiwi.plugin('radio', function(kiwi, log) {
                 audio.src = station.source;
             }
             applyVolume();
-            var started = audio.play();
+            let started = audio.play();
             if (started && started.then) {
-                started.then(function() {
+                started.then(() => {
                     setPlaying(true);
                     if (useWave) {
                         attachWave();
@@ -562,7 +556,7 @@ kiwi.plugin('radio', function(kiwi, log) {
                     setSession(station);
                     startTrackPoll(station);
                     startStallWatch();
-                }).catch(function() {
+                }).catch(() => {
                     if (useWave && audio.crossOrigin) {
                         recoverWithoutWave();
                         return;
@@ -573,15 +567,13 @@ kiwi.plugin('radio', function(kiwi, log) {
         }
 
         function playCurrent() {
-            var station = current();
+            let station = current();
             if (station) {
                 play(station);
                 return;
             }
-            var name = ui.currentName || setting('active', '');
-            var match = ui.stations.find(function(item) {
-                return item.name === name;
-            });
+            let name = ui.currentName || setting('active', '');
+            let match = ui.stations.find((item) => item.name === name);
             if (match) {
                 play(match);
             }
@@ -602,9 +594,9 @@ kiwi.plugin('radio', function(kiwi, log) {
             if (!station || !nowPlayingEnabled(station)) {
                 return;
             }
-            var gen = trackGen;
-            var pull = function() {
-                fetchNowPlaying(station).then(function(title) {
+            let gen = trackGen;
+            let pull = function() {
+                fetchNowPlaying(station).then((title) => {
                     if (gen !== trackGen || !ui.playing) {
                         return;
                     }
@@ -618,7 +610,7 @@ kiwi.plugin('radio', function(kiwi, log) {
                         setSession(station);
                         setPlaying(true);
                     }
-                }).catch(function() {
+                }).catch(() => {
                     trackNetFails += 1;
                     if (trackNetFails >= MAX_NETWORK_FAILS) {
                         stopTrackPoll();
@@ -639,16 +631,16 @@ kiwi.plugin('radio', function(kiwi, log) {
 
         function startStallWatch() {
             stopStallWatch();
-            var gen = stallGen;
+            let gen = stallGen;
             lastStreamTime = ui.audio ? ui.audio.currentTime : 0;
             lastAdvanceAt = Date.now();
-            stallTimer = setInterval(function() {
+            stallTimer = setInterval(() => {
                 if (gen !== stallGen || !ui.playing || !ui.audio ||
                     ui.audio.paused || recovering) {
                     return;
                 }
-                var time = ui.audio.currentTime;
-                var now = Date.now();
+                let time = ui.audio.currentTime;
+                let now = Date.now();
                 if (time > lastStreamTime) {
                     lastStreamTime = time;
                     lastAdvanceAt = now;
@@ -662,7 +654,7 @@ kiwi.plugin('radio', function(kiwi, log) {
         }
 
         function reconnect() {
-            var station = current();
+            let station = current();
             if (!station || !ui.audio) {
                 return;
             }
@@ -672,15 +664,15 @@ kiwi.plugin('radio', function(kiwi, log) {
                 return;
             }
             stopStallWatch();
-            var audio = ui.audio;
+            let audio = ui.audio;
             audio.load();
-            var restarted = audio.play();
+            let restarted = audio.play();
             if (restarted && restarted.then) {
-                restarted.then(function() {
+                restarted.then(() => {
                     setPlaying(true);
                     setSession(station);
                     startStallWatch();
-                }).catch(function() {
+                }).catch(() => {
                     recoverWithoutWave();
                 });
             }
@@ -709,18 +701,16 @@ kiwi.plugin('radio', function(kiwi, log) {
             if (!ui.stations.length) {
                 return;
             }
-            var index = ui.stations.findIndex(function(station) {
-                return station.name === ui.currentName;
-            });
+            let index = ui.stations.findIndex((station) => station.name === ui.currentName);
             if (index < 0) {
                 index = 0;
             }
-            var next = (index + step + ui.stations.length) % ui.stations.length;
+            let next = (index + step + ui.stations.length) % ui.stations.length;
             play(ui.stations[next]);
         }
 
         function setVolume(value) {
-            var next = Math.min(1, Math.max(0, Number(value)));
+            let next = Math.min(1, Math.max(0, Number(value)));
             ui.volumeUnlocked = true;
             setSetting('volume', next);
             ui.muted = false;
@@ -733,13 +723,13 @@ kiwi.plugin('radio', function(kiwi, log) {
         }
 
         function isStarred(name) {
-            var starred = setting('starred', []);
+            let starred = setting('starred', []);
             return starred.indexOf(name) !== -1;
         }
 
         function toggleStar(name) {
-            var starred = (setting('starred', []) || []).slice();
-            var index = starred.indexOf(name);
+            let starred = (setting('starred', []) || []).slice();
+            let index = starred.indexOf(name);
             if (index === -1) {
                 starred.push(name);
             } else {
@@ -769,7 +759,7 @@ kiwi.plugin('radio', function(kiwi, log) {
     }
 
     function openBrowser() {
-        var radioInstance = getRadio();
+        let radioInstance = getRadio();
         if (!radioInstance.enabled()) {
             return false;
         }
@@ -784,7 +774,7 @@ kiwi.plugin('radio', function(kiwi, log) {
         return true;
     }
 
-    var RadioBrowser = kiwi.Vue.extend({
+    const RadioBrowser = kiwi.Vue.extend({
         template: '#kiwi-radio-browser',
         data: function() {
             return {
@@ -793,14 +783,14 @@ kiwi.plugin('radio', function(kiwi, log) {
         },
         computed: {
             ordered: function() {
-                return this.radio.ui.stations.slice().sort(function(a, b) {
-                    var aStar = this.radio.isStarred(a.name) ? 0 : 1;
-                    var bStar = this.radio.isStarred(b.name) ? 0 : 1;
+                return this.radio.ui.stations.slice().sort((a, b) => {
+                    let aStar = this.radio.isStarred(a.name) ? 0 : 1;
+                    let bStar = this.radio.isStarred(b.name) ? 0 : 1;
                     if (aStar !== bStar) {
                         return aStar - bStar;
                     }
                     return a.name.localeCompare(b.name);
-                }.bind(this));
+                });
             },
         },
         mounted: function() {
@@ -811,7 +801,7 @@ kiwi.plugin('radio', function(kiwi, log) {
         },
         methods: {
             details: function(station) {
-                var text = [station.description, station.channels]
+                let text = [station.description, station.channels]
                     .filter(Boolean)
                     .join(' ');
                 return TextFormatting.linkifyChannels(Utils.escapeHtml(text));
@@ -831,14 +821,14 @@ kiwi.plugin('radio', function(kiwi, log) {
                 this.openChannel(event);
             },
             openChannel: function(event) {
-                var el = event.target.closest('a[data-channel-name]');
+                let el = event.target.closest('a[data-channel-name]');
                 if (!el) {
                     return;
                 }
                 event.preventDefault();
-                var networks = this.$state.networks || [];
-                var network = null;
-                networks.forEach(function(item) {
+                let networks = this.$state.networks || [];
+                let network = null;
+                networks.forEach((item) => {
                     if (!network && item.state === 'connected' && item.ircClient) {
                         network = item;
                     }
@@ -846,12 +836,12 @@ kiwi.plugin('radio', function(kiwi, log) {
                 if (!network || !network.ircClient) {
                     return;
                 }
-                var name = el.getAttribute('data-channel-name');
+                let name = el.getAttribute('data-channel-name');
                 if (!name) {
                     return;
                 }
                 this.$state.addBuffer(network.id, name);
-                var buffer = this.$state.getBufferByName(network.id, name);
+                let buffer = this.$state.getBufferByName(network.id, name);
                 if (buffer && !buffer.joined) {
                     network.ircClient.join(name);
                 }
@@ -863,7 +853,7 @@ kiwi.plugin('radio', function(kiwi, log) {
         },
     });
 
-    var RadioControls = kiwi.Vue.extend({
+    let RadioControls = kiwi.Vue.extend({
         template: '#kiwi-radio-controls',
         data: function() {
             return {
@@ -888,7 +878,7 @@ kiwi.plugin('radio', function(kiwi, log) {
                 if (!this.nameScroll) {
                     return null;
                 }
-                var travel = Math.max(3, this.nameScroll / 28);
+                let travel = Math.max(3, this.nameScroll / 28);
                 return {
                     '--kiwi-radio-scroll': this.nameScroll + 'px',
                     'animation-duration': (travel + 3) + 's',
@@ -898,7 +888,7 @@ kiwi.plugin('radio', function(kiwi, log) {
                 if (!this.trackScroll) {
                     return null;
                 }
-                var travel = Math.max(3, this.trackScroll / 28);
+                let travel = Math.max(3, this.trackScroll / 28);
                 return {
                     '--kiwi-radio-scroll': this.trackScroll + 'px',
                     'animation-duration': (travel + 3) + 's',
@@ -906,19 +896,19 @@ kiwi.plugin('radio', function(kiwi, log) {
             },
         },
         watch: {
-            available: function(show) {
+            'available': function(show) {
                 if (show) {
-                    this.$nextTick(function() {
+                    this.$nextTick(() => {
                         this.observeName();
                         this.measureName();
-                    }.bind(this));
+                    });
                 }
             },
             'radio.ui.currentName': function() {
                 this.measureName();
             },
             'radio.ui.trackTitle': function() {
-                this.$nextTick(function() {
+                this.$nextTick(() => {
                     if (!this.radio.ui.trackTitle) {
                         this.trackScroll = 0;
                         this.disconnectTrackObserver();
@@ -926,9 +916,9 @@ kiwi.plugin('radio', function(kiwi, log) {
                     }
                     this.observeTrack();
                     this.measureTrack();
-                }.bind(this));
+                });
             },
-            showWave: {
+            'showWave': {
                 immediate: true,
                 handler: function(show) {
                     this.stopWave();
@@ -944,9 +934,9 @@ kiwi.plugin('radio', function(kiwi, log) {
             }
             this.radio.loadStations();
             if (this.radio.setting('autoPlay', false)) {
-                this.$state.$once('document.clicked', function() {
+                this.$state.$once('document.clicked', () => {
                     this.radio.playCurrent();
-                }.bind(this));
+                });
             }
         },
         beforeDestroy: function() {
@@ -959,49 +949,49 @@ kiwi.plugin('radio', function(kiwi, log) {
         },
         methods: {
             observeName: function() {
-                var track = this.$refs.nameTrack;
+                let track = this.$refs.nameTrack;
                 if (!track || this.nameObserver || !window.ResizeObserver) {
                     return;
                 }
-                this.nameObserver = new ResizeObserver(function() {
+                this.nameObserver = new ResizeObserver(() => {
                     this.measureName();
-                }.bind(this));
+                });
                 this.nameObserver.observe(track);
             },
             measureName: function() {
-                this.$nextTick(function() {
-                    var track = this.$refs.nameTrack;
-                    var text = this.$refs.nameText;
+                this.$nextTick(() => {
+                    let track = this.$refs.nameTrack;
+                    let text = this.$refs.nameText;
                     if (!track || !text) {
                         this.nameScroll = 0;
                         return;
                     }
-                    var overflow = text.scrollWidth - track.clientWidth;
+                    let overflow = text.scrollWidth - track.clientWidth;
                     this.nameScroll = overflow > 2 ? overflow : 0;
-                }.bind(this));
+                });
             },
             observeTrack: function() {
-                var track = this.$refs.trackTrack;
+                let track = this.$refs.trackTrack;
                 if (!track || !window.ResizeObserver) {
                     return;
                 }
                 this.disconnectTrackObserver();
-                this.trackObserver = new ResizeObserver(function() {
+                this.trackObserver = new ResizeObserver(() => {
                     this.measureTrack();
-                }.bind(this));
+                });
                 this.trackObserver.observe(track);
             },
             measureTrack: function() {
-                this.$nextTick(function() {
-                    var track = this.$refs.trackTrack;
-                    var text = this.$refs.trackText;
+                this.$nextTick(() => {
+                    let track = this.$refs.trackTrack;
+                    let text = this.$refs.trackText;
                     if (!track || !text) {
                         this.trackScroll = 0;
                         return;
                     }
-                    var overflow = text.scrollWidth - track.clientWidth;
+                    let overflow = text.scrollWidth - track.clientWidth;
                     this.trackScroll = overflow > 2 ? overflow : 0;
-                }.bind(this));
+                });
             },
             disconnectTrackObserver: function() {
                 if (this.trackObserver) {
@@ -1029,35 +1019,35 @@ kiwi.plugin('radio', function(kiwi, log) {
             },
             drawWave: function() {
                 this.stopWave();
-                var canvas = this.$refs.wave;
-                var analyser = this.radio.ui.analyser;
+                let canvas = this.$refs.wave;
+                let analyser = this.radio.ui.analyser;
                 if (!canvas || !analyser || !this.showWave) {
                     if (this.showWave) {
-                        this.waveFrame = window.requestAnimationFrame(function() {
+                        this.waveFrame = window.requestAnimationFrame(() => {
                             this.drawWave();
-                        }.bind(this));
+                        });
                     }
                     return;
                 }
-                var ctx = canvas.getContext('2d');
-                var data = new Uint8Array(analyser.frequencyBinCount);
+                let ctx = canvas.getContext('2d');
+                let data = new Uint8Array(analyser.frequencyBinCount);
                 analyser.getByteFrequencyData(data);
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                var styles = window.getComputedStyle(canvas);
-                var top = styles.getPropertyValue('--brand-primary-hover').trim() || '#5ec9a6';
-                var bottom = styles.getPropertyValue('--brand-primary').trim() || '#2f896b';
-                var gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                let styles = window.getComputedStyle(canvas);
+                let top = styles.getPropertyValue('--brand-primary-hover').trim() || '#5ec9a6';
+                let bottom = styles.getPropertyValue('--brand-primary').trim() || '#2f896b';
+                let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
                 gradient.addColorStop(0, top);
                 gradient.addColorStop(1, bottom);
                 ctx.fillStyle = gradient;
-                var bar = canvas.width / data.length;
-                data.forEach(function(value, index) {
-                    var height = (value / 255) * canvas.height;
+                let bar = canvas.width / data.length;
+                data.forEach((value, index) => {
+                    let height = (value / 255) * canvas.height;
                     ctx.fillRect(index * bar, canvas.height - height, bar - 1, height);
                 });
-                this.waveFrame = window.requestAnimationFrame(function() {
+                this.waveFrame = window.requestAnimationFrame(() => {
                     this.drawWave();
-                }.bind(this));
+                });
             },
         },
     });

@@ -1,18 +1,18 @@
-kiwi.plugin('nephwave-desktop', function(kiwi, log) {
+kiwi.plugin('nephwave-desktop', (kiwi, log) => {
     'use strict';
 
-    var THEME_PREFIX = 'nephwave';
-    var SETTING_PREFIX = 'plugin-nephwave.';
-    var DEFAULT_PRESET = 'vapor';
-    var DEFAULT_CRT = true;
-    var DEFAULT_SOUNDS = false;
-    var PRESETS = [
+    let THEME_PREFIX = 'nephwave';
+    let SETTING_PREFIX = 'plugin-nephwave.';
+    let DEFAULT_PRESET = 'vapor';
+    let DEFAULT_CRT = true;
+    let DEFAULT_SOUNDS = false;
+    let PRESETS = [
         { key: 'vapor', name: 'Vapour-Net' },
         { key: 'teal', name: 'Classic 98' },
         { key: 'platinum', name: 'Platinum 68K' },
         { key: 'be', name: 'BeAesthetic' },
     ];
-    var BODY_CLASSES = [
+    let BODY_CLASSES = [
         'nephwave-active',
         'nephwave-startup',
         'nephwave-statebrowser',
@@ -24,35 +24,35 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
         'nephwave-glitch',
     ];
 
-    var chromeRoot = null;
-    var startMenu = null;
-    var startButton = null;
-    var aboutModal = null;
-    var shutdownModal = null;
-    var messengerTask = null;
-    var radioTask = null;
-    var radioMenuItem = null;
-    var nowPlayingEl = null;
-    var clockEl = null;
-    var presetLabel = null;
-    var crtMenuLabel = null;
-    var soundsMenuLabel = null;
-    var statusElements = [];
-    var statusText = null;
-    var clockTimer = null;
-    var lastFocus = null;
-    var lastClickSoundAt = 0;
-    var lastGlitchAt = 0;
-    var audioCtx = null;
-    var failedTheme = '';
-    var active = false;
-    var minimized = false;
-    var preset = DEFAULT_PRESET;
-    var crt = DEFAULT_CRT;
-    var sounds = DEFAULT_SOUNDS;
+    let chromeRoot = null;
+    let startMenu = null;
+    let startButton = null;
+    let aboutModal = null;
+    let shutdownModal = null;
+    let messengerTask = null;
+    let radioTask = null;
+    let radioMenuItem = null;
+    let nowPlayingEl = null;
+    let clockEl = null;
+    let presetLabel = null;
+    let crtMenuLabel = null;
+    let soundsMenuLabel = null;
+    let statusElements = [];
+    let statusText = null;
+    let clockTimer = null;
+    let lastFocus = null;
+    let lastClickSoundAt = 0;
+    let lastGlitchAt = 0;
+    let audioCtx = null;
+    let failedTheme = '';
+    let active = false;
+    let minimized = false;
+    let preset = DEFAULT_PRESET;
+    let crt = DEFAULT_CRT;
+    let sounds = DEFAULT_SOUNDS;
 
     function makeEl(tag, className, text) {
-        var el = document.createElement(tag);
+        let el = document.createElement(tag);
         if (className) {
             el.className = className;
         }
@@ -63,11 +63,12 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
     }
 
     function closest(el, selector) {
-        while (el && el !== document) {
-            if (el.nodeType === 1 && el.matches && el.matches(selector)) {
-                return el;
+        let node = el;
+        while (node && node !== document) {
+            if (node.nodeType === 1 && node.matches && node.matches(selector)) {
+                return node;
             }
-            el = el.parentElement;
+            node = node.parentElement;
         }
         return null;
     }
@@ -77,7 +78,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
             if (kiwi.themes && kiwi.themes.activeTheme && kiwi.themes.activeTheme.name) {
                 return kiwi.themes.activeTheme.name.toLowerCase();
             }
-            var selected = kiwi.state.setting('theme');
+            let selected = kiwi.state.setting('theme');
             if (typeof selected === 'string' && selected) {
                 return selected.toLowerCase();
             }
@@ -86,7 +87,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
         }
         try {
             if (kiwi.themes && typeof kiwi.themes.currentTheme === 'function') {
-                var theme = kiwi.themes.currentTheme();
+                let theme = kiwi.themes.currentTheme();
                 return theme && theme.name ? theme.name.toLowerCase() : '';
             }
         } catch (err) {
@@ -100,7 +101,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
     }
 
     function normalizePreset(value) {
-        for (var i = 0; i < PRESETS.length; i += 1) {
+        for (let i = 0; i < PRESETS.length; i += 1) {
             if (PRESETS[i].key === value) {
                 return value;
             }
@@ -109,7 +110,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
     }
 
     function presetName(value) {
-        for (var i = 0; i < PRESETS.length; i += 1) {
+        for (let i = 0; i < PRESETS.length; i += 1) {
             if (PRESETS[i].key === value) {
                 return PRESETS[i].name;
             }
@@ -119,7 +120,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
 
     function readSetting(name, fallback) {
         try {
-            var value = kiwi.state.setting(SETTING_PREFIX + name);
+            let value = kiwi.state.setting(SETTING_PREFIX + name);
             return typeof value === 'undefined' ? fallback : value;
         } catch (err) {
             return fallback;
@@ -142,7 +143,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
     function initAudio() {
         try {
             if (!audioCtx) {
-                var Ctx = window.AudioContext || window.webkitAudioContext;
+                let Ctx = window.AudioContext || window.webkitAudioContext;
                 if (!Ctx) {
                     return;
                 }
@@ -165,9 +166,9 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
             return;
         }
         try {
-            var now = audioCtx.currentTime;
-            var osc = audioCtx.createOscillator();
-            var gain = audioCtx.createGain();
+            let now = audioCtx.currentTime;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
             osc.type = 'square';
             osc.frequency.setValueAtTime(520, now);
             osc.frequency.exponentialRampToValueAtTime(130, now + 0.035);
@@ -189,9 +190,9 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
             return;
         }
         try {
-            var now = audioCtx.currentTime;
-            var osc = audioCtx.createOscillator();
-            var gain = audioCtx.createGain();
+            let now = audioCtx.currentTime;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
             osc.type = 'sine';
             osc.frequency.setValueAtTime(freq || 880, now);
             gain.gain.setValueAtTime(0.12, now);
@@ -212,9 +213,9 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
             return;
         }
         try {
-            var now = audioCtx.currentTime;
-            var osc = audioCtx.createOscillator();
-            var gain = audioCtx.createGain();
+            let now = audioCtx.currentTime;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(1800, now);
             osc.frequency.exponentialRampToValueAtTime(120, now + 0.38);
@@ -230,8 +231,8 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
     /* ---- Theme preference state ---- */
     function applyPreset(value, persist) {
         preset = normalizePreset(value);
-        var body = document.body;
-        PRESETS.forEach(function(item) {
+        let body = document.body;
+        PRESETS.forEach((item) => {
             body.classList.remove('nephwave-preset-' + item.key);
         });
         body.classList.add('nephwave-preset-' + preset);
@@ -239,8 +240,8 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
             presetLabel.textContent = presetName(preset);
         }
         if (chromeRoot) {
-            var items = chromeRoot.querySelectorAll('.nephwave-preset-item');
-            for (var i = 0; i < items.length; i += 1) {
+            let items = chromeRoot.querySelectorAll('.nephwave-preset-item');
+            for (let i = 0; i < items.length; i += 1) {
                 items[i].setAttribute(
                     'aria-checked',
                     items[i].getAttribute('data-preset') === preset ? 'true' : 'false'
@@ -253,8 +254,8 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
     }
 
     function cyclePreset() {
-        var index = 0;
-        for (var i = 0; i < PRESETS.length; i += 1) {
+        let index = 0;
+        for (let i = 0; i < PRESETS.length; i += 1) {
             if (PRESETS[i].key === preset) {
                 index = i;
                 break;
@@ -270,7 +271,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
             crtMenuLabel.textContent = crt ? 'On' : 'Off';
         }
         if (chromeRoot) {
-            var button = chromeRoot.querySelector('.nephwave-tray-btn--crt');
+            let button = chromeRoot.querySelector('.nephwave-tray-btn--crt');
             if (button) {
                 button.setAttribute('aria-pressed', crt ? 'true' : 'false');
                 button.classList.toggle('nephwave-tray-btn--active', crt);
@@ -288,9 +289,9 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
             soundsMenuLabel.textContent = sounds ? 'On' : 'Off';
         }
         if (chromeRoot) {
-            var button = chromeRoot.querySelector('.nephwave-tray-btn--sounds');
+            let button = chromeRoot.querySelector('.nephwave-tray-btn--sounds');
             if (button) {
-                var icon = button.querySelector('i');
+                let icon = button.querySelector('i');
                 if (icon) {
                     icon.className = 'bx ' + (sounds ? 'bx-volume-full' : 'bx-volume-mute');
                 }
@@ -325,9 +326,9 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
         if (!clockEl) {
             return;
         }
-        var now = new Date();
-        var hour = now.getHours();
-        var suffix = hour >= 12 ? 'PM' : 'AM';
+        let now = new Date();
+        let hour = now.getHours();
+        let suffix = hour >= 12 ? 'PM' : 'AM';
         hour = hour % 12 || 12;
         clockEl.textContent = hour + ':' + pad(now.getMinutes()) + ' ' + suffix;
     }
@@ -356,9 +357,9 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
     }
 
     function updateStatus() {
-        var mode = 'offline';
-        var label = 'OFFLINE';
-        var network = activeNetwork();
+        let mode = 'offline';
+        let label = 'OFFLINE';
+        let network = activeNetwork();
         if (network && network.state === 'connected') {
             mode = 'online';
             label = 'ONLINE';
@@ -366,7 +367,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
             mode = 'connecting';
             label = 'DIALING';
         }
-        statusElements.forEach(function(el) {
+        statusElements.forEach((el) => {
             el.classList.remove(
                 'nephwave-status--online',
                 'nephwave-status--connecting',
@@ -384,7 +385,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
         if (!nowPlayingEl) {
             return;
         }
-        var text = '';
+        let text = '';
         try {
             text = typeof kiwi.getMediaDisplay === 'function'
                 ? kiwi.getMediaDisplay('radio')
@@ -408,12 +409,12 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
     }
 
     function radioEnabled() {
-        var service = radioService();
+        let service = radioService();
         return !!(service && typeof service.enabled === 'function' && service.enabled());
     }
 
     function updateAvailability() {
-        var available = radioEnabled();
+        let available = radioEnabled();
         if (radioTask) {
             radioTask.hidden = !available;
         }
@@ -463,10 +464,10 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
     }
 
     function updateTaskStates() {
-        var radioOpen = isRadioPickerOpen();
-        var narrow = isNarrowView();
-        var messengerActive = !minimized && (narrow || !radioOpen);
-        var radioActive = !minimized && !narrow && radioOpen;
+        let radioOpen = isRadioPickerOpen();
+        let narrow = isNarrowView();
+        let messengerActive = !minimized && (narrow || !radioOpen);
+        let radioActive = !minimized && !narrow && radioOpen;
 
         if (messengerTask) {
             messengerTask.classList.toggle('nephwave-task--active', messengerActive);
@@ -508,8 +509,8 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
     }
 
     function closeActivePanels() {
-        var radioOpen = isRadioPickerOpen();
-        var panelOpen = radioOpen ||
+        let radioOpen = isRadioPickerOpen();
+        let panelOpen = radioOpen ||
             !!document.querySelector('.kiwi-appsettings, .kiwi-networksettings');
         if (!panelOpen) {
             return;
@@ -526,7 +527,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
         }
         closeActivePanels();
         updateTaskStates();
-        window.setTimeout(function() {
+        window.setTimeout(() => {
             updateTaskStates();
             focusTerminal();
         }, 0);
@@ -553,7 +554,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
         startMenu.hidden = !startMenu.hidden;
         setStartExpanded(!startMenu.hidden);
         if (!startMenu.hidden) {
-            var first = startMenu.querySelector('button');
+            let first = startMenu.querySelector('button');
             if (first) {
                 first.focus();
             }
@@ -561,7 +562,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
     }
 
     function hideModals() {
-        [aboutModal, shutdownModal].forEach(function(modal) {
+        [aboutModal, shutdownModal].forEach((modal) => {
             if (modal) {
                 modal.hidden = true;
             }
@@ -576,7 +577,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
         hideModals();
         lastFocus = document.activeElement;
         modal.hidden = false;
-        var first = modal.querySelector('button');
+        let first = modal.querySelector('button');
         if (first) {
             first.focus();
         }
@@ -596,7 +597,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
         }
         hideStartMenu();
         hideModals();
-        var AppSettings = null;
+        let AppSettings = null;
         try {
             AppSettings = kiwi.require('components/AppSettings');
         } catch (err) {
@@ -621,7 +622,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
             updateTaskStates();
             return;
         }
-        var service = radioService();
+        let service = radioService();
         if (service && typeof service.openBrowser === 'function') {
             service.openBrowser();
             window.setTimeout(updateTaskStates, 0);
@@ -633,7 +634,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
             restoreApp();
         }
         hideStartMenu();
-        var input = document.querySelector(
+        let input = document.querySelector(
             '.kiwi-controlinput input, .kiwi-controlinput textarea'
         );
         if (input) {
@@ -645,21 +646,21 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
         hideStartMenu();
         hideModals();
         playPowerDown();
-        var themes = [];
+        let themes = [];
         try {
             themes = kiwi.themes.availableThemes() || [];
         } catch (err) {
             themes = [];
         }
-        var target = null;
-        for (var i = 0; i < themes.length; i += 1) {
+        let target = null;
+        for (let i = 0; i < themes.length; i += 1) {
             if (themes[i].name.toLowerCase() === 'kiwi dark') {
                 target = themes[i];
                 break;
             }
         }
         if (!target) {
-            for (var j = 0; j < themes.length; j += 1) {
+            for (let j = 0; j < themes.length; j += 1) {
                 if (themes[j].name.toLowerCase().indexOf(THEME_PREFIX) !== 0) {
                     target = themes[j];
                     break;
@@ -712,7 +713,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
     }
 
     function onChromeClick(event) {
-        var button = closest(event.target, 'button');
+        let button = closest(event.target, 'button');
         if (!button) {
             return;
         }
@@ -721,13 +722,13 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
             toggleStartMenu();
             return;
         }
-        var presetKey = button.getAttribute('data-preset');
+        let presetKey = button.getAttribute('data-preset');
         if (presetKey) {
             applyPreset(presetKey, true);
             hideStartMenu();
             return;
         }
-        var action = button.getAttribute('data-action');
+        let action = button.getAttribute('data-action');
         if (action) {
             handleAction(action);
         }
@@ -737,7 +738,7 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
         if (!active || !document.body.classList.contains('nephwave-active')) {
             return;
         }
-        var target = event.target;
+        let target = event.target;
         if (
             startMenu &&
             !startMenu.hidden &&
@@ -749,11 +750,11 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
         if (!sounds || closest(target, '.nephwave-chrome')) {
             return;
         }
-        var now = Date.now();
+        let now = Date.now();
         if (now - lastClickSoundAt < 40) {
             return;
         }
-        var hit = closest(
+        let hit = closest(
             target,
             '.u-button, .kiwi-statebrowser-channel, ' +
             '.kiwi-statebrowser-network-header, .kiwi-header-option a, ' +
@@ -795,13 +796,13 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
         if (prefersReducedMotion()) {
             return;
         }
-        var now = Date.now();
+        let now = Date.now();
         if (now - lastGlitchAt < 1500) {
             return;
         }
         lastGlitchAt = now;
         document.body.classList.add('nephwave-glitch');
-        window.setTimeout(function() {
+        window.setTimeout(() => {
             document.body.classList.remove('nephwave-glitch');
         }, 180);
     }
@@ -1049,10 +1050,10 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
             chromeRoot.hidden = true;
         }
         if (document.body) {
-            BODY_CLASSES.forEach(function(className) {
+            BODY_CLASSES.forEach((className) => {
                 document.body.classList.remove(className);
             });
-            PRESETS.forEach(function(item) {
+            PRESETS.forEach((item) => {
                 document.body.classList.remove('nephwave-preset-' + item.key);
             });
         }
@@ -1067,11 +1068,11 @@ kiwi.plugin('nephwave-desktop', function(kiwi, log) {
     }
 
     syncTheme();
-    kiwi.on('theme.change', function() {
+    kiwi.on('theme.change', () => {
         failedTheme = '';
         syncTheme();
     });
-    kiwi.on('theme.failed', function(theme) {
+    kiwi.on('theme.failed', (theme) => {
         if (theme && typeof theme.name === 'string' &&
             theme.name.toLowerCase().indexOf(THEME_PREFIX) === 0) {
             failedTheme = theme.name.toLowerCase();

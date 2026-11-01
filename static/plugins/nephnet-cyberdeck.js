@@ -1,28 +1,27 @@
-kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
+kiwi.plugin('nephnet-cyberdeck', (kiwi, log) => {
     'use strict';
 
-    var THEME_PREFIX = 'nephdeck';
-    var SETTING_PREFIX = 'plugin-nephdeck.';
-    var DEFAULT_PRESET = 'amber';
-    var PRESETS = {
+    let THEME_PREFIX = 'nephdeck';
+    let SETTING_PREFIX = 'plugin-nephdeck.';
+    let DEFAULT_PRESET = 'amber';
+    let PRESETS = {
         amber: 'Amber',
         green: 'Green',
         cyan: 'Cyan',
     };
 
-    var rootWrap = null;
-    var chromeRoot = null;
-    var clockTimer = null;
-    var signalTimer = null;
-    var preset = DEFAULT_PRESET;
-    var crtOn = true;
-    var poweredOn = true;
-    var audioMuted = true;
-    var audioCtx = null;
-    var booted = false;
-    var active = false;
-    var lastUiTick = 0;
-    var lastGlitch = 0;
+    let rootWrap = null;
+    let chromeRoot = null;
+    let signalTimer = null;
+    let preset = DEFAULT_PRESET;
+    let crtOn = true;
+    let poweredOn = true;
+    let audioMuted = true;
+    let audioCtx = null;
+    let booted = false;
+    let active = false;
+    let lastUiTick = 0;
+    let lastGlitch = 0;
 
     function normalizePreset(value) {
         return Object.prototype.hasOwnProperty.call(PRESETS, value)
@@ -32,7 +31,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
 
     function readSetting(name, fallback) {
         try {
-            var value = kiwi.state.setting(SETTING_PREFIX + name);
+            let value = kiwi.state.setting(SETTING_PREFIX + name);
             return typeof value === 'undefined' ? fallback : value;
         } catch (err) {
             return fallback;
@@ -55,7 +54,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
     function initAudio() {
         try {
             if (!audioCtx) {
-                var Ctx = window.AudioContext || window.webkitAudioContext;
+                let Ctx = window.AudioContext || window.webkitAudioContext;
                 if (!Ctx) {
                     return;
                 }
@@ -74,9 +73,9 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
             return;
         }
         try {
-            var now = audioCtx.currentTime;
-            var osc = audioCtx.createOscillator();
-            var gain = audioCtx.createGain();
+            let now = audioCtx.currentTime;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(tone || 320, now);
             osc.frequency.exponentialRampToValueAtTime(80, now + (duration || 0.04));
@@ -94,9 +93,9 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
             return;
         }
         try {
-            var now = audioCtx.currentTime;
-            var osc = audioCtx.createOscillator();
-            var gain = audioCtx.createGain();
+            let now = audioCtx.currentTime;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
             osc.type = 'sine';
             osc.frequency.setValueAtTime(freq || 880, now);
             gain.gain.setValueAtTime(0.12, now);
@@ -115,9 +114,9 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
             return;
         }
         try {
-            var now = audioCtx.currentTime;
-            var osc = audioCtx.createOscillator();
-            var gain = audioCtx.createGain();
+            let now = audioCtx.currentTime;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(1000, now);
             osc.frequency.exponentialRampToValueAtTime(420, now + 0.038);
@@ -132,10 +131,10 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
 
     /* Short noise buffer for hiss / degauss textures (built on demand) */
     function noiseBuffer(seconds) {
-        var length = Math.max(1, Math.floor(audioCtx.sampleRate * seconds));
-        var buffer = audioCtx.createBuffer(1, length, audioCtx.sampleRate);
-        var data = buffer.getChannelData(0);
-        for (var i = 0; i < length; i++) {
+        let length = Math.max(1, Math.floor(audioCtx.sampleRate * seconds));
+        let buffer = audioCtx.createBuffer(1, length, audioCtx.sampleRate);
+        let data = buffer.getChannelData(0);
+        for (let i = 0; i < length; i++) {
             data[i] = Math.random() * 2 - 1;
         }
         return buffer;
@@ -147,10 +146,10 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
             return;
         }
         try {
-            var now = audioCtx.currentTime;
+            let now = audioCtx.currentTime;
 
-            var thunk = audioCtx.createOscillator();
-            var thunkGain = audioCtx.createGain();
+            let thunk = audioCtx.createOscillator();
+            let thunkGain = audioCtx.createGain();
             thunk.type = 'sine';
             thunk.frequency.setValueAtTime(120, now);
             thunk.frequency.exponentialRampToValueAtTime(38, now + 0.12);
@@ -161,9 +160,9 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
             thunk.start(now);
             thunk.stop(now + 0.18);
 
-            var whineAt = now + 0.05;
-            var whine = audioCtx.createOscillator();
-            var whineGain = audioCtx.createGain();
+            let whineAt = now + 0.05;
+            let whine = audioCtx.createOscillator();
+            let whineGain = audioCtx.createGain();
             whine.type = 'sawtooth';
             whine.frequency.setValueAtTime(1200, whineAt);
             whine.frequency.exponentialRampToValueAtTime(13000, whineAt + 0.5);
@@ -175,9 +174,9 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
             whine.start(whineAt);
             whine.stop(whineAt + 0.6);
 
-            var hiss = audioCtx.createBufferSource();
-            var hissFilter = audioCtx.createBiquadFilter();
-            var hissGain = audioCtx.createGain();
+            let hiss = audioCtx.createBufferSource();
+            let hissFilter = audioCtx.createBiquadFilter();
+            let hissGain = audioCtx.createGain();
             hiss.buffer = noiseBuffer(0.5);
             hissFilter.type = 'highpass';
             hissFilter.frequency.setValueAtTime(2000, whineAt);
@@ -198,10 +197,10 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
             return;
         }
         try {
-            var now = audioCtx.currentTime;
+            let now = audioCtx.currentTime;
 
-            var whine = audioCtx.createOscillator();
-            var whineGain = audioCtx.createGain();
+            let whine = audioCtx.createOscillator();
+            let whineGain = audioCtx.createGain();
             whine.type = 'sawtooth';
             whine.frequency.setValueAtTime(9000, now);
             whine.frequency.exponentialRampToValueAtTime(1200, now + 0.42);
@@ -212,9 +211,9 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
             whine.start(now);
             whine.stop(now + 0.47);
 
-            var thudAt = now + 0.34;
-            var thud = audioCtx.createOscillator();
-            var thudGain = audioCtx.createGain();
+            let thudAt = now + 0.34;
+            let thud = audioCtx.createOscillator();
+            let thudGain = audioCtx.createGain();
             thud.type = 'sine';
             thud.frequency.setValueAtTime(150, thudAt);
             thud.frequency.exponentialRampToValueAtTime(45, thudAt + 0.14);
@@ -234,7 +233,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
             if (!kiwi.themes || typeof kiwi.themes.currentTheme !== 'function') {
                 return '';
             }
-            var theme = kiwi.themes.currentTheme();
+            let theme = kiwi.themes.currentTheme();
             return theme && theme.name ? theme.name.toLowerCase() : '';
         } catch (err) {
             return '';
@@ -253,13 +252,13 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         if (!active || !poweredOn || !crtOn || !document.body) {
             return;
         }
-        var now = Date.now();
+        let now = Date.now();
         if (now - lastGlitch < 1200) {
             return;
         }
         lastGlitch = now;
         document.body.classList.add('nephnet-deck-glitch');
-        window.setTimeout(function () {
+        window.setTimeout(() => {
             document.body.classList.remove('nephnet-deck-glitch');
         }, 150);
     }
@@ -279,7 +278,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
      * A single document-level listener (capture phase) ticks whenever a
      * button-like element is activated, so buffers, sidebar tabs and the
      * station manager all sound consistent without per-component wiring. */
-    var UI_TICK_SELECTOR = 'button, a, [role="button"], ' +
+    let UI_TICK_SELECTOR = 'button, a, [role="button"], ' +
         '.kiwi-statebrowser-channel, .kiwi-statebrowser-network-header, ' +
         '.kiwi-statebrowser-tool, .kiwi-statebrowser-newchannel, ' +
         '.kiwi-statebrowser-usermenu, .kiwi-statebrowser-appsettings, ' +
@@ -287,13 +286,13 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         '.u-tabbed-view-tab, .kiwi-sidebar-close, ' +
         '.kiwi-radio-browser-station, .kiwi-radio-browser-close';
 
-    var UI_TICK_SKIP = 'input, textarea, select, [contenteditable="true"], .kiwi-controlinput-input';
+    let UI_TICK_SKIP = 'input, textarea, select, [contenteditable="true"], .kiwi-controlinput-input';
 
     function onDocumentClick(event) {
         if (audioMuted) {
             return;
         }
-        var target = event.target;
+        let target = event.target;
         if (!target || typeof target.closest !== 'function') {
             return;
         }
@@ -308,7 +307,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         if (!target.closest(UI_TICK_SELECTOR)) {
             return;
         }
-        var now = Date.now();
+        let now = Date.now();
         if (now - lastUiTick < 40) {
             return;
         }
@@ -318,7 +317,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
     }
 
     function makeEl(tag, className, html) {
-        var el = document.createElement(tag);
+        let el = document.createElement(tag);
         if (className) {
             el.className = className;
         }
@@ -329,9 +328,9 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
     }
 
     function makeIconButton(iconClass, handler) {
-        var btn = makeEl('button', 'nephnet-btn nephnet-btn--icon', '');
+        let btn = makeEl('button', 'nephnet-btn nephnet-btn--icon', '');
         btn.type = 'button';
-        var icon = makeEl('i', 'bx ' + iconClass);
+        let icon = makeEl('i', 'bx ' + iconClass);
         icon.setAttribute('aria-hidden', 'true');
         btn.appendChild(icon);
         btn.addEventListener('click', handler);
@@ -347,9 +346,9 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         chromeRoot = makeEl('div', 'nephnet-chrome');
         chromeRoot.hidden = true;
 
-        var brandMark = '<img class="nephnet-brand-mark" src="static/nephnet.svg" alt="" aria-hidden="true">';
+        let brandMark = '<img class="nephnet-brand-mark" src="static/nephnet.svg" alt="" aria-hidden="true">';
 
-        var topbar = makeEl('div', 'nephnet-topbar');
+        let topbar = makeEl('div', 'nephnet-topbar');
         topbar.innerHTML =
             '<div class="nephnet-topbar-left">' +
                 '<span class="nephnet-plate">MK-IV // FIELD RIG <b>REV.3</b></span>' +
@@ -364,16 +363,16 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
                 '<span class="nephnet-clock">--:--:--</span>' +
             '</div>';
 
-        var controls = makeEl('div', 'nephnet-controls');
+        let controls = makeEl('div', 'nephnet-controls');
 
-        var paletteButtons = {};
-        Object.keys(PRESETS).forEach(function (key) {
-            var btn = makeEl('button', 'nephnet-btn nephnet-btn--phosphor', '');
+        let paletteButtons = {};
+        Object.keys(PRESETS).forEach((key) => {
+            let btn = makeEl('button', 'nephnet-btn nephnet-btn--phosphor', '');
             btn.type = 'button';
             btn.setAttribute('data-palette', key);
             btn.setAttribute('title', PRESETS[key] + ' phosphor');
             btn.setAttribute('aria-label', PRESETS[key] + ' phosphor palette');
-            btn.addEventListener('click', function () {
+            btn.addEventListener('click', () => {
                 initAudio();
                 playBeep(750, 0.04);
                 applyPreset(key, true);
@@ -385,7 +384,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
 
         controls.appendChild(makeEl('span', 'nephnet-controls-spacer', ''));
 
-        var crtBtn = makeIconButton('bx-desktop', function () {
+        let crtBtn = makeIconButton('bx-desktop', () => {
             initAudio();
             playClick(300, 0.03);
             crtOn = !crtOn;
@@ -394,7 +393,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         crtBtn.setAttribute('title', 'CRT effect');
         crtBtn.setAttribute('aria-label', 'Toggle CRT effect');
 
-        var audioBtn = makeIconButton('bx-volume-mute', function () {
+        let audioBtn = makeIconButton('bx-volume-mute', () => {
             audioMuted = !audioMuted;
             initAudio();
             applyAudio(true);
@@ -410,7 +409,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
 
         controls.appendChild(makeEl('span', 'nephnet-controls-spacer nephnet-controls-spacer--wide', ''));
 
-        var powerBtn = makeIconButton('bx-power-off', function () {
+        let powerBtn = makeIconButton('bx-power-off', () => {
             initAudio();
             togglePower();
         });
@@ -419,7 +418,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         powerBtn.setAttribute('aria-label', 'Toggle power');
         controls.appendChild(powerBtn);
 
-        var bottombar = makeEl('div', 'nephnet-bottombar');
+        let bottombar = makeEl('div', 'nephnet-bottombar');
         bottombar.appendChild(makeEl('span', 'nephnet-bottombar-label', 'TACTILE NAV BUS // CYBERDECK'));
         bottombar.appendChild(controls);
         bottombar.appendChild(makeEl('span', 'nephnet-bottombar-right', 'CHASSIS: NEPHNET-IND-4'));
@@ -427,7 +426,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         chromeRoot.appendChild(topbar);
         chromeRoot.appendChild(bottombar);
 
-        ['tl', 'tr', 'bl', 'br'].forEach(function (pos) {
+        ['tl', 'tr', 'bl', 'br'].forEach((pos) => {
             chromeRoot.appendChild(makeEl('span', 'nephnet-rivet nephnet-rivet--' + pos));
         });
 
@@ -443,17 +442,17 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
          * cannot remove the chrome or overwrite the state class. */
         document.body.appendChild(chromeRoot);
 
-        chromeRoot._paletteButtons = paletteButtons;
-        chromeRoot._crtBtn = crtBtn;
-        chromeRoot._audioBtn = audioBtn;
-        chromeRoot._powerBtn = powerBtn;
+        chromeRoot.paletteButtons = paletteButtons;
+        chromeRoot.crtBtn = crtBtn;
+        chromeRoot.audioBtn = audioBtn;
+        chromeRoot.powerBtn = powerBtn;
 
         applyCrt();
         applyPower();
         applyAudio(false);
         updateControls();
 
-        clockTimer = window.setInterval(updateClock, 1000);
+        window.setInterval(updateClock, 1000);
         updateClock();
         startSignal();
     }
@@ -462,12 +461,12 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         if (!chromeRoot) {
             return;
         }
-        var clock = chromeRoot.querySelector('.nephnet-clock');
+        let clock = chromeRoot.querySelector('.nephnet-clock');
         if (!clock) {
             return;
         }
-        var now = new Date();
-        var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+        let now = new Date();
+        let pad = function(n) { return (n < 10 ? '0' : '') + n; };
         clock.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
     }
 
@@ -476,7 +475,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
      * "signal dropped" readout when offline. Small random jitter at random
      * intervals keeps it feeling live. */
     function signalState() {
-        var network = null;
+        let network = null;
         try {
             if (kiwi.state && typeof kiwi.state.getActiveNetwork === 'function') {
                 network = kiwi.state.getActiveNetwork();
@@ -497,13 +496,13 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         if (!chromeRoot) {
             return;
         }
-        var readout = chromeRoot.querySelector('.nephnet-readout--signal');
-        var value = chromeRoot.querySelector('.nephnet-signal-value');
+        let readout = chromeRoot.querySelector('.nephnet-readout--signal');
+        let value = chromeRoot.querySelector('.nephnet-signal-value');
         if (!readout || !value) {
             return;
         }
-        var state = signalState();
-        var percent;
+        let state = signalState();
+        let percent;
         if (state === 'good') {
             percent = 91 + Math.random() * 7;
         } else if (state === 'warn') {
@@ -517,7 +516,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
     }
 
     function scheduleSignal() {
-        signalTimer = window.setTimeout(function () {
+        signalTimer = window.setTimeout(() => {
             updateSignal();
             scheduleSignal();
         }, 2000 + Math.random() * 4000);
@@ -538,7 +537,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
     function applyPreset(value, persist) {
         preset = normalizePreset(value);
         if (document.body) {
-            Object.keys(PRESETS).forEach(function (key) {
+            Object.keys(PRESETS).forEach((key) => {
                 document.body.classList.remove('nephdeck-preset-' + key);
             });
             document.body.classList.add('nephdeck-preset-' + preset);
@@ -550,14 +549,14 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
     }
 
     function updateAudioButton() {
-        if (!chromeRoot || !chromeRoot._audioBtn) {
+        if (!chromeRoot || !chromeRoot.audioBtn) {
             return;
         }
-        var icon = chromeRoot._audioBtn.querySelector('i');
+        let icon = chromeRoot.audioBtn.querySelector('i');
         if (icon) {
             icon.className = 'bx ' + (audioMuted ? 'bx-volume-mute' : 'bx-volume-full');
         }
-        chromeRoot._audioBtn.classList.toggle('nephnet-btn--active', !audioMuted);
+        chromeRoot.audioBtn.classList.toggle('nephnet-btn--active', !audioMuted);
     }
 
     function applyAudio(persist) {
@@ -573,8 +572,8 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         }
         document.body.classList.toggle('nephnet-deck-crt-on', crtOn);
         document.body.classList.toggle('nephnet-deck-crt-off', !crtOn);
-        if (chromeRoot && chromeRoot._crtBtn) {
-            chromeRoot._crtBtn.classList.toggle('nephnet-btn--active', crtOn);
+        if (chromeRoot && chromeRoot.crtBtn) {
+            chromeRoot.crtBtn.classList.toggle('nephnet-btn--active', crtOn);
         }
         if (persist) {
             writeSetting('crt', crtOn);
@@ -586,8 +585,8 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
             return;
         }
         document.body.classList.toggle('nephnet-deck-powered-off', !poweredOn);
-        if (chromeRoot && chromeRoot._powerBtn) {
-            chromeRoot._powerBtn.classList.toggle('nephnet-btn--active', poweredOn);
+        if (chromeRoot && chromeRoot.powerBtn) {
+            chromeRoot.powerBtn.classList.toggle('nephnet-btn--active', poweredOn);
         }
     }
 
@@ -603,7 +602,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
             document.body.classList.remove('nephnet-deck-power-on');
             document.body.classList.add('nephnet-deck-power-off');
             applyPower();
-            window.setTimeout(function () {
+            window.setTimeout(() => {
                 document.body.classList.remove('nephnet-deck-power-off');
             }, 320);
         } else {
@@ -613,7 +612,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
             document.body.classList.add('nephnet-deck-power-on');
             applyPower();
             playPowerUp();
-            window.setTimeout(function () {
+            window.setTimeout(() => {
                 document.body.classList.remove('nephnet-deck-power-on');
             }, 340);
         }
@@ -623,8 +622,8 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         if (!chromeRoot) {
             return;
         }
-        var buttons = chromeRoot._paletteButtons || {};
-        Object.keys(buttons).forEach(function (key) {
+        let buttons = chromeRoot.paletteButtons || {};
+        Object.keys(buttons).forEach((key) => {
             buttons[key].classList.toggle('nephnet-btn--active', key === preset);
         });
     }
@@ -712,7 +711,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
                 'nephnet-deck-power-on',
                 'nephnet-deck-powered-off'
             );
-            Object.keys(PRESETS).forEach(function (key) {
+            Object.keys(PRESETS).forEach((key) => {
                 document.body.classList.remove('nephdeck-preset-' + key);
             });
         }
@@ -739,7 +738,7 @@ kiwi.plugin('nephnet-cyberdeck', function (kiwi, log) {
         }
     }
 
-    var observer = null;
+    let observer = null;
     function observeWrap() {
         if (!rootWrap || !window.MutationObserver) {
             return;
