@@ -1,11 +1,11 @@
-@import '../common/base.css';
+@import url('../common/base.css');
 
 :root {
     --brand-primary: #0969da;
     --brand-primary-hover: #0550ae;
     --brand-midtone: #f6f8fa;
     --brand-darktone: #afb8c1;
-    --brand-default-bg: #ffffff;
+    --brand-default-bg: #fff;
     --brand-default-fg: #24292f;
     --brand-notice: #bf8700;
     --brand-warning: #9a6700;
@@ -15,13 +15,12 @@
     /* Input elements */
     --brand-input-border: #d0d7de;
     --brand-input-fg: #24292f;
-    --brand-input-bg: #ffffff;
-
+    --brand-input-bg: #fff;
     --comp-workspace-before-bg: var(--brand-primary);
     --comp-bg-kiwi-workspace--disconnected-after-bg: var(--brand-error);
     --comp-header-bg: var(--brand-default-bg);
     --comp-header-name-fg: #1b1f24;
-    --comp-header-option-active-fg: #ffffff;
+    --comp-header-option-active-fg: #fff;
     --comp-header-option-active-bg: var(--brand-primary);
     --comp-statebrowser-fg: #c9d1d9;
     --comp-statebrowser-bg: #0d1117;
@@ -84,7 +83,7 @@
 .irc-fg-colour-grey { color: #57606a; }
 .irc-fg-colour-light-grey { color: #8c959f; }
 
-.irc-bg-colour-white { background-color: #ffffff; }
+.irc-bg-colour-white { background-color: #fff; }
 .irc-bg-colour-black { background-color: #24292f; }
 .irc-bg-colour-blue { background-color: #0969da; }
 .irc-bg-colour-green { background-color: #1a7f37; }

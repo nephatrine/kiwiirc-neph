@@ -120,6 +120,7 @@
     color: var(--brand-default-bg);
     transition: background-color 0.2s;
 }
+
 .u-button-primary:hover, .u-button-secondary:hover, .u-button-online:hover, .u-button-warning:hover {
     background-color: var(--brand-primary-hover);
 }
@@ -127,12 +128,15 @@
 .u-button-primary {
     background-color: var(--brand-primary);
 }
+
 .u-button-secondary {
     background-color: var(--brand-default-fg);
 }
+
 .u-button-online {
     background-color: var(--brand-online);
 }
+
 .u-button-warning {
     background-color: var(--brand-error);
 }
@@ -667,17 +671,18 @@
     font-weight: 400;
     text-decoration: none;
 }
+
 .kiwi-statebrowser-network-name--hasicon::before {
     content: none;
     margin-right: 0;
 }
 
 /* Icons in the Channel List */
-.kiwi-statebrowser-channel[data-name^="*"]::before {
+.kiwi-statebrowser-channel[data-name^='*']::before {
     content: '\ec27';
 }
 
-.kiwi-statebrowser-channel[data-name="#help"]::before {
+.kiwi-statebrowser-channel[data-name='#help']::before {
     content: '\eb0d';
 }
 
@@ -758,8 +763,9 @@
 /* ---- App ---- */
 .kiwi-wrap {
     color: var(--brand-default-fg);
-    --kiwi-font: 'Source Sans Pro', Helvetica, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
-    --kiwi-font-mono: 'Source Code Pro', Consolas, monaco, monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
+
+    --kiwi-font: 'Source Sans Pro', helvetica, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    --kiwi-font-mono: 'Source Code Pro', consolas, monaco, monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
     --kiwi-nickcolour-lightness: 40;
     --kiwi-supports-monospace: 1;
 }

@@ -1,4 +1,4 @@
-@import '../common/base.css';
+@import url('../common/base.css');
 
 :root {
     /* Primary Variables */
@@ -16,7 +16,7 @@
     --brand-online: #41e8c9;
 
     /* Input elements */
-    --brand-input-border: #000000;
+    --brand-input-border: #000;
     --brand-input-fg: #616161;
     --brand-input-bg: #1b1b1b;
 
@@ -231,6 +231,7 @@
 .kiwi-messagelist {
     background: #000;
 }
+
 .kiwi-messagelist .kiwi-messagelist-body {
     color: #adadad;
 }
@@ -344,7 +345,7 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start,
 
 .kiwi-autocomplete-item--selected {
     background: #3c3c3c;
-    color: #ffffff;
+    color: #fff;
 }
 
 .kiwi-autocomplete-item--selected .u-link {

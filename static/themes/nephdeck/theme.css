@@ -25,7 +25,6 @@
     --cd-accent-deep: #9a3412;
     --cd-away: #ffa040;
     --cd-glow-rgb: 255 95 0;
-
     --cd-bezel: #0b0d10;
     --cd-chassis: #12151a;
     --cd-panel: #171b22;
@@ -33,7 +32,6 @@
     --cd-rim: #242a34;
     --cd-steel: #323a48;
     --cd-metal: #475366;
-
     --cd-screen-bg: #07090c;
     --cd-screen-panel: #0c0f14;
     --cd-screen-line: #1a2029;
@@ -56,7 +54,6 @@
     --brand-input-border: #3a4453;
     --brand-input-fg: #e2e8f0;
     --brand-input-bg: #0d1015;
-
     --comp-workspace-before-bg: var(--cd-accent);
     --comp-bg-kiwi-workspace--disconnected-after-bg: var(--brand-error);
     --comp-header-bg: #0d1117;
@@ -67,7 +64,7 @@
     --comp-statebrowser-bg: #0d1117;
     --comp-statebrowser-bg-networkname: #1b2028;
     --comp-statebrowser-channel-active-bg: rgb(var(--cd-glow-rgb) / 0.14);
-    --comp-statebrowser-channel-active-fg: #ffffff;
+    --comp-statebrowser-channel-active-fg: #fff;
     --comp-usermenu-open-bg: #05070a;
     --comp-statebrowser-network-border: #2a323d;
     --comp-sidebar-bg: #0d1117;
@@ -107,7 +104,6 @@ body.nephdeck-preset-green .kiwi-wrap {
     --cd-accent-glow: #4ade80;
     --cd-accent-deep: #15803d;
     --cd-glow-rgb: 34 197 94;
-
     --cd-screen-text: #86efac;
     --cd-screen-dim: #6b8f78;
 }
@@ -118,7 +114,6 @@ body.nephdeck-preset-cyan .kiwi-wrap {
     --cd-accent-glow: #38bdf8;
     --cd-accent-deep: #0e7490;
     --cd-glow-rgb: 6 182 212;
-
     --cd-screen-text: #7dd3fc;
     --cd-screen-dim: #5f8598;
 }
@@ -247,6 +242,7 @@ body.nephdeck-preset-cyan .kiwi-wrap {
 /* ==================================================================== *
  * Welcome / startup screens
  * ==================================================================== */
+
 /* The startup component renders inside .kiwi-wrap, so the deck frame is
  * already visible. Keep the connection + info columns and give them the
  * cyberdeck treatment rather than restyling the app shell. */
@@ -403,7 +399,7 @@ body.nephnet-deck-active .kiwi-welcome-simple-error {
 .kiwi-header-name {
     background-color: transparent;
     color: var(--cd-accent);
-    font-family: 'Orbitron', var(--kiwi-font);
+    font-family: Orbitron, var(--kiwi-font);
     font-weight: 700;
     letter-spacing: 0.04em;
 }
@@ -821,11 +817,11 @@ body.nephnet-deck-active .kiwi-welcome-simple-error {
     margin-right: 0;
 }
 
-.kiwi-statebrowser-channel[data-name^="*"]::before {
+.kiwi-statebrowser-channel[data-name^='*']::before {
     content: '\ec27';
 }
 
-.kiwi-statebrowser-channel[data-name="#help"]::before {
+.kiwi-statebrowser-channel[data-name='#help']::before {
     content: '\eb0d';
 }
 
@@ -978,7 +974,7 @@ body.nephnet-deck-active .kiwi-welcome-simple-error {
 
 .kiwi-userbox .main-title {
     color: var(--cd-accent);
-    font-family: 'Orbitron', var(--kiwi-font);
+    font-family: Orbitron, var(--kiwi-font);
 }
 
 .kiwi-userbox .kiwi-userbox-actions .kiwi-userbox-action {
@@ -1125,7 +1121,7 @@ body.nephnet-deck-active .kiwi-welcome-simple-error {
 .kiwi-appsettings-block h3 {
     background: var(--brand-primary);
     color: var(--cd-bezel);
-    font-family: 'Orbitron', var(--kiwi-font);
+    font-family: Orbitron, var(--kiwi-font);
 }
 
 .kiwi-appsettings-close {
@@ -1657,7 +1653,7 @@ body.nephnet-deck-active .kiwi-wrap {
 }
 
 .nephnet-brand-name {
-    font-family: 'Orbitron', var(--kiwi-font);
+    font-family: Orbitron, var(--kiwi-font);
     font-weight: 900;
     font-size: 13px;
     letter-spacing: 0.12em;
@@ -1695,7 +1691,7 @@ body.nephnet-deck-active .kiwi-wrap {
 }
 
 .nephnet-readout--signal.nephnet-signal--bad em {
-    color: #ff5555;
+    color: #f55;
 }
 
 .nephnet-clock {
@@ -1915,10 +1911,25 @@ body.nephnet-deck-startup .nephnet-btn--power {
     background: #090b0e;
 }
 
-.nephnet-rivet--tl { top: 6px; left: 6px; }
-.nephnet-rivet--tr { top: 6px; right: 6px; }
-.nephnet-rivet--bl { bottom: 6px; left: 6px; }
-.nephnet-rivet--br { bottom: 6px; right: 6px; }
+.nephnet-rivet--tl {
+    top: 6px;
+    left: 6px;
+}
+
+.nephnet-rivet--tr {
+    top: 6px;
+    right: 6px;
+}
+
+.nephnet-rivet--bl {
+    bottom: 6px;
+    left: 6px;
+}
+
+.nephnet-rivet--br {
+    bottom: 6px;
+    right: 6px;
+}
 
 /* ---- Side rails + inner bezel (framed PDA look) ---- */
 .nephnet-rail {
@@ -2005,10 +2016,7 @@ body.nephnet-deck-statebrowser .nephnet-spine {
 /* Inner rim that frames the screen area */
 .nephnet-bezel {
     position: absolute;
-    top: 34px;
-    left: 12px;
-    right: 12px;
-    bottom: 30px;
+    inset: 34px 12px 30px 12px;
     border: 1px solid var(--cd-rim);
     border-radius: 3px;
     box-shadow:
@@ -2021,10 +2029,7 @@ body.nephnet-deck-statebrowser .nephnet-spine {
 .nephnet-scanlines,
 .nephnet-vignette {
     position: absolute;
-    top: 34px;
-    left: 12px;
-    right: 12px;
-    bottom: 30px;
+    inset: 34px 12px 30px 12px;
     pointer-events: none;
     z-index: 45;
 }
@@ -2071,15 +2076,43 @@ body.nephnet-deck-glitch .kiwi-statebrowser {
 }
 
 @keyframes nephnet-power-off {
-    0% { transform: scale(1, 1); opacity: 1; filter: brightness(1.5); }
-    40% { transform: scale(1, 0.01); opacity: 1; filter: brightness(2); }
-    100% { transform: scale(1, 0.01); opacity: 0; filter: brightness(0); }
+    0% {
+        transform: scale(1, 1);
+        opacity: 1;
+        filter: brightness(1.5);
+    }
+
+    40% {
+        transform: scale(1, 0.01);
+        opacity: 1;
+        filter: brightness(2);
+    }
+
+    100% {
+        transform: scale(1, 0.01);
+        opacity: 0;
+        filter: brightness(0);
+    }
 }
 
 @keyframes nephnet-power-on {
-    0% { transform: scale(1, 0.01); opacity: 0; filter: brightness(2); }
-    60% { transform: scale(1, 1); opacity: 1; filter: brightness(1.3); }
-    100% { transform: scale(1, 1); opacity: 1; filter: none; }
+    0% {
+        transform: scale(1, 0.01);
+        opacity: 0;
+        filter: brightness(2);
+    }
+
+    60% {
+        transform: scale(1, 1);
+        opacity: 1;
+        filter: brightness(1.3);
+    }
+
+    100% {
+        transform: scale(1, 1);
+        opacity: 1;
+        filter: none;
+    }
 }
 
 body.nephnet-deck-power-off .kiwi-workspace {

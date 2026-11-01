@@ -6,6 +6,21 @@ module.exports = {
             files: ['**/*.html'],
             customSyntax: 'postcss-html',
         },
+        {
+            files: [
+                'static/themes/**/*.css',
+                'static/plugins/**/*.css',
+                'static/plugins/**/*.html',
+            ],
+            rules: {
+                'color-function-alias-notation': null,
+                'custom-property-pattern': null,
+                'declaration-no-important': null,
+                'media-feature-range-notation': 'prefix',
+                'no-duplicate-selectors': null,
+                'selector-no-vendor-prefix': null,
+            },
+        },
     ],
     rules: {
         '@stylistic/indentation': 4,

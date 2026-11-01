@@ -1,4 +1,4 @@
-@import '../common/base.css';
+@import url('../common/base.css');
 
 :root {
     --brand-primary: #8839ef;
@@ -16,7 +16,6 @@
     --brand-input-border: #bcc0cc;
     --brand-input-fg: #4c4f69;
     --brand-input-bg: #eff1f5;
-
     --comp-workspace-before-bg: var(--brand-primary);
     --comp-bg-kiwi-workspace--disconnected-after-bg: var(--brand-error);
     --comp-header-bg: var(--brand-default-bg);
@@ -96,7 +95,7 @@
 .irc-bg-colour-light-green { background-color: #179287; }
 .irc-bg-colour-cyan { background-color: #209fb5; }
 .irc-bg-colour-light-cyan { background-color: #04a5e5; }
-    .irc-bg-colour-light-blue { background-color: #7287fd; }
+.irc-bg-colour-light-blue { background-color: #7287fd; }
 .irc-bg-colour-pink { background-color: #ea76cb; }
 .irc-bg-colour-grey { background-color: #6c6f85; }
 .irc-bg-colour-light-grey { background-color: #8c8fa1; }

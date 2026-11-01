@@ -1,4 +1,4 @@
-@import '../common/base.css';
+@import url('../common/base.css');
 
 :root {
     --brand-primary: #be95ff;
@@ -16,7 +16,6 @@
     --brand-input-border: #393939;
     --brand-input-fg: #f2f4f8;
     --brand-input-bg: #161616;
-
     --comp-workspace-before-bg: var(--brand-primary);
     --comp-bg-kiwi-workspace--disconnected-after-bg: var(--brand-error);
     --comp-header-bg: var(--brand-default-bg);
@@ -64,15 +63,15 @@
     border-radius: 1px;
     font-family: var(--kiwi-font-mono);
     font-weight: 600;
-    box-shadow: 3px 3px 0px var(--brand-error);
+    box-shadow: 3px 3px 0 var(--brand-error);
     transition: all 0.2s ease;
     animation: none;
 }
 
 .kiwi-formatting-reverse:hover {
     background: var(--brand-darktone);
-    color: #ffffff;
-    box-shadow: 4px 4px 0px var(--brand-link-normal);
+    color: #fff;
+    box-shadow: 4px 4px 0 var(--brand-link-normal);
 }
 
 .kiwi-header {
@@ -80,13 +79,14 @@
 }
 
 .kiwi-statebrowser-channels .kiwi-statebrowser-channel {
-    color: #ffffff;
+    color: #fff;
 }
 
 .u-tabbed-view-tabs {
     background: var(--brand-midtone);
     border-bottom-color: #ffffff1a;
 }
+
 .u-tabbed-view-tabs .u-tabbed-view-tab {
     border-bottom-color: #ffffff1a;
 }
@@ -109,7 +109,7 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
 }
 
 .kiwi-statebrowser {
-    box-shadow: 0px 0 4px #ffffff2b;
+    box-shadow: 0 0 4px #ffffff2b;
 }
 
 .kiwi-statebrowser-newchannel-inputwrap,
@@ -129,6 +129,7 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
 .kiwi-notconnected-button {
     border-color: var(--brand-default-fg);
 }
+
 .kiwi-notconnected-button:hover {
     background-color: var(--brand-default-fg);
     color: var(--brand-default-bg);
@@ -144,6 +145,7 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
     background-color: #000;
     color: var(--brand-default-fg);
 }
+
 .kiwi-network-name-option:hover,
 .kiwi-network-name-option.active {
     background-color: var(--brand-primary);
@@ -163,7 +165,7 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
 }
 
 .kiwi-statebrowser {
-    box-shadow: 0px 0 4px #ffffff2b;
+    box-shadow: 0 0 4px #ffffff2b;
 }
 
 .kiwi-statebrowser-channelfilter input,
@@ -187,6 +189,7 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
 .kiwi-messagelist-message--info-open {
     background-color: var(--brand-midtone);
 }
+
 .kiwi-messagelist-message--info-open .u-link {
     color: #fff;
 }

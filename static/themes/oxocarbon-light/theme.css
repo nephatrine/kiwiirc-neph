@@ -1,4 +1,4 @@
-@import '../common/base.css';
+@import url('../common/base.css');
 
 :root {
     --brand-primary: #be95ff;
@@ -16,7 +16,6 @@
     --brand-input-border: #dde1e6;
     --brand-input-fg: #161616;
     --brand-input-bg: #f2f4f8;
-
     --comp-workspace-before-bg: var(--brand-primary);
     --comp-bg-kiwi-workspace--disconnected-after-bg: var(--brand-error);
     --comp-header-bg: var(--brand-default-bg);
@@ -65,7 +64,7 @@
     border-radius: 1px;
     font-family: var(--kiwi-font-mono);
     font-weight: 600;
-    box-shadow: 3px 3px 0px var(--brand-error);
+    box-shadow: 3px 3px 0 var(--brand-error);
     transition: all 0.2s ease;
     animation: none;
 }
@@ -73,7 +72,7 @@
 .kiwi-formatting-reverse:hover {
     background: var(--brand-darktone);
     color: var(--brand-default-fg);
-    box-shadow: 4px 4px 0px var(--brand-link-normal);
+    box-shadow: 4px 4px 0 var(--brand-link-normal);
 }
 
 /* Oxocarbon Precision Accents */

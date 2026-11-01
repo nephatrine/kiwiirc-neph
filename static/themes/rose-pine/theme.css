@@ -1,4 +1,4 @@
-@import '../common/base.css';
+@import url('../common/base.css');
 
 :root {
     --brand-primary: #ebbcba;
@@ -16,7 +16,6 @@
     --brand-input-border: #403d52;
     --brand-input-fg: #e0def4;
     --brand-input-bg: #191724;
-
     --comp-workspace-before-bg: var(--brand-primary);
     --comp-bg-kiwi-workspace--disconnected-after-bg: var(--brand-error);
     --comp-header-bg: var(--brand-default-bg);
@@ -76,6 +75,7 @@
     background: var(--brand-midtone);
     border-bottom-color: #ffffff1a;
 }
+
 .u-tabbed-view-tabs .u-tabbed-view-tab {
     border-bottom-color: #ffffff1a;
 }
@@ -98,7 +98,7 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
 }
 
 .kiwi-statebrowser {
-    box-shadow: 0px 0 4px #ffffff2b;
+    box-shadow: 0 0 4px #ffffff2b;
 }
 
 .kiwi-statebrowser-newchannel-inputwrap,
@@ -118,6 +118,7 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
 .kiwi-notconnected-button {
     border-color: var(--brand-default-fg);
 }
+
 .kiwi-notconnected-button:hover {
     background-color: var(--brand-default-fg);
     color: var(--brand-default-bg);
@@ -133,6 +134,7 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
     background-color: #000;
     color: var(--brand-default-fg);
 }
+
 .kiwi-network-name-option:hover,
 .kiwi-network-name-option.active {
     background-color: var(--brand-primary);
@@ -152,7 +154,7 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
 }
 
 .kiwi-statebrowser {
-    box-shadow: 0px 0 4px #ffffff2b;
+    box-shadow: 0 0 4px #ffffff2b;
 }
 
 .kiwi-statebrowser-channelfilter input,
@@ -170,12 +172,13 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
 }
 
 .kiwi-container-toggledraw-statebrowser-messagecount  {
-    color: #ffffff;
+    color: #fff;
 }
 
 .kiwi-messagelist-message--info-open {
     background-color: var(--brand-midtone);
 }
+
 .kiwi-messagelist-message--info-open .u-link {
     color: #fff;
 }

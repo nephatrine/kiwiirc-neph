@@ -1,4 +1,4 @@
-@import '../common/base.css';
+@import url('../common/base.css');
 
 :root {
     --brand-primary: #79740e;
@@ -16,7 +16,6 @@
     --brand-input-border: #bdae93;
     --brand-input-fg: #3c3836;
     --brand-input-bg: #fbf1c7;
-
     --comp-workspace-before-bg: var(--brand-primary);
     --comp-bg-kiwi-workspace--disconnected-after-bg: var(--brand-error);
     --comp-header-bg: var(--brand-default-bg);
@@ -61,7 +60,7 @@
     font-weight: 800;
     padding: 0.12em 0.45em;
     border: 1.5px solid var(--brand-warning);
-    box-shadow: 4px 4px 0px var(--brand-warning);
+    box-shadow: 4px 4px 0 var(--brand-warning);
     border-radius: 2px;
 }
 

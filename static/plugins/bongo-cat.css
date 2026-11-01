@@ -799,10 +799,7 @@
 @media (max-height: 560px) {
     .kiwi-bongo-cat .kiwi-bongo-cat__card {
         position: fixed;
-        top: 56px;
-        left: 50%;
-        right: auto;
-        bottom: auto;
+        inset: 56px auto auto 50%;
         width: min(340px, calc(100vw - 16px));
         max-height: calc(100vh - 96px);
         max-height: calc(100dvh - 96px);

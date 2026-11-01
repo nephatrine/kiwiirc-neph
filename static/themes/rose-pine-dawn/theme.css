@@ -1,4 +1,4 @@
-@import '../common/base.css';
+@import url('../common/base.css');
 
 :root {
     --brand-primary: #d7827e;
@@ -16,7 +16,6 @@
     --brand-input-border: #dfdad9;
     --brand-input-fg: #575279;
     --brand-input-bg: #faf4ed;
-
     --comp-workspace-before-bg: var(--brand-primary);
     --comp-bg-kiwi-workspace--disconnected-after-bg: var(--brand-error);
     --comp-header-bg: var(--brand-default-bg);
