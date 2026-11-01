@@ -241,6 +241,9 @@ and this project adheres to
 
 ### Fixed
 
+- **Modern Layout**: Hover padding now applies to the message content column
+  instead of the embed wrapper, so preview cards are no longer padded inside.
+
 - **Emoji Picker**: Category highlighting now follows the topmost visible
   section and no longer jumps through categories during programmatic scrolling.
 

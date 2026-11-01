@@ -410,13 +410,6 @@ export default {
     display: block;
     margin-left: 0;
     margin-bottom: 10px;
-    padding-right: 0;
-    transition: padding-right 0.2s ease;
-}
-
-.kiwi-messagelist-message--modern:hover .kiwi-messagelist-body,
-.kiwi-messagelist-message--modern:hover .kiwi-messagelist-embed {
-    padding-right: 45px;
 }
 
 .kiwi-messagelist-message--modern .kiwi-messagelist-body a {
@@ -426,8 +419,15 @@ export default {
 .kiwi-messagelist-message--modern .kiwi-messagelist-modern-right {
     margin-left: 5px;
     padding-top: 0;
+    padding-right: 0;
     width: 100%;
+    box-sizing: border-box;
     position: relative;
+    transition: padding-right 0.2s ease;
+}
+
+.kiwi-messagelist-message--modern:hover .kiwi-messagelist-modern-right {
+    padding-right: 45px;
 }
 
 .kiwi-messagelist-message--modern .kiwi-messagelist-top > div {
