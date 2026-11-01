@@ -1,7 +1,7 @@
 {
   "name": "kiwiirc-neph",
-  "version": "2.0.0",
-  "description": "Web based IRC client",
+  "version": "2.1.0",
+  "description": "WebIRC Client",
   "homepage": "https://code.nephatrine.net/nephatrine/kiwiirc",
   "repository": {
     "type": "git",
@@ -16,10 +16,11 @@
     "postbuild": "node scripts/minify-static.js",
     "generate:emojis": "node scripts/generate-emojis.js",
     "generate:boxicons": "node scripts/generate-boxicons-css.js",
+    "optimize:bongo": "node scripts/optimize-bongo-images.js",
     "test:unit": "jest",
     "lint": "npm-run-all lint:*",
-    "lint:eslint": "eslint src tests scripts \"*.js\" \".*.js\"",
-    "lint:stylelint": "stylelint \"src/**/*.{vue,htm,html,css,sss,less,scss}\"",
+    "lint:eslint": "eslint src tests scripts static/plugins \"*.js\" \".*.js\"",
+    "lint:stylelint": "stylelint \"src/**/*.{vue,htm,html,css,sss,less,scss}\" \"static/themes/**/*.css\" \"static/plugins/**/*.css\" \"static/plugins/**/*.html\"",
     "dev": "vue-cli-service serve",
     "test": "jest",
     "gendocs": "rm -rf srcdocs/ && jsdoc -c jsdoc.json"
@@ -84,7 +85,8 @@
     "webpack": "^5.101.0"
   },
   "overrides": {
-    "@ungap/structured-clone": "^1.4.0"
+    "@ungap/structured-clone": "^1.4.0",
+    "serialize-javascript": "^7.1.4"
   },
   "engines": {
     "node": ">= 22.0.0"
