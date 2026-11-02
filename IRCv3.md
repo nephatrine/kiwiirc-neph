@@ -1,454 +1,277 @@
-# Kiwi IRC IRCv3 Technical Reference
-
-Kiwi IRC requests a fixed set of IRCv3 capabilities and uses several client-only
-tags. `RPL_ISUPPORT` tokens adjust history, branding, bans, and file uploads.
-
-## Capability Negotiation
-
-Kiwi IRC requests the following capabilities during connection and again on
-`CAP NEW`.
-
-### Synchronization
-
-- **echo-message**: Echoes outgoing messages so the client can confirm them.
-- **labeled-response**: Correlates echoes and server responses with outgoing
-  commands using unique labels.
-- **message-tags**: Parses tags attached to IRC messages.
-- **batch**: Groups related commands, such as multiline sends or history
-  playback.
-- **server-time**: Uses server-provided UTC timestamps.
-- **draft/chathistory**: Retrieves backlog with `BEFORE`, `AFTER`, and `LATEST`.
-- **draft/channel-rename**: Handles a server-sent `RENAME` by moving the
-  existing buffer to the new name, preserving its messages, members, topic,
-  modes, and settings. Kiwi IRC does not send `RENAME`.
-- **draft/event-playback**: Includes joins, parts, and modes in history.
-- **draft/multiline**: Sends long messages as one batch.
-- **draft/message-redaction**: Removes message content from the log.
-- **draft/read-marker**: Syncs read status across clients. Informational
-  `MARKREAD` requests set a boundary for query buffers, which have no `JOIN`.
-- **draft/oper-tag**: Marks messages sent by IRC operators. Messages carrying
-  `draft/oper` show an operator lock badge unless they also carry the `bot` tag.
-- **draft/relaymsg**: Marks messages relayed from another network. The relayer's
-  nick arrives in the `draft/relaymsg` tag on the rewritten message.
-
-### Identity
-
-- **away-notify**: Tracks away status for visible users.
-- **invite-notify**: Shows invites. If the user is already in the channel, the
-  notice goes to that channel buffer.
-- **account-notify**: Tracks account login and logout for visible users.
-- **account-tag**: Carries the account name on incoming messages.
-- **extended-join**: Includes account and realname on join.
-- **chghost**: Updates a user's hostname without a rejoin.
-- **setname**: Updates the user's realname (gecos) at runtime.
-- **draft/account-registration**: Registers an account with `REGISTER` (plus
-  `VERIFY` when the server asks for a code) instead of NickServ commands.
-  Connected users without a SASL account get a Register Account action in their
-  own profile. When the server advertises `before-connect` and the login page
-  probe sees it, a Register tab appears next to Login: the attempt is armed
-  before connect, `CAP END` is held open with a `kiwi-register-wait` token while
-  `REGISTER` runs (5s backstop), and a `FAIL` aborts back to the form with the
-  server's message. Successful registrations authenticate like SASL logins and
-  persist under Remember Me.
-- **draft/metadata-2**: Syncs public user and channel metadata (`display-name`,
-  `pronouns`, `description`, `homepage`, `status`, `color`, `bot`). Kiwi IRC
-  respects `max-subs`, `max-keys`, and `max-value-bytes`. The subscription is a
-  single per-connection key list (`METADATA * SUB`), sent once at connect;
-  joining a channel then delivers that channel's metadata and its members'
-  metadata for those keys. A stale query buffer is refreshed after 30 minutes.
-  Social colours are adjusted to at least 4.5:1 contrast against the theme
-  background. An IRC away message takes precedence over the social `status` key.
-- **draft/metadata-3**: Preferred over `draft/metadata-2` when a server
-  advertises both; only one metadata capability is ever requested. Channel joins
-  deliver the metadata for the subscribed keys without an explicit `GET` (or a
-  `774` asking for it at a later time), `max-key-bytes` is enforced locally
-  (default 64 bytes), and `775` rate limits are honored the same way as `774`.
-- **Soju metadata**: `soju.im/pinned`, `soju.im/muted`, and `soju.im/blocked`
-  are subscribed even when the server advertises `max-keys=0`, which otherwise
-  stops Kiwi IRC from sending `GET`, `SUB`, or `SET` for its own metadata keys.
-  `soju.im/pinned=1` maps to the Favorite Channel setting, `soju.im/muted=1`
-  maps to Never notify plus Mute Sounds, and `soju.im/blocked=1` maps to Ignore
-  User; changing those settings sends the metadata back so Soju stays in sync.
-
-SASL is negotiated when an account password is set. It is not in the
-always-requested list above. Kiwi IRC prefers `SCRAM-SHA-256` over `PLAIN`. The
-account is taken from the `900` reply; servers such as Soju may send `900` after
-`001`, so it is captured after registration as well. The current account is the
-stripped SASL account by default; a self WHO/WHOX/WHOIS/ACCOUNT, account-tag, or
-extended-join report replaces it.
-
-### Helpers
-
-- **cap-notify**: Reacts to capability changes after registration.
-- **multi-prefix**: Shows every user prefix in member lists, such as `~@`.
-- **userhost-in-names**: Includes full hostmasks in `NAMES` replies.
-- **standard-replies**: Receives `FAIL`, `WARN`, and `NOTE`, routed to the
-  relevant buffer rather than the server tab.
-- **draft/extended-isupport**: Receives `RPL_ISUPPORT` during capability
-  negotiation, before registration finishes. The name is draft-prefixed: servers
-  never advertise the unprefixed form, so requesting it literally would NAK.
-  When the server ACKs it for a login without credentials, Kiwi IRC holds
-  `CAP END` until the first `005` batch arrives (1s debounce, 5s absolute cap),
-  then checks `draft/ACCOUNTREQUIRED` below. Logins with credentials ask for
-  `ISUPPORT` too, but without holding negotiation open.
-- **draft/persistence**: Reports server-side client persistence with
-  `PERSISTENCE STATUS <client-setting> <effective>` (in the registration burst
-  and whenever it changes). Kiwi IRC assumes non-persistent until told
-  otherwise. A per-network Preferred Persistence setting (Keep As-Is by default,
-  otherwise Server Default / Enabled / Disabled, shown only for account logins
-  on servers with the cap) sends `PERSISTENCE SET DEFAULT|ON|OFF` when it
-  disagrees with the reported client setting, and treats the next `STATUS` as
-  the actual truth. When the cap is negotiated for an account login, our
-  post-001 channel joins are held until the first STATUS arrives (5s backstop
-  assumes non-persistent): effectively ON suppresses our rejoins since the
-  server kept us joined, while OFF runs them normally. Guests and networks
-  without the cap always join immediately.
-- **draft/webpush** (or **soju.im/webpush**): Browser push notifications. Kiwi
-  IRC negotiates exactly one of the two names, preferring the draft form, and
-  never both in one request. Push Notifications is a per-network opt-in checkbox
-  (default off), shown only for account logins on servers that negotiate a cap
-  and send a VAPID key. Each network owns its own service worker registration,
-  scoped under `static/webpush/<stateKey>/<networkId>/`, so Ergo servers with
-  different VAPID keys and Soju networks sharing one key can coexist. The
-  connection that negotiated the capability sends WEBPUSH REGISTER with that
-  network's endpoint and keys, renewing daily; toggling off sends WEBPUSH
-  UNREGISTER and removes the browser subscription. Desktop notifications are
-  per-network, so turning them off suspends only that network's registration
-  while keeping its opt-in. Server FAILs uncheck the opt-in, clear the
-  endpoint/timer, record the error, and never trigger a retry loop. A
-  dependency-free worker in `static/sw.js` parses the pushed IRC line (including
-  IRCv3 tags) and only notifies for PRIVMSG, NOTICE, and INVITE; control pushes
-  such as MARKREAD and WEBPUSH REGISTERED are ignored. Local and push
-  notifications share a msgid-based tag so the browser replaces duplicates
-  without suppressing either path. Clicking a notification routes to the
-  matching buffer by msgid, then target/nick. Tabs synchronise Web Push setting
-  and registration state over the `kiwi-ipc` channel. A per-network Reset
-  Browser Push action clears a broken subscription.
-- **draft/bouncer-networks** (or **soju.im/bouncer-networks**): Connects through
-  a modern bouncer and manages its networks. Kiwi IRC negotiates exactly one of
-  the two names, preferring the draft form, and never both in one request. See
-  Bouncer Networks.
-- **draft/bouncer-networks-notify** (or **soju.im/bouncer-networks-notify**):
-  The control connection receives the initial network list and incremental
-  add/change/remove notifications. Exactly one notify name is negotiated, using
-  the same draft/soju family as the base capability.
-
-## Client Tags
-
-These tags are not capabilities. Kiwi IRC sends them only when the server allows
-the tag.
-
-- **+channel-context**: Sent on `PRIVMSG` and `NOTICE` to show a message in a
-  different buffer, such as a query copied into a channel.
-- **+reply**: Points a message at another message by `msgid`. If the server does
-  not allow `+reply`, Kiwi IRC falls back to `+draft/reply`.
-- **+draft/react**: Adds or removes a reaction on a message with an `msgid`.
-- **+typing**: Shares typing state (`active`, `paused`, `done`) when the user
-  has typing sharing enabled.
-
-## Message Confirmation
-
-Kiwi IRC uses one of three paths for outgoing messages:
-
-1. **none**: The UI updates immediately.
-1. **echo-message**: Matches the echo by nick, text, and a time window.
-1. **labeled-response**: Matches the echo or ACK with the label tag.
-
-The seen boundary includes the server read-marker time. Traffic replayed at that
-exact time does not notify. Pending messages revert and log an error after 60
-seconds if the server does not confirm them.
-
-## History Handshake
-
-The first `CHATHISTORY` request waits until the buffer is ready:
-
-- **Channels**: Wait for `RPL_ENDOFNAMES` (366) so the member list is complete.
-- **Queries**: Wait for a `MARKREAD` echo, or 2 seconds.
-- **Network**: Every enabled channel must finish this handshake, or time out,
-  before replayed traffic is processed.
-
-## Message Rerouting
-
-`+channel-context` has two modes:
-
-1. **Lenient (default)**: Trust the tag for live and historical traffic when the
-   target buffer exists.
-1. **Strict**: Reroute only when both users are in the destination channel, or
-   when the original target was a query. Historical traffic is not rerouted.
-
-Reactions and redactions are accepted when the sender is in either the buffer
-where the message is shown or the buffer it was sent to.
-
-## CTCP
-
-Kiwi IRC automatically answers supported CTCP requests only when the request
-targets its own nick. Channel-directed requests are displayed but not answered.
-
-- `CLIENTINFO` returns:
-  `ACTION CLIENTINFO FINGER PING SOURCE TIME USERINFO VERSION`
-- `VERSION` returns `Kiwi IRC <version>`
-- `FINGER` returns the current realname
-- `USERINFO` returns `<nickname> (<realname>)`
-- `PING` echoes its parameters
-- `TIME` returns an ISO 8601 UTC timestamp
-- `SOURCE` returns `https://code.nephatrine.net/nephatrine/kiwiirc`
-
-`ACTION` is displayed as an action and receives no reply. `DCC` and `RELAYMETA`
-requests are not implemented.
-
-## Relay Metadata
-
-Relayed users created by `draft/relaymsg` are not real IRC users, so the
-`METADATA` command cannot describe them. A relay bot may instead advertise a
-`RELAYMETA` CTCP command, answered over `PRIVMSG` / `NOTICE` like this:
-
-- Clients check support with `PRIVMSG <bot> :\001CLIENTINFO\001`. A response
-  listing `RELAYMETA` means the bot speaks this dialect.
-- Requests look like `PRIVMSG <bot> :\001RELAYMETA GET <target> [key ...]\001`,
-  where `<target>` is the relayed nick and each key is a metadata name such as
-  `avatar` or `display-name`. When keys are omitted, the bot answers with every
-  public key it holds for that nick.
-- The bot answers with one or more
-  `NOTICE <client> :\001RELAYMETA DATA <target> <key>=<value> ...\001` lines.
-  Pairs are separated by spaces; the value runs to the next space, so a value
-  containing a space is not representable. Values use IRCv3 message-tag escaping
-  (`\\` for backslash, `\s` for space, `\:` for semicolon, `\r` and `\n` for
-  line breaks). A requested key with no value is returned bare, as `<key>=` with
-  nothing after the sign.
-- Unknown targets fail with
-  `NOTICE <client> :\001RELAYMETA ERR <target> <code> [message]\001`.
-
-There is no subscription or polling. A client asks once per nick and keeps the
-answer for the session. Unanswered requests may be retried; a bot that stays
-silent is treated as having no data.
-
-## Bouncer Networks
-
-Kiwi IRC speaks the IRCv3 `bouncer-networks` specification to connect through a
-modern IRC bouncer such as soju. Support for the pre-IRCv3 KiwiBNC dialect was
-removed.
-
-### Dialects
-
-The specification exists under two equivalent capability names that differ only
-by prefix. Kiwi IRC negotiates exactly one, preferring the draft name:
-
-1. `draft/bouncer-networks` — the IRCv3 draft, preferred when advertised.
-1. `soju.im/bouncer-networks` — soju's vendored copy of the same protocol.
-
-The two are never requested together, and the legacy unprefixed `bouncer`
-capability is gone. The matching `-notify` capability
-(`draft/bouncer-networks-notify` or `soju.im/bouncer-networks-notify`) is
-negotiated as a second pair, also exactly one, using the same draft/soju family
-as the base capability. It is requested only on the unbound control connection.
-
-With notify, the bouncer sends the initial network list automatically and then
-pushes `BOUNCER NETWORK` updates as networks are added, changed, or removed.
-`BOUNCER LISTNETWORKS` is only used when notify is unavailable. The initial
-batch and incremental notifications are both consumed without polling.
-
-### Authentication & BIND
-
-The bouncer connection authenticates with SASL using the bouncer account:
-`connection.account` is the SASL username and `network.password` is the SASL
-secret, while the server `PASS` (`connection.password`) stays empty. A BIND
-requires that authenticated session and is only valid before registration
-completes, so `BOUNCER BIND <netid>` is sent after SASL succeeds and before
-`CAP END`:
-
-- With SASL credentials it goes out on the first `900` or `903` line, ahead of
-  the `CAP END` irc-framework writes for that same line.
-- Without SASL credentials it goes out on the `CAP ... ACK` line.
-
-BIND is fire-and-forget, since the server only replies on failure, and is sent
-at most once per connection. The bound netid is read back from the
-`BOUNCER_NETID` ISUPPORT token.
-
-### The Control Connection
-
-A connection that finishes registration without binding to a netid is the
-bouncer **control connection**: it is the unbound session used to talk to the
-bouncer itself (for example the `BouncerServ` service or `BOUNCER ...` commands)
-rather than to an upstream network. Kiwi IRC exposes it as an always-visible
-network named `BNC` with its own server buffer, so bouncer output and errors
-have somewhere to land and `/msg BouncerServ` or `/quote BOUNCER ...` can be
-typed directly. Query buffers open normally, and the raw (`*raw`) buffer can be
-enabled from its settings. It has no channels tab and no channel controls.
-
-The control connection is identified by `network.isBouncerController()`: it has
-`is_bnc` set and no `connection.bncnetid`. A connection bound to a netid clears
-`is_bnc` and is an ordinary IRC connection. Metadata is never negotiated on the
-control connection: neither `draft/metadata-3` nor `draft/metadata-2` is
-requested and no `METADATA SUB` or `GET` is sent. It is never saved back to the
-bouncer as a network.
-
-Only the capabilities a control connection can actually use are requested:
-`echo-message`, `message-tags`, `batch`, `server-time`, `standard-replies`,
-`cap-notify`, `draft/extended-isupport` and `draft/persistence`, plus one
-webpush name negotiated by preference, `sasl`, and one bouncer-networks
-base/notify pair from their own middleware. Bouncers advertise capabilities they
-forward to their upstream networks, such as `labeled-response`, without
-supporting them on their own replies, so everything else is dropped from the
-request. Messages to `BouncerServ` are then confirmed by the unlabelled echo and
-its `msgid` instead of hanging until the confirm timeout. Connections bound to a
-netid still request the full set.
-
-### Bouncer & Upstream Features
-
-A bound connection's `CAP LS` arrives before `BOUNCER BIND`, so it is the
-bouncer's own advertisement. A control connection never negotiates metadata;
-metadata belongs to the upstream network.
-
-`draft/ACCOUNTREQUIRED` is ignored on bouncer connections: the bouncer's own
-requirement was already satisfied by SASL, and an upstream that requires an
-account is reported by the bouncer itself. Its `error` attribute is shown in the
-network's server buffer rather than aborting the connection. The extended
-ISUPPORT gate is never engaged for a bouncer connection, so registration does
-not wait for a pre-BIND `ISUPPORT` reply.
-
-SASL credentials for a network behind Soju are not part of `bouncer-networks`:
-the `pass` attribute is the upstream server password, not the SASL secret. The
-add-network form keeps the SASL account and password fields visible, and on a
-Soju control connection offers a button that opens the `BouncerServ` query with
-`sasl set-plain -network <name> <account> <password>` already in the input.
-Nothing is sent automatically and no reply is parsed; the user reviews and sends
-it, so the command also appears in the controller's `*raw` buffer. On other
-bouncers the form instead warns that SASL must be configured on the bouncer
-itself. `network.isSoju()` recognises Soju from the `002`/`004` version string.
-
-Logging out and back in restores the saved state, so the startup screens reuse
-the control connection they find there (matched by `is_bnc` with no `bncnetid`)
-instead of adding a second one, and the leftovers of an earlier login are
-dropped when the control connection registers. The connection details of a
-control connection are read-only in its settings tab, exactly as they are in
-restricted mode.
-
-The `004` (`RPL_MYINFO`) reply is used for `network.ircd` when the `002` reply
-does not name a version, so the Information tab shows the server software (such
-as soju's own name) instead of `Unknown`.
-
-### Network Management
-
-`BOUNCER LISTNETWORKS` is answered by a batch named after the negotiated
-capability containing zero or more `BOUNCER NETWORK <netid> <attributes>` lines.
-Kiwi IRC accumulates them and flushes the list when the batch closes.
-
-Each `BOUNCER NETWORK` carries the specification's attributes, encoded as
-message-tag pairs:
-
-- `name`, `host`, `port`, `tls`, `nickname`, `username`, `realname`, `pass`
-- `state` (read-only: `connected`, `connecting`, or `disconnected`)
-- `error` (read-only, present only when the network could not connect)
-
-When notify is negotiated, the initial `BOUNCER NETWORK` batch is cached and
-used as the network list. Later unbatched notifications contain only changed
-attributes, which are merged into the existing local network. An attribute with
-an empty value is removed, and `BOUNCER NETWORK <netid> *` removes the network.
-Bouncer-driven removals never echo a `DELNETWORK` back to the server.
-
-`BOUNCER ADDNETWORK <attributes>` adds a network and is answered by
-`BOUNCER ADDNETWORK <netid>`, with the server generating the netid. Only `host`
-is required; `tls` defaults to `1`, and `port` defaults to `6697` when `tls` is
-set, otherwise `6667`. `BOUNCER CHANGENETWORK <netid> <attributes>` updates a
-network and is answered by `BOUNCER CHANGENETWORK <netid>`.
-`BOUNCER DELNETWORK <netid>` removes one and is answered by
-`BOUNCER DELNETWORK <netid>`.
-
-Errors arrive as standard replies, `FAIL BOUNCER <CODE> <subcommand> [...]`,
-with codes such as `UNKNOWN_COMMAND`, `ACCOUNT_REQUIRED`,
-`REGISTRATION_IS_COMPLETED`, `INVALID_NETID`, `INVALID_ATTRIBUTE`,
-`READ_ONLY_ATTRIBUTE`, `UNKNOWN_ATTRIBUTE`, and `NEED_ATTRIBUTE`. A failure is
-matched to the outstanding subcommand; an unmatched failure is reported as a
-generic bouncer error.
-
-The modern specification has no buffer subcommands and no connect or disconnect
-commands, and `state` is read-only. A connection bound to a netid is an ordinary
-IRC connection from then on: the bouncer replays its joins and history, and read
-state is handled by `draft/read-marker` (see Capability Negotiation) rather than
-any bouncer-specific mechanism.
-
-## ISUPPORT Tokens
-
-Keys are stored in uppercase.
-
-- **CHATHISTORY / MSGREFTYPES**: Sets retrieval limits and whether references
-  use `msgid` or `timestamp`.
-- **BOT**: Marks automated users in the UI.
-- **WHOX**: Retrieves accounts and TLS status with token correlation.
-- **ACCOUNTEXTBAN / EXTBAN**: Builds account bans in the form the server
-  accepts.
-- **CLIENTTAGDENY**: Blocks outgoing client tags the server rejects.
-- **UTF8ONLY**: Forces `utf8` and blocks non-ASCII outgoing actions, including
-  emoji reactions, on networks that cannot carry them.
-- **draft/ACCOUNTREQUIRED**: The connection cannot register without SASL
-  authentication. When seen pre-registration on a credential-less login, Kiwi
-  IRC aborts the connect with an `account_required` error instead of wasting a
-  registration round-trip, so the login page can collect credentials first.
-- **NETWORK**: Shows the network name in the server view.
-- **DRAFT/ICON**: Network icon URL. `{size}` is replaced with `64`. If the token
-  is missing and the network is Libera.Chat, Kiwi IRC uses `/static/libera.svg`;
-  if it is missing and the server is Ergo (`IRCD` or numeric `002`), Kiwi IRC
-  uses `/static/ergo.svg`.
-- **DRAFT/FILEHOST**: Preferred upload URI when `fileupload.service` is
-  `filehost`. See File Host Uploads.
-- **SOJU.IM/FILEHOST**: Fallback upload URI when `draft/FILEHOST` is absent or
-  unusable.
-
-## File Host Uploads
-
-When `fileupload.service` is `filehost`, Kiwi IRC uploads to the current
-network's post-registration ISUPPORT URI. `draft/FILEHOST` is preferred.
-`soju.im/FILEHOST` is used only if the draft token is missing or unusable. Empty
-and non-string tokens are ignored.
-
-Plain `http` is refused when `connection.tls` is set. That flag means the client
-connection is TLS, including a TLS websocket to a gateway. It is not a separate
-check of the gateway's upstream IRC link.
-
-Uploads require a completed SASL login and the stored SASL password. A NickServ
-`ACCOUNT` notify is not enough. The SASL account has any `/network` or `@client`
-suffix stripped before use, so `USER/NETWORK@CLIENT` authenticates as `USER`.
-The request is an HTTP `POST` of the file body with `Content-Type` and
-`Content-Disposition: attachment`, using HTTP Basic. Kiwi IRC does not implement
-`OAUTHBEARER`, so Bearer auth is not used. `Content-Length` is left to the
-browser. Success is `201 Created` plus a `Location` header, resolved against the
-upload URL. Resumable uploads are not implemented.
-
-## WebSocket Transport
-
-Direct IRC connections use the IRCv3 WebSocket transport and request the
-`text.ircv3.net` subprotocol. Messages are sent as text frames containing one
-IRC line without a trailing `\r\n`. Incoming text frames may contain more than
-one line to remain tolerant of legacy servers. If the subprotocol handshake
-fails, the transport retries without a subprotocol so legacy servers still work.
-The `binary.ircv3.net` subprotocol is not supported.
-
-The startup capability probe uses the same text subprotocol for direct
-connections. Gateway connections use the SockJS channel protocol instead and are
-not IRCv3 WebSocket connections.
-
-## Operational Constraints
-
-### History Limits
-
-A single `CHATHISTORY` request is capped at 250 messages. Larger unread gaps are
-filled with follow-up requests.
-
-### Boundary Sanitization
-
-`CHATHISTORY` references skip local notices, such as connection messages, so
-those lines do not become sync boundaries.
-
-## Specification Notes
+# IRC Specifications & Features
+
+This document lists the IRC protocol specifications and extensions used by Kiwi
+IRC. Capability support depends on the IRC server version.
+
+## Core Protocol
+
+- [RFC 1459: IRC Protocol](https://www.rfc-editor.org/info/rfc1459/) (outdated)
+- [RFC 2810: IRC Architecture](https://www.rfc-editor.org/info/rfc2810/)
+- [RFC 2811: IRC Channel Management](https://www.rfc-editor.org/info/rfc2811/)
+- [RFC 2812: IRC Client Protocol](https://www.rfc-editor.org/info/rfc2812/)
+- [RFC 2813: IRC Server Protocol](https://www.rfc-editor.org/info/rfc2813/)
+- [RFC 7194: Default Port for IRC over TLS](https://www.rfc-editor.org/info/rfc7194/)
+- [Modern IRC Client Protocol](https://modern.ircdocs.horse/)
+
+## Official IRCv3 Extensions
+
+- [Capability Negotiation](https://ircv3.net/specs/extensions/capability-negotiation)
+- [Message Tags](https://ircv3.net/specs/extensions/message-tags)
+- Account Authentication & Registration
+  - (draft)
+    [Account Registration](https://ircv3.net/specs/extensions/account-registration)
+  - [IRC v3.1 SASL](https://ircv3.net/specs/extensions/sasl-3.1)
+  - [IRC v3.2 SASL](https://ircv3.net/specs/extensions/sasl-3.2)
+  - [SASL PLAIN](https://tools.ietf.org/html/rfc4616)
+  - [SASL SCRAM-SHA-256](https://tools.ietf.org/html/rfc7677)
+- Account Tracking
+  - [Account Extended Ban](https://ircv3.net/specs/extensions/account-extban)
+  - [Account Notify](https://ircv3.net/specs/extensions/account-notify)
+  - [Account Tag](https://ircv3.net/specs/extensions/account-tag)
+  - [Extended Join](https://ircv3.net/specs/extensions/extended-join)
+- [Away Notifications](https://ircv3.net/specs/extensions/away-notify)
+- [Batches](https://ircv3.net/specs/extensions/batch)
+  - (draft)
+    [Client-Initiated Batches](https://ircv3.net/specs/extensions/client-batch)
+  - [Netsplit & Netjoin Batch Types](https://ircv3.net/specs/batches/netsplit)
+  - [Chathistory Batch Type](https://ircv3.net/specs/batches/chathistory)
+- [Bot Mode](https://ircv3.net/specs/extensions/bot-mode)
+- (draft) [Chanel Renaming](https://ircv3.net/specs/extensions/channel-rename)
+- Persistence
+  - (draft) [Chat History](https://ircv3.net/specs/extensions/chathistory)
+  - (draft)
+    [Message Redaction](https://ircv3.net/specs/extensions/message-redaction)
+  - (draft) [Read Marker](https://ircv3.net/specs/extensions/read-marker)
+- Changing User Properties
+  - [CHGHOST](https://ircv3.net/specs/extensions/chghost)
+  - [SETNAME](https://ircv3.net/specs/extensions/setname)
+- Client-Only Tags
+  - [Channel Context](https://ircv3.net/specs/client-tags/channel-context)
+  - [Message Replies](https://ircv3.net/specs/client-tags/reply)
+  - (draft) [Message Reactions](https://ircv3.net/specs/client-tags/react)
+  - [Typing Status](https://ircv3.net/specs/client-tags/typing)
+- [Echo Message](https://ircv3.net/specs/extensions/echo-message)
+- [Invite Notify](https://ircv3.net/specs/extensions/invite-notify)
+- ISUPPORT
+  - (draft)
+    [Extended ISUPPORT](https://ircv3.net/specs/extensions/extended-isupport)
+  - (draft) [Network Icon](https://ircv3.net/specs/extensions/network-icon)
+- [Labeled Responses](https://ircv3.net/specs/extensions/labeled-response)
+- Listing Users
+  - [Multi-Prefix](https://ircv3.net/specs/extensions/multi-prefix)
+  - [Userhost-in-NAMES](https://ircv3.net/specs/extensions/userhost-in-names)
+  - [WHOX](https://ircv3.net/specs/extensions/whox)
+  - (draft) [Oper Tag](https://ircv3.net/specs/extensions/oper-tag)
+- [Message IDs](https://ircv3.net/specs/extensions/message-ids)
+- (draft) [Metadata v2](https://ircv3.net/specs/extensions/metadata)
+- (draft) [Multiline Messages](https://ircv3.net/specs/extensions/multiline)
+- [Server Time](https://ircv3.net/specs/extensions/server-time)
+- [Standard Replies](https://ircv3.net/specs/extensions/standard-replies)
+- [UTF8ONLY](https://ircv3.net/specs/extensions/utf8-only)
+- [WebSocket](https://ircv3.net/specs/extensions/websocket)
+
+## Vendor Extensions
+
+These extensions are only supported by specific vendors and not generally
+available. In some cases the extensions have been proposed to become official
+drafts and may gain wider support and interoperability in the future.
+
+- Nephatrine
+  - [RELAYMETA](#relaymeta)
+  - Multiline Embed Card Batches
+  - Bridged Username Detection
+  - `+avatar`
+  - `+display-name`
+- Ergo
+  - [RELAYMSG](https://github.com/ircv3/ircv3-specifications/blob/70c0957bf53f5476d3b671f36ea9a4a0c086a5e7/extensions/relaymsg.md)
+    (PROPOSAL)
+- Soju
+  - [Bouncer Networks](https://codeberg.org/emersion/soju/src/branch/master/doc/ext/bouncer-networks.md)
+    [(PROPOSAL)](https://github.com/ircv3/ircv3-specifications/blob/5fc35432ecab07f9ae6fef15c563e34d0446bf7f/extensions/bouncer-networks.md)
+  - [FILEHOST](https://codeberg.org/emersion/soju/src/branch/master/doc/ext/filehost.md)
+    [(PROPOSAL)](https://github.com/ircv3/ircv3-specifications/blob/9c583eaf143d38467df469da93d4297958bef804/extensions/filehost.md)
+  - [Metadata](https://codeberg.org/emersion/soju/src/branch/master/doc/ext/metadata.md)
+  - [Web Push](https://codeberg.org/emersion/soju/src/branch/master/doc/ext/webpush.md)
+    [(PROPOSAL)](https://github.com/ircv3/ircv3-specifications/blob/4c2410c4a2df611997fefc8d2d8adb432845fdce/extensions/webpush.md)
+- [Twitch](https://dev.twitch.tv/docs/chat/irc/)
+  - `twitch.tv/commands`
+  - `twitch.tv/membership`
+  - `twitch.tv/tags`
+
+## Proposed Extensions
+
+These extensions are not widely supported and may be subject to changes or never
+end up as official drafts specs.
+
+- [Autocomplete Client Tags](https://github.com/ircv3/ircv3-specifications/blob/cab233501c451a42262db1519ea294ab72079122/client-tags/autocomplete.md)
+- [Metadata v3](https://github.com/ircv3/ircv3-specifications/blob/31f377bbd0acc2afd8f89aa99cbd05e570707657/extensions/metadata.md)
+- [Persistence](https://github.com/ircv3/ircv3-specifications/blob/b016f41d920494394d0a210317948489818295eb/extensions/persistence.md)
+
+### RELAYMETA
+
+`RELAYMETA` is a Kiwi IRC CTCP extension for describing relayed users. Relayed
+users created by `draft/relaymsg` are not real IRC users, so the `METADATA`
+command cannot describe them. A relay bot may instead answer `RELAYMETA` CTCP
+requests for those synthetic nicks.
+
+The reference bridge implementation is
+[discord-irc](https://code.nephatrine.net/nephatrine/discord-irc). This document
+defines the current dialect; there is no version field.
+
+### Discovery
+
+Clients check support with:
+
+```text
+PRIVMSG <bot> :\x01CLIENTINFO\x01
+```
+
+A response listing `RELAYMETA` means the bot speaks this dialect:
+
+```text
+NOTICE <client> :\x01CLIENTINFO ACTION CLIENTINFO RELAYMETA VERSION\x01
+```
+
+A bot that does not list `RELAYMETA` is marked unsupported and is not queried
+again for that session.
+
+### Request
+
+```text
+PRIVMSG <bot> :\x01RELAYMETA GET <target> [key ...]\x01
+```
+
+- `<target>` is the relayed nick and is matched case-insensitively.
+- Each key is a metadata name such as `avatar` or `display-name`.
+- When keys are omitted, the bot should answer with every public key it holds
+  for that nick.
+- Kiwi IRC requests `avatar`, `display-name`, `bot`, and `color`.
+- There is no subscription or polling. A client asks once per nick and keeps the
+  answer for the session.
+
+Example request:
+
+```text
+PRIVMSG DiscordBot :\x01RELAYMETA GET x2Tuff4Ux/bridged avatar display-name bot color\x01
+```
+
+### Response
+
+The bot answers with one or more lines:
+
+```text
+NOTICE <client> :\x01RELAYMETA DATA <target> <key>=<value> ...\x01
+```
+
+- Pairs are separated by spaces.
+- A value runs to the next space, so spaces must be escaped.
+- Key names are case-insensitive and are normalized to lowercase.
+- A key with no value is returned as `key=`.
+- If a key appears more than once, the last value wins.
+- Unknown keys are ignored.
+- Multiple `DATA` lines are allowed.
+
+Kiwi IRC applies these keys:
+
+| Key            | Behavior                                          |
+| -------------- | ------------------------------------------------- |
+| `avatar`       | Sanitized URL used for the relayed user's avatar. |
+| `display-name` | Display name for the relayed user.                |
+| `bot`          | Bot label for the relayed user.                   |
+| `color`        | Sanitized colour value for the relayed user.      |
+
+**Example Response:**
+
+```text
+NOTICE kiwi :\x01RELAYMETA DATA username/bridged display-name=Some\sOne avatar=https://cdn.example/a.png bot=BillyBot\s8.0 color=#ff00aa\x01
+```
+
+### Escaping
+
+Values use IRCv3 message-tag value escaping:
+
+| Escape | Decodes to      |
+| ------ | --------------- |
+| `\\`   | Backslash       |
+| `\s`   | Space           |
+| `\:`   | Semicolon       |
+| `\r`   | Carriage return |
+| `\n`   | Line feed       |
+
+Kiwi IRC decodes an unknown `\x` sequence as `x`. A sender must escape spaces;
+an unescaped space splits the pair. Kiwi IRC drops the preceding pair rather
+than treating the bare token as part of the value.
+
+### Errors
+
+Unknown targets fail with:
+
+```text
+NOTICE <client> :\x01RELAYMETA ERR <target> <code> [message]\x01
+```
+
+`UNKNOWN_TARGET` is the minimum required code. Other codes are
+implementation-defined. An `ERR` marks the target done and is not retried.
+
+**Example Error:**
+
+```text
+NOTICE kiwi :\x01RELAYMETA ERR username/bridged UNKNOWN_TARGET no such user\x01
+```
+
+### Client Behavior
+
+When a message carries `draft/relaymsg`, Kiwi IRC records the relayer nick and
+the rewritten target nick, then:
+
+1. Probes the relayer with `CLIENTINFO` once per bot.
+2. Sends one `RELAYMETA GET` for the target when the bot advertises support.
+3. Applies the returned metadata to the relayed user.
+4. Marks the target done on `DATA` or `ERR`.
+
+Requests are serialized per network:
+
+- One outstanding request at a time.
+- 5-second pump interval.
+- 30-second response timeout.
+- Two attempts per probe or target.
+- Queue cap of 200 entries.
+- Offline bots are parked until they join.
+- Duplicate relay messages produce one probe and one request.
+- `ERR` and successful `DATA` prevent further requests for that target.
+
+`RELAYMETA` responses are consumed as protocol data and are not shown as CTCP
+traffic. Echoes of Kiwi IRC's own machine-generated `CLIENTINFO` and `RELAYMETA`
+requests are suppressed.
+
+### Security
+
+`RELAYMETA` values are untrusted. Avatar URLs and bot/colour values are
+sanitized, and display names are rendered as text rather than HTML. Bots should
+return only public metadata for the requested relayed nick.
+
+### Non-Goals
+
+`RELAYMETA` does not provide authentication, write access, server-side metadata
+storage, subscriptions, or polling. It is a one-shot read-only description of a
+relayed user for the lifetime of the client session.
+
+## Specification Deviations
 
 ### Message Redaction
 
 Kiwi IRC ignores `REDACT` commands that target `TAGMSG` events, including
-reactions. Reactions already have `+draft/unreact`. Redacting them as well can
-desync the reaction state from the message log.
+reactions. The `draft/message-redaction` specification allows `PRIVMSG`,
+`NOTICE`, or `TAGMSG` as the target and includes a `TAGMSG` redaction example.
+Kiwi IRC deliberately does not apply those redactions because reactions already
+have `+draft/unreact`, and redacting both can desync reaction state from the
+message log.
 
-### Standard Replies
+### WebSocket Transport
 
-Replies are routed using the command arguments or the active label. Replies for
-commands Kiwi IRC does not implement are shown generically, so arbitrary codes
-need no per-code handling.
+Kiwi IRC accepts more than one IRC line in a single incoming text frame. The
+WebSocket transport specification requires each message to contain a single IRC
+line. This is a deliberate compatibility tolerance for legacy servers.
+
+The no-subprotocol fallback is explicitly allowed by the specification and is
+not a deviation.

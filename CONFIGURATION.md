@@ -1,89 +1,570 @@
 # Kiwi IRC Configuration
 
-The browser fetches the config on startup. Do not put passwords, SASL secrets,
-or user hashes in it.
+Kiwi IRC is configured by a JSON5 file that the browser fetches at startup. The
+file is public: never put passwords, SASL secrets, user hashes, or other private
+data in it. The browser fetches it over the same origin as the client.
 
-## Where To Configure
+## Configuration Sources
 
-The application loads `static/config.json` by default. You can override it by
-specifying `?config=<name>` in the url which will instead load
-`static/config_<name>.json`.
+The client checks these sources in order:
 
-The file must be JSON5. Comments and trailing commas are allowed. In development
-only, `static/config.local.json` is copied over `dist/static/config.json` and is
-not included in a production build. It is still served to the browser.
+1. `?config=<name>` in the URL loads `static/config_<name>.json`.
+2. `window.kiwiConfig()` returns a config object directly.
+3. `<meta name="kiwiconfig" content="...">` supplies a config URL.
+4. `<script name="kiwiconfig" type="application/json">` supplies inline JSON5.
+5. Otherwise the client loads `static/config.json`.
 
-The file `src/res/configTemplates.js` supplies the defaults. `config.json` is
-applied on top. Objects merge, but arrays replace. An omitted key keeps the
-default.
+The loaded file must be JSON5. Comments and trailing commas are allowed.
 
-The settings screen writes overrides into browser storage. Those win over this
-file for that browser. They are not written back here.
+In development only, `static/config.local.json` is copied over
+`dist/static/config.json` when it exists. It is excluded from production builds.
+It is still fetched by the browser, so do not put secrets in it either.
 
-## What to Set
+## Configuration Precedence
 
-`kiwiServer` is the websocket gateway, unless `startupOptions.direct` is true.
-Keep it an empty string when the deployment has no gateway: connection pickers
-then offer only direct `ws`/`wss`, and existing `irc`/`ircs` selections are
-switched to their direct websocket equivalent.
+Configuration objects merge in this order:
 
-`startupOptions.server`, `port`, `tls`, `channel`, and `nick` fill the startup
-form. `tls` here is the gateway or direct websocket, not a check of the upstream
-IRC server. `nick` may contain `?`, which is replaced with a random digit.
+1. `configTemplates.default` from `src/res/configTemplates.js`.
+2. `configTemplates[config.template]` when `template` is set.
+3. The loaded config file or object.
 
-`restricted: true` locks the client to one network. The template default is
-`true`. The starter file sets `false`.
+Objects merge recursively. Arrays replace the previous array; they do not
+append. An omitted key keeps its previous value.
 
-`startupScreen` selects the screen shown before the client starts. See
-[Startup Modes](#startup-modes) for the available modes, when to use each, and
-their effects.
+Browser `user_settings` written by the settings screen are not merged into this
+object. `state.setting(name)` checks them first and falls back to the merged
+config, so a saved user setting overrides the same key.
 
-`theme` is a theme name from the built-in list, or a theme object URL under
-`themes`. Omitting `themes` keeps the themes shipped in the template. If you set
-`themes`, that array replaces the built-in list.
+`template` accepts:
 
-`presetNetworks` is a list of servers for the startup picker. Each entry is an
-`irc://` or `ircs://` URI string, or a connection object (`server`, `port`,
-`tls`, `direct`, `path`). Example: `"ircs://irc.example.net:6697"`. Without a
-gateway, gateway presets are switched to their direct websocket equivalent.
+- `default` — the full default configuration.
+- `irc` — inline message layout, hostnames shown, no emoji picker, no coloured
+  nicknames, no inline previews, and no typing sharing.
+- `team` — team highlights enabled, join/part messages hidden, realnames shown,
+  and the modern message layout.
 
-Enable a plugin by adding an entry to the top-level `plugins` array:
+The default config template enables the bundled channels sidebar, NephDeck,
+NephWave, Bongo Companion, and radio plugins.
 
-```json
+## Value Replacements
+
+String values may use these placeholders. They are replaced before the config is
+merged:
+
+| Placeholder      | Value                                               |
+| ---------------- | --------------------------------------------------- |
+| `{{protocol}}`   | Current page protocol, such as `https:` or `http:`. |
+| `{{wsprotocol}}` | `wss:` on HTTPS pages, otherwise `ws:`.             |
+| `{{tls}}`        | `true` on HTTPS pages, otherwise `false`.           |
+| `{{hostname}}`   | Current page hostname.                              |
+| `{{host}}`       | Current page host and port.                         |
+| `{{port}}`       | Current page port, defaulting to 443 or 80.         |
+| `{{hash}}`       | URL fragment without the leading `#`.               |
+| `{{query}}`      | Query string without the leading `?`.               |
+| `{{referrer}}`   | Document referrer.                                  |
+
+An exact placeholder match keeps the replacement type, so `{{tls}}` remains a
+boolean.
+
+## Quick-Start Examples
+
+### Single Network
+
+```json5
+{
+    "startupScreen": "welcome",
+    "restricted": true,
+    "kiwiServer": "https://example.com/webirc/kiwiirc/",
+    "startupOptions": {
+        "server": "irc.example.net",
+        "port": 6697,
+        "tls": true,
+        "channel": "#chat",
+        "nick": "kiwi_?"
+    }
+}
+```
+
+### Multiple Networks Through a Gateway
+
+```json5
+{
+    "startupScreen": "customServer",
+    "restricted": false,
+    "kiwiServer": "https://example.com/webirc/kiwiirc/",
+    "presetNetworks": [
+        "Example|ircs://irc.example.net:+6697#chat",
+        "Libera|ircs://irc.libera.chat:+6697"
+    ]
+}
+```
+
+### Direct WebSocket, No Gateway
+
+```json5
+{
+    "startupScreen": "customServer",
+    "restricted": false,
+    "kiwiServer": "",
+    "startupOptions": {
+        "direct": true
+    }
+}
+```
+
+With `kiwiServer` empty, the connection picker offers only direct `ws` and `wss`
+connections. Existing `irc` or `ircs` selections are switched to their direct
+WebSocket equivalents.
+
+### Bouncer
+
+```json5
+{
+    "startupScreen": "bouncer",
+    "restricted": false,
+    "startupOptions": {
+        "server": "soju.example.net",
+        "port": 6697,
+        "tls": true
+    }
+}
+```
+
+The default Account tab uses `network.connection.account` as the SASL username
+and `network.password` as the SASL secret. The BNC tab uses `network.username`
+and `connection.password` instead.
+
+### Personal Persistent Client
+
+```json5
+{
+    "startupScreen": "personal",
+    "restricted": false
+}
+```
+
+`personal` forces `restricted` to `false` so saved networks and network settings
+remain available.
+
+## Startup Modes
+
+`startupScreen` selects the screen shown before the IRC client starts.
+
+| Value                 | Use When                                                 | Behavior                                                                                                                                                                                                                                                        |
+| --------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `welcome`             | A public client tied to one network or gateway.          | Single-network login. Shows Anonymous, Account, and Register tabs when supported. Uses `startupOptions.server`, `port`, `tls`, `channel`, and `nick`; `probeServerCaps` adapts tabs, registration, and length limits; `altComponent` replaces the form.         |
+| `customServer`        | Users choose between networks or enter their own server. | Multi-network screen with preset/custom server selection, IRC and Bouncer tabs, and identity tabs. Uses `presetNetworks`, `enableCustom`, and `enableTabs`. Supports URL-fragment auto-connect. This is the config template default.                            |
+| `bouncer`             | A Soju or other modern `bouncer-networks` deployment.    | Dedicated bouncer login. Connects to the bouncer control connection and loads its networks. Uses `draft/bouncer-networks` or `soju.im/bouncer-networks`; a completed probe without either shows an error, and BNC, Account, and Register tabs follow the probe. |
+| `personal`            | A persistent personal client with saved networks.        | Returning-user home with saved networks, Add Network, temporary connection, and Add to Existing Tab. Forces `restricted: false` so network settings remain available.                                                                                           |
+| Custom component name | The built-in screens do not fit.                         | Runs a startup component registered with `kiwi.addStartup(name, component)`. An unknown name throws a startup error.                                                                                                                                            |
+
+Notes:
+
+- `static/config.json` starts with `welcome`; the config template default is
+  `customServer`. If `startupScreen` is unset entirely, the code falls back to
+  `personal`.
+- `startupOptions.server`, `port`, `tls`, `channel`, and `nick` seed the
+  built-in forms. `personal` uses saved state and URL fragments instead.
+- `startupOptions.bouncer: true` is the legacy bouncer switch used by `welcome`
+  and `personal`. It keeps the single bouncer login form and enables the bouncer
+  provider. `customServer` uses its own Bouncer tab instead.
+- `kiwiBnc` and `znc` are legacy aliases for `startupScreen: "bouncer"`.
+- `restricted: true` locks the client to one network. `personal` forces it to
+  `false`.
+- `presetNetworks` supplies the `customServer` selector.
+
+## Startup Options
+
+`startupOptions` seeds the built-in startup forms and controls their behavior.
+
+| Key                | Default      | Description                                                             |
+| ------------------ | ------------ | ----------------------------------------------------------------------- |
+| `server`           | `""`         | IRC server or gateway host. Empty uses the gateway default.             |
+| `port`             | `6667`       | Connection port. Defaults depend on TLS and direct mode.                |
+| `tls`              | `false`      | TLS for the gateway or direct WebSocket. Not an upstream IRC TLS check. |
+| `direct`           | `false`      | Connect directly to the IRC server WebSocket instead of the gateway.    |
+| `channel`          | `""`         | Initial channel.                                                        |
+| `nick`             | `kiwi_?`     | Initial nick. `?` is replaced with a random number.                     |
+| `state_key`        | `kiwi-state` | Browser storage key. Empty disables saved state.                        |
+| `remember_buffers` | `true`       | Include the buffer list in saved state.                                 |
+| `nick_format`      | `""`         | Pattern used to validate nick input.                                    |
+| `probeServerCaps`  | `false`      | Probe server capabilities before rendering forms and presets.           |
+| `enableCustom`     | `true`       | Show the custom-server entry on `customServer`.                         |
+| `enableTabs`       | `true`       | Show the IRC and Bouncer tabs on `customServer`.                        |
+| `altComponent`     | unset        | Replace the `welcome` form with a registered custom component.          |
+| `bouncer`          | `false`      | Legacy bouncer switch for `welcome` and `personal`.                     |
+| `greetingText`     | unset        | Custom greeting text for startup screens.                               |
+| `buttonText`       | unset        | Custom connect-button text.                                             |
+| `footerText`       | unset        | Custom footer text.                                                     |
+| `termsContent`     | unset        | Terms or notice content shown on startup screens.                       |
+| `infoBackground`   | unset        | Background image URL for the startup info panel.                        |
+| `infoContent`      | unset        | Custom HTML content for the startup info panel.                         |
+
+### Advanced Startup Fields
+
+These are accepted by the built-in startup screens in addition to the table
+above. They are mainly for preconfigured deployments.
+
+| Key                | Default                                        | Description                                                                 |
+| ------------------ | ---------------------------------------------- | --------------------------------------------------------------------------- |
+| `account`          | `""`                                           | Prefill the account/SASL username.                                          |
+| `password`         | `""`                                           | Prefill the SASL password. Public if set in config.                         |
+| `username`         | `""`                                           | Prefill the ident/username.                                                 |
+| `gecos`            | `""`                                           | Prefill the realname/GECOS.                                                 |
+| `encoding`         | unset                                          | IRC encoding. `customServer` falls back to `utf-8` when creating a network. |
+| `websocket`        | unset                                          | Direct WebSocket URI. Overrides `server`, `port`, `tls`, and `direct`.      |
+| `direct_path`      | `""`                                           | WebSocket path used in direct mode.                                         |
+| `showChannel`      | `true`                                         | Show the channel field.                                                     |
+| `showNick`         | `true`                                         | Show the nick field (`welcome` only).                                       |
+| `showPassword`     | `true`                                         | Show the password field (`welcome` only).                                   |
+| `toggablePassword` | `true`                                         | Allow toggling password visibility (`welcome` only).                        |
+| `allowNoChannel`   | `false` in `welcome`, `true` in `customServer` | Allow connecting without a channel.                                         |
+| `autoConnect`      | `false`                                        | Submit automatically when the form is ready (`welcome` only).               |
+
+`probeServerCaps` costs one extra connection per probed endpoint and page load.
+A failed probe falls back to the configured defaults. A bouncer preset waits for
+its probe before enabling the login button; other forms remain usable. Custom
+endpoints skip the probe.
+
+`startupOptions.direct` and `kiwiServer` are independent:
+
+- A non-empty `kiwiServer` enables gateway connections.
+- `direct: true` selects a direct WebSocket connection instead.
+- With `kiwiServer` empty, only direct `ws`/`wss` connections are offered.
+
+## Preset Networks
+
+`presetNetworks` is an array of strings or objects.
+
+String format:
+
+```text
+[name|][irc://|ircs://|ws://|wss://]server[:[+]port][/path][#channel][?param=value&...]
+```
+
+Examples:
+
+```text
+Example|ircs://irc.example.net:+6697#chat
+Libera|ircs://irc.libera.chat:+6697
+Local|ws://localhost:8067
+Bouncer|ircs://soju.example.net:+6697?type=bnc
+```
+
+Object format:
+
+```json5
+{
+    "name": "Example",
+    "server": "irc.example.net",
+    "port": 6697,
+    "tls": true,
+    "direct": false,
+    "path": "",
+    "type": "irc",
+    "channels": "#chat"
+}
+```
+
+`type` is `irc` or `bnc`; `znc` is accepted as a legacy alias for `bnc`.
+`channels` is used for the initial channel list. Without a gateway, gateway
+presets are switched to their direct WebSocket equivalent.
+
+String presets may include `?type=bnc` and `?nick=<nick>`. The `nick` parameter
+is used when a URL fragment supplies multiple connections.
+
+## Connection and Network Defaults
+
+| Key                            | Default            | Description                                                                 |
+| ------------------------------ | ------------------ | --------------------------------------------------------------------------- |
+| `kiwiServer`                   | `/webirc/kiwiirc/` | WebSocket gateway URL. Empty disables gateway connections.                  |
+| `restricted`                   | `true`             | Locks the client to one network and makes connection details read-only.     |
+| `autoReconnect`                | `false`            | Reconnect automatically after a disconnect.                                 |
+| `autoReconnectMaxWait`         | `30000`            | Maximum reconnect delay in milliseconds.                                    |
+| `autoReconnectMaxRetries`      | `10`               | Maximum reconnect attempts.                                                 |
+| `disconnectOnSaslFail`         | `true`             | Disconnect when SASL authentication fails.                                  |
+| `defaultSaslMechanism`         | `AUTO`             | `AUTO` prefers SCRAM-SHA-256 over PLAIN.                                    |
+| `quitMessage`                  | `Page closed`      | Quit message sent when the client disconnects.                              |
+| `warnOnExit`                   | `true`             | Warn before leaving the page while connected.                               |
+| `persistencePreference`        | `keep`             | Per-network `draft/persistence` preference: `keep`, `default`, `on`, `off`. |
+| `hideSettings`                 | `null`             | Hide the settings button in the state browser.                              |
+| `hide_advanced`                | unset              | Hide the Advanced tab in app settings.                                      |
+| `allowRegisterProtocolHandler` | `false`            | Offer `irc://` and `ircs://` protocol registration when supported.          |
+| `ircFramework`                 | unset              | Advanced options passed to the `irc-framework` client.                      |
+
+### Legacy Bouncer
+
+The `bnc` object is the pre-`bouncer-networks` connection method:
+
+```json5
+"bnc": {
+    "active": false,
+    "server": "",
+    "port": 6667,
+    "tls": false,
+    "path": "",
+    "username": "",
+    "password": ""
+}
+```
+
+Prefer `startupScreen: "bouncer"` for modern bouncers. The `bnc.password` value
+is public if set in config; use the login form instead.
+
+### Per-Network Defaults
+
+Several buffer defaults are copied into each new network and then owned by that
+network:
+
+- Desktop notifications (`buffers.show_notifications`)
+- Persistence preference (`persistencePreference`)
+- Typing sharing (`buffers.share_typing`)
+- Lenient rerouting (`buffers.lenient_rerouting`)
+- Ignore bots (`buffers.ignore_bots`)
+- Redaction display (`buffers.show_redactions`)
+- File upload service and retention
+
+Changing these in Network Settings affects only that network. Changing the
+config default affects networks created afterward.
+
+Web Push is not configured in `config.json`. It is a per-network opt-in shown
+only after login when the server negotiates `draft/webpush` or `soju.im/webpush`
+and provides a VAPID key.
+
+## Appearance and Interface
+
+| Key                        | Default                          | Description                                                                  |
+| -------------------------- | -------------------------------- | ---------------------------------------------------------------------------- |
+| `windowTitle`              | `Kiwi IRC - The web IRC client`  | Browser tab title.                                                           |
+| `useMonospace`             | `false`                          | Use the monospace font for messages.                                         |
+| `language`                 | `""`                             | UI language. Empty follows the browser.                                      |
+| `theme`                    | `Kiwi Dark`                      | Active built-in theme name or theme object name.                             |
+| `themes`                   | Built-in list                    | Theme definitions. Setting this replaces the built-in list.                  |
+| `google_fonts`             | Source Sans Pro, Source Code Pro | Fallback Google Fonts loaded for the active theme.                           |
+| `showEmojiPicker`          | `true`                           | Show the emoji picker button.                                                |
+| `forceShowEmojiPicker`     | `false`                          | Show the emoji picker even on touch devices.                                 |
+| `emojiPickerMaxVersion`    | `0`                              | Maximum Unicode emoji version. `0` shows all versions.                       |
+| `showColorPicker`          | `false`                          | Show the colour picker button.                                               |
+| `showSendButton`           | `false`                          | Show a send button on touch devices.                                         |
+| `showAutocomplete`         | `true`                           | Enable command and nick autocomplete.                                        |
+| `autocompleteTokens`       | `["/", "#", "@"]`                | Tokens that trigger autocomplete.                                            |
+| `showAwayStatusIndicators` | `true`                           | Show away and offline status dots.                                           |
+| `sidebarDefault`           | `nicklist`                       | Sidebar shown at startup: `nicklist`, `settings`, `about`, `user`, or empty. |
+| `showRaw`                  | `false`                          | Show raw server buffers globally.                                            |
+| `showChanlistModes`        | `false`                          | Show channel modes in the channel list.                                      |
+| `nicklistGroupAway`        | `false`                          | Group away users in the nicklist.                                            |
+| `noticeActiveBuffer`       | `true`                           | Route server notices to the active buffer when possible.                     |
+| `skipHiddenMessages`       | `false`                          | Skip hidden join/part/nick/mode events entirely.                             |
+| `useBufferHistory`         | `true`                           | Remember recently viewed buffers and reopen the last one.                    |
+| `changeNickOnCollision`    | `true`                           | Automatically try a new nick during registration if needed.                  |
+| `highlights`               | `""`                             | Space-separated extra highlight words.                                       |
+| `teamHighlights`           | `false`                          | Enable `@here`, `@channel`, and `@everyone` highlights.                      |
+
+`themes` entries support `name`, `url`, `mode` (`light` or `dark`), and
+`google_fonts`. If `themes` is set, it replaces the built-in list rather than
+appending to it.
+
+`showEmojiPicker` and `forceShowEmojiPicker` are also gated by the active
+network supporting UTF-8. `forceShowEmojiPicker` only overrides the touch-device
+check.
+
+`sidebarDefault` only opens the sidebar on desktop widths; mobile keeps the
+sidebar closed until the user opens it.
+
+`skipHiddenMessages` skips processing for hidden events, not only their display.
+Self-involved events are still processed.
+
+### Compatibility and Advanced Keys
+
+- `emojis`: optional map of emoji characters to reaction image filenames.
+- `emojiLocation`: base URL for those reaction images. Set this whenever
+  `emojis` is used.
+- `hideSettings`: hides the settings button in the state browser.
+- `hide_advanced`: hides the Advanced settings tab.
+- `ircFramework`: advanced `irc-framework` client options. Use with care.
+
+## Buffer Defaults
+
+These values are defaults for new buffers. A per-buffer or per-network setting
+overrides them.
+
+### Layout and Display
+
+| Key                            | Default       | Description                                           |
+| ------------------------------ | ------------- | ----------------------------------------------------- |
+| `messageLayout`                | `modern`      | `modern`, `compact`, or `inline`.                     |
+| `show_timestamps`              | `true`        | Show message timestamps.                              |
+| `timestamp_format`             | `%H:%M:%S`    | Timestamp format.                                     |
+| `timestamp_full_format`        | `""`          | Full timestamp format. Empty uses the browser locale. |
+| `show_hostnames`               | `false`       | Show `nick!user@host` in system messages.             |
+| `show_realnames`               | `false`       | Show realnames in the nicklist.                       |
+| `show_joinparts`               | `true`        | Show join and part messages.                          |
+| `show_topics`                  | `true`        | Show topic changes.                                   |
+| `show_topic_in_header`         | `false`       | Show the topic in the channel header.                 |
+| `show_nick_changes`            | `true`        | Show nick changes.                                    |
+| `show_mode_changes`            | `true`        | Show mode changes.                                    |
+| `show_presence_changes`        | `true`        | Show presence changes.                                |
+| `show_buffer_groups`           | `true`        | Group buffers by type in the sidebar.                 |
+| `coloured_nicklist`            | `true`        | Colour nicknames in the nicklist.                     |
+| `colour_nicknames_in_messages` | `true`        | Colour nicknames in messages.                         |
+| `nicklist_avatars`             | `false`       | Show avatars in the nicklist.                         |
+| `hide_message_counts`          | `false`       | Hide unread message counts.                           |
+| `show_message_info`            | `true`        | Show the message info action.                         |
+| `extra_formatting`             | `true`        | Enable Markdown-style and extra formatting.           |
+| `emoji_convert_as_typed`       | `true`        | Convert emoji shortcodes while typing.                |
+| `emoji_convert_incoming`       | `true`        | Convert emoji shortcodes in incoming messages.        |
+| `show_redactions`              | `placeholder` | `hidden`, `placeholder`, or `revealed`.               |
+| `favorite`                     | `false`       | Per-buffer favourite default.                         |
+
+### History and Scrolling
+
+| Key                     | Default    | Description                                                    |
+| ----------------------- | ---------- | -------------------------------------------------------------- |
+| `scrollback_size`       | `250`      | Normal buffer scrollback. Raw server buffers default to 500.   |
+| `auto_request_history`  | `all`      | Request history for `all`, `channels`, `queries`, or `none`.   |
+| `prompt_leave`          | `channels` | Prompt before leaving `all`, `channels`, `queries`, or `none`. |
+| `who_loop`              | `true`     | Periodically refresh user information with WHO.                |
+| `shared_input`          | `false`    | Share input across buffers.                                    |
+| `block_pms`             | `false`    | Block private messages from unknown users.                     |
+| `warn_expected_command` | `true`     | Warn when a slash command is preceded by whitespace.           |
+
+### Notifications and Sounds
+
+| Key                   | Default     | Description                                           |
+| --------------------- | ----------- | ----------------------------------------------------- |
+| `alert_on`            | `highlight` | Alert on `message`, `highlight`, or `never`.          |
+| `flash_title`         | `message`   | Flash the title on `message`, `highlight`, or `off`.  |
+| `mute_sound`          | `false`     | Mute notification sounds for the buffer.              |
+| `show_notifications`  | `true`      | Show desktop notifications while the page is running. |
+| `traffic_as_activity` | `false`     | Treat join/part traffic as activity.                  |
+| `server_as_activity`  | `true`      | Treat server messages as activity.                    |
+
+### Link Previews and Media
+
+| Key                                  | Default | Description                                                   |
+| ------------------------------------ | ------- | ------------------------------------------------------------- |
+| `show_link_previews`                 | `true`  | Show link preview handles.                                    |
+| `inline_link_auto_previews`          | `true`  | Automatically embed previews in channels.                     |
+| `inline_link_auto_previews_query`    | `true`  | Automatically embed previews in queries.                      |
+| `inline_link_auto_preview_whitelist` | `.*`    | Regex whitelist for automatic inline previews.                |
+| `hide_preview_cards`                 | `false` | Hide `[PREVIEW]` bridge cards without hiding `[EMBED]` cards. |
+
+### Moderation and Commands
+
+| Key                   | Default                                                       | Description                                       |
+| --------------------- | ------------------------------------------------------------- | ------------------------------------------------- |
+| `default_ban_mask`    | `*!%i@%h`                                                     | Default ban mask.                                 |
+| `default_kick_reason` | `Your behaviour is not conducive to the desired environment.` | Default kick reason.                              |
+| `ignore_bots`         | `false`                                                       | Ignore messages from known bots.                  |
+| `lenient_rerouting`   | `true`                                                        | Trust `+channel-context` rerouting when possible. |
+| `share_typing`        | `true`                                                        | Share typing state with other users.              |
+
+## Avatars
+
+| Key                             | Default | Description                                                                        |
+| ------------------------------- | ------- | ---------------------------------------------------------------------------------- |
+| `avatars.fallback_avatar_url`   | `""`    | Fallback avatar URL. `{nickname}` is replaced with the URL-encoded lowercase nick. |
+| `avatars.away_status_position`  | `1`     | Away-dot corner: `1` top-right, `2` bottom-right, `3` bottom-left, `4` top-left.   |
+| `avatars.initials_length`       | `1`     | Initials shown in fallback avatars: `1` or `2`.                                    |
+| `avatars.show_image_background` | `true`  | Show the colour background behind avatar images.                                   |
+| `avatars.show_without_user`     | `false` | Show avatars for messages without a known user.                                    |
+
+## Text Formats
+
+`textFormats` is an object keyed by system-message type. Each value is a format
+string with `%key` placeholders replaced from event data. Unknown keys become
+empty strings.
+
+Common placeholders:
+
+- `%nick`
+- `%username`
+- `%ident`
+- `%host`
+- `%text`
+- `%channel`
+- `%reason`
+- `%prefix`
+- `%message`
+- `%server`
+- `%info`
+- `%realname`
+- `%name`
+- `%destination`
+
+Defaults live in `src/res/configTemplates.js`. Changing these affects system
+messages and traffic lines, not user chat text.
+
+## Aliases
+
+`aliases` is a newline-delimited string. Each line starts with `/` and defines a
+command:
+
+```text
+/alias /target $1+
+```
+
+Alias variables:
+
+- `$0` — the command being run.
+- `$1` — first parameter.
+- `$1+2` — two parameters starting at `$1`.
+- `$2+4` — four parameters starting at `$2`.
+- `$2+` — second parameter plus everything after.
+- `$variable` — configured variable. Common variables are `$network`, `$server`,
+  `$channel`, `$query`, `$destination`, and `$nick`.
+- `$var?` — only run when the variable exists.
+- `|` — separates multiple commands.
+
+Lines that do not start with `/` are ignored, so `#` comments are allowed.
+Aliases are editable in config and in the settings screen.
+
+## Plugins
+
+Enable plugins with the top-level `plugins` array:
+
+```json5
 "plugins": [
     { "name": "my-plugin", "url": "static/plugins/my-plugin.html" }
 ]
 ```
 
-Remove an entry to disable that plugin. Set `plugins` to an empty array to load
-none. HTML plugins are injected with `innerHTML`; `<i />` is not self-closing
-there. Plugin-specific configuration is documented with each plugin.
+- The config template enables the bundled channels sidebar, NephDeck, NephWave,
+  Bongo Companion, and radio plugins.
+- An empty array loads no plugins.
+- HTML plugins are injected with `innerHTML`; use `<i></i>`, not `<i />`.
+- URLs resolve relative to the plugin HTML file.
+- Plugin-specific settings live under their own namespaces.
 
-See [PLUGINS.md](PLUGINS.md) for plugin authoring, UI hooks, events,
-translations, and the media playback API.
+See [PLUGINS.md](PLUGINS.md) for authoring, UI hooks, events, translations, and
+media playback.
 
 ## File Uploads
 
-```json
+```json5
 "fileupload": {
     "service": "none",
-    "litterbox": { "retention": "72h" }
+    "litterbox": {
+        "retention": "72h"
+    }
 }
 ```
 
-`service` is `none` (default), `litterbox`, or `filehost`. Users can override
-the service and retention in settings. `none` does not lock out a user override.
-
-`litterbox.retention` is `1h`, `12h`, `24h`, or `72h` (default `72h`).
-
-`filehost` is not a URL in this file. The upload URL comes from the server
-`draft/FILEHOST` token, or `soju.im/FILEHOST` if draft is absent. It is
-available only after SASL login. Plain `http` is refused when `connection.tls`
-is set.
+- `service` is `none`, `litterbox`, or `filehost`.
+- `litterbox.retention` is `1h`, `12h`, `24h`, or `72h`.
+- Users can override the service and retention in settings. `none` does not lock
+  out a user override.
+- `filehost` is not a URL. The upload URL comes from `draft/FILEHOST`, falling
+  back to `soju.im/FILEHOST`.
+- `FILEHOST` requires a completed SASL login and the stored SASL password.
+- Plain `http` is refused when the gateway/WebSocket connection uses TLS.
+- The SASL account has any `/network` or `@client` suffix stripped before HTTP
+  Basic authentication.
+- Resumable uploads are not implemented.
 
 ## Limnoria
 
-```json
+```json5
 "limnoria": {
     "suggestions": true,
     "prefix": "!",
@@ -92,169 +573,70 @@ is set.
 }
 ```
 
-`plugins` is a comma- or space-separated list of plugin names used for local
-`/lim` command suggestions and help. It defaults to the six core plugins above.
-An empty value disables local command suggestions. Per-network settings override
-this default. Manually typed `/lim` commands still work when their plugin is not
-listed.
+- `suggestions` enables the `/lim` input command and its local suggestions. The
+  default is `false`. When disabled, `/lim` reports that it is turned off.
+- `prefix` is the channel command prefix. The default is `!`.
+- `name` is the bot nick used for private `/msg` delivery. The default is
+  `SupyBot`.
+- `plugins` is a comma- or space-separated list used for local suggestions and
+  help. It defaults to the six core plugins above. An empty value disables local
+  suggestions, but typed `/lim` commands still use the full command table.
+- Per-network settings override these defaults.
+- Manually typed `/lim` commands still work when their plugin is not listed.
+- Channel-context commands use the prefix and need a channel with the bot
+  present; private-preferred commands use `/msg`. Remote autocomplete still
+  queries Limnoria on Tab.
 
-## Connection
+## Bouncer Networks
 
-| Key                       | Default            |                                            |
-| ------------------------- | ------------------ | ------------------------------------------ |
-| `kiwiServer`              | `/webirc/kiwiirc/` | Gateway URL.                               |
-| `restricted`              | `true`             | One network only.                          |
-| `bnc.active`              | `false`            | Route networks through a bouncer.          |
-| `bnc.server`              | `""`               |                                            |
-| `bnc.port`                | `6667`             |                                            |
-| `bnc.tls`                 | `false`            |                                            |
-| `bnc.path`                | `""`               |                                            |
-| `bnc.username`            | `""`               |                                            |
-| `bnc.password`            | `""`               | Public if set here. Prefer the login form. |
-| `autoReconnect`           | `false`            |                                            |
-| `autoReconnectMaxWait`    | `30000`            | Milliseconds.                              |
-| `autoReconnectMaxRetries` | `10`               |                                            |
-| `disconnectOnSaslFail`    | `true`             |                                            |
-| `defaultSaslMechanism`    | `AUTO`             | `AUTO` prefers SCRAM-SHA-256 over PLAIN.   |
-| `quitMessage`             | `Page closed`      |                                            |
-| `warnOnExit`              | `true`             |                                            |
+Use `startupScreen: "bouncer"` for modern bouncers.
 
-## Startup
+- Supports `draft/bouncer-networks` or `soju.im/bouncer-networks`, preferring
+  the draft name.
+- Negotiates exactly one base capability and one matching notify capability.
+- The unbound control connection appears as an always-visible `BNC` network.
+- Bound networks behave like ordinary IRC connections.
+- BNC, Account, and Register tabs follow the capability probe.
+- In Account mode, Bouncer User maps to `connection.account`; Bouncer Password
+  maps to `network.password`; Server Password maps to `connection.password`.
+- In BNC mode, Bouncer User maps to `network.username`; Bouncer Password maps to
+  `connection.password`; no SASL is used. The nick is the user with the first
+  `@` or `/` suffix stripped.
+- Bouncer-managed networks use explicit Save and Connect/Reconnect actions.
+- On Soju, the settings page can prefill
+  `sasl set-plain -network <name> <account> <password>` into the `BouncerServ`
+  query. It is never sent automatically.
 
-`startupScreen` chooses the screen shown before the IRC client starts.
+The legacy `bnc` object remains for older deployments. Prefer the dedicated
+bouncer startup screen.
 
-### Startup Modes
+## Security and Privacy
 
-| Value                 | Pick When                                                | What It Does                                                                                                                                                                                                                                            |
-| --------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `welcome`             | A public client tied to one network or gateway.          | Single-network login. Shows Anonymous, Account, and Register tabs when supported. Uses `startupOptions.server`, `port`, `tls`, `channel`, and `nick`; `probeServerCaps` adapts tabs, registration, and length limits; `altComponent` replaces the form. |
-| `customServer`        | Users choose between networks or enter their own server. | Multi-network connection screen with a preset/custom server selector, IRC and Bouncer tabs, and identity tabs. Uses `presetNetworks`, `enableCustom`, and `enableTabs`. Supports URL-fragment auto-connect. This is the config template default.        |
-| `bouncer`             | A Soju or other modern `bouncer-networks` deployment.    | Dedicated bouncer login. Connects to the bouncer control connection and loads its networks. Requires `draft/bouncer-networks` or `soju.im/bouncer-networks`; BNC, Account, and Register tabs follow the capability probe.                               |
-| `personal`            | A persistent personal client with saved networks.        | Returning-user home with saved networks, Add Network, temporary connection, and Add to Existing Tab. Forces `restricted: false` so network settings remain available.                                                                                   |
-| Custom component name | The built-in screens do not fit.                         | Runs a startup component registered with `kiwi.addStartup(name, component)`. An unknown name throws a startup error.                                                                                                                                    |
+- The config file is public. Never store passwords, SASL secrets, or user hashes
+  in it.
+- `bnc.password`, `network.password`, and `connection.password` are visible to
+  the browser if set in config. Prefer the login form.
+- User settings are stored in browser storage. Remember Me can purge saved
+  state.
+- `startupOptions.state_key` changes the storage namespace. An empty value
+  disables saved state.
+- Web Push registrations are stored in the browser and scoped per network.
+- File uploads use the SASL secret only after login.
+- There is no server-side application state.
 
-- `static/config.json` starts with `welcome`; the config template default is
-  `customServer`.
-- `startupOptions.server`, `port`, `tls`, `channel`, and `nick` seed the
-  built-in forms. `personal` uses saved state and URL fragments instead.
-- `startupOptions.bouncer: true` is the legacy bouncer mode used by `welcome`,
-  `customServer`, and `personal`. New bouncer deployments should use
-  `startupScreen: "bouncer"`.
-- `restricted: true` locks the client to one network. `personal` forces it to
-  `false`.
-- `presetNetworks` supplies the `customServer` selector.
+## Common Mistakes
 
-### Startup Options
-
-| Key                               | Default      | Description                                                          |
-| --------------------------------- | ------------ | -------------------------------------------------------------------- |
-| `startupOptions.server`           | `""`         | IRC server or gateway host. Empty uses the gateway default.          |
-| `startupOptions.port`             | `6667`       | Connection port. Defaults depend on TLS and direct mode.             |
-| `startupOptions.tls`              | `false`      | TLS for the gateway or direct websocket.                             |
-| `startupOptions.direct`           | `false`      | Connect directly to the IRC server websocket instead of the gateway. |
-| `startupOptions.channel`          | `""`         | Initial channel.                                                     |
-| `startupOptions.nick`             | `kiwi_?`     | Initial nick. `?` is replaced with a random digit.                   |
-| `startupOptions.state_key`        | `kiwi-state` | Browser storage key. Empty disables state saving.                    |
-| `startupOptions.remember_buffers` | `true`       | Include buffers in saved state.                                      |
-| `startupOptions.nick_format`      | `""`         | Pattern used to validate nick input.                                 |
-
-### Mode-Specific Options
-
-| Option                           | Default | Effect                                                                                                                 |
-| -------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `startupOptions.probeServerCaps` | `false` | Probe server capabilities before rendering single-network forms and presets. Costs one extra connection per page load. |
-| `startupOptions.enableCustom`    | `true`  | Show the custom-server entry on `customServer`.                                                                        |
-| `startupOptions.enableTabs`      | `true`  | Show the IRC and Bouncer tabs on `customServer`.                                                                       |
-| `startupOptions.altComponent`    | unset   | Replace the `welcome` form with a custom component.                                                                    |
-| `startupOptions.bouncer`         | `false` | Legacy bouncer switch for `welcome`, `customServer`, and `personal`. Prefer `startupScreen: "bouncer"`.                |
-
-## Buffers
-
-These are the defaults for new buffers. A buffer setting in the UI overrides
-them.
-
-| Key                                          | Default                                                       |                                                  |
-| -------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------ |
-| `buffers.messageLayout`                      | `modern`                                                      | `modern`, `compact`, or `inline`.                |
-| `buffers.alert_on`                           | `highlight`                                                   | `message`, `highlight`, or `never`.              |
-| `buffers.scrollback_size`                    | `250`                                                         | Raw server buffer defaults to 500.               |
-| `buffers.show_timestamps`                    | `true`                                                        |                                                  |
-| `buffers.timestamp_format`                   | `%H:%M:%S`                                                    |                                                  |
-| `buffers.timestamp_full_format`              | `""`                                                          | Empty uses the browser locale.                   |
-| `buffers.show_hostnames`                     | `false`                                                       |                                                  |
-| `buffers.show_joinparts`                     | `true`                                                        |                                                  |
-| `buffers.show_topics`                        | `true`                                                        |                                                  |
-| `buffers.show_topic_in_header`               | `false`                                                       |                                                  |
-| `buffers.show_nick_changes`                  | `true`                                                        |                                                  |
-| `buffers.show_mode_changes`                  | `true`                                                        |                                                  |
-| `buffers.show_presence_changes`              | `true`                                                        |                                                  |
-| `buffers.traffic_as_activity`                | `false`                                                       |                                                  |
-| `buffers.server_as_activity`                 | `true`                                                        |                                                  |
-| `buffers.coloured_nicklist`                  | `true`                                                        |                                                  |
-| `buffers.colour_nicknames_in_messages`       | `true`                                                        |                                                  |
-| `buffers.block_pms`                          | `false`                                                       |                                                  |
-| `buffers.extra_formatting`                   | `true`                                                        |                                                  |
-| `buffers.mute_sound`                         | `false`                                                       | Sounds are separate from desktop notifications.  |
-| `buffers.hide_message_counts`                | `false`                                                       |                                                  |
-| `buffers.show_realnames`                     | `false`                                                       |                                                  |
-| `buffers.default_ban_mask`                   | `*!%i@%h`                                                     |                                                  |
-| `buffers.default_kick_reason`                | `Your behaviour is not conducive to the desired environment.` |                                                  |
-| `buffers.shared_input`                       | `false`                                                       |                                                  |
-| `buffers.show_message_info`                  | `true`                                                        |                                                  |
-| `buffers.who_loop`                           | `true`                                                        |                                                  |
-| `buffers.share_typing`                       | `true`                                                        |                                                  |
-| `buffers.flash_title`                        | `message`                                                     | `message`, `highlight`, or `off`.                |
-| `buffers.nicklist_avatars`                   | `false`                                                       |                                                  |
-| `buffers.warn_expected_command`              | `true`                                                        |                                                  |
-| `buffers.show_link_previews`                 | `true`                                                        |                                                  |
-| `buffers.inline_link_auto_previews`          | `true`                                                        |                                                  |
-| `buffers.inline_link_auto_previews_query`    | `true`                                                        |                                                  |
-| `buffers.inline_link_auto_preview_whitelist` | `.*`                                                          |                                                  |
-| `buffers.show_buffer_groups`                 | `true`                                                        |                                                  |
-| `buffers.prompt_leave`                       | `channels`                                                    | `all`, `channels`, `queries`, or `none`.         |
-| `buffers.auto_request_history`               | `all`                                                         | `all`, `channels`, `queries`, or `none`.         |
-| `buffers.emoji_convert_as_typed`             | `true`                                                        |                                                  |
-| `buffers.emoji_convert_incoming`             | `true`                                                        |                                                  |
-| `buffers.ignore_bots`                        | `false`                                                       |                                                  |
-| `buffers.show_redactions`                    | `placeholder`                                                 |                                                  |
-| `buffers.show_notifications`                 | `true`                                                        | Desktop notifications while the page is running. |
-| `buffers.lenient_rerouting`                  | `true`                                                        |                                                  |
-| `buffers.favorite`                           | `false`                                                       | Per-buffer default, not a global switch.         |
-
-## Interface
-
-| Key                             | Default                             |                            |
-| ------------------------------- | ----------------------------------- | -------------------------- |
-| `windowTitle`                   | `Kiwi IRC - The web IRC client`     |                            |
-| `useMonospace`                  | `false`                             |                            |
-| `language`                      | `""`                                | Empty follows the browser. |
-| `theme`                         | `Kiwi Dark`                         |                            |
-| `google_fonts`                  | Source Sans Pro and Source Code Pro |                            |
-| `showEmojiPicker`               | `true`                              |                            |
-| `forceShowEmojiPicker`          | `false`                             |                            |
-| `emojiPickerMaxVersion`         | `0`                                 | `0` shows all versions.    |
-| `showColorPicker`               | `false`                             |                            |
-| `showSendButton`                | `false`                             |                            |
-| `showAutocomplete`              | `true`                              |                            |
-| `autocompleteTokens`            | `["/", "#", "@"]`                   |                            |
-| `showAwayStatusIndicators`      | `true`                              |                            |
-| `sidebarDefault`                | `nicklist`                          |                            |
-| `showRaw`                       | `false`                             |                            |
-| `showChanlistModes`             | `false`                             |                            |
-| `nicklistGroupAway`             | `false`                             |                            |
-| `noticeActiveBuffer`            | `true`                              |                            |
-| `skipHiddenMessages`            | `false`                             |                            |
-| `useBufferHistory`              | `true`                              |                            |
-| `changeNickOnCollision`         | `true`                              |                            |
-| `allowRegisterProtocolHandler`  | `false`                             |                            |
-| `highlights`                    | `""`                                | Extra highlight words.     |
-| `teamHighlights`                | `false`                             |                            |
-| `avatars.fallback_avatar_url`   | `""`                                | `{nickname}` is replaced.  |
-| `avatars.away_status_position`  | `1`                                 |                            |
-| `avatars.initials_length`       | `1`                                 |                            |
-| `avatars.show_image_background` | `true`                              |                            |
-| `avatars.show_without_user`     | `false`                             |                            |
-
-Message prefixes live under `textFormats`. Command aliases live under `aliases`.
-Both are long and rarely need editing. The full defaults are in
-`src/res/configTemplates.js`.
+- Leaving `kiwiServer` at the example URL.
+- Assuming `restricted` defaults to `false`; the config template defaults to
+  `true`, while the starter file sets `false`.
+- Setting `themes` or `plugins` and expecting arrays to append; arrays replace.
+- Expecting `config.local.json` in production; it is development-only.
+- Using the legacy `bnc` object instead of `startupScreen: "bouncer"`.
+- Forgetting that `probeServerCaps` adds one connection per probed endpoint, and
+  that custom endpoints are not probed.
+- Setting `limnoria.suggestions` to `false` and expecting `/lim` to work.
+- Setting `limnoria.plugins` to empty and expecting local suggestions.
+- Setting `fileupload.service` to `filehost` without a FILEHOST token and SASL.
+- Setting `state_key` empty and expecting saved state.
+- Using global `showRaw` instead of the per-network raw-buffer setting.
+- Putting secrets in `static/config.json` or `static/config.local.json`.

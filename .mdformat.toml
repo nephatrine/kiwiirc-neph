@@ -2,4 +2,19 @@
 # SPDX-License-Identifier: CC0-1.0
 
 wrap = 80
+number = true
 extensions = ["gfm"]
+codeformatters = [
+    "bash",
+    "css",
+    "html",
+    "javascript",
+    "js",
+    "json",
+    "python",
+    "sh",
+    "toml",
+    "xml",
+    "yaml",
+]
+exclude = ["AGENTS.md", "VOICE.md", "dist/**"]

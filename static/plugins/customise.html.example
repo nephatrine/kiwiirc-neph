@@ -3,8 +3,8 @@
 </style>
 
 <script>
-kiwi.plugin('customise', function(kiwi, log) {
-    // Add your customisations here
-    // Some small examples can be found at https://github.com/kiwiirc/kiwiirc/wiki/Plugin-Examples
+kiwi.plugin('customise', (kiwi, log) => {
+    // Add your customisations here.
+    // See PLUGINS.md and the bundled plugin documentation for examples.
 });
 </script>
