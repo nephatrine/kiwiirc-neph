@@ -1,5 +1,5 @@
 name: Test Package
-run-name: ${{ gitea.actor }} pushed to ${{ gitea.repository }}:${{ gitea.ref_name }}
+run-name: Test Package - ${{ gitea.event_name }} - ${{ gitea.ref_name }} (#${{ gitea.run_number }})
 on:
     push:
         branches:
@@ -21,7 +21,7 @@ jobs:
             - name: Checkout Repository
               uses: https://code.nephatrine.net/NephHub/checkout@v6
             - name: Run Tests
-              run: cd "${{ gitea.workspace }}" && npm ci && npm run lint && npm test && npm run build
+              run: cd "${{ gitea.workspace }}" && npm ci && npm run lint && npm test && npm run build:release
             - name: Notify Discord
               uses: https://code.nephatrine.net/NephHub/actions-status-discord@v1
               if: failure()

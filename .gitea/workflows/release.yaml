@@ -1,0 +1,32 @@
+name: Release Package
+run-name: Release Package - ${{ gitea.ref_name }} (#${{ gitea.run_number }})
+on:
+    push:
+        tags:
+            - "v*"
+permissions:
+    contents: read
+    releases: write
+jobs:
+    build_release:
+        runs-on: nephnet-fast
+        timeout-minutes: 60
+        container:
+            image: code.nephatrine.net/nephnet/nxb-alpine:latest
+        steps:
+            - name: Checkout Repository
+              uses: https://code.nephatrine.net/NephHub/checkout@v6
+            - name: Build Packages
+              run: cd "${{ gitea.workspace }}" && npm ci && npm run lint && npm test && npm run build:release && tar -C dist --exclude='*.map' -czf "${{ gitea.workspace }}/kiwiirc-release.tar.gz" .
+            - name: Create Release
+              uses: https://code.nephatrine.net/NephHub/gitea-release-action@v1
+              with:
+                  tag_name: ${{ gitea.ref_name }}
+                  files: kiwiirc-release.tar.gz
+                  sha256sum: true
+            - name: Notify Discord
+              uses: https://code.nephatrine.net/NephHub/actions-status-discord@v1
+              if: failure()
+              with:
+                  title: "FAIL: release"
+                  webhook: ${{ secrets.DISCORD_WH_PROJECTS }}

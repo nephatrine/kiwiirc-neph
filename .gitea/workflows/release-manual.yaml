@@ -1,0 +1,48 @@
+name: Release Package (Manual)
+run-name: Manual Release of ${{ inputs.tag }}
+on:
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: Release Tag
+                required: true
+permissions:
+    contents: read
+    releases: write
+jobs:
+    build_release:
+        runs-on: nephnet-fast
+        timeout-minutes: 60
+        container:
+            image: code.nephatrine.net/nephnet/nxb-alpine:latest
+        steps:
+            - name: Checkout Repository
+              uses: https://code.nephatrine.net/NephHub/checkout@v6
+              with:
+                  ref: ${{ inputs.tag }}
+            - name: Validate Release Tag
+              env:
+                  RELEASE_TAG: ${{ inputs.tag }}
+              run: |
+                  case "$RELEASE_TAG" in
+                    v*) ;;
+                    *)
+                      echo "Release tag must start with v"
+                      exit 1
+                      ;;
+                  esac
+                  git rev-parse --verify "refs/tags/$RELEASE_TAG" >/dev/null
+            - name: Build Packages
+              run: cd "${{ gitea.workspace }}" && npm ci && npm run lint && npm test && npm run build:release && tar -C dist --exclude='*.map' -czf "${{ gitea.workspace }}/kiwiirc-release.tar.gz" .
+            - name: Create Release
+              uses: https://code.nephatrine.net/NephHub/gitea-release-action@v1
+              with:
+                  tag_name: ${{ inputs.tag }}
+                  files: kiwiirc-release.tar.gz
+                  sha256sum: true
+            - name: Notify Discord
+              uses: https://code.nephatrine.net/NephHub/actions-status-discord@v1
+              if: failure()
+              with:
+                  title: "FAIL: release"
+                  webhook: ${{ secrets.DISCORD_WH_PROJECTS }}

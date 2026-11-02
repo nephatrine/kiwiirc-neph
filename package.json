@@ -11,8 +11,17 @@
     "url": "https://code.nephatrine.net/nephatrine/kiwiirc/issues"
   },
   "author": "Darren <darren@darrenwhitlen.com>",
+  "contributors": [
+    {
+      "name": "Daniel Wolf",
+      "email": "nephatrine@gmail.com",
+      "url": "https://nephatrine.net/"
+    }
+  ],
+  "license": "Apache-2.0",
   "scripts": {
     "build": "vue-cli-service build --no-module",
+    "build:release": "vue-cli-service build --no-module --nomap",
     "postbuild": "node scripts/minify-static.js",
     "generate:emojis": "node scripts/generate-emojis.js",
     "generate:boxicons": "node scripts/generate-boxicons-css.js",
