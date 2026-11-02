@@ -190,7 +190,7 @@ reactive object keys need `kiwi.Vue.set()` or `kiwi.Vue.delete()`. Use
 | `kiwi.commithash`              | Build commit hash.                                   |
 | `kiwi.versionMatches(version)` | True when the running version is at least `version`. |
 | `kiwi.Vue`                     | Vue 2 constructor and helpers.                       |
-| `kiwi.JSON5`                   | JSON5 parser used for configuration.                 |
+| `kiwi.JSON5`                   | JSON5 parser, loaded before plugin scripts run.      |
 | `kiwi.state`                   | Running application state singleton.                 |
 | `kiwi.themes`                  | Theme manager.                                       |
 | `kiwi.i18n`                    | i18next instance.                                    |

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 /*
- * Generate src/res/emojis.js from JoyPixels emoji-toolkit data.
+ * Generate src/res/emojiLookup.js and src/res/emojiData.js from JoyPixels
+ * emoji-toolkit data.
  *
  * Usage:
  *   node scripts/generate-emojis.js /path/to/emoji.json
@@ -9,6 +10,9 @@
  * Only non-artwork metadata is used: names, aliases, categories, and code
  * points. Skin-tone variants, regional-indicator components, keycap
  * components, and hair-color variants are intentionally excluded.
+ *
+ * The lookup module is small enough to stay in the entrypoint. The full
+ * metadata module is loaded on demand by the emoji picker.
  */
 
 const fs = require('fs');
@@ -165,11 +169,17 @@ function buildData(joypixels) {
         throw new Error(`Expected ${expectedTotal} emoji, found ${total}`);
     }
 
-    return { byCategory, shortcodeToChar };
+    const emojiVersions = Array.from(new Set(
+        entries
+            .map((entry) => entry.version)
+            .filter(Boolean)
+    )).sort((a, b) => b - a);
+
+    return { byCategory, shortcodeToChar, emojiVersions };
 }
 
-function render(data) {
-    const lines = [
+function header() {
+    return [
         "'kiwi public';",
         '',
         '/*',
@@ -180,9 +190,13 @@ function render(data) {
         ' * components, keycap components, and hair-color variants are excluded.',
         ' */',
         '',
-        'export const categories = [',
     ];
+}
 
+function renderLookup(data) {
+    const lines = header();
+
+    lines.push('export const categories = [');
     CATEGORIES.forEach((category) => {
         lines.push('    {');
         lines.push(`        id: ${quote(category.id)},`);
@@ -192,6 +206,28 @@ function render(data) {
     });
     lines.push('];');
     lines.push('');
+    lines.push('export const shortcodeToChar = {');
+
+    Object.keys(data.shortcodeToChar).forEach((name) => {
+        lines.push(`    ${quote(name)}: ${quote(data.shortcodeToChar[name])},`);
+    });
+
+    lines.push('};');
+    lines.push('');
+    lines.push('// Unicode versions present in the full emoji data, newest first.');
+    lines.push('export const emojiVersions = [');
+    data.emojiVersions.forEach((version) => {
+        lines.push(`    ${version},`);
+    });
+    lines.push('];');
+    lines.push('');
+
+    return lines.join('\n');
+}
+
+function renderData(data) {
+    const lines = header();
+
     lines.push('export const emojiData = {');
 
     CATEGORIES.forEach((category) => {
@@ -212,14 +248,6 @@ function render(data) {
 
     lines.push('};');
     lines.push('');
-    lines.push('export const shortcodeToChar = {');
-
-    Object.keys(data.shortcodeToChar).forEach((name) => {
-        lines.push(`    ${quote(name)}: ${quote(data.shortcodeToChar[name])},`);
-    });
-
-    lines.push('};');
-    lines.push('');
 
     return lines.join('\n');
 }
@@ -232,9 +260,13 @@ function main() {
 
     const joypixels = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
     const data = buildData(joypixels);
-    const outputPath = path.join(__dirname, '..', 'src', 'res', 'emojis.js');
-    fs.writeFileSync(outputPath, render(data));
-    process.stdout.write(`Wrote ${outputPath}\n`);
+    const lookupPath = path.join(__dirname, '..', 'src', 'res', 'emojiLookup.js');
+    const dataPath = path.join(__dirname, '..', 'src', 'res', 'emojiData.js');
+
+    fs.writeFileSync(lookupPath, renderLookup(data));
+    fs.writeFileSync(dataPath, renderData(data));
+    process.stdout.write(`Wrote ${lookupPath}\n`);
+    process.stdout.write(`Wrote ${dataPath}\n`);
 }
 
 main();

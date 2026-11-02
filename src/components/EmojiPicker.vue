@@ -29,31 +29,18 @@
                 </div>
             </div>
             <div ref="scroller" class="kiwi-emojipicker-emojis" @scroll="onScroll" @mousedown.prevent>
-                <div v-if="filter" class="kiwi-emojipicker-category-section">
-                    <div class="kiwi-emojipicker-category-title">{{ $t('search_results') }}</div>
-                    <div class="kiwi-emojipicker-category-list">
-                        <div
-                            v-for="emoji in filteredEmojis"
-                            :key="emoji.shortcode"
-                            :title="emoji.shortcode"
-                            class="kiwi-emojipicker-emoji"
-                            @click="onEmojiClick(emoji.char)"
-                        >
-                            {{ emoji.char }}
-                        </div>
-                    </div>
+                <div v-if="emojiDataLoading" class="kiwi-emojipicker-loading">
+                    <i class="bx bx-loader-alt bx-spin" aria-hidden="true" />
+                </div>
+                <div v-else-if="!emojiData" class="kiwi-emojipicker-loading">
+                    <i class="bx bx-error-circle" aria-hidden="true" />
                 </div>
                 <template v-else>
-                    <div
-                        v-for="cat in categories"
-                        :key="cat.id"
-                        :ref="`cat-${cat.id}`"
-                        class="kiwi-emojipicker-category-section"
-                    >
-                        <div class="kiwi-emojipicker-category-title">{{ cat.label }}</div>
+                    <div v-if="filter" class="kiwi-emojipicker-category-section">
+                        <div class="kiwi-emojipicker-category-title">{{ $t('search_results') }}</div>
                         <div class="kiwi-emojipicker-category-list">
                             <div
-                                v-for="emoji in visibleEmojiData[cat.id]"
+                                v-for="emoji in filteredEmojis"
                                 :key="emoji.shortcode"
                                 :title="emoji.shortcode"
                                 class="kiwi-emojipicker-emoji"
@@ -63,6 +50,27 @@
                             </div>
                         </div>
                     </div>
+                    <template v-else>
+                        <div
+                            v-for="cat in categories"
+                            :key="cat.id"
+                            :ref="`cat-${cat.id}`"
+                            class="kiwi-emojipicker-category-section"
+                        >
+                            <div class="kiwi-emojipicker-category-title">{{ cat.label }}</div>
+                            <div class="kiwi-emojipicker-category-list">
+                                <div
+                                    v-for="emoji in visibleEmojiData[cat.id] || []"
+                                    :key="emoji.shortcode"
+                                    :title="emoji.shortcode"
+                                    class="kiwi-emojipicker-emoji"
+                                    @click="onEmojiClick(emoji.char)"
+                                >
+                                    {{ emoji.char }}
+                                </div>
+                            </div>
+                        </div>
+                    </template>
                 </template>
             </div>
         </div>
@@ -72,15 +80,20 @@
 <script>
 'kiwi public';
 
-import { categories, emojiData } from '@/res/emojis';
+import { categories } from '@/res/emojiLookup';
 import { emojiMatches, filterEmojiData } from '@/helpers/Emoji';
+import { loadEmojiData } from '@/libs/LazyLoad';
+import Logger from '@/libs/Logger';
+
+let log = Logger.namespace('EmojiPicker');
 
 export default {
     data() {
         return {
             filter: '',
             categories,
-            emojiData,
+            emojiData: null,
+            emojiDataLoading: false,
             activeCategory: categories[0].id,
             scrollTarget: null,
             scrollTargetTop: null,
@@ -96,6 +109,9 @@ export default {
             return Number.isFinite(value) ? value : 0;
         },
         visibleEmojiData() {
+            if (!this.emojiData) {
+                return {};
+            }
             return filterEmojiData(this.emojiData, this.emojiPickerMaxVersion);
         },
         filteredEmojis() {
@@ -120,6 +136,7 @@ export default {
             this.filter = '';
             this.activeCategory = this.categories[0].id;
             this.clearScrollTarget();
+            this.loadEmojiData();
         });
 
         this.listen(this.$state, 'document.keydown', (event) => {
@@ -135,6 +152,20 @@ export default {
         close() {
             this.clearScrollTarget();
             this.$state.ui.emoji_picker.visible = false;
+        },
+        async loadEmojiData() {
+            if (this.emojiData || this.emojiDataLoading) {
+                return;
+            }
+
+            this.emojiDataLoading = true;
+            try {
+                this.emojiData = await loadEmojiData();
+            } catch (err) {
+                log.error('Failed to load emoji data', err);
+            } finally {
+                this.emojiDataLoading = false;
+            }
         },
         onEmojiClick(emojiChar) {
             const picker = this.$state.ui.emoji_picker;
@@ -311,6 +342,15 @@ export default {
     flex: 1;
     overflow-y: auto;
     padding: 10px;
+}
+
+.kiwi-emojipicker-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 24px;
+    opacity: 0.6;
 }
 
 .kiwi-emojipicker-category-title {

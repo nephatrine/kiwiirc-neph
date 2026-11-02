@@ -381,8 +381,7 @@
 import ThemeManager from '@/libs/ThemeManager';
 import GlobalApi from '@/libs/GlobalApi';
 import localesList from '@/res/localesList';
-import { emojiData } from '@/res/emojis';
-import { getEmojiVersions } from '@/helpers/Emoji';
+import { emojiVersions as emojiVersionList } from '@/res/emojiLookup';
 import { debounce } from '@/helpers/Async';
 import SettingsAliases from './SettingsAliases';
 import SettingsAdvanced from './SettingsAdvanced';
@@ -437,7 +436,7 @@ export default {
             );
         },
         emojiVersions() {
-            return getEmojiVersions(emojiData);
+            return emojiVersionList;
         },
         timestamps_24h: {
             get() {

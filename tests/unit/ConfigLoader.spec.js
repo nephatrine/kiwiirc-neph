@@ -1,4 +1,13 @@
-import ConfigLoader from '@/libs/ConfigLoader';
+import ConfigLoader, { parseConfigText } from '@/libs/ConfigLoader';
+import { loadJson5 } from '@/libs/Json5Loader';
+
+jest.mock('@/libs/Json5Loader', () => {
+    const JSON5 = jest.requireActual('json5');
+    return {
+        loadJson5: jest.fn(() => Promise.resolve(JSON5)),
+        getJson5: () => JSON5,
+    };
+});
 
 function mockFetch(body) {
     global.fetch = jest.fn(() => Promise.resolve({
@@ -7,12 +16,23 @@ function mockFetch(body) {
 }
 
 describe('ConfigLoader', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
     afterEach(() => {
         jest.restoreAllMocks();
         delete global.fetch;
     });
 
     describe('loadFromUrl', () => {
+        it('parses strict JSON without loading JSON5', async() => {
+            const config = await parseConfigText('{"foo":"bar"}');
+
+            expect(config.foo).toBe('bar');
+            expect(loadJson5).not.toHaveBeenCalled();
+        });
+
         it('fetches and parses a JSON5 config', async() => {
             mockFetch('{ foo: "bar", nested: { one: 1 } }');
 
@@ -22,6 +42,7 @@ describe('ConfigLoader', () => {
             expect(global.fetch).toHaveBeenCalledWith('/static/config.json');
             expect(config.foo).toBe('bar');
             expect(config.nested.one).toBe(1);
+            expect(loadJson5).toHaveBeenCalled();
         });
 
         it('expands value replacements while parsing', async() => {
@@ -42,6 +63,7 @@ describe('ConfigLoader', () => {
 
             await expect(loader.loadFromUrl('/static/config.json'))
                 .rejects.toMatch(/^Config file error:/);
+            expect(loadJson5).toHaveBeenCalled();
         });
 
         it('propagates network failures', async() => {

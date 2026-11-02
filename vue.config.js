@@ -55,7 +55,7 @@ module.exports = {
                 cacheGroups: {
                     defaultVendors: {
                         name: 'chunk-vendors',
-                        chunks: 'all',
+                        chunks: 'initial',
                         enforce: true,
                         test: (m) => /[\\/]node_modules[\\/]/.test(m.resource ?? m.context ?? '') && m.constructor.name !== 'CssModule',
                     },

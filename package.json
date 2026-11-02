@@ -24,6 +24,7 @@
     "build:release": "vue-cli-service build --no-module --nomap",
     "postbuild": "node scripts/minify-static.js",
     "generate:emojis": "node scripts/generate-emojis.js",
+    "generate:limnoria": "node scripts/generate-limnoria-index.js",
     "generate:boxicons": "node scripts/generate-boxicons-css.js",
     "optimize:bongo": "node scripts/optimize-bongo-images.js",
     "format": "npm-run-all format:*",

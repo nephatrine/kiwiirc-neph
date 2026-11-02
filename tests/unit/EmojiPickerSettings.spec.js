@@ -1,6 +1,7 @@
 import AppSettings from '@/components/AppSettings.vue';
 import EmojiPicker from '@/components/EmojiPicker.vue';
-import { emojiData } from '@/res/emojis';
+import { emojiData } from '@/res/emojiData';
+import { emojiVersions } from '@/res/emojiLookup';
 
 function pickerEnabled(settings, utf8 = true) {
     return AppSettings.computed.emojiPickerEnabled.call({
@@ -35,6 +36,7 @@ describe('Emoji picker version setting', () => {
         expect(versions).toContain(13);
         expect(versions).toContain(13.1);
         expect(versions[0]).toBeGreaterThan(versions[versions.length - 1]);
+        expect(versions).toEqual(emojiVersions);
     });
 
     it('filters the picker data by the selected version', () => {

@@ -1,5 +1,13 @@
 import ControlInput from '@/components/ControlInput';
 
+jest.mock('@/libs/LazyLoad', () => {
+    const commands = jest.requireActual('@/libs/LimnoriaCommands');
+    return {
+        getLimnoriaCommands: () => commands,
+        loadLimnoriaCommands: () => Promise.resolve(commands),
+    };
+});
+
 describe('ControlInput Limnoria autocomplete', () => {
     function makeContext() {
         const input = {
@@ -44,12 +52,16 @@ describe('ControlInput Limnoria autocomplete', () => {
             },
             $nextTick: (cb) => cb(),
             limnoria_pending: null,
+            limnoria_commands_ready: true,
+            limnoria_commands_loading: false,
             autocomplete_items: [],
             autocomplete_filter: '',
             autocomplete_filtering: true,
             autocomplete_limnoria: false,
             autocomplete_open: false,
             limnoriaEnabledPlugins: ControlInput.methods.limnoriaEnabledPlugins,
+            ensureLimnoriaCommands: ControlInput.methods.ensureLimnoriaCommands,
+            limnoriaCommandSuggestionsFor: ControlInput.methods.limnoriaCommandSuggestionsFor,
             shouldCompleteLimnoria: ControlInput.methods.shouldCompleteLimnoria,
             openLimnoriaAutocomplete: ControlInput.methods.openLimnoriaAutocomplete,
             maybeRequestLimnoriaAutocomplete: ControlInput.methods.maybeRequestLimnoriaAutocomplete,

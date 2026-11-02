@@ -7,7 +7,7 @@ import { each } from '@/helpers/Utils';
 import AliasRewriter from './AliasRewriter';
 import { addTwitchUserNotice } from './TwitchMiddleware';
 import { limnoriaSettings } from './Limnoria';
-import { limnoriaCommandDelivery, limnoriaCommandPath } from './LimnoriaCommands';
+import { limnoriaCommandDelivery, limnoriaCommandPath } from './LimnoriaCommandIndex';
 
 // Map of commandName=commandHandlerFn
 const inputCommands = {};

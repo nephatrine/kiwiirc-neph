@@ -1,6 +1,6 @@
 'kiwi public';
 
-import { shortcodeToChar } from '@/res/emojis';
+import { shortcodeToChar } from '@/res/emojiLookup';
 
 export const curatedEmojis = [
     { char: '👍', shortcode: 'thumbsup' },

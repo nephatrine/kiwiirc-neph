@@ -1,4 +1,5 @@
-import { categories, emojiData, shortcodeToChar } from '@/res/emojis';
+import { categories, emojiVersions, shortcodeToChar } from '@/res/emojiLookup';
+import { emojiData } from '@/res/emojiData';
 import {
     curatedEmojis,
     emojiMatches,
@@ -118,6 +119,7 @@ describe('JoyPixels emoji data', () => {
         expect(byShortcode.melting_face.version).toBe(14);
         expect(getEmojiVersions(emojiData)).toContain(13);
         expect(getEmojiVersions(emojiData)).toContain(13.1);
+        expect(emojiVersions).toEqual(getEmojiVersions(emojiData));
     });
 
     it('filters emoji by maximum Unicode version', () => {

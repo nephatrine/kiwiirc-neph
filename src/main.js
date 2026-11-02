@@ -1,5 +1,4 @@
 import Vue from 'vue';
-import JSON5 from 'json5';
 import i18next from 'i18next';
 import i18nextHTTP from 'i18next-http-backend';
 import VueI18Next from '@panter/vue-i18next';
@@ -15,7 +14,8 @@ import startupCustomServer from '@/components/startups/CustomServer';
 import startupBouncer from '@/components/startups/Bouncer';
 import startupPersonal from '@/components/startups/Personal';
 import Logger from '@/libs/Logger';
-import ConfigLoader from '@/libs/ConfigLoader';
+import ConfigLoader, { parseConfigText } from '@/libs/ConfigLoader';
+import { loadJson5 } from '@/libs/Json5Loader';
 import getState from '@/libs/state';
 import { installGlobalErrorHandlers } from '@/libs/GlobalErrorHandler';
 import ThemeManager from '@/libs/ThemeManager';
@@ -227,7 +227,7 @@ installGlobalErrorHandlers(Vue, window);
 
 loadApp();
 
-function loadApp() {
+async function loadApp() {
     let configFile = 'static/config.json';
     let configObj = null;
 
@@ -256,9 +256,9 @@ function loadApp() {
         let configContents = document.querySelector('script[name="kiwiconfig"]').innerHTML;
 
         try {
-            configObj = JSON5.parse(configContents);
+            configObj = await parseConfigText(configContents);
         } catch (parseErr) {
-            log.error('Config file: ' + parseErr.stack);
+            log.error('Config file: ' + (parseErr.stack || parseErr));
             showError(parseErr);
         }
     }
@@ -279,12 +279,13 @@ function loadApp() {
         .addValueReplacement('query', (window.location.search || '').substr(1))
         .addValueReplacement('referrer', window.document.referrer);
 
-    (configObj ? configLoader.loadFromObj(configObj) : configLoader.loadFromUrl(configFile))
+    return (configObj ? configLoader.loadFromObj(configObj) : configLoader.loadFromUrl(configFile))
         .then(applyConfig)
         .then(initState)
         .then(initInputCommands)
         .then(initLocales)
         .then(initThemes)
+        .then(initJson5)
         .then(loadPlugins)
         .then(initSound)
         .then(startApp)
@@ -572,6 +573,21 @@ function initThemes() {
     let argTheme = getQueryVariable('theme');
     let themeMgr = ThemeManager.instance(getState(), argTheme);
     api.setThemeManager(themeMgr);
+}
+
+function initJson5() {
+    let plugins = getState().settings.plugins || [];
+    if (!plugins.length) {
+        return Promise.resolve();
+    }
+
+    return loadJson5()
+        .then((JSON5) => {
+            api.JSON5 = JSON5;
+        })
+        .catch((err) => {
+            log.error('JSON5: ' + (err.stack || err));
+        });
 }
 
 function initSound() {

@@ -1,14 +1,15 @@
 'kiwi public';
 
 import getState from '@/libs/state';
-import { emojiData, shortcodeToChar } from '@/res/emojis';
+import { shortcodeToChar } from '@/res/emojiLookup';
 import { escapeHtml } from '@/helpers/Utils';
 
 const emojiByChar = new Map();
-Object.values(emojiData).forEach((list) => {
-    list.forEach((emoji) => {
-        emojiByChar.set(emoji.char, emoji);
-    });
+Object.keys(shortcodeToChar).forEach((shortcode) => {
+    const char = shortcodeToChar[shortcode];
+    if (!emojiByChar.has(char)) {
+        emojiByChar.set(char, { char, shortcode });
+    }
 });
 
 const graphemeSegmenter = typeof Intl !== 'undefined' && Intl.Segmenter ?

@@ -212,10 +212,8 @@ import {
     limnoriaSettings,
     parseLimnoriaResponses
 } from '@/libs/Limnoria';
-import {
-    limnoriaCommandSuggestions,
-    limnoriaCommandSyntax
-} from '@/libs/LimnoriaCommands';
+import { getLimnoriaCommands, loadLimnoriaCommands } from '@/libs/LazyLoad';
+import Logger from '@/libs/Logger';
 
 import autocompleteCommands from '@/res/autocompleteCommands';
 import {
@@ -275,6 +273,8 @@ import SelfUser from './SelfUser';
 import AwayStatusIndicator from './AwayStatusIndicator';
 import TypingUsersList from './TypingUsersList';
 
+let log = Logger.namespace('ControlInput');
+
 export default {
     components: {
         AutoComplete,
@@ -291,6 +291,8 @@ export default {
             selfuser_open: false,
             autocomplete_open: false,
             autocomplete_limnoria: false,
+            limnoria_commands_ready: false,
+            limnoria_commands_loading: false,
             autocomplete_items: [],
             autocomplete_filter: '',
             // Not filtering through the autocomplete list means that the entire word is put
@@ -688,6 +690,34 @@ export default {
             }
             return limnoriaSettings(this.network).plugins;
         },
+        ensureLimnoriaCommands() {
+            if (this.limnoria_commands_ready || this.limnoria_commands_loading) {
+                return;
+            }
+
+            this.limnoria_commands_loading = true;
+            loadLimnoriaCommands()
+                .then(() => {
+                    this.limnoria_commands_ready = true;
+                })
+                .catch((err) => {
+                    log.error('Failed to load Limnoria commands', err);
+                })
+                .finally(() => {
+                    this.limnoria_commands_loading = false;
+                });
+        },
+        limnoriaCommandSuggestionsFor(inputVal) {
+            const commands = getLimnoriaCommands();
+            if (!commands) {
+                this.ensureLimnoriaCommands();
+                return [];
+            }
+            return commands.limnoriaCommandSuggestions(
+                inputVal,
+                this.limnoriaEnabledPlugins()
+            );
+        },
         shouldCompleteLimnoria(inputVal) {
             if (!this.network || !this.buffer || this.network.state !== 'connected') {
                 return false;
@@ -696,13 +726,10 @@ export default {
             if (!limnoria.suggestions || !limnoria.name) {
                 return false;
             }
-            return limnoriaCommandSuggestions(inputVal, limnoria.plugins).length > 0;
+            return this.limnoriaCommandSuggestionsFor(inputVal).length > 0;
         },
         openLimnoriaAutocomplete(inputVal, currentToken, filtering) {
-            const items = limnoriaCommandSuggestions(
-                inputVal,
-                this.limnoriaEnabledPlugins()
-            );
+            const items = this.limnoriaCommandSuggestionsFor(inputVal);
             if (items.length === 0) {
                 return false;
             }
@@ -1096,10 +1123,7 @@ export default {
             let histArgItems = this.histArgContextItems(inputVal);
             let bncArgItems = this.bouncerservArgContextItems(inputVal);
             let limnoriaItems = this.shouldCompleteLimnoria(inputVal) ?
-                limnoriaCommandSuggestions(
-                    inputVal,
-                    this.limnoriaEnabledPlugins()
-                ) :
+                this.limnoriaCommandSuggestionsFor(inputVal) :
                 [];
 
             if (event.key === 'Escape' && this.autocomplete_open) {
@@ -1615,7 +1639,17 @@ export default {
                 return '';
             }
             const text = this.limnoriaInputText(this.$refs.input.getRawText());
-            return text ? limnoriaCommandSyntax(text) : '';
+            if (!text) {
+                return '';
+            }
+
+            const commands = this.limnoria_commands_ready ? getLimnoriaCommands() : null;
+            if (!commands) {
+                this.ensureLimnoriaCommands();
+                return '';
+            }
+
+            return commands.limnoriaCommandSyntax(text);
         },
         serviceArgGhost() {
             if (!this.network) {

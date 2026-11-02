@@ -189,6 +189,7 @@ npm run dev
 **Generated Assets:**
 
 - `npm run generate:emojis -- /path/to/emoji.json`
+- `npm run generate:limnoria`
 - `npm run generate:boxicons`
 - `npm run optimize:bongo`
 
