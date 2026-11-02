@@ -10,6 +10,21 @@ const pkg = require('./package.json');
 
 const makeSourceMap = process.argv.indexOf('--nomap') === -1;
 
+// vue-loader imports extracted style blocks as default exports, while
+// mini-css-extract-plugin emits a module with no exports. Webpack reports that
+// combination as a warning even though the style block is only side-effectful.
+class IgnoreStyleExportWarningsPlugin {
+    apply(compiler) {
+        compiler.hooks.afterCompile.tap('IgnoreStyleExportWarningsPlugin', (compilation) => {
+            compilation.warnings = compilation.warnings.filter((warning) => (
+                !/export 'default' \(imported as 'style\d+'\) was not found/.test(
+                    warning.message || ''
+                )
+            ));
+        });
+    }
+}
+
 module.exports = {
     publicPath: '',
     assetsDir: 'static/',
@@ -58,6 +73,7 @@ module.exports = {
             new StyleLintPlugin({
                 files: ['src/**/*.{vue,htm,html,css,sss,less,scss}'],
             }),
+            new IgnoreStyleExportWarningsPlugin(),
             new ConvertLocalesPlugin(),
             new CopyWebpackPlugin({
                 patterns: [
