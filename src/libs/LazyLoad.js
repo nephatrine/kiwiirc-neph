@@ -24,6 +24,19 @@ export function loadEmojiData() {
     });
 }
 
+export function loadEmojiPacksSettings() {
+    return new Promise((resolve, reject) => {
+        require.ensure([], () => {
+            try {
+                // eslint-disable-next-line n/global-require
+                resolve(require('@/components/EmojiPacks').default);
+            } catch (err) {
+                reject(err);
+            }
+        }, reject, 'emoji-packs-settings');
+    });
+}
+
 let limnoriaCommandsPromise = null;
 let limnoriaCommandsModule = null;
 

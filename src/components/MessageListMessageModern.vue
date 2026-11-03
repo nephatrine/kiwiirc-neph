@@ -8,6 +8,9 @@
             props.message.type_extra
                 ? `kiwi-messagelist-message-${props.message.type}-${props.message.type_extra}`
                 : '',
+            props.ml.isEmojiOnlyMessage(props.message)
+                ? 'kiwi-messagelist-message--emoji-only'
+                : '',
             props.ml.isMessageHighlight(props.message)
                 ? 'kiwi-messagelist-message--highlight'
                 : '',
@@ -410,6 +413,11 @@ export default {
     display: block;
     margin-left: 0;
     margin-bottom: 10px;
+}
+
+.kiwi-messagelist-message--modern.kiwi-messagelist-message--emoji-only .kiwi-messagelist-body {
+    font-size: 3em;
+    line-height: 1.2;
 }
 
 .kiwi-messagelist-message--modern .kiwi-messagelist-body a {

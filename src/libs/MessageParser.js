@@ -20,14 +20,14 @@ import { urlRegex, channelRegex } from '@/helpers/TextFormatting';
  * @param {Array} userList List of users to find within the message
  * @returns An array of blocks, where each special content will be extracted into a separate block.
  */
-export default function parseMessage(message, formatOpts = {}, userList = null) {
+export default function parseMessage(message, formatOpts = {}, userList = null, buffer = null) {
     let msg = message;
     if (formatOpts.visibleControlChars) {
         msg = Misc.controlCharsToGlyphs(msg);
     }
     const blocks = formatIrcMessage(msg, formatOpts);
     let formatedBlocks = blocks.reduce(
-        (acc, block, i) => acc.concat(processBlock(block, userList)),
+        (acc, block, i) => acc.concat(processBlock(block, userList, buffer)),
         []
     );
 
@@ -40,8 +40,10 @@ export default function parseMessage(message, formatOpts = {}, userList = null) 
  * @param {Object} userList List of users to find within the message
  * @returns An array of blocks, where each special content will be extracted into a separate block.
  */
-function processBlock(block, userList) {
+function processBlock(block, userList, buffer) {
     const wordsRegex = /\S+/g;
+    const skipEmoji = block.styles &&
+        (block.styles.monospace || block.styles.block);
 
     let wordMatch;
     let word;
@@ -63,7 +65,7 @@ function processBlock(block, userList) {
             matchChannel(word) ||
             matchUrl(word) ||
             matchUser(word, userList) ||
-            EmojiProvider.matchEmoji(word);
+            (!skipEmoji && EmojiProvider.matchEmoji(word, buffer));
 
         if (!matches || !matches.length) {
             continue;
@@ -239,6 +241,7 @@ function mergeMatches(block, specialMatches) {
             resultBlocks.push({
                 content: beforeMatchContent,
                 styles: { ...block.styles },
+                type: block.type || 'text',
                 containsContent: !!beforeMatchContent,
             });
         }
@@ -253,6 +256,7 @@ function mergeMatches(block, specialMatches) {
         resultBlocks.push({
             content: block.content.substr(lastProcessedIndex),
             styles: { ...block.styles },
+            type: block.type || 'text',
             containsContent: !!block.content.substr(lastProcessedIndex),
         });
     }

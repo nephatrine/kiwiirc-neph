@@ -275,6 +275,23 @@ import TypingUsersList from './TypingUsersList';
 
 let log = Logger.namespace('ControlInput');
 
+const EMOJI_AUTOCOMPLETE_RE = /:([^\p{Cc}\p{Cf}\p{Cs}\p{Zl}\p{Zp}\p{Zs}/:]+)(?:\/([^\p{Cc}\p{Cf}\p{Cs}\p{Zl}\p{Zp}\p{Zs}:]+))?$/u;
+
+function trailingEmojiToken(value) {
+    const token = String(value || '');
+    const match = EMOJI_AUTOCOMPLETE_RE.exec(token);
+    if (!match) {
+        return '';
+    }
+
+    const start = match.index;
+    if (start > 0 && /[\p{L}\p{N}_]/u.test(token[start - 1])) {
+        return '';
+    }
+
+    return match[0];
+}
+
 export default {
     components: {
         AutoComplete,
@@ -921,9 +938,28 @@ export default {
             if (selectedItem && selectedItem.limnoria) {
                 const prefix = selectedItem.prefix || '/lim ';
                 this.$refs.input.setPlainText(prefix + selectedValue);
+            } else if (selectedItem && selectedItem.type === 'emoji') {
+                this.applyEmojiAutocompleteValue(selectedValue);
             } else if (selectedValue.length > 0) {
                 this.$refs.input.setCurrentWord(selectedValue);
             }
+        },
+        applyEmojiAutocompleteValue(selectedValue) {
+            const currentWord = this.$refs.input.getCurrentWord();
+            const prefix = currentWord.word.substr(0, currentWord.position);
+            const token = this.emojiAutocompleteToken(prefix);
+
+            if (!token) {
+                this.$refs.input.setCurrentWord(selectedValue);
+                return;
+            }
+
+            const tokenStart = prefix.length - token.length;
+            this.$refs.input.setCurrentWord(
+                prefix.substr(0, tokenStart) + selectedValue,
+                false,
+                true
+            );
         },
         onAutocompleteCancel() {
             this.clearLimnoriaPending();
@@ -1125,6 +1161,10 @@ export default {
             let limnoriaItems = this.shouldCompleteLimnoria(inputVal) ?
                 this.limnoriaCommandSuggestionsFor(inputVal) :
                 [];
+            let emojiToken = this.emojiAutocompleteToken(currentToken);
+            let emojiItems = emojiToken ?
+                Emoji.getEmojiAutocompleteItems(emojiToken, this.buffer) :
+                [];
 
             if (event.key === 'Escape' && this.autocomplete_open) {
                 this.onAutocompleteCancel();
@@ -1151,7 +1191,16 @@ export default {
                 // next arrow falls through to message history instead.
                 this.autocomplete_open = false;
             } else if (this.autocomplete_open) {
-                if (!this.autocomplete_limnoria &&
+                if (!this.autocomplete_limnoria && emojiToken) {
+                    if (emojiItems.length) {
+                        this.autocomplete_items = emojiItems;
+                        this.autocomplete_filtering = true;
+                    } else {
+                        this.autocomplete_open = false;
+                    }
+                } else if (!this.autocomplete_limnoria && this.isEmojiAutocomplete()) {
+                    this.autocomplete_open = false;
+                } else if (!this.autocomplete_limnoria &&
                     /^\/lim\s+/i.test(inputVal) &&
                     limnoriaItems.length === 0
                 ) {
@@ -1216,6 +1265,9 @@ export default {
                 // Completing a BouncerServ argument: suggest subcommands
                 this.openAutoComplete(bncArgItems);
                 this.autocomplete_filtering = true;
+            } else if (emojiToken && emojiItems.length > 0) {
+                this.openAutoComplete(emojiItems);
+                this.autocomplete_filtering = true;
             } else if (
                 event.key === 'Tab'
                 && !event.shiftKey
@@ -1242,7 +1294,7 @@ export default {
                 this.autocomplete_filtering &&
                 !this.autocomplete_limnoria
             ) {
-                this.autocomplete_filter = currentToken;
+                this.autocomplete_filter = emojiToken || currentToken;
             }
         },
         submitForm() {
@@ -1273,7 +1325,7 @@ export default {
             }
 
             if (this.$state.setting('buffers.emoji_convert_as_typed') && (!this.network || this.network.isUtf8)) {
-                ircText = Emoji.replaceShortcodes(ircText);
+                ircText = Emoji.replaceShortcodes(ircText, this.buffer);
             }
 
             this.$state.$emit('input.raw', ircText);
@@ -1333,11 +1385,24 @@ export default {
         maybeReplaceEmoji() {
             if (this.$state.setting('buffers.emoji_convert_as_typed') && (!this.network || this.network.isUtf8)) {
                 let currentWord = this.$refs.input.getCurrentWord(true);
-                let emojis = EmojiProvider.getEmojis(currentWord.word);
+                let emojis = EmojiProvider.getEmojis(currentWord.word, this.buffer);
                 if (emojis.length && emojis[0].char) {
-                    this.$refs.input.setCurrentWord(emojis[0].char, false, true);
+                    const emoji = emojis[0];
+                    const replacement = currentWord.word.substr(0, emoji.index) +
+                        emoji.char +
+                        currentWord.word.substr(emoji.index + emoji.match.length);
+                    this.$refs.input.setCurrentWord(replacement, false, true);
                 }
             }
+        },
+        shouldCompleteEmoji(currentToken) {
+            return !!trailingEmojiToken(currentToken);
+        },
+        emojiAutocompleteToken(currentToken) {
+            return trailingEmojiToken(currentToken);
+        },
+        isEmojiAutocomplete() {
+            return this.autocomplete_items.some((item) => item.type === 'emoji');
         },
         shouldCompleteNickserv(inputVal) {
             if (!inputVal || !this.network || !this.network.isErgo) {

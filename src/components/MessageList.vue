@@ -122,6 +122,7 @@ import * as Misc from '@/helpers/Misc';
 import { createNickColour } from '@/helpers/TextFormatting';
 import Logger from '@/libs/Logger';
 import * as bufferTools from '@/libs/bufferTools';
+import { isEmojiOnlyBlocks } from '@/libs/EmojiProvider';
 import { isPreviewCard } from '@/helpers/BridgeCard';
 import RemoveBeforeUpdate from './utils/RemoveBeforeUpdate';
 import MessageListMessageCompact from './MessageListMessageCompact';
@@ -382,6 +383,23 @@ export default {
             return format ?
                 strftime(format, new Date(time)) :
                 (new Date(time)).toLocaleString();
+        },
+        isEmojiOnlyMessage(message) {
+            if (!message || message.is_redacted || message.bodyTemplate ||
+                (message.embed && message.embed.payload) ||
+                !this.buffer || this.buffer.isSpecial()
+            ) {
+                return false;
+            }
+
+            const type = (message.type || '').toLowerCase();
+            if (['privmsg', 'message', 'action', 'notice'].indexOf(type) === -1) {
+                return false;
+            }
+
+            return isEmojiOnlyBlocks(
+                message.toBlocks(this.buffer, this.useExtraFormatting)
+            );
         },
         formatMessage(message) {
             let showRedactions = this.bufferSetting('show_redactions');

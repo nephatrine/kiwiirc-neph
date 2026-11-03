@@ -2,7 +2,7 @@
     <div class="kiwi-autocomplete kiwi-theme-bg">
         <div
             v-for="item in filteredAndLimitedItems"
-            :key="item.type + item.text"
+            :key="item.type + (item.filterText || item.text)"
             :class="[
                 'kiwi-autocomplete-item',
                 `kiwi-autocomplete-type--${item.type ? item.type : 'default'}`,
@@ -12,7 +12,28 @@
             @mousedown.prevent
             @click="handleClick(item)"
         >
-            <span class="kiwi-autocomplete-item-value"><emoji-text :text="item.text" /><span
+            <span
+                v-if="item.type === 'emoji'"
+                class="kiwi-autocomplete-item-value kiwi-autocomplete-item-value--emoji"
+            >
+                <span class="kiwi-autocomplete-emoji-name">
+                    <emoji-text :text="item.name || item.text" />
+                </span>
+                <span class="kiwi-autocomplete-emoji-symbol">
+                    <img
+                        v-if="item.url"
+                        :src="item.url"
+                        :alt="item.alt || item.name"
+                        class="kiwi-autocomplete-emoji-image"
+                    >
+                    <template v-else>{{ item.char }}</template>
+                </span>
+                <span
+                    class="kiwi-autocomplete-emoji-source"
+                    :title="emojiSourceTitle(item)"
+                >{{ emojiSource(item) }}</span>
+            </span>
+            <span v-else class="kiwi-autocomplete-item-value"><emoji-text :text="item.text" /><span
                 v-if="item.badge"
                 :class="['kiwi-autocomplete-badge', `kiwi-autocomplete-badge--${item.badge.toLowerCase()}`]"
             >{{ item.badge }}</span></span>
@@ -71,7 +92,8 @@ export default {
 
             return this.items.filter((item) => {
                 let s = false;
-                if (item.text.toLowerCase().indexOf(filterVal) === 0) {
+                const filterText = item.filterText || item.text;
+                if (filterText.toLowerCase().indexOf(filterVal) === 0) {
                     s = true;
                 }
 
@@ -153,6 +175,21 @@ export default {
         resetSelection() {
             this.selected_idx = 0;
         },
+        emojiSource(item) {
+            if (item.packName) {
+                return item.packName;
+            }
+            if (item.packId) {
+                return item.packId;
+            }
+            return this.$t('emoji_source_' + item.sourceType);
+        },
+        emojiSourceTitle(item) {
+            return [item.packId, item.channelName].filter(Boolean).join(' · ');
+        },
+        itemValue(item) {
+            return item.insertText || item.value || item.text;
+        },
         handleOnKeyDown(event) {
             let handled = false;
 
@@ -170,7 +207,7 @@ export default {
                 if (!this.selectedItem) {
                     this.cancel();
                 } else if (event.key === ' ' &&
-                    /\s/.test(this.selectedItem.value || this.selectedItem.text || '')
+                    /\s/.test(this.itemValue(this.selectedItem) || '')
                 ) {
                     // A space should not replace the input with a multi-word
                     // suggestion. Let the space be typed instead.
@@ -244,7 +281,7 @@ export default {
         handleClick(item) {
             this.selected_idx = item.idx;
             this.selectCurrentItem();
-            this.$emit('click', item.value || item.text, item);
+            this.$emit('click', this.itemValue(item), item);
         },
         openQuery(nick) {
             let buffer = this.$state.addBuffer(this.buffer.networkid, nick);
@@ -256,14 +293,14 @@ export default {
             if (!item) {
                 return;
             }
-            this.$emit('temp', item.value || item.text, item);
+            this.$emit('temp', this.itemValue(item), item);
         },
         selectCurrentItem() {
             let item = this.selectedItem;
             let value = '';
 
             if (item) {
-                value = item.value || item.text;
+                value = this.itemValue(item);
             }
 
             this.$emit('selected', value, item);
@@ -293,6 +330,43 @@ export default {
 
 .kiwi-autocomplete-item-value {
     font-weight: 700;
+}
+
+.kiwi-autocomplete-item-value--emoji {
+    display: grid;
+    grid-template-columns: minmax(7em, 1fr) 1.5em minmax(7em, 1fr);
+    align-items: center;
+    column-gap: 8px;
+    font-weight: 400;
+}
+
+.kiwi-autocomplete-emoji-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 700;
+}
+
+.kiwi-autocomplete-emoji-symbol {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5em;
+    height: 1.5em;
+    font-size: 1.1em;
+}
+
+.kiwi-autocomplete-emoji-image {
+    width: 1.25em;
+    height: 1.25em;
+    object-fit: contain;
+}
+
+.kiwi-autocomplete-emoji-source {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0.7;
 }
 
 .kiwi-autocomplete-type--command {
@@ -389,6 +463,12 @@ export default {
 
         .kiwi-autocomplete-item-details {
             float: unset;
+        }
+    }
+
+    .kiwi-autocomplete-type--emoji {
+        .kiwi-autocomplete-item-value {
+            grid-column: span 3;
         }
     }
 

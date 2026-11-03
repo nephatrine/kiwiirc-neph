@@ -19,6 +19,7 @@ function scrollContext(sections, activeCategory = 'a') {
         scrollTargetTop: null,
         scrollTimer: null,
         categories: Object.keys(sections).map((id) => ({ id })),
+        pickerCategories: Object.keys(sections).map((id) => ({ id })),
         activeCategory,
         $refs: refs,
         clearScrollTarget: EmojiPicker.methods.clearScrollTarget,
@@ -71,6 +72,7 @@ describe('Emoji picker category highlighting', () => {
             scrollTargetTop: null,
             scrollTimer: null,
             categories: [{ id: 'b' }],
+            pickerCategories: [{ id: 'b' }],
             $refs: {
                 scroller,
                 'cat-b': [el],

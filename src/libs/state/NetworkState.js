@@ -87,6 +87,11 @@ export default class NetworkState {
             // Empty means use the admin/service default.
             fileuploadService: '',
             fileuploadRetention: '',
+            // channel -> emoji pack load policy entry
+            emojiChannelPolicies: {},
+            emojiChannelPoliciesMigrated: false,
+            // channel -> selected channel emoji pack ids
+            emojiPackSelections: {},
         };
         this.nick = '';
         this.username = '';

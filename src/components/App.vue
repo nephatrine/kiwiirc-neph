@@ -68,6 +68,7 @@
         </template>
         <AvatarCommon />
         <emoji-picker />
+        <emoji-pack-prompt />
         <redaction-prompt />
         <hex-color-picker />
         <media-lightbox />
@@ -87,6 +88,7 @@ import ControlInput from '@/components/ControlInput';
 import MediaViewer from '@/components/MediaViewer';
 import AvatarCommon from '@/components/UserAvatarCommon';
 import EmojiPicker from '@/components/EmojiPicker';
+import EmojiPackPrompt from '@/components/EmojiPackPrompt';
 import RedactionPrompt from '@/components/RedactionPrompt';
 import HexColorPicker from '@/components/HexColorPicker';
 import MediaLightbox from '@/components/MediaLightbox';
@@ -107,6 +109,7 @@ export default {
         MediaViewer,
         AvatarCommon,
         EmojiPicker,
+        EmojiPackPrompt,
         RedactionPrompt,
         HexColorPicker,
         MediaLightbox,

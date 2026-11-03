@@ -47,7 +47,7 @@ module.exports = {
             symlinks: false,
         },
         performance: {
-            maxEntrypointSize: 1783539, // 1.7MiB
+            maxEntrypointSize: 1835008, // 1.75MiB
             maxAssetSize: 1048576, // 1MiB
         },
         optimization: {

@@ -1689,6 +1689,106 @@ msgstr "Display Shortcodes As Emoji"
 msgid "settings_emoji_convert_as_typed"
 msgstr "Convert Shortcodes To Emoji"
 
+#: Load network and server emoji packs automatically
+msgid "settings_remote_emoji_packs"
+msgstr "Load Remote Emoji Packs"
+
+#: Remote emoji packs warning
+msgid "settings_remote_emoji_packs_hint"
+msgstr "Remote packs may contact third-party servers and reveal your IP address."
+
+#: Channel emoji pack settings
+msgid "settings_emoji_packs"
+msgstr "Emoji Packs"
+
+#: Channel emoji pack warning
+msgid "settings_emoji_packs_warning"
+msgstr "Loading channel packs contacts third-party URLs and may reveal your IP address."
+
+#: Channel emoji pack policy
+msgid "settings_emoji_packs_policy"
+msgstr "Load Packs"
+
+#: Channel emoji pack policy option
+msgid "settings_emoji_packs_policy_prompt"
+msgstr "Prompt"
+
+#: Channel emoji pack policy option
+msgid "settings_emoji_packs_policy_always"
+msgstr "Always"
+
+#: Channel emoji pack policy option
+msgid "settings_emoji_packs_policy_never"
+msgstr "Never"
+
+#: Channel emoji pack prompt policy hint
+msgid "settings_emoji_packs_policy_prompt_hint"
+msgstr "Pack files load only when an emoji from this channel is used."
+
+#: Channel not joined label
+msgid "settings_emoji_packs_not_joined"
+msgstr "Not Joined"
+
+#: Waiting for channel metadata
+msgid "settings_emoji_packs_metadata_pending"
+msgstr "Waiting for channel metadata..."
+
+#: Channel emoji pack prompt title
+msgid "emoji_pack_prompt_title"
+msgstr "Load Emoji Packs?"
+
+#: Channel emoji pack prompt body
+msgid "emoji_pack_prompt_body"
+msgstr "Load emoji packs from {{channel}}? Kiwi will request the channel metadata and fetch remote pack files."
+
+#: Channel emoji pack prompt reference
+msgid "emoji_pack_prompt_reference"
+msgstr "Referenced emoji: {{emoji}}"
+
+#: Channel emoji pack prompt hint
+msgid "emoji_pack_prompt_hint"
+msgstr "You can change this later in the network's emoji pack settings."
+
+#: Channel emoji pack prompt decline
+msgid "emoji_pack_prompt_never"
+msgstr "Don't Load"
+
+#: Channel emoji pack prompt accept
+msgid "emoji_pack_prompt_load"
+msgstr "Load"
+
+#: Load channel emoji pack list
+msgid "settings_emoji_packs_load"
+msgstr "Load Pack List"
+
+#: Refresh channel emoji pack list
+msgid "settings_emoji_packs_refresh"
+msgstr "Refresh Pack List"
+
+#: Channel emoji pack loading state
+msgid "settings_emoji_packs_loading"
+msgstr "Loading pack list..."
+
+#: Channel emoji pack detected state
+msgid "settings_emoji_packs_detected"
+msgstr "Pack source detected. Set this channel to Always to load it."
+
+#: Channel emoji pack error
+msgid "settings_emoji_packs_error"
+msgstr "Could not load emoji packs:"
+
+#: Channel emoji pack list empty
+msgid "settings_emoji_packs_empty"
+msgstr "No packs found."
+
+#: Channel emoji pack unsupported
+msgid "settings_emoji_packs_unsupported"
+msgstr "This pack requires unsupported extensions and will not be used."
+
+#: Channel emoji pack homepage
+msgid "settings_emoji_packs_homepage"
+msgstr "Pack Homepage"
+
 #: Netsplit summary
 msgid "netsplit_summary"
 msgstr "{{count}} users have timed out from {{remote}}."
@@ -2157,3 +2257,23 @@ msgstr "Enter a Limnoria command after /lim."
 #: Limnoria prefix commands require a channel with the bot present.
 msgid "limnoria_prefix_unavailable"
 msgstr "Limnoria prefix commands require a channel with the bot present."
+
+#: Custom emoji category
+msgid "custom_emojis"
+msgstr "Custom"
+
+#: Emoji source label
+msgid "emoji_source_local"
+msgstr "Local"
+
+#: Emoji source label
+msgid "emoji_source_server"
+msgstr "Server"
+
+#: Emoji source label
+msgid "emoji_source_channel"
+msgstr "Channel"
+
+#: Emoji source label
+msgid "emoji_source_unicode"
+msgstr "Unicode"

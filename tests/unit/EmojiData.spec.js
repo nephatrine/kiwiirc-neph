@@ -146,6 +146,21 @@ describe('JoyPixels emoji data', () => {
         expect(getEmojis(':piñata:')[0].char).toBe('🪅');
     });
 
+    it('reports the matched shortcode position after punctuation', () => {
+        expect(getEmojis('ten-:smile:')[0]).toMatchObject({
+            shortcode: 'smile',
+            char: '😄',
+            index: 4,
+            match: ':smile:',
+        });
+        expect(getEmojis('ten:joy:')[0]).toMatchObject({
+            shortcode: 'joy',
+            char: '😂',
+            index: 3,
+            match: ':joy:',
+        });
+    });
+
     it('maps every primary and alias to its entry character', () => {
         allEmojis.forEach((emoji) => {
             expect(shortcodeToChar[emoji.shortcode]).toBe(emoji.char);

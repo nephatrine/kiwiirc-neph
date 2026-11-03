@@ -104,6 +104,7 @@ These extensions are not widely supported and may be subject to changes or never
 end up as official drafts specs.
 
 - [Autocomplete Client Tags](https://github.com/ircv3/ircv3-specifications/blob/cab233501c451a42262db1519ea294ab72079122/client-tags/autocomplete.md)
+- [Custom Emoji](https://github.com/ircv3/ircv3-specifications/blob/12a841ca77aee21ec699740aa40367488cbed32d/extensions/custom-emoji.md)
 - [Metadata v3](https://github.com/ircv3/ircv3-specifications/blob/31f377bbd0acc2afd8f89aa99cbd05e570707657/extensions/metadata.md)
 - [Persistence](https://github.com/ircv3/ircv3-specifications/blob/b016f41d920494394d0a210317948489818295eb/extensions/persistence.md)
 
@@ -257,6 +258,22 @@ storage, subscriptions, or polling. It is a one-shot read-only description of a
 relayed user for the lifetime of the client session.
 
 ## Specification Deviations
+
+### Custom Emoji
+
+We render custom emoji in circumstances the proposed spec does not allow. This
+does match Discord's emoji handling much better, but it does leave you without
+any way to "escape" a shortcode sequence. So we have made another deviation in
+that we do not render shortcodes inside a code/monospace block, which also
+matches Discord's behavior.
+
+We also are more permissive in allowing cross-channel packs to be used by
+`packid` even if their pack ID does not contain the channel name. My original
+reading of the spec was that the channel name in a pack ID triggers the
+cross-channel METADATA GET and so was helpful for allowing users in that other
+channel to see the emote properly, but was not a hard requirement for rendering
+cross-channel emotes. The spec author cleared this up, but we retain our
+original relaxed implementation.
 
 ### Message Redaction
 

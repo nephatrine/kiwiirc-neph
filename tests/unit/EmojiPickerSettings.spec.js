@@ -51,3 +51,60 @@ describe('Emoji picker version setting', () => {
         expect(emojis.some((emoji) => emoji.shortcode === 'zap')).toBe(true);
     });
 });
+
+describe('Emoji picker custom items', () => {
+    function clickContext(picker) {
+        return {
+            $state: { ui: { emoji_picker: picker } },
+            close: jest.fn(),
+        };
+    }
+
+    it('inserts a custom token into the input', () => {
+        const ircinput = { insertText: jest.fn() };
+        const context = clickContext({
+            type: 'input',
+            ircinput,
+        });
+
+        EmojiPicker.methods.onEmojiClick.call(context, {
+            char: '',
+            insertText: ':kiwi/#test:',
+        });
+
+        expect(ircinput.insertText).toHaveBeenCalledWith(':kiwi/#test:');
+        expect(context.close).toHaveBeenCalled();
+    });
+
+    it('reacts with a custom token', () => {
+        const buffer = { react: jest.fn() };
+        const message = { id: 1 };
+        const context = clickContext({
+            type: 'reaction',
+            buffer,
+            message,
+        });
+
+        EmojiPicker.methods.onEmojiClick.call(context, {
+            char: '',
+            insertText: ':kiwi:',
+        });
+
+        expect(buffer.react).toHaveBeenCalledWith(message, ':kiwi:');
+        expect(context.close).toHaveBeenCalled();
+    });
+
+    it('still inserts unicode characters', () => {
+        const ircinput = { insertText: jest.fn() };
+        const context = clickContext({
+            type: 'input',
+            ircinput,
+        });
+
+        EmojiPicker.methods.onEmojiClick.call(context, {
+            char: '👍',
+        });
+
+        expect(ircinput.insertText).toHaveBeenCalledWith('👍');
+    });
+});

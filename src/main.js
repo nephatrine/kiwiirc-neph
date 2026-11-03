@@ -16,6 +16,7 @@ import startupPersonal from '@/components/startups/Personal';
 import Logger from '@/libs/Logger';
 import ConfigLoader, { parseConfigText } from '@/libs/ConfigLoader';
 import { loadJson5 } from '@/libs/Json5Loader';
+import { initEmojiPacks as initEmojiPackStore } from '@/libs/EmojiPackStore';
 import getState from '@/libs/state';
 import { installGlobalErrorHandlers } from '@/libs/GlobalErrorHandler';
 import ThemeManager from '@/libs/ThemeManager';
@@ -282,6 +283,7 @@ async function loadApp() {
     return (configObj ? configLoader.loadFromObj(configObj) : configLoader.loadFromUrl(configFile))
         .then(applyConfig)
         .then(initState)
+        .then(initEmojiPacks)
         .then(initInputCommands)
         .then(initLocales)
         .then(initThemes)
@@ -304,7 +306,7 @@ function applyConfig(config) {
 // Recursively merge an object onto another via Vue.$set
 function applyConfigObj(obj, target) {
     // Keys in the newObjects array will get new objects created (empty) before merging from config
-    let newObjects = ['emojis', 'autocompleteTokens'];
+    let newObjects = ['customEmojis', 'autocompleteTokens'];
     each(obj, (val, key) => {
         if (typeof val === 'object') {
             if (
@@ -573,6 +575,10 @@ function initThemes() {
     let argTheme = getQueryVariable('theme');
     let themeMgr = ThemeManager.instance(getState(), argTheme);
     api.setThemeManager(themeMgr);
+}
+
+function initEmojiPacks() {
+    initEmojiPackStore(getState());
 }
 
 function initJson5() {

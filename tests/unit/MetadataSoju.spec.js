@@ -122,6 +122,26 @@ describe('Soju metadata', () => {
         expect(metadataCommands(client)).toHaveLength(0);
     });
 
+    test('emits draft/emoji metadata for channels without buffers', () => {
+        const { s, network, client, getParsed } = setup();
+        const onMetadata = jest.fn();
+        s.$on('emoji.channel-metadata', onMetadata);
+
+        applyMetadata(
+            getParsed,
+            client,
+            '#remote',
+            'draft/emoji',
+            'https://emoji.example/remote.json'
+        );
+
+        expect(onMetadata).toHaveBeenCalledWith({
+            network,
+            channel: '#remote',
+            url: 'https://emoji.example/remote.json',
+        });
+    });
+
     test('opening a stale channel sends nothing but a stale query is fetched', () => {
         const { s, network, client } = setup({ maxKeys: '32' });
 

@@ -63,6 +63,9 @@ describe('ControlInput Limnoria autocomplete', () => {
             ensureLimnoriaCommands: ControlInput.methods.ensureLimnoriaCommands,
             limnoriaCommandSuggestionsFor: ControlInput.methods.limnoriaCommandSuggestionsFor,
             shouldCompleteLimnoria: ControlInput.methods.shouldCompleteLimnoria,
+            shouldCompleteEmoji: ControlInput.methods.shouldCompleteEmoji,
+            emojiAutocompleteToken: ControlInput.methods.emojiAutocompleteToken,
+            applyEmojiAutocompleteValue: ControlInput.methods.applyEmojiAutocompleteValue,
             openLimnoriaAutocomplete: ControlInput.methods.openLimnoriaAutocomplete,
             maybeRequestLimnoriaAutocomplete: ControlInput.methods.maybeRequestLimnoriaAutocomplete,
             limnoriaAutocompleteContext: ControlInput.methods.limnoriaAutocompleteContext,
@@ -463,5 +466,123 @@ describe('ControlInput input activity', () => {
         expect(context.$state.$emit).toHaveBeenCalledWith('input.activity', expect.objectContaining({
             textLength: 2,
         }));
+    });
+});
+
+describe('ControlInput emoji autocomplete', () => {
+    test('triggers only for partial shortcodes', () => {
+        const should = ControlInput.methods.shouldCompleteEmoji;
+
+        expect(should(':k')).toBe(true);
+        expect(should(':kiwi')).toBe(true);
+        expect(should(':kiwi:')).toBe(false);
+        expect(should('hello:k')).toBe(false);
+        expect(should(':')).toBe(false);
+    });
+
+    test('extracts adjacent emoji tokens after other emoji', () => {
+        const token = ControlInput.methods.emojiAutocompleteToken;
+        const should = ControlInput.methods.shouldCompleteEmoji;
+
+        expect(token(':wave::s')).toBe(':s');
+        expect(token('😀:s')).toBe(':s');
+        expect(token(':wave/#te')).toBe(':wave/#te');
+        expect(should(':wave::s')).toBe(true);
+        expect(should('😀:s')).toBe(true);
+        expect(should('hello:s')).toBe(false);
+        expect(token('hello:s')).toBe('');
+    });
+
+    test('replaces only the adjacent partial emoji token', () => {
+        const input = {
+            getCurrentWord: jest.fn(() => ({
+                word: ':wave::s',
+                position: 8,
+            })),
+            setCurrentWord: jest.fn(),
+        };
+        const context = {
+            $refs: { input },
+            emojiAutocompleteToken: ControlInput.methods.emojiAutocompleteToken,
+        };
+
+        ControlInput.methods.applyEmojiAutocompleteValue.call(context, ':smile:');
+
+        expect(input.setCurrentWord).toHaveBeenCalledWith(
+            ':wave::smile:',
+            false,
+            true
+        );
+    });
+
+    test('replaces a partial token that follows a unicode emoji', () => {
+        const input = {
+            getCurrentWord: jest.fn(() => ({
+                word: '😀:s',
+                position: 4,
+            })),
+            setCurrentWord: jest.fn(),
+        };
+        const context = {
+            $refs: { input },
+            emojiAutocompleteToken: ControlInput.methods.emojiAutocompleteToken,
+        };
+
+        ControlInput.methods.applyEmojiAutocompleteValue.call(context, ':smile:');
+
+        expect(input.setCurrentWord).toHaveBeenCalledWith(
+            '😀:smile:',
+            false,
+            true
+        );
+    });
+});
+
+describe('ControlInput as-typed emoji conversion', () => {
+    function makeContext(word) {
+        const input = {
+            getCurrentWord: jest.fn(() => ({
+                word,
+                position: word.length,
+            })),
+            setCurrentWord: jest.fn(),
+        };
+        return {
+            input,
+            context: {
+                $state: {
+                    setting: () => true,
+                },
+                network: {
+                    isUtf8: true,
+                },
+                buffer: undefined,
+                $refs: { input },
+            },
+        };
+    }
+
+    test('converts only the shortcode and preserves punctuation', () => {
+        const { context, input } = makeContext('ten-:smile:');
+
+        ControlInput.methods.maybeReplaceEmoji.call(context);
+
+        expect(input.setCurrentWord).toHaveBeenCalledWith('ten-😄', false, true);
+    });
+
+    test('handles a colon directly before the shortcode', () => {
+        const { context, input } = makeContext('ten:joy:');
+
+        ControlInput.methods.maybeReplaceEmoji.call(context);
+
+        expect(input.setCurrentWord).toHaveBeenCalledWith('ten😂', false, true);
+    });
+
+    test('preserves text after the shortcode', () => {
+        const { context, input } = makeContext(':smile:test');
+
+        ControlInput.methods.maybeReplaceEmoji.call(context);
+
+        expect(input.setCurrentWord).toHaveBeenCalledWith('😄test', false, true);
     });
 });

@@ -42,6 +42,7 @@ export default function metadataMiddleware(network) {
         'status',
         'color',
         'bot',
+        'draft/emoji',
     ];
 
     const initialSync = () => {
@@ -629,6 +630,13 @@ function updateMetadataState(network, target, key, value, event, isAuth) {
             if (network.isSoju()) {
                 applySojuBufferMetadata(buffer, key, sanitizedValue);
             }
+        }
+        if (key === 'draft/emoji') {
+            state.$emit('emoji.channel-metadata', {
+                network,
+                channel: target,
+                url: sanitizedValue,
+            });
         }
     } else {
         const user = isAuth ?

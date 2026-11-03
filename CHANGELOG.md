@@ -24,6 +24,10 @@ and this project adheres to
   for core plugins including Admin, Channel, Factoids, Karma, Quote, RSS, and
   Services. Commands use prefix or private delivery as appropriate, with remote
   autocomplete still available on Tab.
+- **Emoji**: Added local `customEmojis` for messages and reactions, IRCv3
+  `draft/EMOJI` server and `draft/emoji` channel packs, per-channel loading
+  policies, prompts for unknown channel packs, a custom picker category, and
+  pack-aware autocomplete.
 - **Media & Previews**: Added X/Twitter media previews and Libera network icons.
 - **Plugins**: Added an app-level `addUi('app', ...)` mount point, an
   `input.activity` event, and a generic media playback registry.
@@ -49,6 +53,8 @@ and this project adheres to
 - **Chat Behavior**: `@everyone` replaces `@everybody`, consecutive replies to
   the same message show one preview, CTCP auto-replies are available, operator
   login posts a visible line, and bot badges use Boxicons.
+- **Emoji & Messages**: Emoji tokens render after punctuation. The Modern layout
+  enlarges emoji-only messages to 3em.
 - **Themes & UI**: NephDeck is now one theme with Amber, Green, and Cyan
   presets; Boxicons replaces Font Awesome; action buttons, disabled controls,
   emoji metadata, and radio styling are unified; the radio player ships as a
@@ -57,6 +63,8 @@ and this project adheres to
 - **Build & Performance**: Replaced several third-party libraries to reduce the
   client bundle by about 86 KB, direct connections request the IRCv3
   `text.ircv3.net` subprotocol, and production builds minify static assets.
+  Unicode emoji data, the Limnoria command index, and JSON5 now load in separate
+  chunks, and release builds omit source maps.
 - **Metadata**: Servers advertising `max-keys=0` no longer receive Kiwi's own
   metadata requests, Soju's pinned/muted/blocked keys remain mapped to settings,
   and subscriptions use one per-connection key list.
@@ -65,6 +73,8 @@ and this project adheres to
 
 - **Embedly**: Removed optional Embedly card support and the `embedly`
   configuration. Existing blocks are ignored.
+- **Configuration**: Removed the legacy `emojis` and `emojiLocation` keys in
+  favor of `customEmojis`.
 
 ### Fixed
 
@@ -78,7 +88,9 @@ and this project adheres to
   keep their prefix, redactions and spoilers behave correctly, and `/roll`, CTCP
   relay metadata, SASL `900` after `001`, current-account tracking,
   team-highlight word boundaries, WHO throttling, and echo matching are
-  corrected.
+  corrected. As-typed emoji conversion replaces only the matched shortcode,
+  preserving surrounding text such as `ten-:smile:`, and shortcodes stay literal
+  inside monospace or code blocks.
 - **UI & Themes**: Bongo animation frames preload, modern-layout hover padding
   is fixed, emoji categories track scrolling, link preview handles open
   correctly, links without native media no longer show preview controls, network

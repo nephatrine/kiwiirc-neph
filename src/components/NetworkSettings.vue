@@ -376,6 +376,10 @@
                 </button>
             </div>
         </div>
+        <emoji-packs
+            v-if="hasEmojiPacks && remoteEmojiPacksEnabled"
+            :network="network"
+        />
     </div>
 </template>
 
@@ -384,6 +388,7 @@
 
 import * as Misc from '@/helpers/Misc';
 import Captcha from '@/components/Captcha';
+import { loadEmojiPacksSettings } from '@/libs/LazyLoad';
 import NetworkPreferencesMixin from './NetworkPreferencesMixin';
 import ServerSelector from './ServerSelector';
 import {
@@ -392,10 +397,15 @@ import {
     withinLimit
 } from '@/helpers/LoginFields';
 
+const EmojiPacks = (resolve, reject) => {
+    loadEmojiPacksSettings().then(resolve).catch(reject);
+};
+
 export default {
     components: {
         ServerSelector,
         Captcha,
+        EmojiPacks,
     },
     mixins: [NetworkPreferencesMixin],
     props: ['network'],
@@ -432,6 +442,24 @@ export default {
         },
         showNetworkPreferences() {
             return this.$state.networks.length > 1 && this.network.state === 'connected';
+        },
+        remoteEmojiPacksEnabled() {
+            return this.$state.setting('remoteEmojiPacks') !== false;
+        },
+        hasEmojiPacks() {
+            const policies = this.network.setting('emojiChannelPolicies') || {};
+            if (Object.keys(policies).length > 0) {
+                return true;
+            }
+            const selections = this.network.setting('emojiPackSelections') || {};
+            if (Object.keys(selections).length > 0) {
+                return true;
+            }
+            return this.network.buffers.some((buffer) => (
+                buffer.isChannel() &&
+                buffer.metadata &&
+                buffer.metadata['draft/emoji']
+            ));
         },
         nickLen() {
             return this.supportLimit('NICKLEN');

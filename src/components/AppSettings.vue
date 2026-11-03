@@ -117,6 +117,13 @@
                                 <input v-model="settingBufferEmojiConvertAsTyped" type="checkbox">
                             </label>
                             <label
+                                class="u-checkbox-wrapper"
+                                :title="$t('settings_remote_emoji_packs_hint')"
+                            >
+                                <span>{{ $t('settings_remote_emoji_packs') }} </span>
+                                <input v-model="settingRemoteEmojiPacks" type="checkbox">
+                            </label>
+                            <label
                                 v-if="emojiPickerEnabled"
                                 class="kiwi-appsettings-messagelistDisplay"
                             >
@@ -462,6 +469,7 @@ export default {
         settingBufferShowTimestamps: bindSetting('buffers.show_timestamps'),
         settingBufferEmojiConvertIncoming: bindSetting('buffers.emoji_convert_incoming'),
         settingBufferEmojiConvertAsTyped: bindSetting('buffers.emoji_convert_as_typed'),
+        settingRemoteEmojiPacks: bindSetting('remoteEmojiPacks'),
         settingBufferBlockPms: bindSetting('buffers.block_pms'),
         settingBufferScrollbackSize: bindSetting('buffers.scrollback_size'),
         settingBufferExtraFormatting: bindSetting('buffers.extra_formatting'),

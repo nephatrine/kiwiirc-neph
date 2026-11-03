@@ -14,7 +14,7 @@
                 </div>
                 <div class="kiwi-emojipicker-categories" @mousedown.prevent>
                     <div
-                        v-for="cat in categories"
+                        v-for="cat in pickerCategories"
                         :key="cat.id"
                         :title="cat.label"
                         :class="{ 'kiwi-emojipicker-category--active': activeCategory === cat.id }"
@@ -41,18 +41,23 @@
                         <div class="kiwi-emojipicker-category-list">
                             <div
                                 v-for="emoji in filteredEmojis"
-                                :key="emoji.shortcode"
-                                :title="emoji.shortcode"
+                                :key="emojiKey(emoji)"
+                                :title="emoji.label || emoji.shortcode"
                                 class="kiwi-emojipicker-emoji"
-                                @click="onEmojiClick(emoji.char)"
+                                @click="onEmojiClick(emoji)"
                             >
-                                {{ emoji.char }}
+                                <lazy-emoji-image
+                                    v-if="emoji.url"
+                                    :src="emoji.url"
+                                    :alt="emoji.alt || emoji.label"
+                                />
+                                <template v-else>{{ emoji.char }}</template>
                             </div>
                         </div>
                     </div>
                     <template v-else>
                         <div
-                            v-for="cat in categories"
+                            v-for="cat in pickerCategories"
                             :key="cat.id"
                             :ref="`cat-${cat.id}`"
                             class="kiwi-emojipicker-category-section"
@@ -61,12 +66,17 @@
                             <div class="kiwi-emojipicker-category-list">
                                 <div
                                     v-for="emoji in visibleEmojiData[cat.id] || []"
-                                    :key="emoji.shortcode"
-                                    :title="emoji.shortcode"
+                                    :key="emojiKey(emoji)"
+                                    :title="emoji.label || emoji.shortcode"
                                     class="kiwi-emojipicker-emoji"
-                                    @click="onEmojiClick(emoji.char)"
+                                    @click="onEmojiClick(emoji)"
                                 >
-                                    {{ emoji.char }}
+                                    <lazy-emoji-image
+                                        v-if="emoji.url"
+                                        :src="emoji.url"
+                                        :alt="emoji.alt || emoji.label"
+                                    />
+                                    <template v-else>{{ emoji.char }}</template>
                                 </div>
                             </div>
                         </div>
@@ -83,11 +93,16 @@
 import { categories } from '@/res/emojiLookup';
 import { emojiMatches, filterEmojiData } from '@/helpers/Emoji';
 import { loadEmojiData } from '@/libs/LazyLoad';
+import { getCustomEmojiPickerItems } from '@/libs/EmojiPackStore';
 import Logger from '@/libs/Logger';
+import LazyEmojiImage from '@/components/utils/LazyEmojiImage';
 
 let log = Logger.namespace('EmojiPicker');
 
 export default {
+    components: {
+        LazyEmojiImage,
+    },
     data() {
         return {
             filter: '',
@@ -108,11 +123,31 @@ export default {
             const value = Number(this.$state.setting('emojiPickerMaxVersion'));
             return Number.isFinite(value) ? value : 0;
         },
+        pickerBuffer() {
+            return this.$state.ui.emoji_picker.buffer || this.$state.getActiveBuffer();
+        },
+        customEmojiItems() {
+            return getCustomEmojiPickerItems(this.pickerBuffer);
+        },
+        pickerCategories() {
+            if (!this.customEmojiItems || !this.customEmojiItems.length) {
+                return this.categories;
+            }
+            return this.categories.concat([{
+                id: 'custom',
+                label: this.$t('custom_emojis'),
+                icon: 'bx-star',
+            }]);
+        },
         visibleEmojiData() {
             if (!this.emojiData) {
                 return {};
             }
-            return filterEmojiData(this.emojiData, this.emojiPickerMaxVersion);
+            const data = filterEmojiData(this.emojiData, this.emojiPickerMaxVersion);
+            if (this.customEmojiItems && this.customEmojiItems.length) {
+                data.custom = this.customEmojiItems;
+            }
+            return data;
         },
         filteredEmojis() {
             const results = [];
@@ -167,12 +202,25 @@ export default {
                 this.emojiDataLoading = false;
             }
         },
-        onEmojiClick(emojiChar) {
+        emojiKey(emoji) {
+            return [
+                emoji.shortcode,
+                emoji.sourceType || '',
+                emoji.packId || '',
+                emoji.channelName || '',
+            ].join('|');
+        },
+        onEmojiClick(emoji) {
+            const value = emoji.insertText || emoji.char;
+            if (!value) {
+                return;
+            }
+
             const picker = this.$state.ui.emoji_picker;
             if (picker.type === 'input' && picker.ircinput) {
-                picker.ircinput.insertText(emojiChar);
+                picker.ircinput.insertText(value);
             } else if (picker.type === 'reaction' && picker.buffer && picker.message) {
-                picker.buffer.react(picker.message, emojiChar);
+                picker.buffer.react(picker.message, value);
             }
             this.close();
         },
@@ -220,8 +268,8 @@ export default {
             }
 
             const scrollerTop = scroller.getBoundingClientRect().top;
-            let active = this.categories[0].id;
-            this.categories.forEach((cat) => {
+            let active = this.pickerCategories[0].id;
+            this.pickerCategories.forEach((cat) => {
                 const el = this.$refs[`cat-${cat.id}`] &&
                     this.$refs[`cat-${cat.id}`][0];
                 if (el && el.getBoundingClientRect().top <= scrollerTop + 1) {

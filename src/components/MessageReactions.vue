@@ -1,19 +1,24 @@
 <template>
     <div v-if="hasReactions && !message.is_redacted" class="kiwi-messagereactions">
         <div
-            v-for="(reaction, emoji) in message.reactions"
-            :key="emoji"
+            v-for="item in displayReactions"
+            :key="item.emoji"
             :class="{
-                'kiwi-messagereactions-reaction--reacted': reaction.reacted,
-                'kiwi-messagereactions-reaction--pending': isPending(reaction),
+                'kiwi-messagereactions-reaction--reacted': item.reaction.reacted,
+                'kiwi-messagereactions-reaction--pending': isPending(item.reaction),
             }"
-            :title="reaction.users.join(', ')"
+            :title="item.title"
             class="kiwi-messagereactions-reaction"
-            @click.stop="onReactionClick(emoji)"
+            @click.stop="onReactionClick(item.emoji)"
         >
-            <span v-if="getEmojiUrl(emoji)" :style="{ 'background-image': `url(${getEmojiUrl(emoji)})` }" class="kiwi-messagereactions-emoji-img" />
-            <span v-else class="kiwi-messagereactions-emoji-text">{{ emoji }}</span>
-            <span class="kiwi-messagereactions-count">{{ reaction.count }}</span>
+            <img
+                v-if="item.url"
+                :src="item.url"
+                :alt="item.alt"
+                class="kiwi-messagereactions-emoji-img"
+            >
+            <span v-else class="kiwi-messagereactions-emoji-text">{{ item.text }}</span>
+            <span class="kiwi-messagereactions-count">{{ item.reaction.count }}</span>
         </div>
     </div>
 </template>
@@ -21,8 +26,7 @@
 <script>
 'kiwi public';
 
-import { curatedEmojis } from '@/helpers/Emoji';
-import { each } from '@/helpers/Utils';
+import { reactionDisplay } from '@/helpers/Emoji';
 
 export default {
     props: ['buffer', 'message'],
@@ -30,22 +34,20 @@ export default {
         hasReactions() {
             return Object.keys(this.message.reactions).length > 0;
         },
-        emojiLocation() {
-            return this.$state.setting('emojiLocation');
-        },
-        emojiMap() {
-            // Map emoji characters to their image filenames
-            const emojis = this.$state.setting('emojis');
-            const map = {};
-            each(emojis, (filename, ascii) => {
-                if (!filename) return;
-                map[ascii] = filename;
+        displayReactions() {
+            return Object.entries(this.message.reactions).map(([emoji, reaction]) => {
+                const display = reactionDisplay(emoji, this.buffer);
+                const users = (reaction.users || []).join(', ');
+                return {
+                    emoji,
+                    reaction,
+                    url: display.url,
+                    alt: display.alt || display.label,
+                    text: display.text,
+                    label: display.label,
+                    title: users ? `${display.label}\n${users}` : display.label,
+                };
             });
-            // Ensure curated emojis are in the map
-            curatedEmojis.forEach((e) => {
-                map[e.char] = e.code;
-            });
-            return map;
         },
         isUtf8() {
             const network = this.buffer.getNetwork();
@@ -57,18 +59,6 @@ export default {
             const network = this.buffer.getNetwork();
             const ourNick = network ? network.nick : '';
             return reaction.pending_nicks && reaction.pending_nicks.indexOf(ourNick) !== -1;
-        },
-        getEmojiUrl(emoji) {
-            // 1. Try direct map (ascii or unicode if in config)
-            let filename = this.emojiMap[emoji];
-
-            // 2. If not found, it might be a unicode emoji that matches one of our filenames
-            if (!filename) {
-                // This is a fallback and might not work for all emojis without a better map
-                // but for curated list it should be fine if we add them to config or handle here.
-            }
-
-            return filename ? `${this.emojiLocation}${filename}` : null;
         },
         onReactionClick(emoji) {
             // If the user has already reacted, they can always unreact (safe)
@@ -133,13 +123,17 @@ export default {
 .kiwi-messagereactions-emoji-img {
     width: 16px;
     height: 16px;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
+    object-fit: contain;
     margin-right: 4px;
 }
 
 .kiwi-messagereactions-emoji-text {
+    display: inline-block;
+    max-width: 12em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
     margin-right: 4px;
 }
 

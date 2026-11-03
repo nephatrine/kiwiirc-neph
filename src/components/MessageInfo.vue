@@ -18,12 +18,12 @@
         <div v-if="supportsReactions && isUtf8" class="kiwi-messageinfo-reactions">
             <div
                 v-for="emoji in curatedEmojis"
-                :key="emoji.code"
-                :style="{ 'background-image': `url(${emojiUrl(emoji.code)})` }"
+                :key="emoji.shortcode"
                 :class="{ 'kiwi-messageinfo-reaction--reacted': hasReacted(emoji.char) }"
+                :title="emoji.shortcode"
                 class="kiwi-messageinfo-reaction"
                 @click="onReact(emoji.char)"
-            />
+            >{{ emoji.char }}</div>
         </div>
         <div
             :class="{ 'kiwi-messageinfo-actions--open': requestingInput }"
@@ -121,9 +121,6 @@ export default {
         },
     },
     methods: {
-        emojiUrl(code) {
-            return this.$state.setting('emojiLocation') + code;
-        },
         hasReacted(emojiChar) {
             return this.message.reactions[emojiChar] && this.message.reactions[emojiChar].reacted;
         },
@@ -224,16 +221,17 @@ export default {
 }
 
 .kiwi-messageinfo-reaction {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 24px;
     height: 24px;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
     cursor: pointer;
     padding: 4px;
     border-radius: 4px;
     border: 1px solid transparent;
     transition: background 0.2s;
+    font-size: 16px;
 }
 
 .kiwi-messageinfo-reaction:hover {

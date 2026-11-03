@@ -634,6 +634,7 @@ function clientMiddleware(state, network) {
                 options[key.toUpperCase()] = event.options[key];
             });
             network.isupport = options;
+            state.$emit('emoji.server-pack', { network });
 
             // Draft/extended-isupport replies may arrive as several 005
             // lines (batched 005s are re-emitted together at batch end, but

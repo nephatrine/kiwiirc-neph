@@ -69,6 +69,11 @@ export const configTemplates = {
             { name: 'SynthWave \'84', url: 'static/themes/synthwave84', mode: 'dark', google_fonts: ['Rajdhani:wght@400;700', 'Share Tech Mono'] },
             { name: 'Tokyo Night', url: 'static/themes/tokyo-night', mode: 'dark', google_fonts: ['Urbanist:wght@400;700', 'Chivo Mono:wght@400;700'] },
         ],
+        // token -> absolute http(s) image URL
+        customEmojis: {},
+        // Load network/server emoji packs automatically. Channel packs still
+        // require explicit per-network selection.
+        remoteEmojiPacks: true,
         // Restricted to a single IRC server
         restricted: true,
         // The startup screen

@@ -29,6 +29,15 @@ div {
     font-variant-emoji: emoji;
     font-style: normal;
     font-weight: normal;
+    font-size: 1.2em;
+}
+
+img.kiwi-custom-emoji {
+    display: inline-block;
+    width: auto;
+    height: 1.2em;
+    object-fit: contain;
+    vertical-align: -0.225em;
 }
 
 ul {

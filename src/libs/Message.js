@@ -159,6 +159,14 @@ export default class Message {
         return this;
     }
 
+    invalidateRender() {
+        this.hasRendered = false;
+        this.html = '';
+        this.hasParsed = false;
+        this.blocks = [];
+        this.lastUsedExtraFormatting = null;
+    }
+
     toHtml(messageList) {
         if (this.hasRendered) {
             return this.html;
@@ -201,7 +209,8 @@ export default class Message {
                 noformatting: isSpecial,
                 visibleControlChars: isSpecial,
             },
-            userList
+            userList,
+            buffer
         );
 
         this.mentioned_urls = blocks

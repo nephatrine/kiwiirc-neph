@@ -376,9 +376,15 @@ Self-involved events are still processed.
 
 ### Compatibility and Advanced Keys
 
-- `emojis`: optional map of emoji characters to reaction image filenames.
-- `emojiLocation`: base URL for those reaction images. Set this whenever
-  `emojis` is used.
+- `customEmojis`: optional map of shortcode names to absolute `http`/`https`
+  image URLs or root-relative paths beginning with `/`. Used for `:name:` custom
+  emoji and custom-token reactions. Configured tokens take precedence over the
+  Unicode shortcode table.
+- `remoteEmojiPacks`: load network/server emoji packs automatically. Defaults to
+  `true`. Channel packs use a per-channel Prompt/Always/Never policy. Prompt
+  asks before loading a channel's packs, Always loads all of them and fetches
+  `draft/emoji` metadata for channels you have not joined, and Never keeps them
+  literal.
 - `hideSettings`: hides the settings button in the state browser.
 - `hide_advanced`: hides the Advanced settings tab.
 - `ircFramework`: advanced `irc-framework` client options. Use with care.
