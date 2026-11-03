@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-03
+
 ### Added
 
 - **Themes**: Added NephWave, a standalone theme with an optional desktop shell
