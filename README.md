@@ -1,4 +1,4 @@
-# Kiwi IRC
+# KiwiIRC-Neph
 
 > A static, browser-based IRC client built around modern IRCv3 features.
 
@@ -197,9 +197,9 @@ Do not hand-edit generated emoji data, Boxicons CSS, or Bongo WebP files.
 
 ## Project Status
 
-Kiwi IRC was originally created by Darren Whitlen and the KiwiIRC contributors.
-This fork, KiwiIRC-Neph, is maintained by Daniel Wolf and is based on the
-upstream project at <https://github.com/kiwiirc/kiwiirc>.
+Kiwi IRC was created by Darren Whitlen and the KiwiIRC contributors. This fork,
+KiwiIRC-Neph, is maintained by Daniel Wolf and is based on the upstream project
+at <https://github.com/kiwiirc/kiwiirc>.
 
 This project is here primarily because KiwiIRC plays it safe and does not
 aggressively adopt draft or even pre-draft IRC specifications and proposals. I
@@ -217,12 +217,6 @@ with Ergo, Soju, Twitch, and my Discord-IRC fork... but unusual IRC
 configuration combinations have not been tested and edge cases may remain.
 
 You can also get help on the `#support` channel at <ircs://irc.nephatrine.net>.
-
-## Attribution
-
-Kiwi IRC was originally created by Darren Whitlen and the KiwiIRC contributors.
-This fork, KiwiIRC-Neph, is maintained by Daniel Wolf and is based on the
-upstream project at <https://github.com/kiwiirc/kiwiirc>.
 
 ## Additional Documentation
 
