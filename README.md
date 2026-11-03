@@ -217,9 +217,3 @@ with Ergo, Soju, Twitch, and my Discord-IRC fork... but unusual IRC
 configuration combinations have not been tested and edge cases may remain.
 
 You can also get help on the `#support` channel at <ircs://irc.nephatrine.net>.
-
-## Additional Documentation
-
-- [CONFIGURATION.md](CONFIGURATION.md) — Configuration Options & Defaults
-- [IRCv3.md](IRCv3.md) — Supported Extensions, RELAYMETA Spec
-- [PLUGINS.md](PLUGINS.md) — Plugin Developer Guide
