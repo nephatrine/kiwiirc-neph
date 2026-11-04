@@ -2,6 +2,7 @@
 
 import * as TextFormatting from '@/helpers/TextFormatting';
 import * as Misc from '@/helpers/Misc';
+import { byteLength, withinLimit } from '@/helpers/LoginFields';
 import { rollDice, formatRoll } from '@/helpers/Dice';
 import { each } from '@/helpers/Utils';
 import AliasRewriter from './AliasRewriter';
@@ -11,6 +12,29 @@ import { limnoriaCommandDelivery, limnoriaCommandPath } from './LimnoriaCommandI
 
 // Map of commandName=commandHandlerFn
 const inputCommands = {};
+
+function isupportLimit(network, name) {
+    if (network && typeof network.isupportLimit === 'function') {
+        return network.isupportLimit(name);
+    }
+    return 0;
+}
+
+function rejectTooLong(handler, buffer, value, limit, localeKey) {
+    if (!limit || withinLimit(value, limit)) {
+        return false;
+    }
+
+    handler.state.addMessage(buffer, {
+        nick: '*',
+        message: TextFormatting.t(localeKey, {
+            current: byteLength(value),
+            max: limit,
+        }),
+        type: 'error',
+    });
+    return true;
+}
 
 export default class InputHandler {
     constructor(state) {
@@ -383,6 +407,7 @@ inputCommands.ctcp = function inputCommandCtcp(event, command, line, context) {
 inputCommands.join = function inputCommandJoin(event, command, line, context) {
     event.handled = true;
     const { network, buffer } = context;
+    const channelLimit = isupportLimit(network, 'CHANNELLEN');
 
     let bufferObjs = Misc.extractBuffers(line);
 
@@ -390,6 +415,15 @@ inputCommands.join = function inputCommandJoin(event, command, line, context) {
     if (bufferObjs.length === 0) {
         // join the active channel if its not joined
         if (buffer.isChannel() && !buffer.joined) {
+            if (rejectTooLong(
+                this,
+                buffer,
+                buffer.name,
+                channelLimit,
+                'error_channel_too_long'
+            )) {
+                return;
+            }
             network.ircClient.join(buffer.name, buffer.key);
             return;
         }
@@ -416,6 +450,16 @@ inputCommands.join = function inputCommandJoin(event, command, line, context) {
         let chanName = network.isChannelName(bufferObj.name) ?
             bufferObj.name :
             '#' + bufferObj.name;
+
+        if (rejectTooLong(
+            this,
+            buffer,
+            chanName,
+            channelLimit,
+            'error_channel_too_long'
+        )) {
+            return;
+        }
 
         let newBuffer = this.state.addBuffer(network.id, chanName);
 
@@ -490,6 +534,16 @@ inputCommands.topic = function inputCommandTopic(event, command, line, context) 
         newTopic = line;
     }
 
+    if (rejectTooLong(
+        this,
+        buffer,
+        newTopic,
+        isupportLimit(network, 'TOPICLEN'),
+        'error_topic_too_long'
+    )) {
+        return;
+    }
+
     network.ircClient.setTopic(bufferName, newTopic);
 };
 
@@ -519,6 +573,16 @@ inputCommands.kick = function inputCommandKick(event, command, line, context) {
         bufferName = buffer.name;
     }
     if (!toKick) {
+        return;
+    }
+
+    if (rejectTooLong(
+        this,
+        buffer,
+        kickReason,
+        isupportLimit(network, 'KICKLEN'),
+        'error_kick_reason_too_long'
+    )) {
         return;
     }
 
@@ -636,12 +700,23 @@ inputCommands.invite = function inputCommandInvite(event, command, line, context
 
 inputCommands.nick = function inputCommandNick(event, command, line, context) {
     event.handled = true;
-    const { network } = context;
+    const { network, buffer } = context;
 
     let spaceIdx = line.indexOf(' ');
     if (spaceIdx === -1) spaceIdx = line.length;
 
     let newNick = line.substr(0, spaceIdx);
+
+    if (rejectTooLong(
+        this,
+        buffer,
+        newNick,
+        isupportLimit(network, 'NICKLEN'),
+        'error_nick_too_long'
+    )) {
+        return;
+    }
+
     network.ircClient.changeNick(newNick);
 };
 
@@ -688,8 +763,20 @@ inputCommands.encoding = function inputCommandEncoding(event, command, line, con
 inputCommands.away = function inputCommandAway(event, command, line, context) {
     event.handled = true;
 
-    let network = this.state.getActiveNetwork();
-    network.ircClient.raw('AWAY', line || TextFormatting.t('default_away_message'));
+    const { network, buffer } = context;
+    const awayMessage = line || TextFormatting.t('default_away_message');
+
+    if (rejectTooLong(
+        this,
+        buffer,
+        awayMessage,
+        isupportLimit(network, 'AWAYLEN'),
+        'error_away_too_long'
+    )) {
+        return;
+    }
+
+    network.ircClient.raw('AWAY', awayMessage);
 };
 
 inputCommands.back = function inputCommandBack(event, command, line, context) {

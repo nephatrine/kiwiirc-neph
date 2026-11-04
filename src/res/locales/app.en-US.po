@@ -1252,6 +1252,26 @@ msgstr "Invite User"
 msgid "error_no_channel_join"
 msgstr "Please specify a channel to join. (e.g. /join #example)"
 
+#: Channel name is too long
+msgid "error_channel_too_long"
+msgstr "Channel name is too long ({{current}} / {{max}} bytes)."
+
+#: Topic is too long
+msgid "error_topic_too_long"
+msgstr "Topic is too long ({{current}} / {{max}} bytes)."
+
+#: Kick reason is too long
+msgid "error_kick_reason_too_long"
+msgstr "Kick reason is too long ({{current}} / {{max}} bytes)."
+
+#: Away message is too long
+msgid "error_away_too_long"
+msgstr "Away message is too long ({{current}} / {{max}} bytes)."
+
+#: Nickname is too long
+msgid "error_nick_too_long"
+msgstr "Nickname is too long ({{current}} / {{max}} bytes)."
+
 #: The nickname '{{nick}}' is already in use!
 msgid "error_nick_in_use"
 msgstr "The nickname '{{nick}}' is already in use!"
@@ -1701,11 +1721,11 @@ msgstr "Convert Shortcodes To Emoji"
 
 #: Load network and server emoji packs automatically
 msgid "settings_remote_emoji_packs"
-msgstr "Load Remote Emoji Packs"
+msgstr "Load Remote Emoji"
 
 #: Remote emoji packs warning
 msgid "settings_remote_emoji_packs_hint"
-msgstr "Remote packs may contact third-party servers and reveal your IP address."
+msgstr "Remote emoji packs could override built-in emoji shortcodes."
 
 #: Channel emoji pack settings
 msgid "settings_emoji_packs"
@@ -1713,7 +1733,7 @@ msgstr "Emoji Packs"
 
 #: Channel emoji pack warning
 msgid "settings_emoji_packs_warning"
-msgstr "Loading channel packs contacts third-party URLs and may reveal your IP address."
+msgstr "You should only load channel packs you trust."
 
 #: Channel emoji pack policy
 msgid "settings_emoji_packs_policy"
@@ -1753,7 +1773,7 @@ msgstr "Load emoji packs from {{channel}}? Kiwi will request the channel metadat
 
 #: Channel emoji pack prompt reference
 msgid "emoji_pack_prompt_reference"
-msgstr "Referenced emoji: {{emoji}}"
+msgstr "Referenced Emoji: {{emoji}}"
 
 #: Channel emoji pack prompt hint
 msgid "emoji_pack_prompt_hint"
@@ -1785,7 +1805,7 @@ msgstr "Pack source detected. Set this channel to Always to load it."
 
 #: Channel emoji pack error
 msgid "settings_emoji_packs_error"
-msgstr "Could not load emoji packs:"
+msgstr "Unable To Load:"
 
 #: Channel emoji pack list empty
 msgid "settings_emoji_packs_empty"

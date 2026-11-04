@@ -4,6 +4,7 @@ import strftime from 'strftime';
 import Irc from 'irc-framework';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import { each, find } from '@/helpers/Utils';
+import { buildOutgoingMessage, serializeOutgoingMessage } from '@/helpers/IrcSerialization';
 import typingMiddleware from './TypingMiddleware';
 import limnoriaMiddleware from './LimnoriaMiddleware';
 import reactionMiddleware from './ReactionMiddleware';
@@ -251,13 +252,9 @@ export function create(state, network) {
     // Overload the raw() function so that we can emit outgoing IRC messages to plugins
     let originalIrcClientRaw = ircClient.raw;
     ircClient.raw = function raw(...args) {
-        let message = null;
-
-        if (args[0] instanceof Irc.Message || (args[0] && args[0].command && args[0].params)) {
-            message = args[0];
-        } else {
-            let rawString = ircClient.rawString(...args);
-            message = Irc.ircLineParser(rawString);
+        let message = buildOutgoingMessage(Irc, args);
+        if (!message) {
+            return;
         }
 
         let eventObj = { network, message, handled: false };
@@ -266,21 +263,10 @@ export function create(state, network) {
             return;
         }
 
-        // Workaround for unsetting the topic as to1459() will remove the trailing colon.
-        const isTopic = (
-            args.length === 1
-            && typeof args[0] === 'string'
-            && args[0].indexOf('TOPIC') === 0
-        );
-        if (isTopic && args[0].lastIndexOf(':') === args[0].length - 1) {
-            originalIrcClientRaw.apply(ircClient, args);
-            return;
-        }
-
         // Always pass a string to the original raw() method to avoid any
         // constructor/instanceof issues with different library versions/imports.
         const out = (typeof message.to1459 === 'function') ?
-            message.to1459() :
+            serializeOutgoingMessage(message) :
             ircClient.rawString(...args);
 
         originalIrcClientRaw.apply(ircClient, [out]);

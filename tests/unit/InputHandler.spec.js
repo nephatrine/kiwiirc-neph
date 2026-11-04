@@ -1,4 +1,11 @@
+import { TextEncoder } from 'util';
 import InputHandler from '@/libs/InputHandler';
+import * as TextFormatting from '@/helpers/TextFormatting';
+
+// jsdom lacks TextEncoder, which the advertised byte-limit checks use.
+if (typeof global.TextEncoder === 'undefined') {
+    global.TextEncoder = TextEncoder;
+}
 
 function makeHandler() {
     const state = {
@@ -98,5 +105,147 @@ describe('InputHandler /fakesub', () => {
 
         expect(network.appState.addMessage).not.toHaveBeenCalled();
         expect(network.ircClient.raw).not.toHaveBeenCalled();
+    });
+});
+
+describe('InputHandler advertised limits', () => {
+    let tSpy;
+
+    beforeEach(() => {
+        tSpy = jest.spyOn(TextFormatting, 't').mockImplementation((key) => key);
+    });
+
+    afterEach(() => {
+        tSpy.mockRestore();
+    });
+
+    function makeLimitContext(limits = {}) {
+        const state = {
+            setting: jest.fn(() => ''),
+            $watch: jest.fn(),
+            $on: jest.fn(),
+            $emit: jest.fn(),
+            addMessage: jest.fn(),
+            addBuffer: jest.fn((networkid, name) => ({ name, key: '' })),
+            setActiveBuffer: jest.fn(),
+        };
+        const network = {
+            id: 1,
+            nick: 'TestNick',
+            name: 'TestNetwork',
+            connection: { server: 'irc.example.com' },
+            isupportLimit: jest.fn((name) => limits[name] || 0),
+            isChannelName: jest.fn((name) => /^[#&]/.test(name)),
+            ircClient: {
+                join: jest.fn(),
+                setTopic: jest.fn(),
+                raw: jest.fn(),
+                changeNick: jest.fn(),
+            },
+        };
+        const buffer = {
+            name: '#test',
+            key: '',
+            isChannel: jest.fn(() => true),
+            isServer: jest.fn(() => false),
+        };
+        const handler = new InputHandler(state);
+
+        return { handler, state, network, buffer };
+    }
+
+    it('rejects a channel name over CHANNELLEN by byte count', () => {
+        const { handler, state, network, buffer } =
+            makeLimitContext({ CHANNELLEN: 4 });
+
+        handler.processLine('/join #éé', { network, buffer });
+
+        expect(network.ircClient.join).not.toHaveBeenCalled();
+        expect(state.addBuffer).not.toHaveBeenCalled();
+        expect(state.addMessage).toHaveBeenCalledWith(
+            buffer,
+            expect.objectContaining({
+                type: 'error',
+                message: 'error_channel_too_long',
+            })
+        );
+        expect(tSpy).toHaveBeenCalledWith('error_channel_too_long', {
+            current: 5,
+            max: 4,
+        });
+    });
+
+    it('allows a channel name at CHANNELLEN', () => {
+        const { handler, state, network, buffer } =
+            makeLimitContext({ CHANNELLEN: 5 });
+
+        handler.processLine('/join #éé', { network, buffer });
+
+        expect(network.ircClient.join).toHaveBeenCalledWith('#éé', '');
+        expect(state.addMessage).not.toHaveBeenCalled();
+    });
+
+    it('rejects a topic over TOPICLEN', () => {
+        const { handler, state, network, buffer } =
+            makeLimitContext({ TOPICLEN: 3 });
+
+        handler.processLine('/topic éé', { network, buffer });
+
+        expect(network.ircClient.setTopic).not.toHaveBeenCalled();
+        expect(state.addMessage).toHaveBeenCalledWith(
+            buffer,
+            expect.objectContaining({
+                type: 'error',
+                message: 'error_topic_too_long',
+            })
+        );
+    });
+
+    it('rejects a kick reason over KICKLEN', () => {
+        const { handler, state, network, buffer } =
+            makeLimitContext({ KICKLEN: 3 });
+
+        handler.processLine('/kick Other éé', { network, buffer });
+
+        expect(network.ircClient.raw).not.toHaveBeenCalled();
+        expect(state.addMessage).toHaveBeenCalledWith(
+            buffer,
+            expect.objectContaining({
+                type: 'error',
+                message: 'error_kick_reason_too_long',
+            })
+        );
+    });
+
+    it('rejects an away message over AWAYLEN', () => {
+        const { handler, state, network, buffer } =
+            makeLimitContext({ AWAYLEN: 3 });
+
+        handler.processLine('/away éé', { network, buffer });
+
+        expect(network.ircClient.raw).not.toHaveBeenCalled();
+        expect(state.addMessage).toHaveBeenCalledWith(
+            buffer,
+            expect.objectContaining({
+                type: 'error',
+                message: 'error_away_too_long',
+            })
+        );
+    });
+
+    it('rejects a nickname over NICKLEN', () => {
+        const { handler, state, network, buffer } =
+            makeLimitContext({ NICKLEN: 3 });
+
+        handler.processLine('/nick éé', { network, buffer });
+
+        expect(network.ircClient.changeNick).not.toHaveBeenCalled();
+        expect(state.addMessage).toHaveBeenCalledWith(
+            buffer,
+            expect.objectContaining({
+                type: 'error',
+                message: 'error_nick_too_long',
+            })
+        );
     });
 });

@@ -284,4 +284,20 @@ describe('NetworkState', () => {
         expect(user.buffers[buffer.id].twitch_modes).toEqual([]);
         expect(user.buffers[buffer.id].modes).toEqual([]);
     });
+
+    it('parses advertised ISUPPORT limits', () => {
+        let s = state.create();
+        let network = s.addNetwork('TestNetwork', 'nick', {});
+
+        network.isupport.NICKLEN = '30';
+        network.isupport.TOPICLEN = '390';
+        network.isupport.AWAYLEN = true;
+        network.isupport.KICKLEN = '';
+
+        expect(network.isupportLimit('NICKLEN')).toBe(30);
+        expect(network.isupportLimit('TOPICLEN')).toBe(390);
+        expect(network.isupportLimit('AWAYLEN')).toBe(0);
+        expect(network.isupportLimit('KICKLEN')).toBe(0);
+        expect(network.isupportLimit('CHANNELLEN')).toBe(0);
+    });
 });

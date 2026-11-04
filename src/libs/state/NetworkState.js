@@ -828,6 +828,23 @@ export default class NetworkState {
         });
     }
 
+    isupportLimit(name) {
+        const value = this.supports(name);
+        if (typeof value === 'number') {
+            return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+        }
+
+        if (typeof value === 'string') {
+            const text = value.trim();
+            if (/^\d+$/.test(text)) {
+                const limit = parseInt(text, 10);
+                return limit > 0 ? limit : 0;
+            }
+        }
+
+        return 0;
+    }
+
     /**
      * @param {string} name
      * @returns {any}
