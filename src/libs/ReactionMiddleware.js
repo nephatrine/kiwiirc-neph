@@ -65,7 +65,7 @@ export function theMiddleware(network, command, message, client, next) {
                 target = contextChannel;
             }
         }
-    } else if (target.toLowerCase() === client.user.nick.toLowerCase()) {
+    } else if (client.caseCompare(target, client.user.nick)) {
         // If we are the target then the sender is the target (direct message)
         target = message.nick;
     }
@@ -92,7 +92,7 @@ export function theMiddleware(network, command, message, client, next) {
     const isReacting = !!reactEmoji;
 
     // If this is an echo of our own reaction, handle promotion
-    if (targetNick.toLowerCase() === client.user.nick.toLowerCase()) {
+    if (client.caseCompare(targetNick, client.user.nick)) {
         if (label) {
             network.appState.promotePendingLabel(network.id, label);
         } else {
@@ -117,7 +117,7 @@ export function theMiddleware(network, command, message, client, next) {
     }
 
     // Update the 'reacted' status if this is our nick
-    if (targetNick.toLowerCase() === client.user.nick.toLowerCase()) {
+    if (client.caseCompare(targetNick, client.user.nick)) {
         if (targetMessage.reactions[emoji]) {
             targetMessage.reactions[emoji].reacted = isReacting;
         }

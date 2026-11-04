@@ -67,7 +67,7 @@ export default function metadataMiddleware(network) {
         const profileGetLabels = new Set();
 
         const isSelfTarget = (target) => !!target && !!network.nick &&
-            target.toLowerCase() === network.nick.toLowerCase();
+            network.caseCompare(target, network.nick);
 
         // Adopt a server-provided self value into the remembered profile so
         // a value set elsewhere (or surviving server-side) is never clobbered
@@ -193,7 +193,7 @@ export default function metadataMiddleware(network) {
             if (
                 network.metadataCap() &&
                 network.isSoju() &&
-                event.nick === client.user.nick
+                network.caseCompare(event.nick, client.user.nick)
             ) {
                 watchSojuBufferSettings(network, network.bufferByName(event.channel));
             }
@@ -610,7 +610,7 @@ function updateMetadataState(network, target, key, value, event, isAuth) {
         MetadataCache.rememberChannel(network, target, sanitizedValue);
     }
 
-    if (target.toLowerCase() === network.nick.toLowerCase()) {
+    if (network.caseCompare(target, network.nick)) {
         if (sanitizedValue === '') {
             state.$delete(network.metadata, key);
         } else {

@@ -18,6 +18,9 @@ describe('ControlInput Limnoria autocomplete', () => {
         const network = {
             state: 'connected',
             nick: 'TestNick',
+            caseCompare: (left, right) => (
+                String(left).toLowerCase() === String(right).toLowerCase()
+            ),
             hasCap: jest.fn((cap) => cap === 'message-tags'),
             setting: jest.fn((name) => {
                 if (name === 'limnoriaSuggestions') {

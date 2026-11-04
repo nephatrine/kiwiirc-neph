@@ -62,8 +62,9 @@ export default {
                 return false;
             }
 
-            let ourNick = this.buffer.getNetwork().nick;
-            let isOurMessage = this.message.nick.toLowerCase() === ourNick.toLowerCase();
+            let network = this.buffer.getNetwork();
+            let ourNick = network.nick;
+            let isOurMessage = network.caseCompare(this.message.nick, ourNick);
             let areWeAnOp = this.buffer.isUserAnOp(ourNick);
 
             return isOurMessage || areWeAnOp;

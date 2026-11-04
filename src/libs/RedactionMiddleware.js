@@ -50,7 +50,7 @@ export function theMiddleware(network, command, message, client, next) {
     }
 
     // If this is an echo of our own redaction, handle promotion
-    if (message.nick.toLowerCase() === client.user.nick.toLowerCase()) {
+    if (client.caseCompare(message.nick, client.user.nick)) {
         if (label) {
             network.appState.promotePendingLabel(network.id, label);
         } else {

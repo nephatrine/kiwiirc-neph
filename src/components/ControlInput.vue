@@ -865,7 +865,7 @@ export default {
             if (!event || !event.tags) {
                 return;
             }
-            if (event.nick && event.nick.toLowerCase() !== this.network.nick.toLowerCase()) {
+            if (event.nick && !this.network.caseCompare(event.nick, this.network.nick)) {
                 return;
             }
             if (pending.label && event.tags.label && event.tags.label !== pending.label) {
@@ -888,7 +888,7 @@ export default {
             if (!event || !event.tags) {
                 return;
             }
-            if (event.nick && event.nick.toLowerCase() !== pending.name.toLowerCase()) {
+            if (event.nick && !this.network.caseCompare(event.nick, pending.name)) {
                 return;
             }
 

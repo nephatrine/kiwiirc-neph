@@ -82,7 +82,12 @@ describe('redaction previews', () => {
             params: ['#test', 'remote-msgid', 'reason'],
             tags: {},
             nick: 'Other',
-        }, { user: { nick: 'TestNick' } }, jest.fn());
+        }, {
+            user: { nick: 'TestNick' },
+            caseCompare: (left, right) => (
+                String(left).toLowerCase() === String(right).toLowerCase()
+            ),
+        }, jest.fn());
 
         expect(target.is_redacted).toBe(true);
         expect(target.closeEmbed).toHaveBeenCalledTimes(1);
@@ -107,7 +112,12 @@ describe('redaction previews', () => {
             params: ['#test', 'remote-msgid', 'again'],
             tags: {},
             nick: 'Other',
-        }, { user: { nick: 'TestNick' } }, jest.fn());
+        }, {
+            user: { nick: 'TestNick' },
+            caseCompare: (left, right) => (
+                String(left).toLowerCase() === String(right).toLowerCase()
+            ),
+        }, jest.fn());
 
         expect(target.closeEmbed).not.toHaveBeenCalled();
         expect(target.embed.payload).toBe('https://example.com/reopened.jpg');

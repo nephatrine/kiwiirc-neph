@@ -304,7 +304,13 @@ export default {
             return isVue;
         },
         isHoveringOverMessage(message) {
-            return message.nick && message.nick.toLowerCase() === this.hover_nick.toLowerCase();
+            const network = this.buffer.getNetwork();
+            return message.nick && this.hover_nick &&
+                network && network.caseCompare(message.nick, this.hover_nick);
+        },
+        isSelfNick(nick) {
+            const network = this.buffer.getNetwork();
+            return !!network && network.caseCompare(nick, network.nick);
         },
         toggleMessageInfo(message) {
             if (!message) {

@@ -28,6 +28,12 @@ function createStorage() {
 function createNetwork() {
     return {
         nick: 'me',
+        caseUpper(value) {
+            return String(value).toUpperCase();
+        },
+        caseLower(value) {
+            return String(value).toLowerCase();
+        },
         connection: {
             server: 'irc.example',
             account: 'me',

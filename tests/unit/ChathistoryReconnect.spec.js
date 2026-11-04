@@ -16,6 +16,12 @@ function createClient() {
 
 function createNetwork() {
     return {
+        caseUpper(value) {
+            return String(value).toUpperCase();
+        },
+        caseLower(value) {
+            return String(value).toLowerCase();
+        },
         hasCap(cap) {
             return cap === 'draft/chathistory';
         },

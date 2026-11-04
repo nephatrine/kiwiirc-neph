@@ -22,6 +22,7 @@ import saslMiddleware from './SaslMiddleware';
 import registrationMiddleware from './RegistrationMiddleware';
 import batchMiddleware from './BatchMiddleware';
 import metadataMiddleware from './MetadataMiddleware';
+import isupportMiddleware from './IsupportMiddleware';
 import persistenceMiddleware from './PersistenceMiddleware';
 import webpushMiddleware from './WebpushMiddleware';
 import WhoQueue from './WhoQueue';
@@ -119,6 +120,7 @@ export function create(state, network) {
     });
 
     ircClient.use(chathistoryMiddleware(network));
+    ircClient.use(isupportMiddleware(network));
     ircClient.use(typingMiddleware(network));
     ircClient.use(limnoriaMiddleware(network));
     ircClient.use(reactionMiddleware(network));
@@ -470,8 +472,9 @@ function clientMiddleware(state, network) {
     let advertisedLsCaps = new Set();
 
     function isSelfNick(nick) {
-        return !!nick && !!network.nick &&
-            nick.toLowerCase() === network.nick.toLowerCase();
+        const selfNick = network.nick ||
+            (network.frameworkClient && network.frameworkClient.user.nick);
+        return !!nick && !!selfNick && network.caseCompare(nick, selfNick);
     }
 
     // Gate token planted in the framework's cap.requested list to hold CAP
@@ -633,7 +636,14 @@ function clientMiddleware(state, network) {
             Object.keys(event.options).forEach((key) => {
                 options[key.toUpperCase()] = event.options[key];
             });
+            if (!client.advertisedIsupport || !client.advertisedIsupport.has('PREFIX')) {
+                delete options.PREFIX;
+            }
+            const previousCasemapping = network.isupport.CASEMAPPING;
             network.isupport = options;
+            if (options.CASEMAPPING && options.CASEMAPPING !== previousCasemapping) {
+                network.reindexUsers();
+            }
             state.$emit('emoji.server-pack', { network });
 
             // Draft/extended-isupport replies may arrive as several 005
@@ -1421,7 +1431,7 @@ function clientMiddleware(state, network) {
 
             // 1. Determine the protocol destination (original buffer)
             if (!event.from_server) {
-                if (event.target === client.user.nick) {
+                if (isSelfNick(event.target)) {
                     isPrivateMessage = true;
                     bufferName = event.nick;
                 }
@@ -1614,8 +1624,7 @@ function clientMiddleware(state, network) {
 
                 network.ircClient.whois(event.nick, event.nick, (whoisData) => {
                     network.pendingPms.forEach((pm, idx, obj) => {
-                        let nickLower = pm.message.nick.toLowerCase();
-                        if (nickLower === whoisData.nick.toLowerCase()) {
+                        if (network.caseCompare(pm.message.nick, whoisData.nick)) {
                             if (whoisData.operator) {
                                 buffer = state.getOrAddBufferByName(network.id, pm.bufferName);
                                 state.addMessage(buffer, pm.message);
@@ -1703,9 +1712,9 @@ function clientMiddleware(state, network) {
             }
             // If we have any buffers marked as being redirected to this new channel, update
             // that buffer instead of creating a new one
-            if (!isHistory && event.nick === client.user.nick) {
+            if (!isHistory && isSelfNick(event.nick)) {
                 network.buffers.forEach((b) => {
-                    if ((b.flags.redirect_to || '').toLowerCase() === targetName.toLowerCase()) {
+                    if (network.caseLower(b.flags.redirect_to || '') === network.caseLower(targetName)) {
                         state.$delete(b.flags, 'redirect_to');
                         b.rename(targetName);
                     }
@@ -1733,7 +1742,7 @@ function clientMiddleware(state, network) {
                     network.setCurrentAccount(event.account);
                 }
 
-                if (event.nick === client.user.nick) {
+                if (isSelfNick(event.nick)) {
                     buffer.enabled = true;
                     buffer.joined = true;
                     buffer.flags.channel_badkey = false;
@@ -1768,12 +1777,12 @@ function clientMiddleware(state, network) {
             }
 
             let ignoreEvent = state.setting('skipHiddenMessages') && !buffer.setting('show_joinparts');
-            if (!ignoreEvent || event.nick === client.user.nick) {
+            if (!ignoreEvent || isSelfNick(event.nick)) {
                 let nick = buffer.setting('show_hostnames') ?
                     TextFormatting.formatUserFull(event) :
                     TextFormatting.formatUser(event);
 
-                let joinKey = (event.nick === client.user.nick && isReconnect)
+                let joinKey = (isSelfNick(event.nick) && isReconnect)
                     ? 'has_reconnected'
                     : 'has_joined';
                 let messageBody = TextFormatting.formatAndT(
@@ -1783,7 +1792,7 @@ function clientMiddleware(state, network) {
                     { nick: nick }
                 );
 
-                let typeExtra = (event.nick === client.user.nick) ? 'join_self' : 'join';
+                let typeExtra = (isSelfNick(event.nick)) ? 'join_self' : 'join';
 
                 const isHandledBatch = event.batch && ['netsplit', 'netjoin'].includes(event.batch.type);
                 if (!isHandledBatch) {
@@ -1813,7 +1822,7 @@ function clientMiddleware(state, network) {
             if (!isHistory) {
                 state.removeUserFromBuffer(buffer, event.kicked);
 
-                if (event.kicked === client.user.nick) {
+                if (isSelfNick(event.kicked)) {
                     buffer.joined = false;
                     buffer.enabled = false;
                     buffer.clearUsers();
@@ -1822,9 +1831,9 @@ function clientMiddleware(state, network) {
 
             let messageBody = '';
             let ignoreEvent = state.setting('skipHiddenMessages') && !buffer.setting('show_joinparts');
-            let isUserInvolved = [event.kicked, event.nick].includes(client.user.nick);
+            let isUserInvolved = (isSelfNick(event.kicked) || isSelfNick(event.nick));
             if (!ignoreEvent || isUserInvolved) {
-                if (event.kicked === client.user.nick) {
+                if (isSelfNick(event.kicked)) {
                     messageBody = TextFormatting.formatAndT(
                         'channel_selfkick',
                         { reason: event.message },
@@ -1876,7 +1885,7 @@ function clientMiddleware(state, network) {
 
             if (!isHistory) {
                 state.removeUserFromBuffer(buffer, event.nick);
-                if (event.nick === client.user.nick) {
+                if (isSelfNick(event.nick)) {
                     buffer.joined = false;
                     buffer.enabled = false;
                     buffer.clearUsers();
@@ -1892,7 +1901,7 @@ function clientMiddleware(state, network) {
             }
 
             let ignoreEvent = state.setting('skipHiddenMessages') && !buffer.setting('show_joinparts');
-            if (!ignoreEvent || event.nick === client.user.nick) {
+            if (!ignoreEvent || isSelfNick(event.nick)) {
                 let nick = buffer.setting('show_hostnames') ?
                     TextFormatting.formatUserFull(event) :
                     TextFormatting.formatUser(event);
@@ -1904,7 +1913,7 @@ function clientMiddleware(state, network) {
                     { nick: nick },
                 );
 
-                let typeExtra = (event.nick === client.user.nick) ? 'part_self' : 'part';
+                let typeExtra = (isSelfNick(event.nick)) ? 'part_self' : 'part';
 
                 const isHandledBatch = event.batch && ['netsplit', 'netjoin'].includes(event.batch.type);
                 if (!isHandledBatch) {
@@ -1940,13 +1949,13 @@ function clientMiddleware(state, network) {
                     return;
                 }
 
-                if (!isHistory && event.nick === client.user.nick) {
+                if (!isHistory && isSelfNick(event.nick)) {
                     buffer.joined = false;
                     buffer.clearUsers();
                 }
 
                 let ignoreEvent = state.setting('skipHiddenMessages') && !buffer.setting('show_joinparts');
-                if (ignoreEvent && event.nick !== client.user.nick) {
+                if (ignoreEvent && !isSelfNick(event.nick)) {
                     return;
                 }
 
@@ -1961,7 +1970,7 @@ function clientMiddleware(state, network) {
                     { nick: nick }
                 );
 
-                let typeExtra = (event.nick === client.user.nick) ? 'quit_self' : 'quit';
+                let typeExtra = (isSelfNick(event.nick)) ? 'quit_self' : 'quit';
 
                 const isHandledBatch = event.batch && ['netsplit', 'netjoin'].includes(event.batch.type);
                 if (!isHandledBatch) {
@@ -2077,12 +2086,12 @@ function clientMiddleware(state, network) {
                     // History must be isolated to a batch target
                     return;
                 }
-            } else if (event.nick === client.user.nick) {
+            } else if (isSelfNick(event.nick)) {
                 buffer = state.getActiveBuffer();
             }
 
             if (buffer) {
-                if (!isHistory && event.nick === client.user.nick) {
+                if (!isHistory && isSelfNick(event.nick)) {
                     network.away = 'away';
                 }
                 state.addMessage(buffer, {
@@ -2111,12 +2120,12 @@ function clientMiddleware(state, network) {
                     // History must be isolated to a batch target
                     return;
                 }
-            } else if (event.nick === client.user.nick) {
+            } else if (isSelfNick(event.nick)) {
                 buffer = state.getActiveBuffer();
             }
 
             if (buffer) {
-                if (!isHistory && event.nick === client.user.nick) {
+                if (!isHistory && isSelfNick(event.nick)) {
                     network.away = '';
                 }
                 state.addMessage(buffer, {
@@ -2265,7 +2274,7 @@ function clientMiddleware(state, network) {
 
         if (effectiveCommand === 'NICK') {
             if (!isHistory) {
-                if (event.nick === client.user.nick) {
+                if (isSelfNick(event.nick)) {
                     network.nick = event.new_nick;
                 }
 
@@ -2279,7 +2288,7 @@ function clientMiddleware(state, network) {
                 { nick: event.nick, newnick: event.new_nick },
             );
 
-            let typeExtra = (event.nick === client.user.nick) ? 'nick_self' : '';
+            let typeExtra = (isSelfNick(event.nick)) ? 'nick_self' : '';
 
             let buffers = [];
             if (isHistory) {
@@ -2298,7 +2307,7 @@ function clientMiddleware(state, network) {
 
             buffers.forEach((buffer) => {
                 let ignoreEvent = state.setting('skipHiddenMessages') && !buffer.setting('show_nick_changes');
-                if (ignoreEvent && event.nick !== client.user.nick) {
+                if (ignoreEvent && !isSelfNick(event.nick)) {
                     return;
                 }
 
@@ -2547,7 +2556,8 @@ function clientMiddleware(state, network) {
                 each(modeStrs, (targets, mode) => {
                     let targetNicks = targets.map((t) => t.target);
                     let ignoreEvent = state.setting('skipHiddenMessages') && !buffer.setting('show_mode_changes');
-                    let isUserInvolved = [event.nick, ...targetNicks].includes(client.user.nick);
+                    let isUserInvolved = isSelfNick(event.nick) ||
+                        targetNicks.some((nick) => isSelfNick(nick));
                     if (ignoreEvent && !isUserInvolved) {
                         return;
                     }
@@ -2586,7 +2596,7 @@ function clientMiddleware(state, network) {
                     }
                 });
             } else {
-                if (!isHistory && event.target === network.nick) {
+                if (!isHistory && network.caseCompare(event.target, network.nick)) {
                     (event.modes || []).forEach((item) => {
                         if (item && item.mode === '+o') {
                             network.is_oper = true;
@@ -2851,7 +2861,7 @@ function clientMiddleware(state, network) {
             if (effectiveCommand === 'CTCP REQUEST') {
                 const ownNick = client.user.nick || '';
                 const targetIsUs = event.target && ownNick &&
-                    event.target.toLowerCase() === ownNick.toLowerCase();
+                    network.caseCompare(event.target, ownNick);
                 const replyTarget = event.from_server ?
                     (event.hostname || event.nick) :
                     event.nick;

@@ -17,7 +17,7 @@
             props.ml.buffer.last_read && props.message.time > props.ml.buffer.last_read
                 ? 'kiwi-messagelist-message--unread'
                 : '',
-            props.message.nick.toLowerCase() === props.ml.ourNick.toLowerCase()
+            props.ml.isSelfNick(props.message.nick)
                 ? 'kiwi-messagelist-message--own'
                 : '',
             props.ml.message_info_open === props.message
@@ -197,7 +197,7 @@ const methods = {
     },
     isHoveringOverMessage(message) {
         let props = this.props;
-        return message.nick && message.nick.toLowerCase() === props.hover_nick.toLowerCase();
+        return props.ml.isHoveringOverMessage(message);
     },
     userMode(user) {
         let props = this.props;

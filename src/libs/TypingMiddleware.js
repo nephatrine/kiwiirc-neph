@@ -34,14 +34,14 @@ export default function typingMiddleware(network) {
         if (
             network.hasCap('echo-message') &&
             message.nick &&
-            message.nick.toLowerCase() === client.user.nick.toLowerCase()
+            client.caseCompare(message.nick, client.user.nick)
         ) {
             next();
             return;
         }
 
         // if we are params[0] then the target is the sender (direct message)
-        let target = (message.params[0].toLowerCase() === client.user.nick.toLowerCase()) ?
+        let target = client.caseCompare(message.params[0], client.user.nick) ?
             message.nick :
             message.params[0];
 
@@ -64,6 +64,12 @@ function addFunctionsToClient(client, network) {
     let typing = client.typing = {};
     let activeTyping = Object.create(null);
 
+    function typingKey(target) {
+        return typeof client.caseLower === 'function' ?
+            client.caseLower(target) :
+            String(target).toLowerCase();
+    }
+
     function isEnabled() {
         return network.supportsTag('+typing');
     }
@@ -73,12 +79,13 @@ function addFunctionsToClient(client, network) {
             return;
         }
 
-        let lastSentStatus = activeTyping[target.toLowerCase()];
+        const key = typingKey(target);
+        let lastSentStatus = activeTyping[key];
         if (lastSentStatus && lastSentStatus > Date.now() - 3000) {
             return;
         }
 
-        activeTyping[target.toLowerCase()] = Date.now();
+        activeTyping[key] = Date.now();
 
         let message = new client.Message('TAGMSG', target);
         message.tags['+typing'] = 'active';
@@ -90,7 +97,7 @@ function addFunctionsToClient(client, network) {
             return;
         }
 
-        if (!activeTyping[target.toLowerCase()]) {
+        if (!activeTyping[typingKey(target)]) {
             // Did not start typing so cannot pause
             return;
         }
@@ -105,12 +112,12 @@ function addFunctionsToClient(client, network) {
             return;
         }
 
-        if (!activeTyping[target.toLowerCase()]) {
+        if (!activeTyping[typingKey(target)]) {
             // Did not start typing so cannot stop
             return;
         }
 
-        delete activeTyping[target.toLowerCase()];
+        delete activeTyping[typingKey(target)];
 
         if (!sendStop) {
             // Stop was called after a message was sent,

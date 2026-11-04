@@ -35,7 +35,10 @@ function networkCacheKey(network) {
         identity = '';
     }
 
-    return server.toLowerCase() + '\n' + identity.toLowerCase();
+    return server.toLowerCase() + '\n' +
+        (network && typeof network.caseLower === 'function' ?
+            network.caseLower(identity) :
+            identity.toLowerCase());
 }
 
 function readBucket(network) {
@@ -80,18 +83,18 @@ function cleanAvatar(value) {
     return Misc.sanitizeUrl(value);
 }
 
-function nickKey(nick) {
+function nickKey(network, nick) {
     if (!nick || typeof nick !== 'string') {
         return '';
     }
-    return 'n:' + nick.toUpperCase();
+    return 'n:' + (network ? network.caseUpper(nick) : nick.toUpperCase());
 }
 
-function accountKey(account) {
+function accountKey(network, account) {
     if (!account || typeof account !== 'string' || account === '*') {
         return '';
     }
-    return 'a:' + account.toLowerCase();
+    return 'a:' + (network ? network.caseLower(account) : account.toLowerCase());
 }
 
 function isFresh(entry) {
@@ -194,9 +197,9 @@ function ensureMeta(target) {
     }
 }
 
-function migrateUserKey(net, user) {
-    let ak = accountKey(user.account);
-    let nk = nickKey(user.nick);
+function migrateUserKey(network, net, user) {
+    let ak = accountKey(network, user.account);
+    let nk = nickKey(network, user.nick);
     if (!ak || !nk || !net.users[nk]) {
         return ak;
     }
@@ -290,7 +293,7 @@ export function rememberChannel(network, target, displayName) {
         return;
     }
 
-    let key = target.toLowerCase();
+    let key = network.caseLower(target);
     let name = cleanName(displayName);
     if (!name) {
         let existing = readBucket(network);
@@ -321,8 +324,8 @@ export function rememberUser(network, user) {
     let meta = user.metadata || {};
     let name = cleanName(meta['display-name']);
     let avatar = cleanAvatar(meta.avatar);
-    let nk = nickKey(user.nick);
-    let ak = accountKey(user.account);
+    let nk = nickKey(network, user.nick);
+    let ak = accountKey(network, user.account);
 
     if (!name && !avatar) {
         let existing = readBucket(network);
@@ -380,7 +383,7 @@ export function paintBuffer(network, buffer) {
         return;
     }
 
-    let key = String(buffer.name).toLowerCase();
+    let key = network.caseLower(buffer.name);
     let entry = net.channels[key];
     if (!entry) {
         return;
@@ -411,9 +414,9 @@ export function paintUser(network, user) {
         return;
     }
 
-    migrateUserKey(net, user);
-    let ak = accountKey(user.account);
-    let nk = nickKey(user.nick);
+    migrateUserKey(network, net, user);
+    let ak = accountKey(network, user.account);
+    let nk = nickKey(network, user.nick);
     let key = (ak && net.users[ak]) ? ak : nk;
     let entry = key && net.users[key];
     if (!entry) {

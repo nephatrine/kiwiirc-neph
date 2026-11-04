@@ -486,7 +486,7 @@ export default class BufferState {
         }
 
         let oldName = this.name;
-        let oldNameLower = oldName.toLowerCase();
+        let oldNameLower = network.caseLower(oldName);
         let wasActive = this.state.getActiveBuffer() === this;
 
         this.name = newName;
@@ -502,7 +502,7 @@ export default class BufferState {
         if (Array.isArray(lastActive)) {
             lastActive.forEach((entry) => {
                 if (entry.networkid === network.id &&
-                    String(entry.bufferName || '').toLowerCase() === oldNameLower
+                    network.caseLower(entry.bufferName || '') === oldNameLower
                 ) {
                     entry.bufferName = newName;
                 }
@@ -512,7 +512,7 @@ export default class BufferState {
         let metadataSubs = network.active_metadata_subs;
         if (metadataSubs) {
             Object.keys(metadataSubs).forEach((key) => {
-                if (key.toLowerCase() !== oldNameLower || key === newName) {
+                if (network.caseLower(key) !== oldNameLower || key === newName) {
                     return;
                 }
 
@@ -524,7 +524,7 @@ export default class BufferState {
         let metadataTargets = network.metadata_label_targets;
         if (metadataTargets && typeof metadataTargets.forEach === 'function') {
             metadataTargets.forEach((target, label) => {
-                if (String(target).toLowerCase() === oldNameLower) {
+                if (network.caseLower(target) === oldNameLower) {
                     metadataTargets.set(label, newName);
                 }
             });
@@ -679,11 +679,16 @@ export default class BufferState {
     }
 
     hasNick(nick) {
-        let nickUpper = nick.toUpperCase();
+        const network = this.getNetwork();
+        if (!network) {
+            return false;
+        }
+
+        let nickUpper = network.caseUpper(nick);
         return (
             nickUpper in this.users
-            || this.addUserBatch.queue().some((u) => u.nick.toUpperCase() === nickUpper)
-            || (this.isQuery() && this.name.toUpperCase() === nickUpper)
+            || this.addUserBatch.queue().some((u) => network.caseUpper(u.nick) === nickUpper)
+            || (this.isQuery() && network.caseCompare(this.name, nick))
         );
     }
 
@@ -732,6 +737,7 @@ export default class BufferState {
     }
 
     removeUser(nick) {
+        const network = this.getNetwork();
         let userObj = this.state.getUser(this.networkid, nick);
 
         // A user could be queued to be added, so make sure it's not there as it
@@ -743,7 +749,7 @@ export default class BufferState {
             userIdx = userQueue.indexOf(userObj);
         }
 
-        this.state.$delete(this.users, nick.toUpperCase());
+        this.state.$delete(this.users, network ? network.caseUpper(nick) : nick.toUpperCase());
 
         if (userObj) {
             delete userObj.buffers[this.id];
@@ -1042,12 +1048,15 @@ export default class BufferState {
  */
 function createUserBatch(bufferState) {
     let addSingleUser = (u) => {
-        bufferState.state.$set(bufferState.users, u.nick.toUpperCase(), u);
+        const network = bufferState.getNetwork();
+        const key = network ? network.caseUpper(u.nick) : u.nick.toUpperCase();
+        bufferState.state.$set(bufferState.users, key, u);
     };
     let addMultipleUsers = (users) => {
+        const network = bufferState.getNetwork();
         let o = Object.assign(Object.create(null), bufferState.users);
         users.forEach((u) => {
-            o[u.nick.toUpperCase()] = u;
+            o[network ? network.caseUpper(u.nick) : u.nick.toUpperCase()] = u;
         });
         bufferState.users = o;
     };

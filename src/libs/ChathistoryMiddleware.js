@@ -46,8 +46,9 @@ function addFunctionsToClient(client, network) {
         queue: [],
         queueActive: false,
         add(cb, target, type, ...args) {
-            this.callbacks[target.toUpperCase()] = this.callbacks[target.toUpperCase()] || [];
-            this.callbacks[target.toUpperCase()].push(cb);
+            const targetKey = network.caseUpper(target);
+            this.callbacks[targetKey] = this.callbacks[targetKey] || [];
+            this.callbacks[targetKey].push(cb);
 
             let tags = {};
             if (network.hasCap('labeled-response')) {
@@ -65,12 +66,13 @@ function addFunctionsToClient(client, network) {
             }
         },
         resolve(target, value) {
-            const targetCallbacks = this.callbacks[target.toUpperCase()] || [];
+            const targetKey = network.caseUpper(target);
+            const targetCallbacks = this.callbacks[targetKey] || [];
             const cb = targetCallbacks.shift();
 
             if (!targetCallbacks.length) {
                 // last callback, cleanup callbacks
-                delete this.callbacks[target.toUpperCase()];
+                delete this.callbacks[targetKey];
             }
 
             if (cb) {

@@ -12,9 +12,12 @@ let nextId = 0;
 
 export default class UserState {
     constructor(networkid, user, state) {
+        const network = state && typeof state.getNetwork === 'function' ?
+            state.getNetwork(networkid) :
+            null;
         this.id = ++nextId;
         this.networkid = networkid;
-        this.key = user.nick.toUpperCase();
+        this.key = network ? network.caseUpper(user.nick) : user.nick.toUpperCase();
         this.nick = user.nick;
         this.host = user.host || '';
         this.username = user.username || '';
@@ -186,7 +189,8 @@ export default class UserState {
     }
 
     typingStatus(_target, status) {
-        let target = _target.toUpperCase();
+        const network = this.state.getNetwork(this.networkid);
+        let target = network ? network.caseUpper(_target) : _target.toUpperCase();
         if (!status) {
             return this.typingState[target] || { status: '' };
         }

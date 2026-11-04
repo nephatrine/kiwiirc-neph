@@ -627,8 +627,8 @@ function createNewState() {
                     return null;
                 }
 
-                let toMatch = bufferName.toLowerCase();
-                let buffer = find(network.buffers, (b) => b.name.toLowerCase() === toMatch);
+                let toMatch = network.caseLower(bufferName);
+                let buffer = find(network.buffers, (b) => network.caseLower(b.name) === toMatch);
 
                 if (!buffer) {
                     buffer = this.addBuffer(networkid, bufferName);
@@ -647,8 +647,8 @@ function createNewState() {
                     return null;
                 }
 
-                let toMatch = bufferName.toLowerCase();
-                let buffer = find(network.buffers, (b) => b.name.toLowerCase() === toMatch);
+                let toMatch = network.caseLower(bufferName);
+                let buffer = find(network.buffers, (b) => network.caseLower(b.name) === toMatch);
 
                 return buffer;
             },
@@ -839,7 +839,7 @@ function createNewState() {
 
                 // If this is an echo of our own message, try to find the local version
                 // and update it with the authoritative tags/msgid from the server
-                let isEcho = message.nick === network.nick;
+                let isEcho = network.caseCompare(message.nick, network.nick);
                 let msgid = message.irc_id || (message.tags ?
                     (message.tags.msgid || message.tags['draft/msgid']) :
                     null);
@@ -902,7 +902,7 @@ function createNewState() {
                     for (let i = startIdx; i < bufMessages.length; i++) {
                         let m = bufMessages[i];
                         if (
-                            m.nick === network.nick &&
+                            network.caseCompare(m.nick, network.nick) &&
                             m.raw_text === rawText &&
                             m.is_pending && !m.irc_id &&
                             withinWindow(m)
@@ -918,7 +918,7 @@ function createNewState() {
                     for (let i = startIdx; i < bufMessages.length; i++) {
                         let m = bufMessages[i];
                         if (
-                            m.nick === network.nick &&
+                            network.caseCompare(m.nick, network.nick) &&
                             m.is_pending && !m.irc_id &&
                             withinWindow(m)
                         ) {
@@ -1146,13 +1146,14 @@ function createNewState() {
             getUser(networkid, nick, usersArr_) {
                 let user = null;
                 let users = usersArr_;
+                let network = this.getNetwork(networkid);
 
                 if (!users) {
                     users = userDict.networks[networkid];
                 }
 
                 if (users) {
-                    user = users[nick.toUpperCase()];
+                    user = users[network ? network.caseUpper(nick) : nick.toUpperCase()];
                 }
 
                 return user;
@@ -1187,10 +1188,11 @@ function createNewState() {
 
                 let usersArr = usersArr_ || userDict.networks[network.id];
                 let userObj = null;
+                let userKey = network.caseUpper(user.nick);
 
-                if (!usersArr[user.nick.toUpperCase()]) {
+                if (!usersArr[userKey]) {
                     userObj = new UserState(network.id, user, state);
-                    Vue.set(usersArr, user.nick.toUpperCase(), userObj);
+                    Vue.set(usersArr, userKey, userObj);
                 } else {
                     // Update the existing user object with any new info we have
                     userObj = state.getUser(network.id, user.nick, usersArr);
@@ -1216,7 +1218,7 @@ function createNewState() {
                     state.removeUserFromBuffer(buffer, user.nick);
                 });
 
-                Vue.delete(userDict.networks[network.id], user.nick.toUpperCase());
+                Vue.delete(userDict.networks[network.id], network.caseUpper(user.nick));
             },
 
             addMultipleUsersToBuffer(buffer, newUsers) {
@@ -1232,7 +1234,7 @@ function createNewState() {
                         if (!userObj) {
                             userObj = this.addUser(network, user, users);
                         }
-                        bufUsers[userObj.nick.toUpperCase()] = userObj;
+                        bufUsers[network.caseUpper(userObj.nick)] = userObj;
 
                         // Add the buffer to the users buffer list
                         if (!userObj.buffers[buffer.id]) {
@@ -1291,7 +1293,7 @@ function createNewState() {
                 network.buffers.forEach((buffer) => {
                     if (buffer.hasNick(nick)) {
                         buffers.push(buffer);
-                    } else if (nick === network.nick && buffer.isQuery()) {
+                    } else if (network.caseCompare(nick, network.nick) && buffer.isQuery()) {
                         buffers.push(buffer);
                     }
                 });
@@ -1328,8 +1330,8 @@ function createNewState() {
                     return;
                 }
 
-                let normalisedNew = newNick.toUpperCase();
-                let normalisedOld = oldNick.toUpperCase();
+                let normalisedNew = network.caseUpper(newNick);
+                let normalisedOld = network.caseUpper(oldNick);
 
                 user.key = normalisedNew;
                 user.nick = newNick;
@@ -1484,7 +1486,7 @@ function createNewState() {
                             const endIdx = Math.max(0, bufMessages.length - 20);
                             for (let i = startIdx; i >= endIdx; i--) {
                                 const m = bufMessages[i];
-                                if (m.is_pending && m.nick === network.nick) {
+                                if (m.is_pending && network.caseCompare(m.nick, network.nick)) {
                                     m.is_pending = false;
                                     m.type = 'error';
                                     handled = true;
@@ -1509,7 +1511,9 @@ function createNewState() {
                     const startIdx = bufMessages.length - 1;
                     const endIdx = Math.max(0, bufMessages.length - 20);
                     for (let i = startIdx; i >= endIdx; i--) {
-                        if (bufMessages[i].is_pending && bufMessages[i].nick === network.nick) {
+                        if (bufMessages[i].is_pending &&
+                            network.caseCompare(bufMessages[i].nick, network.nick)
+                        ) {
                             bufMessages[i].is_pending = false;
                             bufMessages[i].type = 'error';
                             handled = true;

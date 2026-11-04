@@ -36,7 +36,9 @@ export default class WhoQueue {
             return;
         }
 
-        const key = target.toLowerCase();
+        const key = typeof this.client.caseLower === 'function' ?
+            this.client.caseLower(target) :
+            target.toLowerCase();
         if (this.current && this.current.key === key) {
             if (typeof onWho === 'function') {
                 this.current.onWho = onWho;
@@ -119,6 +121,13 @@ export default class WhoQueue {
 
         const target = event && event.target;
         if (target && this.current.target &&
+            typeof this.client.caseCompare === 'function' &&
+            !this.client.caseCompare(target, this.current.target)
+        ) {
+            return;
+        }
+        if (target && this.current.target &&
+            typeof this.client.caseCompare !== 'function' &&
             String(target).toLowerCase() !== String(this.current.target).toLowerCase()
         ) {
             return;

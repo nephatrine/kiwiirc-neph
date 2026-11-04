@@ -779,6 +779,55 @@ export default class NetworkState {
         return parseAccountRegistrationCap(this.capValue('draft/account-registration'));
     }
 
+    caseLower(value) {
+        const str = String(value || '');
+        if (this.frameworkClient && typeof this.frameworkClient.caseLower === 'function') {
+            return this.frameworkClient.caseLower(str);
+        }
+        return str.toLowerCase();
+    }
+
+    caseUpper(value) {
+        const str = String(value || '');
+        if (this.frameworkClient && typeof this.frameworkClient.caseUpper === 'function') {
+            return this.frameworkClient.caseUpper(str);
+        }
+        return str.toUpperCase();
+    }
+
+    caseCompare(left, right) {
+        if (this.frameworkClient && typeof this.frameworkClient.caseCompare === 'function') {
+            return this.frameworkClient.caseCompare(String(left || ''), String(right || ''));
+        }
+        return String(left || '').toLowerCase() === String(right || '').toLowerCase();
+    }
+
+    reindexUsers() {
+        const users = this.users;
+        const nextUsers = Object.create(null);
+        Object.keys(users).forEach((key) => {
+            const user = users[key];
+            const nextKey = this.caseUpper(user.nick);
+            if (!nextUsers[nextKey]) {
+                nextUsers[nextKey] = user;
+                user.key = nextKey;
+            }
+        });
+        this.users = nextUsers;
+
+        this.buffers.forEach((buffer) => {
+            const nextBufferUsers = Object.create(null);
+            Object.keys(buffer.users).forEach((key) => {
+                const user = buffer.users[key];
+                const nextKey = this.caseUpper(user.nick);
+                if (!nextBufferUsers[nextKey]) {
+                    nextBufferUsers[nextKey] = user;
+                }
+            });
+            buffer.users = nextBufferUsers;
+        });
+    }
+
     /**
      * @param {string} name
      * @returns {any}
@@ -792,10 +841,7 @@ export default class NetworkState {
         // Default values
         if (name.toUpperCase() === 'PREFIX') {
             return [
-                { symbol: '~', mode: 'q' },
-                { symbol: '&', mode: 'a' },
                 { symbol: '@', mode: 'o' },
-                { symbol: '%', mode: 'h' },
                 { symbol: '+', mode: 'v' },
             ];
         }
