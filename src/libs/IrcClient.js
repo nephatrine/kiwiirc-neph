@@ -4,6 +4,7 @@ import strftime from 'strftime';
 import Irc from 'irc-framework';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import { each, find } from '@/helpers/Utils';
+import { byteLength } from '@/helpers/LoginFields';
 import { buildOutgoingMessage, serializeOutgoingMessage } from '@/helpers/IrcSerialization';
 import typingMiddleware from './TypingMiddleware';
 import limnoriaMiddleware from './LimnoriaMiddleware';
@@ -272,9 +273,13 @@ export function create(state, network) {
         originalIrcClientRaw.apply(ircClient, [out]);
     };
 
+    const needsMultiline = (message) => (
+        message.indexOf('\n') > -1 || byteLength(message) > 350
+    );
+
     const originalIrcClientSay = ircClient.say;
     ircClient.say = function say(target, message, tags) {
-        if (network.hasCap('draft/multiline') && (message.indexOf('\n') > -1 || message.length > 350)) {
+        if (network.hasCap('draft/multiline') && needsMultiline(message)) {
             BatchHandlers.sendMultiline(network, state, 'PRIVMSG', target, message, tags);
             return;
         }
@@ -283,7 +288,7 @@ export function create(state, network) {
 
     const originalIrcClientNotice = ircClient.notice;
     ircClient.notice = function notice(target, message, tags) {
-        if (network.hasCap('draft/multiline') && (message.indexOf('\n') > -1 || message.length > 350)) {
+        if (network.hasCap('draft/multiline') && needsMultiline(message)) {
             BatchHandlers.sendMultiline(network, state, 'NOTICE', target, message, tags);
             return;
         }

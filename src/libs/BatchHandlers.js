@@ -4,6 +4,50 @@ import Irc from 'irc-framework';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import { BRIDGE_CARD_TAG, isBridgeCardText } from '@/helpers/BridgeCard';
 
+const MAX_LINE_BYTES = 350;
+const MAX_CHUNK_BYTES = 300;
+const graphemeSegmenter = typeof Intl !== 'undefined' &&
+    typeof Intl.Segmenter === 'function' ?
+    new Intl.Segmenter(undefined, { granularity: 'grapheme' }) :
+    null;
+
+function splitGraphemes(value) {
+    if (graphemeSegmenter) {
+        return Array.from(graphemeSegmenter.segment(value), (entry) => entry.segment);
+    }
+    // Code points are the safest fallback available without a segmenter; they
+    // at least keep surrogate pairs together.
+    return Array.from(value);
+}
+
+function splitLineIntoChunks(line, encoder) {
+    if (encoder.encode(line).length <= MAX_LINE_BYTES) {
+        return [line];
+    }
+
+    const chunks = [];
+    let chunk = '';
+    let chunkBytes = 0;
+
+    splitGraphemes(line).forEach((grapheme) => {
+        const graphemeBytes = encoder.encode(grapheme).length;
+        if (chunkBytes > 0 && chunkBytes + graphemeBytes > MAX_CHUNK_BYTES) {
+            chunks.push(chunk);
+            chunk = '';
+            chunkBytes = 0;
+        }
+
+        chunk += grapheme;
+        chunkBytes += graphemeBytes;
+    });
+
+    if (chunk.length > 0) {
+        chunks.push(chunk);
+    }
+
+    return chunks;
+}
+
 /**
  * Handlers for specialized IRCv3 BATCH types.
  * Each handler returns an array of synthetic IrcMessage-like objects.
@@ -167,11 +211,8 @@ export function sendMultiline(network, state, commandName, target, message, tags
     const totalBytes = encoder.encode(message).length;
 
     const logicalLines = message.split(/\r\n|\n|\r/);
-    let estimatedLines = 0;
-    logicalLines.forEach((line) => {
-        // Use a safe limit for individual IRC commands (e.g., 350 bytes)
-        estimatedLines += Math.max(1, Math.ceil(encoder.encode(line).length / 350));
-    });
+    const lineChunks = logicalLines.map((line) => splitLineIntoChunks(line, encoder));
+    const estimatedLines = lineChunks.reduce((total, chunks) => total + chunks.length, 0);
 
     if ((maxBytes > 0 && totalBytes > maxBytes) || (maxLines > 0 && estimatedLines > maxLines)) {
         const buffer = network.bufferByName(target) || network.serverBuffer();
@@ -210,44 +251,18 @@ export function sendMultiline(network, state, commandName, target, message, tags
     }
     client.raw(batchStart);
 
-    logicalLines.forEach((line) => {
-        const lineBytes = encoder.encode(line);
-        if (lineBytes.length <= 350) {
-            // Single chunk line
+    lineChunks.forEach((chunks) => {
+        chunks.forEach((chunk, chunkIdx) => {
             const lineTags = { batch: batchId };
-            const msg = new client.Message(commandName, target, line);
+            if (chunkIdx > 0) {
+                // Subsequent chunks MUST have the tag (look-back)
+                lineTags['draft/multiline-concat'] = true;
+            }
+
+            const msg = new client.Message(commandName, target, chunk);
             msg.tags = lineTags;
             client.raw(msg);
-        } else {
-            // Chunked line
-            let offset = 0;
-            let chunkIdx = 0;
-            while (offset < line.length) {
-                const chunkTags = { batch: batchId };
-                if (chunkIdx > 0) {
-                    // Subsequent chunks MUST have the tag (look-back)
-                    chunkTags['draft/multiline-concat'] = true;
-                }
-
-                let chunk = '';
-                let chunkBytes = 0;
-                while (offset < line.length) {
-                    const char = line[offset];
-                    const charBytes = encoder.encode(char).length;
-                    if (chunkBytes + charBytes > 300) {
-                        break;
-                    }
-                    chunk += char;
-                    chunkBytes += charBytes;
-                    offset++;
-                }
-
-                const msg = new client.Message(commandName, target, chunk);
-                msg.tags = chunkTags;
-                client.raw(msg);
-                chunkIdx++;
-            }
-        }
+        });
     });
 
     client.raw(`BATCH -${batchId}`);

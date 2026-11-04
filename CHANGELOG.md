@@ -8,6 +8,16 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Fixed
+
+- **IRC Protocol**: Casefold user and channel state with the negotiated
+  `CASEMAPPING`, apply negated `RPL_ISUPPORT` tokens, and fall back to the
+  modern `(ov)@+` `PREFIX` only when the server does not advertise one.
+- **Chat & Input**: Preserve empty trailing IRC parameters, enforce advertised
+  byte limits for `/join`, `/topic`, `/kick`, `/away`, and `/nick`, and send
+  long multiline messages in grapheme-safe chunks so emoji and ZWJ sequences are
+  never split.
+
 ## [2.1.0] - 2026-11-03
 
 ### Added

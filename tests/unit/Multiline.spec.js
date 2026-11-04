@@ -156,5 +156,74 @@ describe('BatchHandlers.js', () => {
                 tags: expect.objectContaining({ 'draft/multiline-concat': true }),
             }));
         });
+
+        function sentMessages() {
+            return client.raw.mock.calls
+                .map(([message]) => message)
+                .filter((message) => message && message.command === 'PRIVMSG');
+        }
+
+        it('should not split surrogate pairs in long emoji lines', () => {
+            const emoji = '😀';
+            const longLine = emoji.repeat(100);
+            BatchHandlers.sendMultiline(
+                network,
+                {},
+                'PRIVMSG',
+                '#channel',
+                longLine,
+                {}
+            );
+
+            const chunks = sentMessages().map((message) => message.params[1]);
+            expect(chunks.join('')).toBe(longLine);
+            expect(chunks.length).toBeGreaterThan(1);
+            chunks.forEach((chunk) => {
+                expect(chunk.split(emoji).join('')).toBe('');
+                expect(new TextEncoder().encode(chunk).length).toBeLessThanOrEqual(300);
+            });
+        });
+
+        it('should keep ZWJ emoji sequences intact in long lines', () => {
+            const family = '👨‍👩‍👧‍👦';
+            const longLine = family.repeat(50);
+            network.capValue.mockReturnValue('max-bytes=10000,max-lines=10');
+            BatchHandlers.sendMultiline(
+                network,
+                {},
+                'PRIVMSG',
+                '#channel',
+                longLine,
+                {}
+            );
+
+            const chunks = sentMessages().map((message) => message.params[1]);
+            expect(chunks.join('')).toBe(longLine);
+            expect(chunks.length).toBeGreaterThan(1);
+            chunks.forEach((chunk) => {
+                expect(chunk.split(family).join('')).toBe('');
+                expect(new TextEncoder().encode(chunk).length).toBeLessThanOrEqual(300);
+            });
+        });
+
+        it('should count generated chunks when enforcing max-lines', () => {
+            network.capValue.mockReturnValue('max-bytes=10000,max-lines=2');
+            const state = { addMessage: jest.fn() };
+
+            BatchHandlers.sendMultiline(
+                network,
+                state,
+                'PRIVMSG',
+                '#channel',
+                'a'.repeat(700),
+                {}
+            );
+
+            expect(client.raw).not.toHaveBeenCalled();
+            expect(state.addMessage).toHaveBeenCalledWith(
+                undefined,
+                expect.objectContaining({ type: 'error' })
+            );
+        });
     });
 });
