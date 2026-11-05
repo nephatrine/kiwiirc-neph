@@ -25,8 +25,10 @@ import SockJS from 'sockjs-client';
 import EventEmitter from 'eventemitter3';
 
 const serverConnections = Object.create(null);
-const createdChannels = Object.create(null);
 const controlChannel = '0';
+// Auto-generated IDs are used by server probes. Keep them clear of the small
+// network IDs used for real sessions so probe channels are never reused.
+const AUTO_CHANNEL_ID_BASE = 1000000;
 
 /**
  *
@@ -63,36 +65,48 @@ function createNewConnection(wsAddr, sessionId) {
 
     serverConnections[wsAddr] = connection;
 
-    connection.nextChannelId = 1;
+    connection.nextChannelId = AUTO_CHANNEL_ID_BASE;
     connection.connected = false;
+    connection.channels = Object.create(null);
 
     connection.reconnect =
     connection.connect = function connect() {
-        if (connection.ws) {
+        const oldSocket = connection.ws;
+        connection.ws = null;
+        if (oldSocket) {
             try {
-                connection.ws.close();
+                oldSocket.close();
             } catch (err) {
                 // Ignore any closing errors. Most likely due to not
                 // being connected yet.
             }
-
-            connection.ws = null;
         }
-        connection.ws = new SockJS(wsAddr);
-        connection.ws.onopen = () => {
+
+        const socket = new SockJS(wsAddr);
+        connection.ws = socket;
+        socket.onopen = () => {
+            if (connection.ws !== socket) {
+                return;
+            }
             let connectStr = sessionId ?
                 'CONTROL SESSION ' + sessionId :
                 'CONTROL START';
-            connection.ws.send(`:${controlChannel} ${connectStr}`);
+            socket.send(`:${controlChannel} ${connectStr}`);
             connection.connected = true;
             connection.emit('open');
         };
-        connection.ws.onclose = (err) => {
+        socket.onclose = (err) => {
+            if (connection.ws !== socket) {
+                return;
+            }
             connection.connected = false;
             connection.ws = null;
             connection.emit('close', err);
         };
-        connection.ws.onmessage = (event) => {
+        socket.onmessage = (event) => {
+            if (connection.ws !== socket) {
+                return;
+            }
             connection.emit('message', event);
 
             // If the message starts with ":channel " then extract that channel and emit
@@ -133,13 +147,13 @@ function createNewConnection(wsAddr, sessionId) {
 function createChannelOnConnection(connection, channelId) {
     // Only allow 1 ConnectionChannel instance per channel
     return function ConnectionChannelWrapper(options) {
-        if (!createdChannels[channelId]) {
-            createdChannels[channelId] = new ConnectionChannel(options);
+        if (!connection.channels[channelId]) {
+            connection.channels[channelId] = new ConnectionChannel(options);
         } else if (connection.connected) {
-            createdChannels[channelId].initChannel();
+            connection.channels[channelId].initChannel();
         }
 
-        return createdChannels[channelId];
+        return connection.channels[channelId];
     };
 
     function ConnectionChannel(options) {
@@ -153,12 +167,15 @@ function createChannelOnConnection(connection, channelId) {
         channel.remoteState = 0;
 
         // When the websocket opens, open this channel on it
-        connection.on('open', () => {
-            connection.ws.send(':' + channelId);
-        });
+        const onConnectionOpen = () => {
+            if (connection.ws) {
+                connection.ws.send(':' + channelId);
+            }
+        };
+        connection.on('open', onConnectionOpen);
         // When we get confirmation of this channel being opened, send any control
         // messages that were buffered
-        connection.on('open.' + channelId, () => {
+        const onChannelOpen = () => {
             channel.isOpen = true;
             // channel.emit('open');
             if (sendControlBuffer.length) {
@@ -173,14 +190,16 @@ function createChannelOnConnection(connection, channelId) {
             // This channel is now open and can start sending data to the server
             channel.remoteState = 1;
             channel.emit('open');
-        });
-        connection.on('close', (err) => {
+        };
+        connection.on('open.' + channelId, onChannelOpen);
+        const onConnectionClose = (err) => {
             channel.state = 3;
             channel.remoteState = 0;
             channel.isOpen = false;
             channel.emit('close', err);
-        });
-        connection.on('message.' + channelId, (event) => {
+        };
+        connection.on('close', onConnectionClose);
+        const onChannelMessage = (event) => {
             if (event.data.indexOf('control ') === 0) {
                 // When we get the signal that the connection to the IRC server
                 // has connected, start proxying all data
@@ -198,11 +217,12 @@ function createChannelOnConnection(connection, channelId) {
             if (channel.remoteState === 1) {
                 channel.emit('line', event.data);
             }
-        });
+        };
+        connection.on('message.' + channelId, onChannelMessage);
 
         // Send a control message to the server (not relayed to an IRC network)
         channel.sendControl = function writeTarget(data) {
-            if (channel.isOpen) {
+            if (channel.isOpen && connection.ws) {
                 connection.ws.send(':' + channelId + ' ' + data);
             } else {
                 sendControlBuffer.push(data);
@@ -211,7 +231,7 @@ function createChannelOnConnection(connection, channelId) {
 
         channel.writeLine = function writeTarget(data, cb) {
             // Buffer the data if the socket has not yet been sent
-            if (channel.remoteState >= 1) {
+            if (channel.remoteState >= 1 && connection.ws) {
                 connection.ws.send(':' + channelId + ' ' + data);
             }
 
@@ -239,7 +259,7 @@ function createChannelOnConnection(connection, channelId) {
         };
 
         channel.close = function close() {
-            if (channel.remoteState >= 1) {
+            if (channel.remoteState >= 1 && connection.ws) {
                 connection.ws.send(':' + channelId);
             }
         };
@@ -247,18 +267,29 @@ function createChannelOnConnection(connection, channelId) {
         // This is not supported but irc-framework transports need it, so just noop it
         channel.setEncoding = function setEncoding(newEncoding) {
             encoding = newEncoding;
-            if (connection.connected) {
+            if (connection.connected && connection.ws) {
                 connection.ws.send(':' + channelId + ' ENCODING ' + newEncoding);
             }
             return true;
         };
 
         channel.disposeSocket = function disposeSocket() {
-            // noop
+            connection.removeListener('open', onConnectionOpen);
+            connection.removeListener('open.' + channelId, onChannelOpen);
+            connection.removeListener('close', onConnectionClose);
+            connection.removeListener('message.' + channelId, onChannelMessage);
+            channel.isOpen = false;
+            channel.remoteState = 0;
+            sendControlBuffer = [];
+            if (connection.channels[channelId] === channel) {
+                delete connection.channels[channelId];
+            }
         };
 
         channel.initChannel = function initChannel() {
-            connection.ws.send(':' + channelId);
+            if (connection.ws) {
+                connection.ws.send(':' + channelId);
+            }
         };
         // Let the server know of this new channel if we're already connected
         if (connection.connected) {

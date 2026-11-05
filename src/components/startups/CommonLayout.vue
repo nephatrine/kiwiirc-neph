@@ -78,7 +78,9 @@ export default {
                     this.$state.persistence.includePasswords = this.rememberPasswords;
                     this.$state.persistence.watchStateForChanges();
                 } else {
-                    this.$state.persistence.forgetState();
+                    this.$state.persistence.clearStoredState().catch((err) => {
+                        window.console.warn('Failed to clear saved state', err);
+                    });
                 }
                 // Hacky to be using $parent but this component should only be used in a sepcific
                 // scope within startup screens

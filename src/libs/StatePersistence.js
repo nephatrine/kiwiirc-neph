@@ -97,10 +97,17 @@ export default class StatePersistence {
         ));
     }
 
-    async forgetState() {
+    async clearStoredState() {
+        this.stopWatchingState();
         await WebpushUtils.unsubscribeStateBrowserSubscriptions(this.state.stateKey());
-        this.state.resetState();
-        await this.storage.set(this.storageKey, null);
+        if (this.storageKey) {
+            await this.storage.set(this.storageKey, null);
+        }
         await MetadataCache.clear();
+    }
+
+    async forgetState() {
+        await this.clearStoredState();
+        this.state.resetState();
     }
 }

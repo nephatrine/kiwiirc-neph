@@ -49,6 +49,26 @@ describe('BouncerProvider network saving', () => {
         s.addMessage = jest.fn();
     });
 
+    it('flushes a save that was deferred until a controller is ready', () => {
+        let network = s.addNetwork('Deferred', 'nick', {
+            server: 'irc.example.com',
+            port: 6697,
+        });
+
+        provider.getController = () => null;
+        provider.listenToState();
+        s.$emit('network.connecting', { network });
+        expect(provider.pendingSave).toBe(true);
+        expect(addNetwork).not.toHaveBeenCalled();
+
+        provider.getController = () => controller;
+        addNetwork.mockReturnValue(Promise.resolve({ netid: 'deferred-1' }));
+        provider.onBouncerNetworks([]);
+
+        expect(provider.pendingSave).toBe(false);
+        expect(addNetwork).toHaveBeenCalled();
+    });
+
     it('never saves the bouncer control connection as a network', () => {
         let control = s.addNetwork('BNC', 'nick', {
             server: 'bnc.example.com',

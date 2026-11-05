@@ -93,15 +93,26 @@ function theMiddleware(network, command, message, rawLine, client, next) {
 }
 
 async function processScramStep(client, fullPayload) {
+    const scram = client.sasl_scram;
+    if (!scram) {
+        return;
+    }
+
     try {
         let response = '';
-        if (client.sasl_scram.state === 'FIRST_SENT') {
-            response = await client.sasl_scram.handleServerFirst(fullPayload);
-        } else if (client.sasl_scram.state === 'FINAL_SENT') {
-            await client.sasl_scram.handleServerFinal(fullPayload);
+        if (scram.state === 'FIRST_SENT') {
+            response = await scram.handleServerFirst(fullPayload);
+        } else if (scram.state === 'FINAL_SENT') {
+            await scram.handleServerFinal(fullPayload);
             // SASL protocol requires a final empty response to a server-final challenge
             // if it was successful.
             response = '+';
+        }
+
+        // A reconnect resets client.sasl_scram. Never write an old handshake
+        // response onto the replacement connection.
+        if (client.sasl_scram !== scram) {
+            return;
         }
 
         if (response) {
@@ -112,6 +123,9 @@ async function processScramStep(client, fullPayload) {
             }
         }
     } catch (err) {
+        if (client.sasl_scram !== scram) {
+            return;
+        }
         client.sasl_scram = null;
         // RFC 5802 requirement: abort on verification failure
         client.quit('SASL SCRAM handshake failed');

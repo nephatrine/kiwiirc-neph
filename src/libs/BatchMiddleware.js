@@ -12,6 +12,15 @@ export default function batchMiddleware(network) {
         // Active batches indexed by ID
         client.active_batches = client.active_batches || new Map();
 
+        const resetBatches = () => {
+            client.active_batches.clear();
+            if (network.active_outgoing_batches) {
+                network.active_outgoing_batches.clear();
+            }
+        };
+        client.on('connecting', resetBatches);
+        client.on('close', resetBatches);
+
         rawEvents.use((command, message, rawLine, clientInstance, next) => {
             if (message.is_batch_handled) {
                 next();

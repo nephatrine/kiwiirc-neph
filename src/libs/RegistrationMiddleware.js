@@ -196,6 +196,10 @@ export default function registrationMiddleware(network) {
     return function middlewareFn(client, rawEvents) {
         const state = network.appState;
 
+        client.on('connecting', () => {
+            scrubRegisterGate(client);
+        });
+
         // Pre-connect gate: runs before irc-framework's own ACK
         // processing, so the planted token holds CAP END open.
         rawEvents.use((command, event, rawLine, clientArg, next) => {

@@ -42,6 +42,8 @@ export default class BouncerProvider {
 
         // If we are currently monitoring for network settings changes
         this.monitoringChanges = false;
+        // A network requested a save while no bouncer controller was ready.
+        this.pendingSave = false;
 
         state.$on('irc.motd', this.onNetworkMotd.bind(this));
         state.$on('irc.bouncer networks', this.onBouncerNetworks.bind(this));
@@ -191,6 +193,11 @@ export default class BouncerProvider {
 
         // start monitoring network changes
         this.monitorNetworkChanges();
+
+        if (this.pendingSave) {
+            this.pendingSave = false;
+            this.saveState();
+        }
 
         if (this.state.getActiveBuffer()) {
             return;
@@ -555,9 +562,11 @@ export default class BouncerProvider {
             let controller = this.getController();
             if (!controller) {
                 log.debug('No controller available to save network states');
+                this.pendingSave = true;
                 return;
             }
 
+            this.pendingSave = false;
             this.saveState();
         });
         state.$on('irc.motd', (event, network) => {

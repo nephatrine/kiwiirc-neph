@@ -1,5 +1,5 @@
 import EventEmitter from 'eventemitter3';
-import chathistoryMiddleware from '@/libs/ChathistoryMiddleware';
+import chathistoryMiddleware, { HISTORY_REQUEST_TIMEOUT_MS } from '@/libs/ChathistoryMiddleware';
 
 function createClient() {
     const client = new EventEmitter();
@@ -45,6 +45,10 @@ describe('chathistory reconnect cleanup', () => {
         chathistoryMiddleware(createNetwork())(client, {}, { use: jest.fn() });
     });
 
+    afterEach(() => {
+        jest.useRealTimers();
+    });
+
     it('resolves pending requests and clears the queue on socket close', async() => {
         const first = client.chathistory.latest('#test', '*');
         const second = client.chathistory.latest('#test', '*');
@@ -80,5 +84,69 @@ describe('chathistory reconnect cleanup', () => {
         client.chathistory.latest('#test', '*');
 
         expect(client.raw).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not time out requests while they wait in the queue', async() => {
+        jest.useFakeTimers();
+        const first = client.chathistory.latest('#one', '*');
+        const second = client.chathistory.latest('#two', '*');
+
+        expect(client.raw).toHaveBeenCalledTimes(1);
+
+        await jest.advanceTimersByTimeAsync(HISTORY_REQUEST_TIMEOUT_MS - 1000);
+        expect(client.raw).toHaveBeenCalledTimes(1);
+
+        client.chathistory.batchCallbacks.resolve('#one', { commands: [] });
+        await jest.advanceTimersByTimeAsync(0);
+        expect(client.raw).toHaveBeenCalledTimes(2);
+
+        let secondSettled = false;
+        second.then(() => {
+            secondSettled = true;
+        });
+
+        await jest.advanceTimersByTimeAsync(HISTORY_REQUEST_TIMEOUT_MS - 1000);
+        await jest.advanceTimersByTimeAsync(0);
+        expect(secondSettled).toBe(false);
+
+        await jest.advanceTimersByTimeAsync(1000);
+        await jest.advanceTimersByTimeAsync(0);
+        expect(secondSettled).toBe(true);
+        await expect(first).resolves.toMatchObject({ commands: [] });
+        await expect(second).resolves.toMatchObject({ error: 'timeout' });
+    });
+
+    it('times out a sent request and advances the queue', async() => {
+        jest.useFakeTimers();
+        const first = client.chathistory.latest('#one', '*');
+        const second = client.chathistory.latest('#two', '*');
+
+        await jest.advanceTimersByTimeAsync(HISTORY_REQUEST_TIMEOUT_MS);
+        await expect(first).resolves.toMatchObject({ error: 'timeout' });
+        expect(client.raw).toHaveBeenCalledTimes(2);
+
+        client.chathistory.batchCallbacks.resolve('#two', { commands: [] });
+        await expect(second).resolves.toMatchObject({ commands: [] });
+    });
+
+    it('ignores a late response that arrives after a timeout', async() => {
+        jest.useFakeTimers();
+        const first = client.chathistory.latest('#one', '*');
+        const second = client.chathistory.latest('#two', '*');
+        const third = client.chathistory.latest('#three', '*');
+
+        await jest.advanceTimersByTimeAsync(HISTORY_REQUEST_TIMEOUT_MS);
+        await expect(first).resolves.toMatchObject({ error: 'timeout' });
+        expect(client.raw).toHaveBeenCalledTimes(2);
+
+        client.chathistory.batchCallbacks.resolve('#one', { commands: [] });
+        expect(client.raw).toHaveBeenCalledTimes(2);
+
+        client.chathistory.batchCallbacks.resolve('#two', { commands: [] });
+        expect(client.raw).toHaveBeenCalledTimes(3);
+
+        client.chathistory.batchCallbacks.resolve('#three', { commands: [] });
+        await expect(second).resolves.toMatchObject({ commands: [] });
+        await expect(third).resolves.toMatchObject({ commands: [] });
     });
 });

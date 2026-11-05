@@ -184,6 +184,8 @@ export default class NetworkState {
         this.active_metadata_subs = Object.create(null);
         this.metadata_throttles = new Map();
         this.metadata_label_targets = new Map();
+        def(this, 'metadata_sync_timers', new Map(), false);
+        def(this, 'connection_generation', 0, true);
 
         bufferDict.$set(bufferDict.networks, this.id, []);
     }

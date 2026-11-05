@@ -74,6 +74,7 @@ export default {
             addedNetworkToExisting: false,
             server: null,
             readyToShowOptions: false,
+            starting: false,
         };
     },
     computed: {
@@ -173,16 +174,22 @@ export default {
 
             this.addedNetworkToExisting = true;
         },
-        addNetwork(temporary = false) {
-            if (!this.server) {
+        async addNetwork(temporary = false) {
+            if (!this.server || this.starting) {
                 return;
             }
+            this.starting = true;
 
             let con = this.server;
 
             if (temporary) {
+                try {
+                    await this.$state.persistence.forgetState();
+                } catch (err) {
+                    this.$state.resetState();
+                    window.console.warn('Failed to clear saved state', err);
+                }
                 this.$state.persistence.storageKey = null;
-                this.$state.persistence.forgetState();
 
                 this.init();
             }
@@ -212,6 +219,7 @@ export default {
             this.$emit('start', {
                 fallbackComponent: this.constructor,
             });
+            this.starting = false;
         },
         parseFragment() {
             if (window.location.hash.substr(1)) {

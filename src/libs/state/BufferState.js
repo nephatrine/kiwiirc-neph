@@ -12,7 +12,35 @@ import { each, find } from '@/helpers/Utils';
 
 let nextBufferId = 0;
 
-const HISTORY_REQUEST_TIMEOUT_MS = 15000;
+const HISTORY_MAX_RETRIES = 3;
+const HISTORY_RETRY_BASE_MS = 3000;
+const HISTORY_RETRY_MAX_MS = 12000;
+const READ_MARKER_THROTTLE_MS = 1000;
+const READ_MARKER_CONFIRM_TIMEOUT_MS = 15000;
+const CHAT_MESSAGE_TYPES = ['privmsg', 'notice', 'action', 'message'];
+
+function hasServerTimestamp(message) {
+    return !!message &&
+        !!message.server_time &&
+        !!message.tags &&
+        typeof message.tags.time !== 'undefined';
+}
+
+function buildMessageReference(message, refTypes) {
+    if (!message) {
+        return null;
+    }
+
+    if (refTypes.includes('msgid') && message.irc_id) {
+        return message.irc_id;
+    }
+
+    if (refTypes.includes('timestamp') && hasServerTimestamp(message)) {
+        return new Date(message.server_time);
+    }
+
+    return null;
+}
 
 /** The IRC buffer instance */
 export default class BufferState {
@@ -86,6 +114,11 @@ export default class BufferState {
         def(this, 'isMessageTrimming', true, true);
         def(this, 'addMessageBatch', createMessageBatch(this), false);
         def(this, 'addUserBatch', createUserBatch(this), false);
+        def(this, 'chathistory_retry_timeout', null, true);
+        def(this, 'chathistory_pending_requests', 0, true);
+        def(this, 'read_marker_timeout', null, true);
+        def(this, 'read_marker_pending', null, true);
+        def(this, 'read_marker_pending_timer', null, true);
 
         // poll who to update away status if away-notify is not enabled
         if (this.isChannel() || this.isQuery()) {
@@ -110,6 +143,13 @@ export default class BufferState {
         // Clean up the previous event and itself when the buffer is closed.
         function onBufferClose(event) {
             if (event.buffer === this) {
+                if (this.active_timeout) {
+                    clearTimeout(this.active_timeout);
+                    this.active_timeout = null;
+                }
+                this.clearHistoryRetry();
+                this.clearReadMarkerTimeout();
+                this.clearReadMarkerPending();
                 this.state.$off('network.connecting', onNetworkConnectingBound);
                 this.state.$off('buffer.close', onBufferCloseBound);
                 this.state.$off('irc.motd', onNetworkMotdBound);
@@ -131,12 +171,49 @@ export default class BufferState {
     }
 
     resetHistoryForReconnect() {
+        if (this.active_timeout) {
+            clearTimeout(this.active_timeout);
+            this.active_timeout = null;
+        }
+        this.chathistory_pending_requests = 0;
+        this.clearHistoryRetry();
+        this.clearReadMarkerTimeout();
+        this.clearReadMarkerPending();
         this.chathistory_request_count = 0;
         this.flags.is_requesting_chathistory = false;
         this.flags.chathistory_available = true;
         this.flags.names_received = false;
         this.flags.marker_received = false;
         this.flags.motd_history_done = false;
+    }
+
+    clearReadMarkerTimeout() {
+        if (this.read_marker_timeout) {
+            clearTimeout(this.read_marker_timeout);
+            this.read_marker_timeout = null;
+        }
+    }
+
+    clearReadMarkerPending() {
+        if (this.read_marker_pending_timer) {
+            clearTimeout(this.read_marker_pending_timer);
+            this.read_marker_pending_timer = null;
+        }
+        this.read_marker_pending = null;
+    }
+
+    clearHistoryRetry() {
+        if (this.chathistory_retry_timeout) {
+            clearTimeout(this.chathistory_retry_timeout);
+            this.chathistory_retry_timeout = null;
+        }
+        this.updateHistoryLoadingState();
+    }
+
+    updateHistoryLoadingState() {
+        this.flags.is_requesting_chathistory =
+            this.chathistory_pending_requests > 0 ||
+            !!this.chathistory_retry_timeout;
     }
 
     initHistory() {
@@ -261,7 +338,7 @@ export default class BufferState {
         }
 
         // Buffer is no longer visible
-        if (this.active_timeout) {
+        if (this.active_timeout || this.read_marker_timeout) {
             this.markAsRead(false);
         }
     }
@@ -546,15 +623,15 @@ export default class BufferState {
         return this.flags[name];
     }
 
-    getHistoryReference(direction = 'backward') {
+    getReferenceMessage(direction = 'backward', refTypes = ['msgid', 'timestamp'], options = {}) {
+        const includePending = options.includePending !== false;
         const messages = this.getMessages();
         const queue = this.addMessageBatch.queue();
         const allMessages = [...messages, ...queue];
-
-        const validTypes = ['privmsg', 'notice', 'action', 'message'];
         const validMessages = allMessages.filter((m) => (
-            validTypes.includes(m.type) &&
-            (m.irc_id || m.is_history)
+            CHAT_MESSAGE_TYPES.includes(m.type) &&
+            (includePending || !m.is_pending) &&
+            !!buildMessageReference(m, refTypes)
         ));
 
         if (validMessages.length === 0) {
@@ -570,6 +647,54 @@ export default class BufferState {
         return validMessages.reduce((latest, current) => (
             (current.time >= latest.time) ? current : latest
         ));
+    }
+
+    getHistoryReference(direction = 'backward') {
+        const network = this.getNetwork();
+        const history = network && network.ircClient && network.ircClient.chathistory;
+        const refTypes = history && typeof history.supportedRefTypes === 'function' ?
+            history.supportedRefTypes() :
+            ['msgid', 'timestamp'];
+        return this.getReferenceMessage(direction, refTypes, { includePending: true });
+    }
+
+    getReadMarkerMessage() {
+        return this.getReferenceMessage(
+            'forward',
+            ['timestamp'],
+            { includePending: false }
+        );
+    }
+
+    getMessageByServerTime(serverTime) {
+        if (!serverTime) {
+            return null;
+        }
+
+        const messages = this.getMessages();
+        const queue = this.addMessageBatch.queue();
+        const matches = [...messages, ...queue].filter((m) => (
+            CHAT_MESSAGE_TYPES.includes(m.type) &&
+            m.server_time === serverTime
+        ));
+
+        if (matches.length === 0) {
+            return null;
+        }
+
+        return matches.reduce((latest, current) => (
+            (current.time >= latest.time) ? current : latest
+        ));
+    }
+
+    localTimeForServerMarker(serverTime) {
+        const message = this.getMessageByServerTime(serverTime);
+        if (message) {
+            return message.time;
+        }
+
+        const network = this.getNetwork();
+        return network ? network.timeToLocal(serverTime) : serverTime;
     }
 
     requestScrollback(_direction) {
@@ -642,31 +767,196 @@ export default class BufferState {
             clearTimeout(this.active_timeout);
             this.active_timeout = null;
         }
+        this.clearReadMarkerTimeout();
+
         if (delayed) {
             this.active_timeout = setTimeout(
                 this.markAsRead.bind(this),
                 10000,
                 false
             );
-        } else {
-            this.last_read = Date.now();
+            return;
+        }
 
-            let network = this.getNetwork();
-            if (!network) {
+        const network = this.getNetwork();
+        if (!network) {
+            return;
+        }
+
+        // Without read-marker support the local clock is all we have.
+        if (this.name[0] === '*' || !network.hasCap('draft/read-marker')) {
+            this.last_read = Date.now();
+            return;
+        }
+
+        const markerMessage = this.getReadMarkerMessage();
+        const markerTime = markerMessage ? markerMessage.server_time : 0;
+
+        if (!markerTime) {
+            if (this.flags.last_read_authoritative) {
+                this.last_read = this.localTimeForServerMarker(
+                    this.flags.last_read_authoritative
+                );
+            }
+            return;
+        }
+
+        if (this.read_marker_pending &&
+            this.read_marker_pending.serverTime >= markerTime
+        ) {
+            this.last_read = this.read_marker_pending.localTime;
+            return;
+        }
+
+        if (markerTime <= this.flags.last_read_authoritative) {
+            this.last_read = this.localTimeForServerMarker(
+                this.flags.last_read_authoritative
+            );
+            return;
+        }
+
+        // Optimistically show the exact local time of the message being
+        // marked. Reusing the timestamp here avoids clock-offset drift when
+        // the server echo arrives.
+        this.last_read = markerMessage.time;
+        const label = network.ircClient.readMarker.set(
+            this.name,
+            new Date(markerTime)
+        );
+
+        this.clearReadMarkerPending();
+        const pending = {
+            label: label || '',
+            serverTime: markerTime,
+            localTime: markerMessage.time,
+        };
+        this.read_marker_pending = pending;
+        this.read_marker_pending_timer = setTimeout(() => {
+            if (this.read_marker_pending === pending) {
+                this.read_marker_pending = null;
+                this.read_marker_pending_timer = null;
+            }
+        }, READ_MARKER_CONFIRM_TIMEOUT_MS);
+    }
+
+    markAsReadSoon() {
+        const network = this.getNetwork();
+        if (!network || this.name[0] === '*' ||
+            !network.hasCap('draft/read-marker')
+        ) {
+            return;
+        }
+
+        // Throttle so a busy buffer sends at most one marker per window.
+        if (this.read_marker_timeout) {
+            return;
+        }
+
+        this.read_marker_timeout = setTimeout(() => {
+            this.read_marker_timeout = null;
+            this.markAsRead(false);
+        }, READ_MARKER_THROTTLE_MS);
+    }
+
+    noteVisibleMessage(message) {
+        const network = this.getNetwork();
+        if (!network) {
+            return;
+        }
+
+        if (this.name[0] !== '*' && network.hasCap('draft/read-marker')) {
+            if (hasServerTimestamp(message)) {
+                this.last_read = message.time;
+                this.markAsReadSoon();
+            }
+            return;
+        }
+
+        this.last_read = message.time;
+    }
+
+    applyServerReadMarker(serverTime, label) {
+        const network = this.getNetwork();
+        if (!network) {
+            return;
+        }
+
+        if (!serverTime) {
+            // MARKREAD * means the server has no stored marker. Do not treat
+            // the current local clock as an authoritative read position.
+            if (this.read_marker_pending) {
+                return;
+            }
+            this.flags.last_read_authoritative = 0;
+            if (this.isVisible) {
+                this.markAsReadSoon();
+            }
+            return;
+        }
+
+        const pending = this.read_marker_pending;
+        const labelMatches = !!(pending && label &&
+            pending.label && label === pending.label);
+        const sameTime = !!(pending && serverTime === pending.serverTime);
+
+        if (pending) {
+            if ((labelMatches || sameTime) && serverTime === pending.serverTime) {
+                this.clearReadMarkerPending();
+                this.flags.last_read_authoritative = serverTime;
+                this.last_read = pending.localTime;
+                this.flags.unread = 0;
+                this.flags.highlight = false;
                 return;
             }
 
-            // 1. DRAFT read-marker (IRCv3 Standard)
-            // Only use this for chat buffers.
-            // Exclude special buffers (names starting with *) and server buffers.
-            if (this.name[0] !== '*' && network.hasCap('draft/read-marker')) {
-                const lastMsg = this.getHistoryReference('forward');
-                if (lastMsg && lastMsg.server_time > this.flags.last_read_authoritative) {
-                    // Update authoritative state optimistically
-                    this.flags.last_read_authoritative = lastMsg.server_time;
-                    network.ircClient.readMarker.set(this.name, new Date(lastMsg.server_time));
-                }
+            if (!labelMatches && !sameTime && serverTime < pending.serverTime) {
+                // A stale server marker must not undo a newer marker that is
+                // still awaiting confirmation.
+                return;
             }
+
+            this.clearReadMarkerPending();
+        }
+
+        if (serverTime < this.flags.last_read_authoritative) {
+            // Read markers only move forward; ignore late or stale markers.
+            return;
+        }
+
+        const authoritative = serverTime;
+        this.flags.last_read_authoritative = authoritative;
+        this.last_read = this.localTimeForServerMarker(authoritative);
+        this.flags.unread = 0;
+        this.flags.highlight = false;
+
+        if (this.isVisible) {
+            const marker = this.getReadMarkerMessage();
+            if (marker && marker.server_time > authoritative) {
+                this.markAsReadSoon();
+            }
+        }
+    }
+
+    readMarkerFailed(label) {
+        const network = this.getNetwork();
+        if (!network) {
+            return;
+        }
+
+        const pending = this.read_marker_pending;
+        if (pending && label && pending.label && label !== pending.label) {
+            // A failure for a different request must not clear this one.
+            return;
+        }
+
+        this.clearReadMarkerPending();
+
+        if (this.flags.last_read_authoritative) {
+            this.last_read = this.localTimeForServerMarker(
+                this.flags.last_read_authoritative
+            );
+        } else {
+            this.last_read = 0;
         }
     }
 
@@ -1189,32 +1479,67 @@ function maybeStartWhoLoop(bufferState) {
     }
 }
 
-function getBufferHistory(buffer, chathistoryFuncName, time, depth = 0) {
-    let ircClient = buffer.getNetwork().ircClient;
+function getBufferHistory(buffer, chathistoryFuncName, time, depth = 0, attempt = 0) {
+    const network = buffer.getNetwork();
+    if (!network || !network.ircClient) {
+        return Promise.resolve();
+    }
+
+    let ircClient = network.ircClient;
     if (!ircClient.chathistory.isSupported()) {
         return Promise.resolve();
     }
 
-    if (depth === 0) {
-        buffer.flag('is_requesting_chathistory', true);
-    }
+    const connectionGeneration = network.connection_generation;
+    const isCurrentConnection = () => {
+        const current = buffer.getNetwork();
+        return current === network &&
+            current.connection_generation === connectionGeneration;
+    };
+
+    buffer.chathistory_pending_requests += 1;
+    buffer.updateHistoryLoadingState();
     buffer.chathistory_request_count += 1;
     let existingMessageIds = Object.assign({}, buffer.messagesObj.messageIds);
-    const request = ircClient.chathistory[chathistoryFuncName](buffer.name, time);
-    let timeoutId = null;
-    const timeout = new Promise((resolve) => {
-        timeoutId = setTimeout(() => {
-            resolve({
-                error: 'timeout',
-                reason: 'History request timed out',
-            });
-        }, HISTORY_REQUEST_TIMEOUT_MS);
-    });
 
-    return Promise.race([request, timeout]).then((event) => {
+    return ircClient.chathistory[chathistoryFuncName](buffer.name, time).then((event) => {
+        if (!isCurrentConnection()) {
+            return undefined;
+        }
+
         if (!event) {
             buffer.flag('chathistory_available', false);
-            return;
+            return undefined;
+        }
+
+        if (event.error === 'timeout') {
+            // A timeout means the request may have been rate limited or the
+            // server may still be busy. Keep manual loading available and try
+            // the same request again after a short backoff.
+            buffer.flag('chathistory_available', true);
+
+            if (attempt < HISTORY_MAX_RETRIES && isCurrentConnection()) {
+                const delay = Math.min(
+                    HISTORY_RETRY_BASE_MS * (2 ** attempt),
+                    HISTORY_RETRY_MAX_MS
+                );
+
+                buffer.clearHistoryRetry();
+                buffer.chathistory_retry_timeout = setTimeout(() => {
+                    buffer.chathistory_retry_timeout = null;
+                    if (isCurrentConnection() && network.state === 'connected') {
+                        getBufferHistory(buffer, chathistoryFuncName, time, depth, attempt + 1);
+                    }
+                }, delay);
+            } else {
+                buffer.state.addMessage(buffer, {
+                    time: Date.now(),
+                    nick: '*',
+                    message: 'Failed to load history: ' + (event.reason || event.error),
+                    type: 'error',
+                });
+            }
+            return undefined;
         }
 
         if (event.error) {
@@ -1228,13 +1553,13 @@ function getBufferHistory(buffer, chathistoryFuncName, time, depth = 0) {
                 });
                 buffer.flag('chathistory_available', false);
             }
-            return;
+            return undefined;
         }
 
         if (typeof event.is_end !== 'undefined') {
             buffer.flag('chathistory_available', !event.is_end);
             if (event.is_end) {
-                return;
+                return undefined;
             }
         }
 
@@ -1250,7 +1575,7 @@ function getBufferHistory(buffer, chathistoryFuncName, time, depth = 0) {
         buffer.flag('chathistory_available', hasNewMessages);
 
         if (!hasNewMessages) {
-            return;
+            return undefined;
         }
 
         // Recursive gap fill logic
@@ -1267,16 +1592,17 @@ function getBufferHistory(buffer, chathistoryFuncName, time, depth = 0) {
             }
 
             if (ref) {
-                // Fetch the next chunk recursively
-                getBufferHistory(buffer, 'before', ref, depth + 1);
+                // Fetch the next chunk recursively and keep the loading state
+                // active until the whole gap-fill chain finishes.
+                return getBufferHistory(buffer, 'before', ref, depth + 1);
             }
         }
+        return undefined;
     }).finally(() => {
-        if (timeoutId) {
-            clearTimeout(timeoutId);
-        }
-        if (depth === 0) {
-            buffer.flag('is_requesting_chathistory', false);
-        }
+        buffer.chathistory_pending_requests = Math.max(
+            0,
+            buffer.chathistory_pending_requests - 1
+        );
+        buffer.updateHistoryLoadingState();
     });
 }

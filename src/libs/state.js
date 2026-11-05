@@ -1030,7 +1030,7 @@ function createNewState() {
                 bufferMessage.isHighlight = isHighlight;
 
                 if (isNewMessage && buffer.isVisible) {
-                    buffer.last_read = message.time;
+                    buffer.noteVisibleMessage(bufferMessage);
                 }
 
                 // Handle buffer flags

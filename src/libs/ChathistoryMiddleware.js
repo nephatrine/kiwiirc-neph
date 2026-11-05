@@ -4,6 +4,8 @@
 
 import * as Misc from '@/helpers/Misc';
 
+export const HISTORY_REQUEST_TIMEOUT_MS = 15000;
+
 /**
  * Adds the CHATHISTORY IRCv3 spec to irc-framework
  */
@@ -25,7 +27,11 @@ export default function chathistoryMiddleware(network) {
             const reason = event.params[event.params.length - 1];
 
             // Resolve the callback with an error object
-            client.chathistory.batchCallbacks.resolve(target, { error, reason });
+            client.chathistory.batchCallbacks.resolve(
+                target,
+                { error, reason },
+                event.tags && event.tags.label
+            );
 
             if (error.toLowerCase() === 'invalid_target') {
                 // suppress invalid target errors
@@ -45,6 +51,7 @@ function addFunctionsToClient(client, network) {
         callbacks: Object.create(null),
         queue: [],
         queueActive: false,
+        current: null,
         add(cb, target, type, ...args) {
             const targetKey = network.caseUpper(target);
             this.callbacks[targetKey] = this.callbacks[targetKey] || [];
@@ -57,22 +64,34 @@ function addFunctionsToClient(client, network) {
 
             this.queue.push({
                 target,
+                targetKey,
                 type,
                 args,
                 tags,
+                timeoutId: null,
             });
             if (!this.queueActive) {
                 this.queueNext();
             }
         },
-        resolve(target, value) {
-            const targetKey = network.caseUpper(target);
-            const targetCallbacks = this.callbacks[targetKey] || [];
+        finishCurrent(value) {
+            const current = this.current;
+            if (!current) {
+                return;
+            }
+
+            this.current = null;
+            if (current.timeoutId) {
+                clearTimeout(current.timeoutId);
+                current.timeoutId = null;
+            }
+
+            const targetCallbacks = this.callbacks[current.targetKey] || [];
             const cb = targetCallbacks.shift();
 
             if (!targetCallbacks.length) {
                 // last callback, cleanup callbacks
-                delete this.callbacks[targetKey];
+                delete this.callbacks[current.targetKey];
             }
 
             if (cb) {
@@ -81,7 +100,31 @@ function addFunctionsToClient(client, network) {
 
             this.queueNext();
         },
+        resolve(target, value, label) {
+            if (!this.current) {
+                return;
+            }
+
+            const targetKey = network.caseUpper(target);
+            if (this.current.targetKey !== targetKey) {
+                // A late response for a request that already timed out must not
+                // advance the queue past the request that is in flight now.
+                return;
+            }
+
+            const currentLabel = this.current.tags && this.current.tags.label;
+            if (label && currentLabel && label !== currentLabel) {
+                return;
+            }
+
+            this.finishCurrent(value);
+        },
         reset(value) {
+            if (this.current && this.current.timeoutId) {
+                clearTimeout(this.current.timeoutId);
+            }
+            this.current = null;
+
             const pending = this.callbacks;
             this.callbacks = Object.create(null);
             this.queue = [];
@@ -99,6 +142,18 @@ function addFunctionsToClient(client, network) {
                 this.queueActive = false;
                 return;
             }
+
+            this.current = nextRequest;
+            nextRequest.timeoutId = setTimeout(() => {
+                if (this.current !== nextRequest) {
+                    return;
+                }
+
+                this.finishCurrent({
+                    error: 'timeout',
+                    reason: 'History request timed out',
+                });
+            }, HISTORY_REQUEST_TIMEOUT_MS);
 
             const ircMessage = new client.Message('CHATHISTORY', nextRequest.type, nextRequest.target, ...nextRequest.args);
             if (nextRequest.tags && Object.keys(nextRequest.tags).length > 0) {

@@ -49,9 +49,17 @@ function addFunctionsToClient(client, network) {
         return network.hasCap('draft/read-marker');
     }
 
+    function sendMarkRead(params, tags) {
+        const message = new client.Message('MARKREAD', ...params);
+        if (Object.keys(tags).length > 0) {
+            message.tags = tags;
+        }
+        client.raw(message);
+    }
+
     readMarker.set = function set(target, ref) {
         if (!isSupported()) {
-            return;
+            return '';
         }
 
         let refString = ref;
@@ -66,12 +74,13 @@ function addFunctionsToClient(client, network) {
             tags.label = Misc.generateLabel();
         }
 
-        client.raw('MARKREAD', target, refString, tags);
+        sendMarkRead([target, refString], tags);
+        return tags.label || '';
     };
 
     readMarker.get = function get(target) {
         if (!isSupported()) {
-            return;
+            return '';
         }
 
         const tags = {};
@@ -79,6 +88,7 @@ function addFunctionsToClient(client, network) {
             tags.label = Misc.generateLabel();
         }
 
-        client.raw('MARKREAD', target, tags);
+        sendMarkRead([target], tags);
+        return tags.label || '';
     };
 }

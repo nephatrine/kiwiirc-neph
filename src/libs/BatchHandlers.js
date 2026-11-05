@@ -123,7 +123,11 @@ export function handleChathistoryBatch(network, client, batch) {
             commands: batch.commands,
             is_end: !!batch.tags['draft/chathistory-end'],
         };
-        client.chathistory.batchCallbacks.resolve(target, event);
+        client.chathistory.batchCallbacks.resolve(
+            target,
+            event,
+            batch.tags && batch.tags.label
+        );
     }
 
     // Notify Kiwi to clear the message range for this history request

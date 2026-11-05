@@ -1,0 +1,56 @@
+import state from '@/libs/state';
+
+function makeNetwork() {
+    const appState = state.create();
+    const network = appState.addNetwork('TestNetwork', 'TestNick', {
+        server: 'irc.example.com',
+    });
+    const client = network.ircClient;
+    const connect = jest.fn();
+    client.connection.connect = connect;
+    return { appState, network, client, connect };
+}
+
+describe('IrcClient connect guard', () => {
+    test('does not replace a transport that is already connecting', () => {
+        const { network, client, connect } = makeNetwork();
+        network.state = 'connecting';
+
+        client.connect();
+
+        expect(connect).not.toHaveBeenCalled();
+    });
+
+    test('starts a connection from the disconnected state', () => {
+        const { network, client, connect } = makeNetwork();
+        network.state = 'disconnected';
+
+        client.connect();
+
+        expect(connect).toHaveBeenCalledTimes(1);
+    });
+
+    test('sets connecting before emitting network.connecting', () => {
+        const { appState, network, client } = makeNetwork();
+        let seenState = null;
+        appState.$on('network.connecting', () => {
+            seenState = network.state;
+        });
+        network.state = 'disconnected';
+
+        client.connect();
+
+        expect(seenState).toBe('connecting');
+    });
+
+    test('returns to disconnected if the connect call throws', () => {
+        const { network, client } = makeNetwork();
+        network.state = 'disconnected';
+        client.connection.connect.mockImplementation(() => {
+            throw new Error('connect failed');
+        });
+
+        expect(() => client.connect()).toThrow('connect failed');
+        expect(network.state).toBe('disconnected');
+    });
+});

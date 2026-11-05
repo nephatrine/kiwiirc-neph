@@ -81,15 +81,18 @@ export default {
         clickLogout() {
             this.$state.logout();
         },
-        clickForget() {
+        async clickForget() {
             let msg = 'This will delete all stored networks and start fresh. Are you sure?';
             let confirmed = confirm(msg);
             if (!confirmed) {
                 return;
             }
 
-            this.$state.persistence.forgetState();
-            window.location.reload();
+            try {
+                await this.$state.persistence.forgetState();
+            } finally {
+                window.location.reload();
+            }
         },
     },
 };

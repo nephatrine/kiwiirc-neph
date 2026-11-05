@@ -141,6 +141,12 @@ export function create(state, network) {
     // most recent connection details from the network state
     let originalIrcClientConnect = ircClient.connect;
     ircClient.connect = function connect(...args) {
+        // A second click or plugin call during the handshake must not replace
+        // the transport that is already negotiating.
+        if (network.state === 'connecting') {
+            return;
+        }
+
         // Set some defaults if we don't have eveything
         if (!network.connection.nick) {
             network.connection.nick = 'Guest' + Math.floor(Math.random() * 100);
@@ -187,27 +193,33 @@ export function create(state, network) {
         }
 
         let eventObj = { network, transport: null };
-        state.$emit('network.connecting', eventObj);
+        network.state = 'connecting';
+        try {
+            state.$emit('network.connecting', eventObj);
 
-        if (eventObj.transport) {
-            // A plugin might use its own transport of some kind
-            ircClient.options.transport = eventObj.transport;
-        } else if (!network.connection.direct) {
-            // A direct connection uses a websocket to connect (note: some browsers limit
-            // the number of connections to the same host!).
-            // A non-direct connection will connect via the configured kiwi server using
-            // with our own irc-framework compatible transport.
-            ircClient.options.transport = ServerConnection.createChannelConstructor(
-                state.settings.kiwiServer,
-                (window.location.hash || '').substr(1),
-                networkid
-            );
-        } else {
-            // Use the irc-framework default transport
-            ircClient.options.transport = undefined;
+            if (eventObj.transport) {
+                // A plugin might use its own transport of some kind
+                ircClient.options.transport = eventObj.transport;
+            } else if (!network.connection.direct) {
+                // A direct connection uses a websocket to connect (note: some browsers limit
+                // the number of connections to the same host!).
+                // A non-direct connection will connect via the configured kiwi server using
+                // with our own irc-framework compatible transport.
+                ircClient.options.transport = ServerConnection.createChannelConstructor(
+                    state.settings.kiwiServer,
+                    (window.location.hash || '').substr(1),
+                    networkid
+                );
+            } else {
+                // Use the irc-framework default transport
+                ircClient.options.transport = undefined;
+            }
+
+            originalIrcClientConnect.apply(ircClient, args);
+        } catch (err) {
+            network.state = 'disconnected';
+            throw err;
         }
-
-        originalIrcClientConnect.apply(ircClient, args);
     };
 
     // Abort a connection attempt without leaving the network stuck in the
@@ -321,28 +333,21 @@ export function create(state, network) {
             return;
         }
 
-        let time = 0;
-        let authoritativeTime = 0;
         let ts = String(event.timestamp);
+        const label = event.tags && event.tags.label;
 
         if (ts.indexOf('timestamp=') === 0) {
             ts = ts.substr(10);
         }
 
         if (ts === '*') {
-            time = Date.now();
-            authoritativeTime = Date.now();
+            buffer.applyServerReadMarker(null, label);
         } else if (ts.indexOf('T') !== -1) {
             // ISO8601 timestamp
-            authoritativeTime = new Date(ts).getTime();
-            time = network.timeToLocal(authoritativeTime);
-        }
-
-        if (authoritativeTime && authoritativeTime > buffer.flags.last_read_authoritative) {
-            buffer.last_read = time;
-            buffer.flags.last_read_authoritative = authoritativeTime;
-            buffer.flags.unread = 0;
-            buffer.flags.highlight = false;
+            const authoritativeTime = new Date(ts).getTime();
+            if (authoritativeTime) {
+                buffer.applyServerReadMarker(authoritativeTime, label);
+            }
         }
 
         // Set the marker received flag and attempt history request
@@ -404,8 +409,10 @@ export function handleStandardReply(command, event, network, state) {
     const buffer = network.bufferByName(target) || network.serverBuffer();
     const messageType = ['FAIL', 'WARN'].includes(type) ? 'error' : 'message';
 
-    // If a MARKREAD request fails, we should still unblock history retrieval for that buffer
+    // If a MARKREAD request fails, revert the optimistic display marker and
+    // resync with the server. History retrieval can proceed either way.
     if (type === 'FAIL' && failedCmd === 'MARKREAD' && buffer) {
+        buffer.readMarkerFailed(label);
         buffer.flags.marker_received = true;
         buffer.maybeRequestHistory();
     }
@@ -461,6 +468,14 @@ function clientMiddleware(state, network) {
     let saslSucceeded = false;
     let pendingSaslAccount = '';
     let advertisedLsCaps = new Set();
+    let metadataTimeoutTimer = null;
+
+    function clearMetadataTimeout() {
+        if (metadataTimeoutTimer) {
+            clearTimeout(metadataTimeoutTimer);
+            metadataTimeoutTimer = null;
+        }
+    }
 
     function isSelfNick(nick) {
         const selfNick = network.nick ||
@@ -573,6 +588,17 @@ function clientMiddleware(state, network) {
             network.metadata_throttles = new Map();
             network.metadata_label_targets = new Map();
             network.connected_at = 0;
+            network.connection_generation += 1;
+            network.isupport = {};
+            network.ircd = '';
+            network.nick = network.connection.nick || '';
+            network.metadata_limits = {
+                maxSubs: 32,
+                maxKeys: 32,
+                maxKeyBytes: 64,
+                maxValueBytes: 4096,
+            };
+            clearMetadataTimeout();
             // Auto-reconnects happen inside irc-framework, so the manual
             // connect overload does not emit network.connecting for them.
             // Reset each buffer's history state here so the next NAMES/MOTD
@@ -835,6 +861,7 @@ function clientMiddleware(state, network) {
         });
 
         function markDisconnected(err) {
+            clearMetadataTimeout();
             isRegistered = false;
             network.state = 'disconnected';
             network.connected_at = 0;
@@ -885,6 +912,7 @@ function clientMiddleware(state, network) {
         });
 
         client.on('close', () => {
+            clearMetadataTimeout();
             // The framework emits close only after it has stopped reconnecting.
             // If the final attempt failed while still connecting, socket close
             // was ignored above and this is the only chance to leave the
@@ -1227,8 +1255,10 @@ function clientMiddleware(state, network) {
             // If some channels fail to load NAMES within this window, we authoritatively
             // unblock history requests to ensure the UI remains responsive.
             network.metadata_timeout_active = false;
-            setTimeout(() => {
-                if (network.state === 'connected') {
+            clearMetadataTimeout();
+            metadataTimeoutTimer = setTimeout(() => {
+                metadataTimeoutTimer = null;
+                if (network.state === 'connected' && isRegistered) {
                     network.metadata_timeout_active = true;
                     network.buffers.forEach((b) => b.maybeRequestHistory());
                 }

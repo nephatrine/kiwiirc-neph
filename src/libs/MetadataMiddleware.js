@@ -69,6 +69,11 @@ export default function metadataMiddleware(network) {
         const isSelfTarget = (target) => !!target && !!network.nick &&
             network.caseCompare(target, network.nick);
 
+        const clearMetadataSyncTimers = () => {
+            network.metadata_sync_timers.forEach((timer) => clearTimeout(timer));
+            network.metadata_sync_timers.clear();
+        };
+
         // Adopt a server-provided self value into the remembered profile so
         // a value set elsewhere (or surviving server-side) is never clobbered
         // by a stale remembered one on the next reconnect.
@@ -112,11 +117,14 @@ export default function metadataMiddleware(network) {
             }
             profileRestoreDone = false;
             profileGetLabels.clear();
+            clearMetadataSyncTimers();
             if (profileRestoreTimer) {
                 clearTimeout(profileRestoreTimer);
                 profileRestoreTimer = null;
             }
         });
+
+        client.on('close', clearMetadataSyncTimers);
 
         const updateLimits = () => {
             const cap = network.metadataCap();
@@ -511,12 +519,20 @@ function queueMetadataSync(network, target, retryVal) {
     const normalizedTarget = target === '*' ? network.nick : target;
     network.metadata_throttles.set(normalizedTarget, Date.now() + (retryAfter * 1000));
 
-    setTimeout(() => {
+    const timers = network.metadata_sync_timers;
+    const previousTimer = timers.get(normalizedTarget);
+    if (previousTimer) {
+        clearTimeout(previousTimer);
+    }
+
+    const timer = setTimeout(() => {
+        timers.delete(normalizedTarget);
         if (network.state === 'connected') {
             network.metadata_throttles.delete(normalizedTarget);
             network.syncMetadata(target);
         }
     }, retryAfter * 1000);
+    timers.set(normalizedTarget, timer);
 }
 
 // Soju's own buffer metadata maps onto our own buffer settings. The watchers

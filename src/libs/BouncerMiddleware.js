@@ -62,6 +62,19 @@ export default function bouncerMiddleware(network) {
             bindSent = false;
             advertisedCaps.clear();
             client.bnc.lastNetworks = null;
+
+            const requests = client.bnc.requests;
+            if (requests) {
+                Object.keys(requests).forEach((subcommand) => {
+                    requests[subcommand].forEach((request) => {
+                        request.reject({
+                            error: 'disconnected',
+                            reason: 'Disconnected',
+                        });
+                    });
+                });
+            }
+            client.bnc.requests = Object.create(null);
         });
 
         // A LISTNETWORKS reply and the initial notify batch are both batches of

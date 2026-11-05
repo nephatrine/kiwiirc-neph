@@ -139,6 +139,13 @@ export function probeServerCaps({ createTransport, transportOptions, timeout } =
             } catch (err) {
                 // Already closed; nothing left to do.
             }
+            try {
+                if (typeof transport.disposeSocket === 'function') {
+                    transport.disposeSocket();
+                }
+            } catch (err) {
+                // The transport may already be disposed.
+            }
             const info = {
                 caps: { ...caps },
                 isupport: { ...isupport },

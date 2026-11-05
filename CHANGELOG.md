@@ -17,6 +17,21 @@ and this project adheres to
   byte limits for `/join`, `/topic`, `/kick`, `/away`, and `/nick`, and send
   long multiline messages in grapheme-safe chunks so emoji and ZWJ sequences are
   never split.
+- **History**: `CHATHISTORY` timeouts now start when a request is sent, retry
+  with backoff, and keep manual history loading available instead of disabling
+  it.
+- **Read Markers**: Read state now follows the exact sent `MARKREAD` timestamp,
+  correlates labeled responses with pending markers, reuses the message's local
+  time to avoid clock-offset drift, uses timestamp references when no `msgid` is
+  available, treats `MARKREAD *` as no stored marker, and ignores stale server
+  markers.
+- **Connection Lifecycle**: Reconnects now reset connection-scoped state, cancel
+  stale timers and batch queues, ignore late socket and SASL callbacks, scope
+  gateway channels to their own socket, dispose probe channels, and defer
+  bouncer saves until a controller is available.
+- **Startup Connect**: Temporary and Remember Me off flows no longer reset the
+  live network after connecting, duplicate connect calls are ignored during
+  negotiation, and probe channels cannot collide with network channel IDs.
 
 ## [2.1.0] - 2026-11-03
 
