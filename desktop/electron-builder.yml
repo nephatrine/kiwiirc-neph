@@ -1,0 +1,43 @@
+appId: net.nephatrine.kiwiirc
+productName: KiwiIRC
+asar: true
+directories:
+  output: release
+files:
+  - electron/**/*
+  - package.json
+extraResources:
+  - from: ../dist
+    to: dist
+linux:
+  category: Network
+  desktop:
+    entry:
+      Name: Kiwi IRC
+  executableName: kiwiirc-desktop
+  icon: build/icons
+  maintainer: Daniel Wolf <nephatrine@gmail.com>
+  syncDesktopName: true
+  target:
+    - AppImage
+    - deb
+win:
+  executableName: KiwiIRC
+  icon: build/icon.ico
+  target:
+    - nsis
+    - portable
+appImage:
+  artifactName: KiwiIRC-${version}.${ext}
+deb:
+  artifactName: kiwiirc-desktop_${version}_${arch}.${ext}
+nsis:
+  artifactName: KiwiIRC-Setup-${version}.${ext}
+  include: build/installer.nsh
+  installerIcon: build/icon.ico
+  menuCategory: KiwiIRC
+  shortcutName: KiwiIRC
+  uninstallDisplayName: Kiwi IRC ${version}
+  uninstallerIcon: build/icon.ico
+portable:
+  artifactName: KiwiIRC-${version}-portable.${ext}

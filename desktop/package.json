@@ -1,0 +1,27 @@
+{
+  "name": "kiwiirc-desktop",
+  "version": "2.1.0",
+  "private": true,
+  "description": "Optional Electron shell for Kiwi IRC",
+  "main": "electron/main.js",
+  "desktopName": "kiwiirc-desktop",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "icons": "node scripts/build-icons.js",
+    "pack": "electron-builder --dir",
+    "dist:linux": "electron-builder --linux AppImage deb",
+    "dist:win": "electron-builder --win nsis portable",
+    "dist:all": "npm run dist:linux && npm run dist:win"
+  },
+  "dependencies": {
+    "json5": "^2.2.3"
+  },
+  "devDependencies": {
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0"
+  },
+  "author": "Daniel Wolf <nephatrine@gmail.com>",
+  "license": "Apache-2.0",
+  "homepage": "https://code.nephatrine.net/nephatrine/kiwiirc"
+}

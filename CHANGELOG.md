@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- **Desktop**: Added an optional Electron shell with a secure `app://` bridge, a
+  desktop-only JSON5 configuration overlay, the Personal startup screen, and
+  Linux/Windows packaging.
+
 ### Fixed
 
 - **IRC Protocol**: Casefold user and channel state with the negotiated
