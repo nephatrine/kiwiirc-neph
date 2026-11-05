@@ -16,6 +16,9 @@ and this project adheres to
 
 ### Fixed
 
+- **Network Settings**: Show direct WebSocket paths in the main server field and
+  select WebSocket transport with the protocol picker instead of a redundant
+  advanced checkbox.
 - **IRC Protocol**: Casefold user and channel state with the negotiated
   `CASEMAPPING`, apply negated `RPL_ISUPPORT` tokens, and fall back to the
   modern `(ov)@+` `PREFIX` only when the server does not advertise one.

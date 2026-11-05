@@ -980,10 +980,6 @@ msgstr "Raw Buffer (Requires Reload)"
 msgid "settings_raw_scrollback"
 msgstr "Raw Scrollback Size"
 
-#: Direct websocket
-msgid "settings_use_websocket"
-msgstr "Direct Websocket"
-
 #: Auto commands when connected
 msgid "settings_autorun"
 msgstr "Auto Commands (On Connect)"

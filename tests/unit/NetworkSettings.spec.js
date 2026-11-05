@@ -181,7 +181,7 @@ describe('NetworkSettings server details', () => {
         expect(fieldByLabel(comp, 'settings_encoding').disabled).toBe(true);
     });
 
-    it('orders advanced settings and reveals conditional inputs', async() => {
+    it('orders advanced settings and reveals raw inputs', async() => {
         const comp = mount();
         comp.show_advanced = true;
         await Vue.nextTick();
@@ -191,19 +191,17 @@ describe('NetworkSettings server details', () => {
             '.kiwi-networksettings-advanced .kiwi-networksettings-option input[type="checkbox"]'
         );
         const showRaw = checkboxes[0];
-        const webSocket = checkboxes[1];
         const encoding = fieldByLabel(comp, 'settings_encoding');
         const sasl = fieldByLabel(comp, 'settings_sasl_mechanism');
 
+        expect(checkboxes).toHaveLength(1);
         expect(comp.$el.querySelector('.kiwi-networksettings-raw-scrollback')).toBeNull();
         expect(comp.$el.querySelector('.kiwi-networksettings-websocket-url')).toBeNull();
         expect(comp.$el.textContent).not.toContain('settings_raw_scrollback');
 
         expect(autorun.compareDocumentPosition(showRaw))
             .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-        expect(showRaw.compareDocumentPosition(webSocket))
-            .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-        expect(webSocket.compareDocumentPosition(encoding))
+        expect(showRaw.compareDocumentPosition(encoding))
             .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
         expect(encoding.compareDocumentPosition(sasl))
             .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
@@ -221,7 +219,48 @@ describe('NetworkSettings server details', () => {
         expect(rawScrollback).not.toBeNull();
         expect(rawScrollback.type).toBe('number');
         expect(rawScrollback.title).toBe('settings_raw_scrollback');
-        expect(websocketUrl).not.toBeNull();
+        expect(websocketUrl).toBeNull();
+    });
+
+    it('shows the websocket path in the top server field', () => {
+        network.connection.direct = true;
+        network.connection.path = '/webirc';
+
+        const comp = mount();
+        const input = comp.$el.querySelector(
+            '.kiwi-serverselector-connection-address input'
+        );
+
+        expect(input.value).toBe('irc.example.com/webirc');
+    });
+
+    it('updates the server path from the top server field', async() => {
+        network.connection.direct = true;
+        network.connection.path = '/webirc';
+
+        const comp = mount();
+        const input = comp.$el.querySelector(
+            '.kiwi-serverselector-connection-address input'
+        );
+
+        input.value = 'irc.example.com/other';
+        input.dispatchEvent(new Event('input'));
+        await Vue.nextTick();
+
+        expect(network.connection.server).toBe('irc.example.com');
+        expect(network.connection.path).toBe('/other');
+    });
+
+    it('keeps the websocket path hidden for gateway connections', () => {
+        network.connection.direct = false;
+        network.connection.path = '/webirc';
+
+        const comp = mount();
+        const input = comp.$el.querySelector(
+            '.kiwi-serverselector-connection-address input'
+        );
+
+        expect(input.value).toBe('irc.example.com');
     });
 
     it('keeps disconnected details editable and hides SASL once connected without it', async() => {

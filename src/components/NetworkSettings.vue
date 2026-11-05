@@ -45,6 +45,7 @@
                     :connection="network.connection"
                     :use-preset="!isBouncerManaged"
                     :irc-only="isBouncerManaged"
+                    :show-path="!isBouncerManaged && network.connection.direct"
                 />
 
                 <h4 class="kiwi-networksettings-auth-title">
@@ -197,29 +198,6 @@
                                 :title="$t('settings_raw_scrollback')"
                                 type="number"
                                 class="kiwi-networksettings-raw-scrollback"
-                            />
-                        </div>
-                    </div>
-
-                    <div v-if="!isBouncerManaged" class="kiwi-networksettings-option">
-                        <label>
-                            <span class="kiwi-appsettings-showraw-label">
-                                {{ $t('settings_use_websocket') }}
-                            </span>
-                            <input
-                                v-model="network.connection.direct"
-                                :disabled="connectionDetailsLocked"
-                                type="checkbox"
-                            >
-                        </label>
-                        <div
-                            v-if="network.connection.direct"
-                            class="kiwi-networksettings-option-input"
-                        >
-                            <input-text
-                                v-model="directWs"
-                                :disabled="connectionDetailsLocked"
-                                class="kiwi-networksettings-websocket-url"
                             />
                         </div>
                     </div>
@@ -619,63 +597,6 @@ export default {
                     size = 50;
                 }
                 return this.network.setting('raw_scrollback_size', size);
-            },
-        },
-        directWs: {
-            get() {
-                if (!this.network.connection.direct) {
-                    return '';
-                }
-
-                let connection = this.network.connection;
-                let addr = '';
-                addr += connection.tls ?
-                    'wss://' :
-                    'ws://';
-                addr += connection.server;
-
-                let port = parseInt(connection.port, 10);
-                if (Number.isNaN(port)) {
-                    port = connection.tls ?
-                        443 :
-                        80;
-                }
-
-                // Only include the port if needed
-                if (
-                    (connection.tls && port !== 443) ||
-                    (!connection.tls && port !== 80)
-                ) {
-                    addr += ':' + connection.port;
-                }
-
-                addr += connection.path;
-
-                return addr;
-            },
-            set(newVal) {
-                let url = null;
-
-                try {
-                    url = new URL(newVal);
-                } catch (e) {
-                    return;
-                }
-
-                let connection = this.network.connection;
-                connection.tls = url.protocol.toLowerCase() === 'wss:';
-                connection.server = url.hostname;
-
-                let port = parseInt(url.port, 10);
-                if (Number.isNaN(port)) {
-                    port = url.protocol.toLowerCase() === 'wss:' ?
-                        443 :
-                        80;
-                }
-
-                connection.port = port;
-                let u = url.href.replace(url.protocol + '//', '');
-                connection.path = u.substr(u.indexOf('/'));
             },
         },
     },
