@@ -58,8 +58,8 @@ Linux:   ~/.config/KiwiIRC/config.json5
 Windows: %APPDATA%\KiwiIRC\config.json5
 ```
 
-Use **File → Open Desktop Configuration** to create or open the file, and **File
-→ Reload Desktop Configuration** after editing it.
+Use **File → Open Desktop Configuration Folder** to create the file and open its
+folder, and **File → Reload Desktop Configuration** after editing it.
 
 The file is JSON5, so comments are allowed. For example, to use a webirc
 gateway:

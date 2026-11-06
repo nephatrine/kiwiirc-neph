@@ -104,9 +104,9 @@ function buildApplicationMenu() {
 
     const fileMenu = [
         {
-            label: 'Open Desktop Configuration',
+            label: 'Open Desktop Configuration Folder',
             click: () => {
-                openDesktopConfiguration();
+                openDesktopConfigurationFolder();
             },
         },
         {
@@ -177,15 +177,15 @@ function reloadWindow(ignoreCache) {
     }
 }
 
-async function openDesktopConfiguration() {
+async function openDesktopConfigurationFolder() {
     try {
         desktopConfigPath = ensureUserConfig(app.getPath('userData'));
-        const error = await shell.openPath(desktopConfigPath);
+        const error = await shell.openPath(path.dirname(desktopConfigPath));
         if (error) {
-            dialog.showErrorBox('Unable to Open Configuration', error);
+            dialog.showErrorBox('Unable to Open Configuration Folder', error);
         }
     } catch (err) {
-        dialog.showErrorBox('Unable to Open Configuration', err.message);
+        dialog.showErrorBox('Unable to Open Configuration Folder', err.message);
     }
 }
 

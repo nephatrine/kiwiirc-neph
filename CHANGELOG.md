@@ -20,8 +20,9 @@ and this project adheres to
   select WebSocket transport with the protocol picker instead of a redundant
   advanced checkbox.
 - **Desktop Menus**: Fixed Reload and Force Reload being blocked by the exit
-  warning, added a native close confirmation, and removed the nonfunctional
-  Window menu on Linux and Windows.
+  warning, added a native close confirmation, removed the nonfunctional Window
+  menu on Linux and Windows, and open the configuration folder instead of
+  relying on a JSON5 file association.
 - **IRC Protocol**: Casefold user and channel state with the negotiated
   `CASEMAPPING`, apply negated `RPL_ISUPPORT` tokens, and fall back to the
   modern `(ov)@+` `PREFIX` only when the server does not advertise one.
