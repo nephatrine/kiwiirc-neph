@@ -11,8 +11,8 @@ and this project adheres to
 ### Added
 
 - **Desktop**: Added an optional Electron shell with a secure `app://` bridge, a
-  desktop-only JSON5 configuration overlay, the Personal startup screen, and
-  Linux/Windows packaging.
+  desktop-only JSON5 configuration overlay, the Personal startup screen, native
+  HTTP for emoji packs, downloads, and uploads, and Linux/Windows packaging.
 
 ### Fixed
 

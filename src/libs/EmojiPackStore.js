@@ -2,6 +2,7 @@
 
 import Vue from 'vue';
 import getState from '@/libs/state';
+import { desktopFetch } from '@/libs/desktop/Http';
 import { customEmojiTokens, customEmojiUrl } from '@/libs/CustomEmoji';
 
 const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024;
@@ -158,7 +159,7 @@ async function fetchPackDocument(url) {
     const timer = controller ? setTimeout(() => controller.abort(), FETCH_TIMEOUT) : null;
 
     try {
-        const response = await fetch(url, {
+        const response = await desktopFetch(url, {
             mode: 'cors',
             credentials: 'omit',
             referrerPolicy: 'no-referrer',

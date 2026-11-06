@@ -27,6 +27,8 @@ export default class GlobalApi extends EventEmitter {
         this.JSON5 = null;
         /** The applications internal state */
         this.state = null;
+        /** Optional desktop integration adapter */
+        this.desktop = null;
         /** The applications ThemeManager */
         this.themes = null;
         /** Translations library */

@@ -22,6 +22,7 @@ import { installGlobalErrorHandlers } from '@/libs/GlobalErrorHandler';
 import ThemeManager from '@/libs/ThemeManager';
 import InputHandler from '@/libs/InputHandler';
 import IPC from '@/libs/IPC';
+import desktop from '@/libs/desktop';
 import StatePersistence from '@/libs/StatePersistence';
 import * as MetadataCache from '@/libs/MetadataCache';
 import * as Storage from '@/libs/storage/Local';
@@ -569,6 +570,7 @@ async function initState() {
     });
 
     api.setState(getState());
+    api.desktop = desktop;
 }
 
 function initThemes() {

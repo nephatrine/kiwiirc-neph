@@ -3,6 +3,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { ensureUserConfig, loadDesktopConfig } = require('./desktop-config');
+const httpService = require('./http');
 
 const APP_SCHEME = 'app';
 const APP_HOST = 'kiwi';
@@ -93,6 +94,74 @@ function registerDesktopConfigIpc() {
     ipcMain.on('kiwi:desktop-config', (event) => {
         event.returnValue = desktopConfig;
     });
+
+    ipcMain.handle('kiwi:http-request', (event, options) => {
+        const policy = desktopHttpPolicy();
+        return httpService.request(Object.assign({}, options, {
+            maxResponseBytes: policy.maxResponseBytes,
+            timeoutMs: policy.timeoutMs,
+        }), policy);
+    });
+
+    ipcMain.handle('kiwi:http-upload', (event, options) => {
+        const policy = desktopHttpPolicy();
+        return httpService.upload(Object.assign({}, options, {
+            maxResponseBytes: policy.maxResponseBytes,
+            timeoutMs: policy.timeoutMs,
+        }), policy);
+    });
+
+    ipcMain.handle('kiwi:save-url', async(event, url) => {
+        if (typeof url !== 'string' || !url) {
+            throw new Error('invalid download URL');
+        }
+
+        const policy = desktopHttpPolicy();
+        const result = await dialog.showSaveDialog(mainWindow, {
+            defaultPath: suggestedDownloadName(url),
+        });
+        if (result.canceled || !result.filePath) {
+            return { saved: false };
+        }
+
+        const response = await httpService.request({
+            url,
+            maxResponseBytes: policy.maxDownloadBytes,
+        }, policy);
+        if (response.status < 200 || response.status >= 300) {
+            throw new Error(`download failed (${response.status})`);
+        }
+
+        await fs.writeFile(result.filePath, response.body);
+        return { saved: true, path: result.filePath };
+    });
+}
+
+function positiveInteger(value, fallback) {
+    const parsed = parseInt(value, 10);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function desktopHttpPolicy() {
+    const settings = (desktopConfig && desktopConfig.desktopHttp) || {};
+    return {
+        allowPrivateNetworks: settings.allowPrivateNetworks === true,
+        timeoutMs: positiveInteger(settings.requestTimeoutMs, 15000),
+        maxResponseBytes: positiveInteger(settings.maxResponseBytes, 10 * 1024 * 1024),
+        maxDownloadBytes: positiveInteger(settings.maxDownloadBytes, 100 * 1024 * 1024),
+        maxRequestBytes: positiveInteger(settings.maxRequestBytes, 100 * 1024 * 1024),
+        maxRedirects: positiveInteger(settings.maxRedirects, 5),
+    };
+}
+
+function suggestedDownloadName(url) {
+    try {
+        const parsed = new URL(url);
+        const name = decodeURIComponent(path.basename(parsed.pathname));
+        return name || 'download';
+    } catch (err) {
+        return 'download';
+    }
 }
 
 function buildApplicationMenu() {

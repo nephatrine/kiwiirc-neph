@@ -4,6 +4,7 @@
 
 import Vue from 'vue';
 import PluginWrapper from '@/components/utils/PluginWrapper';
+import { saveUrl as desktopSaveUrl } from '@/libs/desktop/Files';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import { urlRegex } from './TextFormatting';
 import { each, escapeRegExp, isPlainObject, setPath } from '@/helpers/Utils';
@@ -938,6 +939,11 @@ export function downloadUrl(url) {
         absolute = new URL(url, window.location.href).href;
     } catch (err) {
         return Promise.resolve();
+    }
+
+    const nativeDownload = desktopSaveUrl(absolute);
+    if (nativeDownload) {
+        return nativeDownload.catch(() => undefined);
     }
 
     return fetch(absolute, { credentials: 'same-origin' }).then((response) => {

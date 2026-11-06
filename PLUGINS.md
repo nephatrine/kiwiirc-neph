@@ -563,6 +563,33 @@ instead of registering Vue components. This is supported, but it is advanced:
 
 The NephDeck and NephWave desktop plugins are reference examples.
 
+## Desktop API
+
+The optional Electron shell exposes a `kiwi.desktop` adapter. Web builds keep
+the same API shape but report `isDesktop() === false` and use browser fallbacks.
+
+```js
+if (kiwi.desktop.isDesktop()) {
+    // Native HTTP avoids browser CORS restrictions.
+    const response = await kiwi.desktop.http.fetch('https://example.com/data.json');
+}
+```
+
+Available helpers:
+
+- `isDesktop()`
+- `http.fetch(url, options)`
+- `http.uploadFile(url, file, options)`
+- `http.uploadMultipart(url, fields, file, options)`
+- `http.isAvailable()`
+- `files.saveUrl(url)`
+- `files.isAvailable()`
+
+`http.fetch()` and the upload helpers return a standard `Response`. They reject
+when the desktop policy blocks a URL, the request times out, or the response
+exceeds the configured limit. Do not assume native HTTP is available; always
+feature-detect it.
+
 ## Security
 
 - Plugin HTML is injected with `innerHTML` and plugin scripts execute with full

@@ -20,10 +20,18 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
         node: process.versions.node,
     },
     capabilities: {
-        nativeHttp: false,
+        nativeHttp: true,
+        nativeDownloads: true,
         mediaProxy: false,
         profiles: false,
         chatLogs: false,
         dcc: false,
+    },
+    http: {
+        request: (options) => ipcRenderer.invoke('kiwi:http-request', options),
+        upload: (options) => ipcRenderer.invoke('kiwi:http-upload', options),
+    },
+    files: {
+        saveUrl: (url) => ipcRenderer.invoke('kiwi:save-url', url),
     },
 });

@@ -1,4 +1,5 @@
 import { stripAccountSuffix } from '@/helpers/LoginFields';
+import { desktopUploadFile } from '@/libs/desktop/Http';
 import { acceptUploadUrl } from './url';
 
 export function usableFilehostToken(value, tls) {
@@ -96,15 +97,19 @@ export async function uploadFilehost(file, network) {
 
     let filename = contentDispositionFilename(file && file.name);
     let type = (file && file.type) || 'application/octet-stream';
-    let response = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: {
-            'Authorization': basicAuthorization(creds.account, creds.password),
-            'Content-Type': type,
-            'Content-Disposition': `attachment; filename="${filename}"`,
-        },
-        body: file,
-    });
+    let headers = {
+        'Authorization': basicAuthorization(creds.account, creds.password),
+        'Content-Type': type,
+        'Content-Disposition': `attachment; filename="${filename}"`,
+    };
+    let response = await desktopUploadFile(uploadUrl, file, { headers });
+    if (!response) {
+        response = await fetch(uploadUrl, {
+            method: 'POST',
+            headers,
+            body: file,
+        });
+    }
     if (response.status !== 201) {
         throw new Error('upload failed');
     }

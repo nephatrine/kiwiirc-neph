@@ -74,6 +74,22 @@ The overlay accepts any normal config key, including `kiwiServer`,
 `presetNetworks`, `serverProtocols`, `startupOptions`, `fileupload`, `plugins`,
 `themes`, and `aliases`.
 
+Native desktop HTTP is controlled separately:
+
+```json5
+{
+    "desktopHttp": {
+        // Disabled by default. Enable only for networks you trust.
+        "allowPrivateNetworks": false,
+        "requestTimeoutMs": 15000,
+        "maxResponseBytes": 10485760,
+        "maxDownloadBytes": 104857600,
+        "maxRequestBytes": 104857600,
+        "maxRedirects": 5
+    }
+}
+```
+
 ## Icons
 
 The desktop icons are generated from `static/kiwi.svg`:

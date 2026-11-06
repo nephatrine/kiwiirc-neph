@@ -29,6 +29,14 @@ const DEFAULT_CONFIG = {
         url: '',
     },
     presetNetworks: [],
+    desktopHttp: {
+        allowPrivateNetworks: false,
+        requestTimeoutMs: 15000,
+        maxResponseBytes: 10485760,
+        maxDownloadBytes: 104857600,
+        maxRequestBytes: 104857600,
+        maxRedirects: 5,
+    },
 };
 
 const USER_CONFIG_TEMPLATE = `{
@@ -39,6 +47,10 @@ const USER_CONFIG_TEMPLATE = `{
     // "kiwiServer": "https://irc.example.com/webirc/kiwiirc/",
     // "startupOptions": {
     //     "nick": "kiwi_?"
+    // },
+    //
+    // "desktopHttp": {
+    //     "allowPrivateNetworks": false
     // }
 }
 `;
