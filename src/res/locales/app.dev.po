@@ -1386,21 +1386,64 @@ msgstr "{{nick}} has unbanned {{target}}."
 msgid "modes_other"
 msgstr "{{nick}} sets {{mode}} on {{target}}."
 
-#: Troubleshooting
-msgid "troubleshooting"
-msgstr "Troubleshooting"
+#: Export or import a profile
+msgid "profile_transfer"
+msgstr "Profile Transfer"
 
-#: Export Debug Information
-msgid "export_debug"
-msgstr "Export State"
+msgid "profile_transfer_description"
+msgstr "Export or import your networks and settings. Password export is optional."
+
+msgid "profile_include_passwords"
+msgstr "Include Passwords"
+
+msgid "profile_include_passwords_warning"
+msgstr "Passwords will be stored in plaintext in the exported file. Keep it secure."
+
+msgid "profile_include_passwords_confirm"
+msgstr "Include passwords in the exported profile? The file will contain plaintext passwords."
+
+msgid "profile_export"
+msgstr "Export Profile"
+
+msgid "profile_import"
+msgstr "Import Profile"
+
+msgid "profile_import_personal_only"
+msgstr "Profile import is only available in Personal setup mode."
+
+msgid "profile_open_folder"
+msgstr "Open Profile Folder"
+
+msgid "profile_export_success"
+msgstr "Profile exported."
+
+msgid "profile_import_success"
+msgstr "Profile imported. Reloading..."
+
+msgid "profile_export_failed"
+msgstr "Profile export failed: {{reason}}"
+
+msgid "profile_import_failed"
+msgstr "Profile import failed: {{reason}}"
+
+msgid "profile_import_confirm"
+msgstr "Import this profile? It will replace your current networks and settings."
+
+msgid "profile_import_passwords_confirm"
+msgstr "Import this profile and its plaintext passwords? It will replace your current networks and settings."
+
+msgid "profile_import_too_large"
+msgstr "The profile file is too large."
+
+msgid "profile_password_save_failed"
+msgstr "The profile was imported, but its passwords could not be saved securely."
+
+msgid "profile_open_folder_failed"
+msgstr "Unable to open the profile folder: {{reason}}"
 
 #: Export Buffer Content
 msgid "export_buffer"
 msgstr "Export Buffer"
-
-#: Download a JSON file containing the application state and recent logs to help developers troubleshoot issues.
-msgid "export_debug_description"
-msgstr "Download a JSON file containing the application state and recent logs to help developers troubleshoot issues."
 
 #: Rolls {{expression}} and gets {{number}}
 msgid "dice_roll_result"

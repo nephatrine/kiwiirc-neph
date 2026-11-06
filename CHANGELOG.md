@@ -19,6 +19,19 @@ and this project adheres to
   `safeStorage`, and a warned plaintext fallback when encryption is unavailable.
   Personal startup remembers passwords by default, with a per-network opt-out in
   Server Details.
+- **Desktop Profile Transfer**: Added portable browser/desktop profile export
+  and import, with optional password-included files and a desktop profile backup
+  before import.
+
+### Changed
+
+- **Profile Transfer**: Profile import is limited to Personal setup mode. Export
+  remains available in every setup for migration to a personal installation.
+
+### Removed
+
+- **App Settings**: Removed the redundant Export State troubleshooting action.
+  `kiwi.log.getLogBuffer()` remains available for raw log diagnostics.
 
 ### Fixed
 

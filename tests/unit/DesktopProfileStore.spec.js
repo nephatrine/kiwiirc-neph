@@ -74,4 +74,24 @@ describe('Desktop profile store', () => {
     it('rejects a state file that is not a JSON string', async() => {
         await expect(store.set('kiwi-state', 123)).rejects.toThrow();
     });
+
+    it('backs up the current profile files', async() => {
+        await store.set('kiwi-state', '{"version":1}');
+        await store.set('kiwi-metadata-cache', '{"networks":{}}');
+        fs.writeFileSync(
+            path.join(store.profileDirectory(), 'secrets.json'),
+            '{"version":1}'
+        );
+
+        const backupDir = await store.backup();
+        const backupFiles = fs.readdirSync(backupDir).sort();
+
+        expect(backupFiles).toEqual([
+            'metadata-cache.json',
+            'secrets.json',
+            'state.json',
+        ]);
+        expect(fs.readFileSync(path.join(backupDir, 'state.json'), 'utf8'))
+            .toBe('{"version":1}');
+    });
 });

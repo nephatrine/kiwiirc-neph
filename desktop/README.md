@@ -118,6 +118,15 @@ is never downgraded while the keyring is temporarily unavailable.
 Existing `app://` localStorage state is migrated into the default profile on
 first desktop launch when no profile state exists.
 
+## Profile Transfer
+
+The **Profile Transfer** section in App Settings exports and imports a portable
+JSON profile containing networks and settings. Export is available in every
+setup; import is only available in Personal setup mode. Password export is
+optional; when enabled, the file contains plaintext passwords and requires
+confirmation. The desktop build uses native save/open dialogs and backs up the
+current profile before importing. Browser builds use a download and file picker.
+
 ## Icons
 
 The desktop icons are generated from `static/kiwi.svg`:

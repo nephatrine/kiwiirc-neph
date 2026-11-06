@@ -1,3 +1,4 @@
+const fs = require('node:fs/promises');
 const path = require('node:path');
 const {
     atomicWriteFile,
@@ -119,7 +120,34 @@ function createProfileStore(userDataDir) {
         });
     }
 
+    async function backup() {
+        const root = profileDirectory(userDataDir);
+        await ensureDirectory(root);
+
+        const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const backupDir = path.join(root, 'backups', stamp);
+        await ensureDirectory(backupDir);
+
+        const entries = await fs.readdir(root, { withFileTypes: true });
+        await Promise.all(entries.map(async(entry) => {
+            if (
+                !entry.isFile() ||
+                entry.name.endsWith('.tmp') ||
+                entry.name === 'backups'
+            ) {
+                return;
+            }
+            await fs.copyFile(
+                path.join(root, entry.name),
+                path.join(backupDir, entry.name)
+            );
+        }));
+
+        return backupDir;
+    }
+
     return {
+        backup,
         get,
         set,
         filePathFor: (name) => filePathFor(userDataDir, name),

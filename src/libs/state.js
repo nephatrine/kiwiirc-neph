@@ -2,7 +2,6 @@
 
 import Vue from 'vue';
 
-import Logger from '@/libs/Logger';
 import * as Misc from '@/helpers/Misc';
 import { deepClone, each, find, findIndex } from '@/helpers/Utils';
 import * as TextFormatting from '@/helpers/TextFormatting';
@@ -182,35 +181,6 @@ function createNewState() {
                 toExport.user_settings = state.user_settings;
 
                 return JSON.stringify(toExport);
-            },
-
-            getDebugDump() {
-                const stateData = JSON.parse(this.exportState(true));
-
-                // Mask passwords
-                if (stateData.networks) {
-                    stateData.networks.forEach((net) => {
-                        if (net.connection.password) {
-                            net.connection.password = '********';
-                        }
-                        if (net.password) {
-                            net.password = '********';
-                        }
-                    });
-                }
-
-                /* eslint-disable no-undef */
-                const dump = {
-                    version: __VERSION__,
-                    commit: __COMMITHASH__,
-                    userAgent: window.navigator.userAgent,
-                    timestamp: new Date().toISOString(),
-                    state: stateData,
-                    logs: Logger.getLogBuffer(),
-                };
-                /* eslint-enable no-undef */
-
-                return JSON.stringify(dump, null, 2);
             },
 
             // Import a previously exported state to continue that state

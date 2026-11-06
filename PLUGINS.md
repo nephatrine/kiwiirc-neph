@@ -591,6 +591,11 @@ Available helpers:
 - `secrets.save(stateKey, values)`
 - `secrets.clear(stateKey)`
 - `secrets.isAvailable()`
+- `profile.exportBundle(bundle, filename)`
+- `profile.importBundle()`
+- `profile.backup()`
+- `profile.openFolder()`
+- `profile.isAvailable()`
 
 `http.fetch()` and the upload helpers return a standard `Response`. They reject
 when the desktop policy blocks a URL, the request times out, or the response
@@ -602,7 +607,8 @@ URL is not HTTP(S). Use it for direct image, audio, and video sources, not for
 iframe embeds.
 
 `secrets.*` is desktop-only and intended for profile credential handling. Never
-log, display, or include returned secrets in plugin diagnostics.
+log, display, or include returned secrets in plugin diagnostics. Profile bundles
+may contain plaintext passwords when the user explicitly includes them.
 
 ## Security
 

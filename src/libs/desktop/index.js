@@ -20,6 +20,13 @@ import {
     save as saveSecrets,
     status as secretStorageStatus
 } from './Secrets';
+import {
+    backup as backupProfile,
+    exportBundle as exportProfileBundle,
+    importBundle as importProfileBundle,
+    isAvailable as isProfileTransferAvailable,
+    openFolder as openProfileFolder
+} from './Profile';
 
 const desktop = {
     isDesktop,
@@ -43,6 +50,13 @@ const desktop = {
         save: saveSecrets,
         clear: clearSecrets,
         isAvailable: isSecretStorageAvailable,
+    },
+    profile: {
+        exportBundle: exportProfileBundle,
+        importBundle: importProfileBundle,
+        backup: backupProfile,
+        openFolder: openProfileFolder,
+        isAvailable: isProfileTransferAvailable,
     },
 };
 

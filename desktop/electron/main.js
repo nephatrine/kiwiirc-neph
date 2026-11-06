@@ -16,7 +16,7 @@ const { ensureUserConfig, loadDesktopConfig } = require('./desktop-config');
 const httpService = require('./http');
 const { handleMediaRequest } = require('./media');
 const { MEDIA_SCHEME } = require('./media-url');
-const { createProfileStore } = require('./profile-store');
+const { createProfileStore, MAX_STORAGE_BYTES } = require('./profile-store');
 const { createSecretStore } = require('./secrets');
 
 const APP_SCHEME = 'app';
@@ -141,6 +141,61 @@ function registerDesktopConfigIpc() {
     ipcMain.handle('kiwi:secrets-clear', (event, stateKey) => (
         secretStore.clear(stateKey)
     ));
+
+    ipcMain.handle('kiwi:profile-export', async(event, text, filename) => {
+        if (typeof text !== 'string' || !text ||
+            Buffer.byteLength(text, 'utf8') > MAX_STORAGE_BYTES
+        ) {
+            throw new Error('invalid profile data');
+        }
+
+        const defaultName = path.basename(
+            typeof filename === 'string' && filename ?
+                filename :
+                'kiwi-profile.json'
+        );
+        const result = await dialog.showSaveDialog(mainWindow, {
+            defaultPath: defaultName,
+            filters: [{ name: 'Kiwi Profile', extensions: ['json'] }],
+        });
+        if (result.canceled || !result.filePath) {
+            return { saved: false };
+        }
+
+        await fs.writeFile(result.filePath, text, { mode: 0o600 });
+        return { saved: true, path: result.filePath };
+    });
+
+    ipcMain.handle('kiwi:profile-import', async() => {
+        const result = await dialog.showOpenDialog(mainWindow, {
+            properties: ['openFile'],
+            filters: [{ name: 'Kiwi Profile', extensions: ['json'] }],
+        });
+        if (result.canceled || !result.filePaths.length) {
+            return { canceled: true };
+        }
+
+        const filePath = result.filePaths[0];
+        const stat = await fs.stat(filePath);
+        if (!stat.isFile() || stat.size > MAX_STORAGE_BYTES) {
+            throw new Error('profile file is too large');
+        }
+
+        return {
+            canceled: false,
+            path: filePath,
+            text: await fs.readFile(filePath, 'utf8'),
+        };
+    });
+
+    ipcMain.handle('kiwi:profile-backup', () => profileStore.backup());
+
+    ipcMain.handle('kiwi:profile-open-folder', async() => {
+        const error = await shell.openPath(profileStore.profileDirectory());
+        if (error) {
+            throw new Error(error);
+        }
+    });
 
     ipcMain.handle('kiwi:http-request', (event, options) => {
         const policy = desktopHttpPolicy();
