@@ -15,7 +15,7 @@
                 </a>
             </div>
             <div class="kiwi-lightbox-content" @click.self="close">
-                <img :src="url" alt="" class="kiwi-lightbox-image" @click.stop />
+                <img :src="displayUrl" alt="" class="kiwi-lightbox-image" @click.stop />
             </div>
         </div>
     </transition>
@@ -24,10 +24,15 @@
 <script>
 'kiwi public';
 
+import { desktopMediaUrl } from '@/libs/desktop/Media';
+
 export default {
     computed: {
         url() {
             return this.$state.ui.lightbox_url;
+        },
+        displayUrl() {
+            return desktopMediaUrl(this.url);
         },
     },
     methods: {

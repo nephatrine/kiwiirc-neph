@@ -34,6 +34,7 @@ const DEFAULT_CONFIG = {
         requestTimeoutMs: 15000,
         maxResponseBytes: 10485760,
         maxDownloadBytes: 104857600,
+        maxMediaBytes: 104857600,
         maxRequestBytes: 104857600,
         maxRedirects: 5,
     },

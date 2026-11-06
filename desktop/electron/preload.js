@@ -22,7 +22,7 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
     capabilities: {
         nativeHttp: true,
         nativeDownloads: true,
-        mediaProxy: false,
+        mediaProxy: true,
         profiles: false,
         chatLogs: false,
         dcc: false,
@@ -33,5 +33,8 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
     },
     files: {
         saveUrl: (url) => ipcRenderer.invoke('kiwi:save-url', url),
+    },
+    media: {
+        proxyUrl: (url) => `kiwi-media://media/${encodeURIComponent(url)}`,
     },
 });

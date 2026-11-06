@@ -4,6 +4,8 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { ensureUserConfig, loadDesktopConfig } = require('./desktop-config');
 const httpService = require('./http');
+const { handleMediaRequest } = require('./media');
+const { MEDIA_SCHEME } = require('./media-url');
 
 const APP_SCHEME = 'app';
 const APP_HOST = 'kiwi';
@@ -15,16 +17,28 @@ const distPath = app.isPackaged ?
     path.join(process.resourcesPath, 'dist') :
     path.resolve(__dirname, '../../dist');
 
-protocol.registerSchemesAsPrivileged([{
-    scheme: APP_SCHEME,
-    privileges: {
-        standard: true,
-        secure: true,
-        supportFetchAPI: true,
-        corsEnabled: true,
-        stream: true,
+protocol.registerSchemesAsPrivileged([
+    {
+        scheme: APP_SCHEME,
+        privileges: {
+            standard: true,
+            secure: true,
+            supportFetchAPI: true,
+            corsEnabled: true,
+            stream: true,
+        },
     },
-}]);
+    {
+        scheme: MEDIA_SCHEME,
+        privileges: {
+            standard: true,
+            secure: true,
+            supportFetchAPI: true,
+            corsEnabled: true,
+            stream: true,
+        },
+    },
+]);
 
 let mainWindow = null;
 let desktopConfig = null;
@@ -55,6 +69,7 @@ if (!app.requestSingleInstanceLock()) {
         registerDesktopConfigIpc();
         buildApplicationMenu();
         await registerAppProtocol();
+        registerMediaProtocol();
         createWindow();
     }).catch((err) => {
         console.error('Failed to start desktop shell:', err);
@@ -149,6 +164,7 @@ function desktopHttpPolicy() {
         timeoutMs: positiveInteger(settings.requestTimeoutMs, 15000),
         maxResponseBytes: positiveInteger(settings.maxResponseBytes, 10 * 1024 * 1024),
         maxDownloadBytes: positiveInteger(settings.maxDownloadBytes, 100 * 1024 * 1024),
+        maxMediaBytes: positiveInteger(settings.maxMediaBytes, 100 * 1024 * 1024),
         maxRequestBytes: positiveInteger(settings.maxRequestBytes, 100 * 1024 * 1024),
         maxRedirects: positiveInteger(settings.maxRedirects, 5),
     };
@@ -310,6 +326,13 @@ async function registerAppProtocol() {
             return new Response('Not found', { status: 404 });
         }
     });
+}
+
+function registerMediaProtocol() {
+    const allowedOrigins = isDev ? [APP_ORIGIN, DEV_ORIGIN] : [APP_ORIGIN];
+    protocol.handle(MEDIA_SCHEME, async(request) => (
+        handleMediaRequest(request, desktopHttpPolicy(), allowedOrigins)
+    ));
 }
 
 function createWindow() {

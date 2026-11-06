@@ -84,11 +84,16 @@ Native desktop HTTP is controlled separately:
         "requestTimeoutMs": 15000,
         "maxResponseBytes": 10485760,
         "maxDownloadBytes": 104857600,
+        "maxMediaBytes": 104857600,
         "maxRequestBytes": 104857600,
         "maxRedirects": 5
     }
 }
 ```
+
+Direct image, audio, and video previews use the `kiwi-media://` protocol in
+desktop builds. It follows the same private-network policy as native HTTP and
+does not proxy iframe embeds.
 
 ## Icons
 

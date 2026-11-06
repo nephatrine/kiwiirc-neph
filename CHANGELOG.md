@@ -12,7 +12,8 @@ and this project adheres to
 
 - **Desktop**: Added an optional Electron shell with a secure `app://` bridge, a
   desktop-only JSON5 configuration overlay, the Personal startup screen, native
-  HTTP for emoji packs, downloads, and uploads, and Linux/Windows packaging.
+  HTTP for emoji packs, downloads, and uploads, a direct-media proxy with Range
+  support, and Linux/Windows packaging.
 
 ### Fixed
 

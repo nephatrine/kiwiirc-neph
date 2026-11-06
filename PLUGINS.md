@@ -584,11 +584,17 @@ Available helpers:
 - `http.isAvailable()`
 - `files.saveUrl(url)`
 - `files.isAvailable()`
+- `media.proxyUrl(url)`
+- `media.isAvailable()`
 
 `http.fetch()` and the upload helpers return a standard `Response`. They reject
 when the desktop policy blocks a URL, the request times out, or the response
 exceeds the configured limit. Do not assume native HTTP is available; always
 feature-detect it.
+
+`media.proxyUrl()` returns the original URL when the proxy is unavailable or the
+URL is not HTTP(S). Use it for direct image, audio, and video sources, not for
+iframe embeds.
 
 ## Security
 

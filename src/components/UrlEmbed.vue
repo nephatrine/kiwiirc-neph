@@ -6,7 +6,7 @@
         <template v-if="media.type === 'image'">
             <div class="kiwi-url-embed-image">
                 <img
-                    :src="media.url"
+                    :src="mediaUrl"
                     :style="mediaStyle"
                     alt=""
                     loading="lazy"
@@ -20,7 +20,7 @@
             <div class="kiwi-url-embed-audio">
                 <!-- eslint-disable-next-line vuejs-accessibility/media-has-caption -->
                 <audio
-                    :src="media.url"
+                    :src="mediaUrl"
                     controls
                     @loadedmetadata="onLoad"
                     @error="onError"
@@ -31,7 +31,7 @@
             <div class="kiwi-url-embed-video">
                 <!-- eslint-disable-next-line vuejs-accessibility/media-has-caption -->
                 <video
-                    :src="media.url"
+                    :src="mediaUrl"
                     :style="mediaStyle"
                     controls
                     @loadedmetadata="onLoad"
@@ -174,6 +174,7 @@
 'kiwi public';
 
 import * as Misc from '@/helpers/Misc';
+import { desktopMediaUrl } from '@/libs/desktop/Media';
 import ThemeManager from '@/libs/ThemeManager';
 
 const MAX_MEDIA_HEIGHT = 400;
@@ -195,6 +196,9 @@ export default {
             const sanitized = Misc.sanitizeUrl(this.url);
             const info = Misc.getMediaInfo(sanitized);
             return info;
+        },
+        mediaUrl() {
+            return desktopMediaUrl(this.media.url);
         },
         sameOriginFediverse() {
             return Misc.isSameOriginUrl(`${this.media.url}/embed`);
