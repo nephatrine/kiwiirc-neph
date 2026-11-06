@@ -28,6 +28,7 @@ protocol.registerSchemesAsPrivileged([{
 let mainWindow = null;
 let desktopConfig = null;
 let desktopConfigPath = null;
+let allowUnload = false;
 
 if (!app.requestSingleInstanceLock()) {
     app.quit();
@@ -101,28 +102,79 @@ function buildApplicationMenu() {
         template.push({ role: 'appMenu' });
     }
 
+    const fileMenu = [
+        {
+            label: 'Open Desktop Configuration',
+            click: () => {
+                openDesktopConfiguration();
+            },
+        },
+        {
+            label: 'Reload Desktop Configuration',
+            click: () => {
+                reloadDesktopConfiguration();
+            },
+        },
+    ];
+
+    if (process.platform !== 'darwin') {
+        fileMenu.push({ type: 'separator' }, { role: 'quit', label: 'Exit' });
+    }
+
     template.push({
         label: 'File',
+        submenu: fileMenu,
+    });
+    template.push({ role: 'editMenu' });
+    template.push({
+        label: 'View',
         submenu: [
             {
-                label: 'Open Desktop Configuration',
+                label: 'Reload',
+                accelerator: 'CmdOrCtrl+R',
                 click: () => {
-                    openDesktopConfiguration();
+                    reloadWindow(false);
                 },
             },
             {
-                label: 'Reload Desktop Configuration',
+                label: 'Force Reload',
+                accelerator: 'CmdOrCtrl+Shift+R',
                 click: () => {
-                    reloadDesktopConfiguration();
+                    reloadWindow(true);
                 },
             },
+            { role: 'toggleDevTools' },
             { type: 'separator' },
-            ...(process.platform === 'darwin' ? [] : [{ role: 'quit' }]),
+            { role: 'resetZoom' },
+            { role: 'zoomIn' },
+            { role: 'zoomOut' },
+            { type: 'separator' },
+            { role: 'togglefullscreen' },
         ],
     });
-    template.push({ role: 'editMenu' }, { role: 'viewMenu' }, { role: 'windowMenu' });
+
+    if (process.platform === 'darwin') {
+        template.push({ role: 'windowMenu' });
+    }
 
     Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
+function reloadWindow(ignoreCache) {
+    if (!mainWindow) {
+        return;
+    }
+
+    allowUnload = true;
+    mainWindow.webContents.once('did-finish-load', () => {
+        allowUnload = false;
+    });
+
+    if (ignoreCache) {
+        mainWindow.webContents.reloadIgnoringCache();
+    } else {
+        mainWindow.webContents.reload();
+    }
 }
 
 async function openDesktopConfiguration() {
@@ -139,9 +191,7 @@ async function openDesktopConfiguration() {
 
 function reloadDesktopConfiguration() {
     loadDesktopConfiguration();
-    if (mainWindow) {
-        mainWindow.webContents.reload();
-    }
+    reloadWindow(false);
 }
 
 async function registerAppProtocol() {
@@ -215,6 +265,28 @@ function createWindow() {
     window.on('closed', () => {
         if (mainWindow === window) {
             mainWindow = null;
+        }
+    });
+
+    window.webContents.on('will-prevent-unload', (event) => {
+        if (allowUnload) {
+            allowUnload = false;
+            event.preventDefault();
+            return;
+        }
+
+        const choice = dialog.showMessageBoxSync(window, {
+            type: 'question',
+            buttons: ['Close', 'Cancel'],
+            defaultId: 1,
+            cancelId: 1,
+            title: 'Kiwi IRC',
+            message: process.platform === 'darwin' ? 'Close this window?' : 'Close Kiwi IRC?',
+            detail: 'Active IRC connections will be disconnected.',
+        });
+
+        if (choice === 0) {
+            event.preventDefault();
         }
     });
 
