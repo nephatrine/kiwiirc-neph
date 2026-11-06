@@ -5,11 +5,13 @@ import * as WebpushUtils from '@/libs/WebpushUtils';
 import { debounce } from '@/helpers/Async';
 
 export default class StatePersistence {
-    constructor(storageKey, state, storage, logger) {
+    constructor(storageKey, state, storage, logger, secretStore = null) {
         this.storageKey = storageKey;
         this.state = state;
         this.storage = storage;
         this.logger = logger;
+        this.secretStore = secretStore;
+        this.secretLoadFailed = false;
         this.isPersisting = false;
         this.includeBuffers = true;
         // Set by the startup screen from the Remember Password checkbox.
@@ -29,10 +31,103 @@ export default class StatePersistence {
         let storedState = await this.storage.get(this.storageKey);
         if (storedState) {
             if (this.logger) {
-                this.logger('Importing state', storedState);
+                this.logger('Importing stored state');
             }
 
             this.state.importState(storedState);
+        }
+
+        await this.loadSecrets();
+    }
+
+    networkAllowsPassword(network) {
+        return !network ||
+            typeof network.setting !== 'function' ||
+            network.setting('rememberPassword') !== false;
+    }
+
+    async loadSecrets() {
+        if (!this.secretStore || !this.storageKey) {
+            return;
+        }
+
+        try {
+            const secrets = await this.secretStore.load(this.storageKey);
+            if (secrets) {
+                Object.keys(secrets).forEach((networkId) => {
+                    const network = this.state.getNetwork(Number(networkId));
+                    if (!network || !this.networkAllowsPassword(network)) {
+                        return;
+                    }
+
+                    const entry = secrets[networkId] || {};
+                    if (typeof entry.connection === 'string') {
+                        network.connection.password = entry.connection;
+                    }
+                    if (typeof entry.sasl === 'string') {
+                        network.password = entry.sasl;
+                    }
+                });
+            }
+            this.secretLoadFailed = false;
+        } catch (err) {
+            this.secretLoadFailed = true;
+            this.reportSecretError('Failed to load saved passwords', err);
+        }
+    }
+
+    collectSecrets() {
+        const secrets = {};
+
+        if (!this.includePasswords) {
+            return secrets;
+        }
+
+        this.state.networks.forEach((network) => {
+            if (!this.networkAllowsPassword(network)) {
+                return;
+            }
+
+            const entry = {};
+            if (network.connection.password) {
+                entry.connection = network.connection.password;
+            }
+            if (network.password) {
+                entry.sasl = network.password;
+            }
+
+            if (Object.keys(entry).length) {
+                secrets[String(network.id)] = entry;
+            }
+        });
+
+        return secrets;
+    }
+
+    async saveSecrets() {
+        if (!this.secretStore || !this.storageKey) {
+            return false;
+        }
+
+        const secrets = this.collectSecrets();
+        if (Object.keys(secrets).length) {
+            await this.secretStore.save(this.storageKey, secrets);
+        } else {
+            await this.secretStore.clear(this.storageKey);
+        }
+
+        return true;
+    }
+
+    reportSecretError(message, err) {
+        if (!this.logger) {
+            return;
+        }
+
+        if (typeof this.logger.error === 'function') {
+            this.logger.error(message, err);
+        } else {
+            this.logger(message, err);
         }
     }
 
@@ -82,25 +177,54 @@ export default class StatePersistence {
         this.isPersisting = true;
     }
 
-    saveStateNow() {
+    async saveStateNow() {
         if (!this.storageKey) {
-            return Promise.resolve();
+            return { secretsSaved: false, stateSaved: false };
         }
 
         if (this.logger) {
-            this.logger('State updated, setting localStorage');
+            this.logger('State updated, writing to storage');
         }
 
-        return Promise.resolve(this.storage.set(
-            this.storageKey,
-            this.state.exportState(this.includeBuffers, this.includePasswords)
-        ));
+        let secretsSaved = true;
+        let stateJson;
+
+        if (this.secretStore) {
+            if (this.secretLoadFailed) {
+                secretsSaved = false;
+            } else {
+                try {
+                    await this.saveSecrets();
+                } catch (err) {
+                    secretsSaved = false;
+                    this.reportSecretError('Failed to save passwords', err);
+                }
+            }
+
+            stateJson = this.state.exportState(this.includeBuffers, false);
+        } else {
+            stateJson = this.state.exportState(
+                this.includeBuffers,
+                this.includePasswords,
+                (network) => this.networkAllowsPassword(network)
+            );
+        }
+
+        await this.storage.set(this.storageKey, stateJson);
+        return { secretsSaved, stateSaved: true };
     }
 
     async clearStoredState() {
         this.stopWatchingState();
         await WebpushUtils.unsubscribeStateBrowserSubscriptions(this.state.stateKey());
         if (this.storageKey) {
+            if (this.secretStore) {
+                try {
+                    await this.secretStore.clear(this.storageKey);
+                } catch (err) {
+                    this.reportSecretError('Failed to clear saved passwords', err);
+                }
+            }
             await this.storage.set(this.storageKey, null);
         }
         await MetadataCache.clear();

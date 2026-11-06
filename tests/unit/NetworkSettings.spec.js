@@ -48,6 +48,7 @@ describe('NetworkSettings server details', () => {
         delete Vue.prototype.$state;
         delete window.Notification;
         delete window.confirm;
+        delete window.kiwiDesktop;
     });
 
     function mount() {
@@ -71,6 +72,37 @@ describe('NetworkSettings server details', () => {
             field.querySelector('input, select, textarea') :
             null;
     }
+
+    it('shows password memory only in Personal startup mode', async() => {
+        s.settings.startupScreen = 'personal';
+        window.kiwiDesktop = {
+            secrets: {
+                status: jest.fn(async() => ({
+                    available: false,
+                    secure: false,
+                    protection: 'plaintext',
+                })),
+            },
+        };
+
+        const comp = mount();
+        await Vue.nextTick();
+        await Promise.resolve();
+
+        const block = comp.$el.querySelector('.kiwi-networksettings-password-memory');
+        const checkbox = block && block.querySelector('input[type="checkbox"]');
+        expect(block).not.toBeNull();
+        expect(checkbox.checked).toBe(true);
+        expect(block.textContent).toContain('settings_remember_password_network');
+        expect(block.textContent).toContain('settings_password_storage_plaintext');
+
+        s.settings.startupScreen = 'customServer';
+        await Vue.nextTick();
+
+        expect(
+            comp.$el.querySelector('.kiwi-networksettings-password-memory')
+        ).toBeNull();
+    });
 
     it('shows network preferences only with multiple connected networks', async() => {
         const comp = mount();

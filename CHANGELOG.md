@@ -14,6 +14,11 @@ and this project adheres to
   desktop-only JSON5 configuration overlay, the Personal startup screen, native
   HTTP for emoji packs, downloads, and uploads, a direct-media proxy with Range
   support, and Linux/Windows packaging.
+- **Desktop Profiles**: Added filesystem-backed state and metadata storage,
+  legacy localStorage migration, OS-backed password storage through
+  `safeStorage`, and a warned plaintext fallback when encryption is unavailable.
+  Personal startup remembers passwords by default, with a per-network opt-out in
+  Server Details.
 
 ### Fixed
 

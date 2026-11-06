@@ -1,4 +1,14 @@
-const { app, BrowserWindow, Menu, dialog, ipcMain, protocol, net, shell } = require('electron');
+const {
+    app,
+    BrowserWindow,
+    Menu,
+    dialog,
+    ipcMain,
+    protocol,
+    net,
+    safeStorage,
+    shell,
+} = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -6,6 +16,8 @@ const { ensureUserConfig, loadDesktopConfig } = require('./desktop-config');
 const httpService = require('./http');
 const { handleMediaRequest } = require('./media');
 const { MEDIA_SCHEME } = require('./media-url');
+const { createProfileStore } = require('./profile-store');
+const { createSecretStore } = require('./secrets');
 
 const APP_SCHEME = 'app';
 const APP_HOST = 'kiwi';
@@ -43,6 +55,8 @@ protocol.registerSchemesAsPrivileged([
 let mainWindow = null;
 let desktopConfig = null;
 let desktopConfigPath = null;
+let profileStore = null;
+let secretStore = null;
 let allowUnload = false;
 
 if (!app.requestSingleInstanceLock()) {
@@ -66,6 +80,9 @@ if (!app.requestSingleInstanceLock()) {
 
     app.whenReady().then(async() => {
         loadDesktopConfiguration();
+        const userDataDir = app.getPath('userData');
+        profileStore = createProfileStore(userDataDir);
+        secretStore = createSecretStore({ userDataDir, safeStorage });
         registerDesktopConfigIpc();
         buildApplicationMenu();
         await registerAppProtocol();
@@ -109,6 +126,21 @@ function registerDesktopConfigIpc() {
     ipcMain.on('kiwi:desktop-config', (event) => {
         event.returnValue = desktopConfig;
     });
+
+    ipcMain.handle('kiwi:storage-get', (event, name) => profileStore.get(name));
+    ipcMain.handle('kiwi:storage-set', (event, name, value) => (
+        profileStore.set(name, value)
+    ));
+    ipcMain.handle('kiwi:secrets-status', () => secretStore.status());
+    ipcMain.handle('kiwi:secrets-load', (event, stateKey) => (
+        secretStore.load(stateKey)
+    ));
+    ipcMain.handle('kiwi:secrets-save', (event, stateKey, secrets) => (
+        secretStore.save(stateKey, secrets)
+    ));
+    ipcMain.handle('kiwi:secrets-clear', (event, stateKey) => (
+        secretStore.clear(stateKey)
+    ));
 
     ipcMain.handle('kiwi:http-request', (event, options) => {
         const policy = desktopHttpPolicy();

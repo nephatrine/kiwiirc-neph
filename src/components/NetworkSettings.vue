@@ -48,6 +48,23 @@
                     :show-path="!isBouncerManaged && network.connection.direct"
                 />
 
+                <div v-if="isPersonalMode" class="kiwi-networksettings-password-memory">
+                    <label class="u-checkbox-wrapper">
+                        <span>{{ $t('settings_remember_password_network') }}</span>
+                        <input
+                            v-model="settingRememberPassword"
+                            type="checkbox"
+                            :disabled="connectionDetailsLocked"
+                        >
+                    </label>
+                    <div
+                        v-if="passwordStorageWarning"
+                        class="kiwi-networksettings-password-warning"
+                    >
+                        {{ $t(passwordStorageWarning) }}
+                    </div>
+                </div>
+
                 <h4 class="kiwi-networksettings-auth-title">
                     {{ $t('settings_irc_auth') }}
                 </h4>
@@ -367,6 +384,7 @@
 import * as Misc from '@/helpers/Misc';
 import Captcha from '@/components/Captcha';
 import { loadEmojiPacksSettings } from '@/libs/LazyLoad';
+import { status as secretStorageStatus } from '@/libs/desktop/Secrets';
 import NetworkPreferencesMixin from './NetworkPreferencesMixin';
 import ServerSelector from './ServerSelector';
 import {
@@ -392,11 +410,35 @@ export default {
             show_advanced: false,
             switch_tabs_on_connect: false,
             network_list: [],
+            passwordProtection: null,
         };
     },
     computed: {
         restricted() {
             return this.$state.setting('restricted');
+        },
+        isPersonalMode() {
+            return this.$state.getSetting('settings.startupScreen') === 'personal';
+        },
+        passwordStorageWarning() {
+            if (!this.isPersonalMode || !this.passwordProtection) {
+                return '';
+            }
+            if (this.passwordProtection.secure) {
+                return '';
+            }
+            if (this.passwordProtection.protection === 'safeStorage') {
+                return 'settings_password_storage_basic_text';
+            }
+            return 'settings_password_storage_plaintext';
+        },
+        settingRememberPassword: {
+            get() {
+                return this.network.setting('rememberPassword') !== false;
+            },
+            set(value) {
+                this.network.setting('rememberPassword', !!value);
+            },
         },
         isBouncerController() {
             return this.network.isBouncerController();
@@ -616,6 +658,13 @@ export default {
     },
     created() {
         this.network_list = this.$state.setting('presetNetworks') || [];
+        if (this.isPersonalMode) {
+            secretStorageStatus().then((status) => {
+                this.passwordProtection = status;
+            }).catch(() => {
+                this.passwordProtection = null;
+            });
+        }
     },
     methods: {
         networkPreferencesTarget() {
@@ -920,6 +969,21 @@ export default {
 .kiwi-networksettings-bouncer-sasl-warning {
     margin: 0 0 1.5em 0;
     padding: 0.8em;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.05);
+    font-style: italic;
+    font-size: 0.9em;
+    border-radius: 4px;
+}
+
+.kiwi-networksettings-password-memory {
+    margin: 0.8em 0 1em;
+    text-align: left;
+}
+
+.kiwi-networksettings-password-warning {
+    margin-top: 0.6em;
+    padding: 0.6em 0.8em;
     border: 1px solid rgba(0, 0, 0, 0.1);
     background: rgba(0, 0, 0, 0.05);
     font-style: italic;

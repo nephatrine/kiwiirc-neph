@@ -865,6 +865,18 @@ msgstr "Remember Me"
 msgid "remember_password"
 msgstr "Remember Password(s)"
 
+#: Remember passwords for this network in Personal startup mode
+msgid "settings_remember_password_network"
+msgstr "Remember Network Passwords"
+
+#: Passwords use the OS keyring, but this Linux backend is not secure
+msgid "settings_password_storage_basic_text"
+msgstr "Passwords will be stored with limited protection because no OS keyring is available."
+
+#: Passwords will be stored unencrypted because secure storage is unavailable
+msgid "settings_password_storage_plaintext"
+msgstr "Passwords will be stored insecurely because secure storage is unavailable."
+
 #: Password strength: weak
 msgid "password_strength_weak"
 msgstr "Weak"

@@ -114,8 +114,10 @@ function createNewState() {
         data: stateObj,
         methods: {
             // Export enough state so that it can be imported in future to resume
-            exportState(includeBuffers, includePasswords = true) {
+            exportState(includeBuffers, includePasswords = true, includeNetworkPassword = null) {
                 let toExport = {};
+                const canIncludePassword = (network) => includePasswords &&
+                    (!includeNetworkPassword || includeNetworkPassword(network));
 
                 if (includeBuffers) {
                     toExport.networks = state.networks.map((network) => {
@@ -131,7 +133,7 @@ function createNewState() {
                                 // Passwords only leave the session when the user
                                 // opted into Remember Password; everything else
                                 // about the account still persists.
-                                password: includePasswords ?
+                                password: canIncludePassword(network) ?
                                     network.connection.password :
                                     '',
                                 direct: network.connection.direct,
@@ -143,7 +145,7 @@ function createNewState() {
                             settings: deepClone(network.settings),
                             username: network.username,
                             gecos: network.gecos,
-                            password: includePasswords ?
+                            password: canIncludePassword(network) ?
                                 network.password :
                                 '',
                             hidden: network.hidden,

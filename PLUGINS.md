@@ -586,6 +586,11 @@ Available helpers:
 - `files.isAvailable()`
 - `media.proxyUrl(url)`
 - `media.isAvailable()`
+- `secrets.status()`
+- `secrets.load(stateKey)`
+- `secrets.save(stateKey, values)`
+- `secrets.clear(stateKey)`
+- `secrets.isAvailable()`
 
 `http.fetch()` and the upload helpers return a standard `Response`. They reject
 when the desktop policy blocks a URL, the request times out, or the response
@@ -595,6 +600,9 @@ feature-detect it.
 `media.proxyUrl()` returns the original URL when the proxy is unavailable or the
 URL is not HTTP(S). Use it for direct image, audio, and video sources, not for
 iframe embeds.
+
+`secrets.*` is desktop-only and intended for profile credential handling. Never
+log, display, or include returned secrets in plugin diagnostics.
 
 ## Security
 

@@ -6,6 +6,7 @@ describe('per-network settings', () => {
         const network = s.addNetwork('TestNetwork', 'TestNick', {});
 
         expect(network.setting('show_notifications')).toBe(true);
+        expect(network.setting('rememberPassword')).toBe(true);
         expect(network.setting('persistencePreference')).toBe('keep');
         expect(network.setting('share_typing')).toBe(true);
         expect(network.setting('lenient_rerouting')).toBe(true);
@@ -21,6 +22,7 @@ describe('per-network settings', () => {
         const second = s.addNetwork('Second', 'SecondNick', {});
 
         first.setting('show_notifications', false);
+        first.setting('rememberPassword', false);
         first.setting('persistencePreference', 'off');
         first.setting('share_typing', false);
         first.setting('lenient_rerouting', false);
@@ -30,6 +32,7 @@ describe('per-network settings', () => {
         first.setting('fileuploadRetention', '1h');
 
         expect(second.setting('show_notifications')).toBe(true);
+        expect(second.setting('rememberPassword')).toBe(true);
         expect(second.setting('persistencePreference')).toBe('keep');
         expect(second.setting('share_typing')).toBe(true);
         expect(second.setting('lenient_rerouting')).toBe(true);

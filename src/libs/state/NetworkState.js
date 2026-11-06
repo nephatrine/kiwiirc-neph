@@ -67,6 +67,10 @@ export default class NetworkState {
             // Browser push notifications are a per-network opt-in for the
             // connection that negotiated webpush.
             webpushEnabled: false,
+            // Personal startup stores passwords for this network by default.
+            // The desktop profile may keep them in the OS keyring or the
+            // plaintext fallback; the web client keeps them in localStorage.
+            rememberPassword: true,
             // Settings whose availability depends on the network live here
             // instead of in the global user settings. New networks start from
             // the admin config defaults; old user values are not migrated.

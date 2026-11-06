@@ -23,7 +23,8 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
         nativeHttp: true,
         nativeDownloads: true,
         mediaProxy: true,
-        profiles: false,
+        profiles: true,
+        passwordStorage: true,
         chatLogs: false,
         dcc: false,
     },
@@ -33,6 +34,16 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
     },
     files: {
         saveUrl: (url) => ipcRenderer.invoke('kiwi:save-url', url),
+    },
+    storage: {
+        get: (name) => ipcRenderer.invoke('kiwi:storage-get', name),
+        set: (name, value) => ipcRenderer.invoke('kiwi:storage-set', name, value),
+    },
+    secrets: {
+        status: () => ipcRenderer.invoke('kiwi:secrets-status'),
+        load: (stateKey) => ipcRenderer.invoke('kiwi:secrets-load', stateKey),
+        save: (stateKey, values) => ipcRenderer.invoke('kiwi:secrets-save', stateKey, values),
+        clear: (stateKey) => ipcRenderer.invoke('kiwi:secrets-clear', stateKey),
     },
     media: {
         proxyUrl: (url) => `kiwi-media://media/${encodeURIComponent(url)}`,

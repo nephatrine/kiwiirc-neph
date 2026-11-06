@@ -95,6 +95,29 @@ Direct image, audio, and video previews use the `kiwi-media://` protocol in
 desktop builds. It follows the same private-network policy as native HTTP and
 does not proxy iframe embeds.
 
+## Profile Data
+
+Desktop state is stored in one default profile:
+
+```text
+Linux:   ~/.config/KiwiIRC/profiles/default/
+Windows: %APPDATA%\KiwiIRC\profiles\default/
+```
+
+The profile contains `state.json`, `metadata-cache.json`, and their `.bak`
+backups. Passwords are kept in `secrets.json`, never in `state.json`.
+
+Personal startup remembers passwords by default. The per-network **Remember
+Passwords for This Network** checkbox is available in Server Details only in
+Personal startup mode. Password storage uses the OS keyring when available. On
+Linux without a usable keyring, Electron's `basic_text` backend is used with a
+warning. If encryption is unavailable, new secrets are written to
+`secrets.json` as plaintext with a warning. An existing encrypted secrets file
+is never downgraded while the keyring is temporarily unavailable.
+
+Existing `app://` localStorage state is migrated into the default profile on
+first desktop launch when no profile state exists.
+
 ## Icons
 
 The desktop icons are generated from `static/kiwi.svg`:

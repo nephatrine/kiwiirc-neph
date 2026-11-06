@@ -25,7 +25,10 @@ import IPC from '@/libs/IPC';
 import desktop from '@/libs/desktop';
 import StatePersistence from '@/libs/StatePersistence';
 import * as MetadataCache from '@/libs/MetadataCache';
-import * as Storage from '@/libs/storage/Local';
+import * as LocalStorage from '@/libs/storage/Local';
+import * as DesktopStorage from '@/libs/storage/Desktop';
+import { migrateLegacyProfile } from '@/libs/storage/DesktopMigration';
+import * as DesktopSecrets from '@/libs/desktop/Secrets';
 import * as Misc from '@/helpers/Misc';
 import GlobalApi from '@/libs/GlobalApi';
 import { AudioManager } from '@/libs/AudioManager';
@@ -545,9 +548,32 @@ async function initState() {
         stateKey = 'kiwi-state';
     }
 
-    let persistLog = Logger.namespace('StatePersistence');
-    let persist = new StatePersistence(stateKey || '', getState(), Storage, persistLog);
+    const Storage = DesktopStorage.isAvailable() ? DesktopStorage : LocalStorage;
+    const secretStore = DesktopSecrets.isAvailable() ? DesktopSecrets : null;
+    const persistLog = Logger.namespace('StatePersistence');
+    let persist = new StatePersistence(
+        stateKey || '',
+        getState(),
+        Storage,
+        persistLog,
+        secretStore
+    );
     persist.includeBuffers = !!getState().settings.startupOptions.remember_buffers;
+
+    if (Storage === DesktopStorage) {
+        try {
+            await migrateLegacyProfile({
+                storage: Storage,
+                persistence: persist,
+                state: getState(),
+                storageKey: stateKey,
+                localStorageImpl: window.localStorage,
+                logger: persistLog,
+            });
+        } catch (err) {
+            persistLog('Desktop profile migration failed', err);
+        }
+    }
 
     if (stateKey) {
         await persist.loadStateIfExists();
