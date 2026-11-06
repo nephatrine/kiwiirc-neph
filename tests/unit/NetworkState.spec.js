@@ -163,6 +163,20 @@ describe('NetworkState', () => {
         expect(network.iconUrl).toBe('/static/libera.svg');
     });
 
+    it('uses the OFTC icon unless DRAFT/ICON is advertised', () => {
+        let s = state.create();
+        let network = s.addNetwork('Work', 'nick', {
+            server: 'irc.example.com',
+        });
+
+        network.isupport.NETWORK = 'OFTC';
+        expect(network.supports('NETWORK')).toBe('OFTC');
+        expect(network.iconUrl).toBe('/static/oftc.svg');
+
+        network.isupport['DRAFT/ICON'] = 'https://example.com/icon-{size}.png';
+        expect(network.iconUrl).toBe('https://example.com/icon-64.png');
+    });
+
     it('reports Twitch as the IRCd type', () => {
         let s = state.create();
         let twitch = s.addNetwork('Twitch', 'nick', {

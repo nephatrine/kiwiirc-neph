@@ -48,6 +48,14 @@
                 >
                     <i :class="[collapsed ? 'bx-plus-circle' : 'bx-minus-circle']" class="bx" />
                 </div>
+                <div
+                    v-if="networkIndex > 0"
+                    :title="$t('move_network_up')"
+                    class="kiwi-network-name-option kiwi-network-name-option-up"
+                    @click.stop="$state.moveNetworkUp(network.id)"
+                >
+                    <i class="bx bx-up-arrow-alt" aria-hidden="true" />
+                </div>
             </div>
         </div>
 
@@ -335,6 +343,9 @@ export default {
         },
         totalNetworkCount() {
             return this.$state.networks.length;
+        },
+        networkIndex() {
+            return this.$state.networks.indexOf(this.network);
         },
         serverUnread() {
             if (!this.collapsed) {

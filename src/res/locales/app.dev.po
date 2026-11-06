@@ -1872,6 +1872,10 @@ msgstr "{{count}} users have returned from {{remote}}."
 msgid "toggle_section"
 msgstr "Toggle Section"
 
+#: Move network up
+msgid "move_network_up"
+msgstr "Move Network Up"
+
 #: Tools
 msgid "tools"
 msgstr "Tools"

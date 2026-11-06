@@ -417,6 +417,24 @@ function createNewState() {
                 return network;
             },
 
+            moveNetwork(networkid, offset) {
+                const index = findIndex(this.networks, (network) => network.id === networkid);
+                const target = index + offset;
+
+                if (index < 0 || target < 0 || target >= this.networks.length) {
+                    return false;
+                }
+
+                const network = this.networks[index];
+                this.networks.splice(index, 1);
+                this.networks.splice(target, 0, network);
+                return true;
+            },
+
+            moveNetworkUp(networkid) {
+                return this.moveNetwork(networkid, -1);
+            },
+
             removeNetwork(networkid, source) {
                 let network = this.getNetwork(networkid);
                 if (!network) {

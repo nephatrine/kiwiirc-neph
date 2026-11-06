@@ -22,6 +22,8 @@ and this project adheres to
 - **Desktop Profile Transfer**: Added portable browser/desktop profile export
   and import, with optional password-included files and a desktop profile backup
   before import.
+- **Network List**: Added per-network move-up controls and the OFTC fallback
+  network icon.
 
 ### Changed
 

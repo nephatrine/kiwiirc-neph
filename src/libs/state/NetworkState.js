@@ -223,6 +223,9 @@ export default class NetworkState {
         if (networkName === 'libera.chat') {
             return '/static/libera.svg';
         }
+        if (networkName === 'oftc') {
+            return '/static/oftc.svg';
+        }
 
         if (this.isTwitch()) {
             return '/static/twitch.svg';

@@ -111,9 +111,9 @@ Personal startup remembers passwords by default. The per-network **Remember
 Passwords for This Network** checkbox is available in Server Details only in
 Personal startup mode. Password storage uses the OS keyring when available. On
 Linux without a usable keyring, Electron's `basic_text` backend is used with a
-warning. If encryption is unavailable, new secrets are written to
-`secrets.json` as plaintext with a warning. An existing encrypted secrets file
-is never downgraded while the keyring is temporarily unavailable.
+warning. If encryption is unavailable, new secrets are written to `secrets.json`
+as plaintext with a warning. An existing encrypted secrets file is never
+downgraded while the keyring is temporarily unavailable.
 
 Existing `app://` localStorage state is migrated into the default profile on
 first desktop launch when no profile state exists.
