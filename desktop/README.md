@@ -118,6 +118,12 @@ downgraded while the keyring is temporarily unavailable.
 Existing `app://` localStorage state is migrated into the default profile on
 first desktop launch when no profile state exists.
 
+## Window State
+
+Window size, position, and maximized state are stored in `window-state.json`
+under the app data directory and restored when they still fit on a connected
+display.
+
 ## Profile Transfer
 
 The **Profile Transfer** section in App Settings exports and imports a portable

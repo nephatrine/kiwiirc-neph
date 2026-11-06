@@ -7,6 +7,7 @@ const {
     protocol,
     net,
     safeStorage,
+    screen,
     shell,
 } = require('electron');
 const fs = require('node:fs/promises');
@@ -18,6 +19,12 @@ const { handleMediaRequest } = require('./media');
 const { MEDIA_SCHEME } = require('./media-url');
 const { createProfileStore, MAX_STORAGE_BYTES } = require('./profile-store');
 const { createSecretStore } = require('./secrets');
+const {
+    loadWindowState,
+    restoreWindowState,
+    saveWindowState,
+    saveWindowStateSync,
+} = require('./window-state');
 
 const APP_SCHEME = 'app';
 const APP_HOST = 'kiwi';
@@ -423,9 +430,18 @@ function registerMediaProtocol() {
 }
 
 function createWindow() {
+    const userDataDir = app.getPath('userData');
+    const savedState = loadWindowState(userDataDir);
+    const bounds = restoreWindowState(
+        savedState,
+        screen.getAllDisplays().map((display) => display.workArea),
+        screen.getPrimaryDisplay().workArea
+    );
     const window = new BrowserWindow({
-        width: 1280,
-        height: 820,
+        x: bounds.x,
+        y: bounds.y,
+        width: bounds.width,
+        height: bounds.height,
         minWidth: 800,
         minHeight: 560,
         show: false,
@@ -440,8 +456,66 @@ function createWindow() {
     });
 
     mainWindow = window;
-    window.once('ready-to-show', () => window.show());
+
+    let stateTimer = null;
+    const captureWindowState = () => {
+        if (window.isDestroyed()) {
+            return null;
+        }
+        const normal = window.getNormalBounds();
+        return {
+            width: normal.width,
+            height: normal.height,
+            x: normal.x,
+            y: normal.y,
+            maximized: window.isMaximized(),
+        };
+    };
+    const saveWindowStateNow = () => {
+        const state = captureWindowState();
+        if (state) {
+            saveWindowState(userDataDir, state).catch(() => {});
+        }
+    };
+    const scheduleWindowStateSave = () => {
+        if (stateTimer) {
+            clearTimeout(stateTimer);
+        }
+        stateTimer = setTimeout(() => {
+            stateTimer = null;
+            saveWindowStateNow();
+        }, 500);
+    };
+
+    window.on('resize', scheduleWindowStateSave);
+    window.on('move', scheduleWindowStateSave);
+    window.on('maximize', scheduleWindowStateSave);
+    window.on('unmaximize', scheduleWindowStateSave);
+    window.on('close', () => {
+        if (stateTimer) {
+            clearTimeout(stateTimer);
+            stateTimer = null;
+        }
+        const state = captureWindowState();
+        if (state) {
+            try {
+                saveWindowStateSync(userDataDir, state);
+            } catch (err) {
+                // Window state is best-effort.
+            }
+        }
+    });
+    window.once('ready-to-show', () => {
+        if (savedState && savedState.maximized) {
+            window.maximize();
+        }
+        window.show();
+    });
     window.on('closed', () => {
+        if (stateTimer) {
+            clearTimeout(stateTimer);
+            stateTimer = null;
+        }
         if (mainWindow === window) {
             mainWindow = null;
         }

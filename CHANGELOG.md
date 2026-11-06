@@ -24,6 +24,8 @@ and this project adheres to
   before import.
 - **Network List**: Added per-network move-up controls and the OFTC fallback
   network icon.
+- **Desktop Window**: Remember the window size, position, and maximized state
+  across launches.
 
 ### Changed
 
