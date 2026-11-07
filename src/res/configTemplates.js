@@ -76,6 +76,8 @@ export const configTemplates = {
         remoteEmojiPacks: true,
         // Restricted to a single IRC server
         restricted: true,
+        // Desktop chat-log retention in days. 0 keeps logs indefinitely.
+        chatLogRetentionDays: 7,
         // The startup screen
         startupScreen: 'customServer',
         // Where to find the kiwi server

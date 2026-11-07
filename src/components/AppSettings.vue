@@ -314,6 +314,7 @@
                             </label>
                         </div>
                     </div>
+                    <chat-log-settings />
                     <profile-settings />
 
                     <div
@@ -381,6 +382,7 @@ import { emojiVersions as emojiVersionList } from '@/res/emojiLookup';
 import { debounce } from '@/helpers/Async';
 import SettingsAliases from './SettingsAliases';
 import SettingsAdvanced from './SettingsAdvanced';
+import ChatLogSettings from './ChatLogSettings';
 import ProfileSettings from './ProfileSettings';
 import NetworkPreferencesMixin from './NetworkPreferencesMixin';
 
@@ -403,6 +405,7 @@ export default {
     components: {
         SettingsAliases,
         SettingsAdvanced,
+        ChatLogSettings,
         ProfileSettings,
     },
     mixins: [NetworkPreferencesMixin],

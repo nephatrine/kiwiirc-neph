@@ -26,6 +26,13 @@ and this project adheres to
   network icon.
 - **Desktop Window**: Remember the window size, position, and maximized state
   across launches.
+- **Desktop Chat Logs**: Added local SQLite chat history with FTS search,
+  configurable retention, redaction handling, and a desktop search dialog.
+  Redacted messages retain their local text and are marked in search results.
+  Search results load historical context around the target, with gap markers and
+  controls to load missing context in either direction. Unjoined channels use a
+  temporary read-only local-log History buffer rather than rejoining, and
+  exhausted server-history gaps can open local log context.
 
 ### Changed
 
@@ -42,6 +49,7 @@ and this project adheres to
 - **Network Settings**: Show direct WebSocket paths in the main server field and
   select WebSocket transport with the protocol picker instead of a redundant
   advanced checkbox.
+- **Desktop Chat Logs**: Match word prefixes in search so `otter` finds `otters`.
 - **Desktop Menus**: Fixed Reload and Force Reload being blocked by the exit
   warning, added a native close confirmation, removed the nonfunctional Window
   menu on Linux and Windows, and open the configuration folder instead of

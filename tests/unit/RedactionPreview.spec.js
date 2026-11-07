@@ -37,11 +37,21 @@ describe('redaction previews', () => {
         });
         message.embed.payload = 'https://example.com/image.jpg';
         jest.spyOn(network.ircClient, 'raw').mockImplementation(() => {});
+        const emit = jest.spyOn(s, '$emit');
 
         buffer.redact(message, 'reason');
 
         expect(message.is_redacted).toBe(true);
         expect(message.embed.payload).toBe('');
+        expect(emit).toHaveBeenCalledWith(
+            'message.redaction',
+            expect.objectContaining({
+                networkId: network.id,
+                ircId: 'local-msgid',
+                redactedBy: 'TestNick',
+                redactionReason: 'reason',
+            })
+        );
     });
 
     it('keeps a preview manually reopened after local redaction', () => {
@@ -92,6 +102,40 @@ describe('redaction previews', () => {
         expect(target.is_redacted).toBe(true);
         expect(target.closeEmbed).toHaveBeenCalledTimes(1);
         expect(target.embed.payload).toBe('');
+    });
+
+    it('emits a log redaction when the target is not loaded', () => {
+        const emit = jest.fn();
+        const network = {
+            id: 1,
+            bufferByName: () => undefined,
+            resolveMessage: () => null,
+            appState: {
+                $emit: emit,
+                promotePendingLabel: jest.fn(),
+            },
+        };
+
+        redactionMiddleware(network, 'REDACT', {
+            params: ['#test', 'missing-msgid', 'reason'],
+            tags: {},
+            nick: 'Other',
+        }, {
+            user: { nick: 'TestNick' },
+            caseCompare: (left, right) => (
+                String(left).toLowerCase() === String(right).toLowerCase()
+            ),
+        }, jest.fn());
+
+        expect(emit).toHaveBeenCalledWith(
+            'message.redaction',
+            expect.objectContaining({
+                networkId: 1,
+                ircId: 'missing-msgid',
+                redactedBy: 'Other',
+                redactionReason: 'reason',
+            })
+        );
     });
 
     it('keeps a preview manually reopened after an incoming redaction', () => {

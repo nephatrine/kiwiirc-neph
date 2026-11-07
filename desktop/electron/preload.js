@@ -26,7 +26,7 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
         profiles: true,
         passwordStorage: true,
         profileTransfer: true,
-        chatLogs: false,
+        chatLogs: true,
         dcc: false,
     },
     http: {
@@ -51,6 +51,22 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
         import: () => ipcRenderer.invoke('kiwi:profile-import'),
         backup: () => ipcRenderer.invoke('kiwi:profile-backup'),
         openFolder: () => ipcRenderer.invoke('kiwi:profile-open-folder'),
+    },
+    logs: {
+        append: (entries) => ipcRenderer.invoke('kiwi:logs-append', entries),
+        search: (options) => ipcRenderer.invoke('kiwi:logs-search', options),
+        context: (options) => ipcRenderer.invoke('kiwi:logs-context', options),
+        redact: (options) => ipcRenderer.invoke('kiwi:logs-redact', options),
+        confirm: (options) => ipcRenderer.invoke('kiwi:logs-confirm', options),
+        prune: (retentionDays) => ipcRenderer.invoke('kiwi:logs-prune', retentionDays),
+        clear: () => ipcRenderer.invoke('kiwi:logs-clear'),
+        stats: () => ipcRenderer.invoke('kiwi:logs-stats'),
+        status: () => ipcRenderer.invoke('kiwi:logs-status'),
+        onOpenSearch: (handler) => {
+            const listener = () => handler();
+            ipcRenderer.on('kiwi:logs-open-search', listener);
+            return () => ipcRenderer.removeListener('kiwi:logs-open-search', listener);
+        },
     },
     media: {
         proxyUrl: (url) => `kiwi-media://media/${encodeURIComponent(url)}`,

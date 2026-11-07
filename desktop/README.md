@@ -124,6 +124,25 @@ Window size, position, and maximized state are stored in `window-state.json`
 under the app data directory and restored when they still fit on a connected
 display.
 
+## Chat Logs
+
+Desktop builds store channel and private-message history in
+`profiles/default/chat-logs.sqlite` using SQLite FTS5. The default retention is
+7 days; App Settings → Chat Logs can change it or keep logs forever. Redacted
+messages keep their original text locally and stay searchable, but are marked in
+search results with the redacting user and reason where available. This is a
+local audit marker, not content deletion. Search matches word prefixes, so
+`otter` matches `otters`. Use **View → Search Chat Logs…** or `Ctrl+Shift+F` to
+search, and the same settings section to clear the local database. Opening a
+result loads surrounding history around the target; if the loaded context is not
+contiguous with the current scrollback, a gap marker offers controls to load
+older or newer messages. For unjoined channels, or when server history cannot
+provide the target, a temporary read-only History buffer is built from local
+logs; it is not joined and is discarded when closed or when the app exits.
+When local logs outlast server history, an exhausted gap can open that local
+context view without changing the live channel. Chat logs are not included in
+profile export/import.
+
 ## Profile Transfer
 
 The **Profile Transfer** section in App Settings exports and imports a portable

@@ -24,6 +24,7 @@ import InputHandler from '@/libs/InputHandler';
 import IPC from '@/libs/IPC';
 import desktop from '@/libs/desktop';
 import StatePersistence from '@/libs/StatePersistence';
+import { initChatLogs } from '@/libs/ChatLogRecorder';
 import * as MetadataCache from '@/libs/MetadataCache';
 import * as LocalStorage from '@/libs/storage/Local';
 import * as DesktopStorage from '@/libs/storage/Desktop';
@@ -597,6 +598,7 @@ async function initState() {
 
     api.setState(getState());
     api.desktop = desktop;
+    initChatLogs(getState());
 }
 
 function initThemes() {

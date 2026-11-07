@@ -70,6 +70,7 @@
         <emoji-picker />
         <emoji-pack-prompt />
         <redaction-prompt />
+        <chat-log-search />
         <hex-color-picker />
         <media-lightbox />
     </div>
@@ -90,6 +91,7 @@ import AvatarCommon from '@/components/UserAvatarCommon';
 import EmojiPicker from '@/components/EmojiPicker';
 import EmojiPackPrompt from '@/components/EmojiPackPrompt';
 import RedactionPrompt from '@/components/RedactionPrompt';
+import ChatLogSearch from '@/components/ChatLogSearch';
 import HexColorPicker from '@/components/HexColorPicker';
 import MediaLightbox from '@/components/MediaLightbox';
 import { State as SidebarState } from '@/components/Sidebar';
@@ -111,6 +113,7 @@ export default {
         EmojiPicker,
         EmojiPackPrompt,
         RedactionPrompt,
+        ChatLogSearch,
         HexColorPicker,
         MediaLightbox,
     },

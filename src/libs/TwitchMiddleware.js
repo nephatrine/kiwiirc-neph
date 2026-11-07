@@ -178,8 +178,13 @@ function redactTwitchMessage(network, buffer, message, reason) {
     message.redacted_by = 'Twitch';
     message.redaction_reason = reason;
     network.appState.$emit('message.redaction', {
+        networkId: network.id,
+        ircId: message.irc_id,
         message,
         buffer,
+        redactedBy: 'Twitch',
+        redactionReason: reason,
+        redactedAt: Date.now(),
     });
 }
 
@@ -246,6 +251,16 @@ function handleClearMessage(network, message, tags) {
         twitchChatMessages(buffer).find((chatMessage) => chatMessage.irc_id === targetMsgId);
     if (targetMessage) {
         redactTwitchMessage(network, buffer, targetMessage, 'Message deleted');
+    } else {
+        network.appState.$emit('message.redaction', {
+            networkId: network.id,
+            ircId: targetMsgId,
+            buffer,
+            message: null,
+            redactedBy: 'Twitch',
+            redactionReason: 'Message deleted',
+            redactedAt: Date.now(),
+        });
     }
 
     network.appState.$emit('twitch.clearmsg', {

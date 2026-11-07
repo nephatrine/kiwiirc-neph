@@ -133,7 +133,8 @@ function createProfileStore(userDataDir) {
             if (
                 !entry.isFile() ||
                 entry.name.endsWith('.tmp') ||
-                entry.name === 'backups'
+                entry.name === 'backups' ||
+                entry.name.startsWith('chat-logs.sqlite')
             ) {
                 return;
             }

@@ -19,6 +19,7 @@ const { handleMediaRequest } = require('./media');
 const { MEDIA_SCHEME } = require('./media-url');
 const { createProfileStore, MAX_STORAGE_BYTES } = require('./profile-store');
 const { createSecretStore } = require('./secrets');
+const { createChatLogStore } = require('./chat-log-store');
 const {
     loadWindowState,
     restoreWindowState,
@@ -64,6 +65,7 @@ let desktopConfig = null;
 let desktopConfigPath = null;
 let profileStore = null;
 let secretStore = null;
+let chatLogStore = null;
 let allowUnload = false;
 
 if (!app.requestSingleInstanceLock()) {
@@ -90,6 +92,11 @@ if (!app.requestSingleInstanceLock()) {
         const userDataDir = app.getPath('userData');
         profileStore = createProfileStore(userDataDir);
         secretStore = createSecretStore({ userDataDir, safeStorage });
+        try {
+            chatLogStore = createChatLogStore(userDataDir);
+        } catch (err) {
+            console.error('Failed to initialize chat log store:', err);
+        }
         registerDesktopConfigIpc();
         buildApplicationMenu();
         await registerAppProtocol();
@@ -104,6 +111,18 @@ if (!app.requestSingleInstanceLock()) {
         if (process.platform !== 'darwin') {
             app.quit();
         }
+    });
+
+    app.on('before-quit', () => {
+        if (!chatLogStore) {
+            return;
+        }
+        try {
+            chatLogStore.close();
+        } catch (err) {
+            // The database may already be closed.
+        }
+        chatLogStore = null;
     });
 }
 
@@ -204,6 +223,30 @@ function registerDesktopConfigIpc() {
         }
     });
 
+    ipcMain.handle('kiwi:logs-append', (event, entries) => (
+        requireChatLogStore().append(entries)
+    ));
+    ipcMain.handle('kiwi:logs-search', (event, options) => (
+        requireChatLogStore().search(options)
+    ));
+    ipcMain.handle('kiwi:logs-context', (event, options) => (
+        requireChatLogStore().context(options)
+    ));
+    ipcMain.handle('kiwi:logs-redact', (event, options) => (
+        requireChatLogStore().redact(options)
+    ));
+    ipcMain.handle('kiwi:logs-confirm', (event, options) => (
+        requireChatLogStore().confirm(options)
+    ));
+    ipcMain.handle('kiwi:logs-prune', (event, retentionDays) => (
+        requireChatLogStore().prune(retentionDays)
+    ));
+    ipcMain.handle('kiwi:logs-clear', () => requireChatLogStore().clear());
+    ipcMain.handle('kiwi:logs-stats', () => requireChatLogStore().stats());
+    ipcMain.handle('kiwi:logs-status', () => ({
+        available: !!chatLogStore,
+    }));
+
     ipcMain.handle('kiwi:http-request', (event, options) => {
         const policy = desktopHttpPolicy();
         return httpService.request(Object.assign({}, options, {
@@ -244,6 +287,13 @@ function registerDesktopConfigIpc() {
         await fs.writeFile(result.filePath, response.body);
         return { saved: true, path: result.filePath };
     });
+}
+
+function requireChatLogStore() {
+    if (!chatLogStore) {
+        throw new Error('chat logging is unavailable');
+    }
+    return chatLogStore;
 }
 
 function positiveInteger(value, fallback) {
@@ -322,6 +372,17 @@ function buildApplicationMenu() {
                     reloadWindow(true);
                 },
             },
+            { type: 'separator' },
+            {
+                label: 'Search Chat Logs…',
+                accelerator: 'CmdOrCtrl+Shift+F',
+                click: () => {
+                    if (mainWindow) {
+                        mainWindow.webContents.send('kiwi:logs-open-search');
+                    }
+                },
+            },
+            { type: 'separator' },
             { role: 'toggleDevTools' },
             { type: 'separator' },
             { role: 'resetZoom' },

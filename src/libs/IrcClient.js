@@ -1299,7 +1299,7 @@ function clientMiddleware(state, network) {
             const joinEnabledChannels = () => {
                 if (!network.connection.bncnetid) {
                     network.buffers.forEach((buffer) => {
-                        if (buffer.isChannel() && buffer.enabled) {
+                        if (buffer.isChannel() && buffer.enabled && !buffer.contextOnly) {
                             client.join(buffer.name, buffer.key);
                         }
                     });

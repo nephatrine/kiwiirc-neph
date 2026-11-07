@@ -158,21 +158,23 @@ function createNewState() {
                             buffers: [],
                         };
 
-                        networkObj.buffers = network.buffers.map((buffer) => {
-                            let bufferObj = {
-                                name: buffer.name,
-                                key: buffer.key,
-                                enabled: !!buffer.enabled,
-                                settings: deepClone(buffer.settings),
-                                latest_messages: [],
-                            };
+                        networkObj.buffers = network.buffers
+                            .filter((buffer) => !buffer.contextOnly)
+                            .map((buffer) => {
+                                let bufferObj = {
+                                    name: buffer.name,
+                                    key: buffer.key,
+                                    enabled: !!buffer.enabled,
+                                    settings: deepClone(buffer.settings),
+                                    latest_messages: [],
+                                };
 
-                            buffer.latest_messages.forEach((msg) => {
-                                bufferObj.latest_messages.push(msg.serialise());
+                                buffer.latest_messages.forEach((msg) => {
+                                    bufferObj.latest_messages.push(msg.serialise());
+                                });
+
+                                return bufferObj;
                             });
-
-                            return bufferObj;
-                        });
 
                         return networkObj;
                     });
@@ -742,6 +744,27 @@ function createNewState() {
                 return false;
             },
 
+            addContextBuffer(networkid, targetName) {
+                const network = this.getNetwork(networkid);
+                if (!network || !targetName) {
+                    return null;
+                }
+
+                const name = `*context-${network.id}-${Date.now()}-${Math.random()
+                    .toString(36)
+                    .slice(2)}`;
+                const buffer = new BufferState(name, network.id, state, messages);
+                buffer.contextOnly = true;
+                buffer.contextTarget = targetName;
+                buffer.joined = false;
+                buffer.enabled = false;
+                buffer.show_input = false;
+                buffer.metadata['display-name'] = targetName;
+                network.buffers.push(buffer);
+                state.$emit('buffer.new', { buffer });
+                return buffer;
+            },
+
             addBuffer(networkid, bufferName) {
                 if (!bufferName) {
                     return false;
@@ -850,6 +873,7 @@ function createNewState() {
                         }
                         // Cleanup label map
                         delete buffer.messagesObj.messageLabels[label];
+                        this.$emit('message.confirmed', { message: m, buffer });
                         return m;
                     }
                 }
@@ -883,6 +907,7 @@ function createNewState() {
                             typeof message.tags['draft/oper'] !== 'undefined'
                         );
                         m.is_pending = false;
+                        this.$emit('message.confirmed', { message: m, buffer });
                         return m;
                     };
 
@@ -1383,6 +1408,15 @@ function createNewState() {
                         const { message } = pendingRedaction;
                         message.is_pending = false;
                         delete buffer.messagesObj.pendingRedactions[label];
+                        network.appState.$emit('message.redaction', {
+                            networkId: network.id,
+                            ircId: message.irc_id,
+                            buffer,
+                            message,
+                            redactedBy: network.nick,
+                            redactionReason: pendingRedaction.reason || '',
+                            redactedAt: Date.now(),
+                        });
                     }
                 });
             },

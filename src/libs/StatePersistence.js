@@ -155,10 +155,13 @@ export default class StatePersistence {
             let watchVals = [];
 
             this.state.networks.forEach((network) => {
+                const persistentBuffers = network.buffers.filter((buffer) => (
+                    !buffer.contextOnly
+                ));
                 let buffersVals = [];
-                buffersVals.push(network.buffers.map((b) => b.name).join(','));
+                buffersVals.push(persistentBuffers.map((b) => b.name).join(','));
 
-                network.buffers.forEach((buffer) => {
+                persistentBuffers.forEach((buffer) => {
                     buffersVals.push([
                         buffer.name,
                         buffer.settings,

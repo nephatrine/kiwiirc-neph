@@ -192,11 +192,14 @@
                             :class="[
                                 (show_channels && type === 'channels')
                                     || (show_queries && type === 'queries')
+                                    || (show_context && type === 'context')
                                     ? 'bx-caret-down'
                                     : 'bx-caret-right',
                             ]"
                         />
-                        {{ type === 'channels' ? $t('channels') : $t('messages') }}
+                        {{ type === 'channels'
+                            ? $t('channels')
+                            : (type === 'queries' ? $t('messages') : $t('history_context')) }}
                     </div>
 
                     <div v-if="type === 'channels'" class="kiwi-statebrowser-channels-options">
@@ -284,6 +287,7 @@
                         v-if="itemBuffers.length && (
                             (show_channels && type === 'channels')
                             || (show_queries && type === 'queries')
+                            || (show_context && type === 'context')
                             || type === 'other'
                         )"
                         class="kiwi-statebrowser-buffers-container"
@@ -329,6 +333,7 @@ export default {
             channel_add_input: '',
             show_channels: true,
             show_queries: true,
+            show_context: true,
         };
     },
     computed: {
@@ -398,13 +403,16 @@ export default {
         },
         filteredBuffersByType() {
             let types = {
+                context: [],
                 other: [],
                 channels: [],
                 queries: [],
             };
 
             this.filteredBuffers.forEach((bufferObj) => {
-                if (bufferObj.isChannel()) {
+                if (bufferObj.contextOnly) {
+                    types.context.push(bufferObj);
+                } else if (bufferObj.isChannel()) {
                     types.channels.push(bufferObj);
                 } else if (bufferObj.isQuery()) {
                     types.queries.push(bufferObj);
@@ -590,6 +598,8 @@ export default {
                 this.show_channels = !this.show_channels;
             } else if (type === 'queries') {
                 this.show_queries = !this.show_queries;
+            } else if (type === 'context') {
+                this.show_context = !this.show_context;
             }
         },
         promptClose() {

@@ -12,6 +12,35 @@
         @scroll.passive="onScroll"
     >
         <div v-resizeobserver="onListResize">
+            <div v-if="buffer.contextOnly" class="kiwi-messagelist-context">
+                <div class="kiwi-messagelist-context-title">
+                    {{ $t('history_context_for', { channel: buffer.contextTarget }) }}
+                </div>
+                <div class="kiwi-messagelist-context-note">
+                    {{ $t('history_context_readonly') }}
+                </div>
+                <div class="kiwi-messagelist-context-actions">
+                    <button
+                        type="button"
+                        class="u-button"
+                        :disabled="buffer.flags.context_loading
+                            || !buffer.flags.context_has_older"
+                        @click="loadContext('older')"
+                    >
+                        {{ $t('history_gap_load_older') }}
+                    </button>
+                    <button
+                        type="button"
+                        class="u-button"
+                        :disabled="buffer.flags.context_loading
+                            || !buffer.flags.context_has_newer"
+                        @click="loadContext('newer')"
+                    >
+                        {{ $t('history_gap_load_newer') }}
+                    </button>
+                </div>
+            </div>
+
             <div
                 v-if="shouldShowChathistoryTools"
                 class="kiwi-messagelist-scrollback"
@@ -43,6 +72,20 @@
                                 class="kiwi-messagelist-seperator"
                             >
                                 <span>{{ $t('unread_messages') }}</span>
+                            </div>
+
+                            <div
+                                v-if="historyGapsByMessageId[message.id]"
+                                :key="`historygap${message.id}`"
+                                class="kiwi-messagelist-historygap-row"
+                            >
+                                <history-gap
+                                    :buffer="buffer"
+                                    :gap="historyGapsByMessageId[message.id]"
+                                    :local-available="localLogsAvailable"
+                                    @load="loadHistoryGap"
+                                    @load-local="loadLocalGapContext"
+                                />
                             </div>
 
                             <div
@@ -98,6 +141,16 @@
                 </template>
             </remove-before-update>
 
+            <div v-if="trailingHistoryGap" class="kiwi-messagelist-historygap-row">
+                <history-gap
+                    :buffer="buffer"
+                    :gap="trailingHistoryGap"
+                    :local-available="localLogsAvailable"
+                    @load="loadHistoryGap"
+                    @load-local="loadLocalGapContext"
+                />
+            </div>
+
             <transition name="kiwi-messagelist-joinloadertrans">
                 <div v-if="shouldShowJoiningLoader" class="kiwi-messagelist-joinloader">
                     <LoadingAnimation />
@@ -122,6 +175,8 @@ import * as Misc from '@/helpers/Misc';
 import { createNickColour } from '@/helpers/TextFormatting';
 import Logger from '@/libs/Logger';
 import * as bufferTools from '@/libs/bufferTools';
+import * as ChatLogContext from '@/libs/ChatLogContext';
+import * as ChatLogs from '@/libs/desktop/ChatLogs';
 import { isEmojiOnlyBlocks } from '@/libs/EmojiProvider';
 import { isPreviewCard } from '@/helpers/BridgeCard';
 import RemoveBeforeUpdate from './utils/RemoveBeforeUpdate';
@@ -130,6 +185,7 @@ import MessageListMessageModern from './MessageListMessageModern';
 import MessageListMessageInline from './MessageListMessageInline';
 import LoadingAnimation from './LoadingAnimation';
 import BufferKey from './BufferKey';
+import HistoryGap from './HistoryGap';
 
 let log = Logger.namespace('MessageList.vue');
 
@@ -145,6 +201,7 @@ export default {
         MessageListMessageInline,
         LoadingAnimation,
         BufferKey,
+        HistoryGap,
     },
     props: ['buffer'],
     data() {
@@ -225,6 +282,36 @@ export default {
                 messages = messages.filter((message) => !isPreviewCard(message));
             }
             return messages;
+        },
+        localLogsAvailable() {
+            return ChatLogs.isAvailable();
+        },
+        historyGapsByMessageId() {
+            const gaps = this.buffer.historyGaps || [];
+            const messages = this.filteredMessages;
+            const result = {};
+
+            gaps.forEach((gap) => {
+                const next = messages.find((message) => (
+                    (message.server_time || message.time) >= gap.to
+                ));
+                if (next) {
+                    result[next.id] = gap;
+                }
+            });
+
+            return result;
+        },
+        trailingHistoryGap() {
+            const gaps = this.buffer.historyGaps || [];
+            const messages = this.filteredMessages;
+            if (!messages.length) {
+                return null;
+            }
+
+            const lastTime = messages[messages.length - 1].server_time ||
+                messages[messages.length - 1].time;
+            return gaps.find((gap) => gap.to > lastTime) || null;
         },
         shouldShowJoiningLoader() {
             return this.buffer.isChannel() &&
@@ -593,6 +680,23 @@ export default {
             this.buffer.replying_to = message;
             this.$state.$emit('input.reply', message.bridged_nick || message.nick);
         },
+        loadHistoryGap({ gap, direction }) {
+            this.buffer.requestHistoryGap(gap, direction);
+        },
+        loadContext(direction) {
+            ChatLogContext.loadMoreContext(this.$state, this.buffer, direction);
+        },
+        loadLocalGapContext(gap) {
+            ChatLogContext.openGapContext(this.$state, this.buffer, gap).then((opened) => {
+                if (!opened) {
+                    this.$state.$emit(
+                        'notification.show',
+                        this.$t('history_gap_local_unavailable'),
+                        { force: true }
+                    );
+                }
+            });
+        },
         onScroll() {
             this.checkScrollingState();
         },
@@ -641,9 +745,14 @@ export default {
                 this.scrollToBottom();
             }
         },
-        maybeScrollToId(id, position = 'middle') {
+        maybeScrollToId(id, position = 'middle', attempt = 0) {
             let msgEl = this.$el.querySelector('.kiwi-messagelist-message[data-message-id="' + id + '"]');
             if (!msgEl) {
+                if (attempt < 5) {
+                    setTimeout(() => {
+                        this.maybeScrollToId(id, position, attempt + 1);
+                    }, 50);
+                }
                 return;
             }
 
@@ -870,6 +979,33 @@ div.kiwi-messagelist-item.kiwi-messagelist-item--selected .kiwi-messagelist-mess
     overflow-x: hidden;
     box-sizing: border-box;
     position: relative;
+}
+
+.kiwi-messagelist-context {
+    margin: 0.8em 1em;
+    padding: 0.7em 1em;
+    border: 1px dashed rgb(127 127 127 / 45%);
+    border-radius: 4px;
+    background: rgb(127 127 127 / 5%);
+    text-align: center;
+}
+
+.kiwi-messagelist-context-title {
+    font-weight: 600;
+}
+
+.kiwi-messagelist-context-note {
+    margin-top: 0.2em;
+    opacity: 0.75;
+    font-size: 0.9em;
+}
+
+.kiwi-messagelist-context-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5em;
+    margin-top: 0.6em;
 }
 
 .kiwi-messagelist--showtyping {

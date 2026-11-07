@@ -241,10 +241,15 @@ describe('TwitchMiddleware', () => {
         expect(alice.redacted_by).toBe('Twitch');
         expect(alice.redaction_reason).toBe('Chat cleared');
         expect(channel.messagesObj.messages).toHaveLength(3);
-        expect(network.appState.$emit).toHaveBeenCalledWith('message.redaction', {
-            message: alice,
-            buffer: channel,
-        });
+        expect(network.appState.$emit).toHaveBeenCalledWith(
+            'message.redaction',
+            expect.objectContaining({
+                message: alice,
+                buffer: channel,
+                redactedBy: 'Twitch',
+                redactionReason: 'Chat cleared',
+            })
+        );
         expect(network.appState.$emit).toHaveBeenCalledWith('twitch.clearchat', {
             network,
             buffer: channel,

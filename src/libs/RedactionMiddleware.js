@@ -38,6 +38,15 @@ export function theMiddleware(network, command, message, client, next) {
     const initialBuffer = network.bufferByName(target);
     const resolved = network.resolveMessage(msgid, initialBuffer, message.nick);
     if (!resolved) {
+        network.appState.$emit('message.redaction', {
+            networkId: network.id,
+            ircId: msgid,
+            buffer: initialBuffer,
+            message: null,
+            redactedBy: message.nick || '',
+            redactionReason: reason,
+            redactedAt: Date.now(),
+        });
         if (next) next();
         return;
     }
@@ -68,8 +77,13 @@ export function theMiddleware(network, command, message, client, next) {
     targetMessage.redaction_reason = reason;
 
     network.appState.$emit('message.redaction', {
+        networkId: network.id,
+        ircId: targetMessage.irc_id || msgid,
         message: targetMessage,
         buffer: buffer,
+        redactedBy: message.nick || '',
+        redactionReason: reason,
+        redactedAt: Date.now(),
     });
 
     // We handled it, do not call next() so the unknown command handler doesn't catch it

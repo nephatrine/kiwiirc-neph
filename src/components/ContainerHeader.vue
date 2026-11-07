@@ -4,7 +4,20 @@
         @click="onHeaderClick"
     >
 
-        <template v-if="isChannel()">
+        <template v-if="isContextOnly">
+            <div class="kiwi-header-name-container">
+                <div class="kiwi-header-name" :title="buffer.contextTarget">
+                    {{ $t('history_context_for', { channel: buffer.contextTarget }) }}
+                </div>
+            </div>
+            <div class="kiwi-header-center">
+                <div class="kiwi-header-topic">
+                    {{ $t('history_context_readonly') }}
+                </div>
+            </div>
+        </template>
+
+        <template v-else-if="isChannel()">
             <div class="kiwi-header-name-container">
                 <div :title="buffer.metadata.description || buffer.name" class="kiwi-header-name">
                     <img
@@ -221,6 +234,9 @@ export default {
     computed: {
         isMobile() {
             return this.$state.ui.app_width <= 550;
+        },
+        isContextOnly() {
+            return !!this.buffer.contextOnly;
         },
         isJoined() {
             let buffer = this.buffer;

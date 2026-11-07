@@ -64,6 +64,19 @@ describe('message echo confirmation', () => {
         expect(messages()[0].tags).toEqual({});
     });
 
+    it('emits message.confirmed when an echo confirms the pending copy', () => {
+        const confirmed = jest.fn();
+        s.$on('message.confirmed', confirmed);
+
+        send('hello world');
+        receiveEcho('hello world', { msgid: 'abc123' });
+
+        expect(confirmed).toHaveBeenCalledWith({
+            message: messages()[0],
+            buffer,
+        });
+    });
+
     it('matches on the raw text rather than the rendered body', () => {
         send('hello world');
         // The server's rendering can differ (custom formats, relay rewrites)

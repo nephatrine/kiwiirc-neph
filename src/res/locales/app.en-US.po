@@ -1451,6 +1451,121 @@ msgstr "The profile was imported, but its passwords could not be saved securely.
 msgid "profile_open_folder_failed"
 msgstr "Unable to open the profile folder: {{reason}}"
 
+#: Search locally stored chat logs
+msgid "chatlogs_search_title"
+msgstr "Search Chat Logs"
+
+msgid "chatlogs_search_placeholder"
+msgstr "Search messages..."
+
+msgid "chatlogs_all_networks"
+msgstr "All Networks"
+
+msgid "chatlogs_search_action"
+msgstr "Search"
+
+msgid "chatlogs_searching"
+msgstr "Searching..."
+
+msgid "chatlogs_no_results"
+msgstr "No matching messages."
+
+msgid "chatlogs_load_more"
+msgstr "Load More"
+
+msgid "chatlogs_search_failed"
+msgstr "Chat log search failed: {{reason}}"
+
+msgid "chatlogs_settings"
+msgstr "Chat Logs"
+
+msgid "chatlogs_description"
+msgstr "Store channel and private-message history locally on this device."
+
+msgid "chatlogs_redaction_note"
+msgstr "Redacted messages remain in the local log and are marked in search results."
+
+msgid "chatlogs_redacted"
+msgstr "Redacted"
+
+msgid "chatlogs_redacted_by"
+msgstr "Redacted by {{nick}}"
+
+msgid "chatlogs_jump_failed"
+msgstr "Unable to load the message context."
+
+msgid "history_context"
+msgstr "History"
+
+msgid "history_context_for"
+msgstr "History for {{channel}}"
+
+msgid "history_context_readonly"
+msgstr "Local Chat Logs · Read-only"
+
+msgid "history_gap_title"
+msgstr "Some Messages Are Not Loaded"
+
+msgid "history_gap_description"
+msgstr "Messages between {{older}} and {{newer}} may not be loaded."
+
+msgid "history_gap_load_older"
+msgstr "Load Older Messages"
+
+msgid "history_gap_load_newer"
+msgstr "Load Newer Messages"
+
+msgid "history_gap_load_local"
+msgstr "Load Local Context"
+
+msgid "history_gap_local_unavailable"
+msgstr "No local chat log context is available for this gap."
+
+msgid "history_gap_loading"
+msgstr "Loading..."
+
+msgid "history_gap_exhausted"
+msgstr "No More Messages"
+
+msgid "chatlogs_retention"
+msgstr "Keep Logs For"
+
+msgid "chatlogs_retention_1"
+msgstr "1 Day"
+
+msgid "chatlogs_retention_7"
+msgstr "7 Days"
+
+msgid "chatlogs_retention_30"
+msgstr "30 Days"
+
+msgid "chatlogs_retention_90"
+msgstr "90 Days"
+
+msgid "chatlogs_retention_forever"
+msgstr "Forever"
+
+msgid "chatlogs_stats"
+msgstr "{{count}} messages · {{size}}"
+
+msgid "chatlogs_search_button"
+msgstr "Search Logs"
+
+msgid "chatlogs_clear"
+msgstr "Clear Chat Logs"
+
+msgid "chatlogs_clear_confirm"
+msgstr "Delete all locally stored chat logs?"
+
+msgid "chatlogs_cleared"
+msgstr "Chat logs cleared."
+
+msgid "chatlogs_clear_failed"
+msgstr "Unable to clear chat logs: {{reason}}"
+
+msgid "chatlogs_retention_failed"
+msgstr "Unable to update chat log retention: {{reason}}"
+
 #: Export Buffer Content
 msgid "export_buffer"
 msgstr "Export Buffer"

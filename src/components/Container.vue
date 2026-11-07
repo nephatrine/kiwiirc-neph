@@ -31,7 +31,9 @@
             <container-header :buffer="buffer" :sidebar-state="sidebarState" />
 
             <not-connected
-                v-if="buffer.getNetwork().state !== 'connected' && !buffer.isServer()"
+                v-if="buffer.getNetwork().state !== 'connected'
+                    && !buffer.isServer()
+                    && !buffer.contextOnly"
                 :buffer="buffer"
                 :network="buffer.getNetwork()"
             />

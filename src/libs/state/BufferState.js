@@ -42,6 +42,10 @@ function buildMessageReference(message, refTypes) {
     return null;
 }
 
+function historyMessageTime(message) {
+    return (message && (message.server_time || message.time)) || 0;
+}
+
 /** The IRC buffer instance */
 export default class BufferState {
     constructor(name, networkid, state, messageDict) {
@@ -74,6 +78,9 @@ export default class BufferState {
             names_received: false,
             marker_received: false,
             motd_history_done: false,
+            context_loading: false,
+            context_has_older: false,
+            context_has_newer: false,
         };
         this.settings = { };
         this.metadata = {};
@@ -88,6 +95,13 @@ export default class BufferState {
         this.show_input = true;
         this.latest_messages = [];
         this.replying_to = null;
+        this.historySegments = [];
+        this.historyGaps = [];
+        this.historyGapExhausted = {};
+        this.contextOnly = false;
+        this.contextTarget = '';
+        this.contextOlderRowId = 0;
+        this.contextNewerRowId = 0;
 
         // Counter for chathistory requests. While this value is 0, it means that this buffer is
         // still loading messages
@@ -112,6 +126,9 @@ export default class BufferState {
         def(this, 'messagesObj', messagesObj, false);
 
         def(this, 'isMessageTrimming', true, true);
+        def(this, 'historyJumpTarget', null, true);
+        def(this, 'historyContextLoading', false, true);
+        def(this, 'contextRowIds', Object.create(null), false);
         def(this, 'addMessageBatch', createMessageBatch(this), false);
         def(this, 'addUserBatch', createUserBatch(this), false);
         def(this, 'chathistory_retry_timeout', null, true);
@@ -368,12 +385,400 @@ export default class BufferState {
             [];
     }
 
+    allMessages() {
+        return this.getMessages().concat(this.addMessageBatch.queue());
+    }
+
     getLastMessage() {
         let messages = this.getMessages();
         if (messages.length === 0) {
             return undefined;
         }
         return messages[messages.length - 1];
+    }
+
+    findLogResultMessage(result = {}) {
+        if (!result) {
+            return null;
+        }
+        if (result.irc_id && this.messagesObj.messageIds[result.irc_id]) {
+            return this.messagesObj.messageIds[result.irc_id];
+        }
+
+        const serverTime = Number(result.server_time) || 0;
+        const localTime = Number(result.time) || 0;
+        const wantedRaw = result.raw_text || result.message || '';
+
+        return this.allMessages().find((message) => {
+            const time = historyMessageTime(message);
+            if (serverTime && message.server_time && message.server_time !== serverTime) {
+                return false;
+            }
+            if (!serverTime && localTime && Math.abs(time - localTime) > 2000) {
+                return false;
+            }
+            if (result.nick && message.nick !== result.nick) {
+                return false;
+            }
+            if (wantedRaw &&
+                message.raw_text !== wantedRaw &&
+                message.message !== result.message
+            ) {
+                return false;
+            }
+            return true;
+        }) || null;
+    }
+
+    historyReferenceForResult(result = {}) {
+        const history = this.getNetwork()?.ircClient?.chathistory;
+        if (!history) {
+            return null;
+        }
+
+        const refTypes = history.supportedRefTypes();
+        if (refTypes.includes('msgid') && result.irc_id) {
+            return result.irc_id;
+        }
+        if (refTypes.includes('timestamp')) {
+            const time = Number(result.server_time) || Number(result.time) || 0;
+            if (time) {
+                return new Date(time);
+            }
+        }
+        return null;
+    }
+
+    historyReferenceForMessage(message) {
+        const history = this.getNetwork()?.ircClient?.chathistory;
+        if (!history || !message) {
+            return null;
+        }
+
+        const refTypes = history.supportedRefTypes();
+        if (refTypes.includes('msgid') && message.irc_id) {
+            return message.irc_id;
+        }
+        if (refTypes.includes('timestamp') && message.server_time) {
+            return new Date(message.server_time);
+        }
+        return null;
+    }
+
+    addHistorySegment(segment = {}) {
+        const start = Number(segment.start);
+        const end = Number(segment.end);
+        if (!Number.isFinite(start) || !Number.isFinite(end)) {
+            return;
+        }
+
+        const next = this.historySegments
+            .map((item) => ({ ...item }))
+            .concat({
+                start: Math.min(start, end),
+                end: Math.max(start, end),
+                firstId: segment.firstId || '',
+                lastId: segment.lastId || '',
+                kind: segment.kind || 'history',
+            })
+            .sort((a, b) => (a.start - b.start) || (a.end - b.end));
+
+        const merged = [];
+        next.forEach((item) => {
+            const last = merged[merged.length - 1];
+            if (last && item.start <= last.end) {
+                if (item.end > last.end) {
+                    last.end = item.end;
+                    last.lastId = item.lastId || last.lastId;
+                }
+                if (item.start < last.start) {
+                    last.start = item.start;
+                    last.firstId = item.firstId || last.firstId;
+                }
+                if (!last.firstId) {
+                    last.firstId = item.firstId;
+                }
+                if (item.kind === 'live') {
+                    last.kind = 'live';
+                }
+            } else {
+                merged.push({ ...item });
+            }
+        });
+
+        this.historySegments = merged;
+        this.refreshHistoryGaps();
+    }
+
+    refreshHistoryGaps() {
+        const segments = this.historySegments
+            .slice()
+            .sort((a, b) => (a.start - b.start) || (a.end - b.end));
+        const gaps = [];
+
+        for (let i = 1; i < segments.length; i++) {
+            const older = segments[i - 1];
+            const newer = segments[i];
+            if (older.end < newer.start) {
+                const key = `${older.start}:${older.end}:${newer.start}:${newer.end}`;
+                gaps.push({
+                    key,
+                    older,
+                    newer,
+                    from: older.end,
+                    to: newer.start,
+                    exhaustedOlder: !!this.historyGapExhausted[`${key}:older`],
+                    exhaustedNewer: !!this.historyGapExhausted[`${key}:newer`],
+                });
+            }
+        }
+
+        this.historyGaps = gaps;
+    }
+
+    connectHistoryWindow(segment, direction) {
+        const sorted = this.historySegments
+            .slice()
+            .sort((a, b) => a.start - b.start);
+        let adjacent = null;
+
+        if (direction === 'before') {
+            adjacent = sorted.find((item) => item.start >= segment.end);
+        } else if (direction === 'after') {
+            adjacent = sorted.slice().reverse().find((item) => item.end <= segment.start);
+        }
+
+        if (!adjacent) {
+            this.addHistorySegment(segment);
+            return;
+        }
+
+        const merged = direction === 'before' ?
+            {
+                start: segment.start,
+                end: adjacent.end,
+                firstId: segment.firstId,
+                lastId: adjacent.lastId,
+                kind: adjacent.kind,
+            } :
+            {
+                start: adjacent.start,
+                end: segment.end,
+                firstId: adjacent.firstId,
+                lastId: segment.lastId,
+                kind: adjacent.kind,
+            };
+
+        this.historySegments = this.historySegments.filter((item) => (
+            item !== adjacent
+        ));
+        this.addHistorySegment(merged);
+    }
+
+    noteHistoryWindow(start, end, direction = 'around') {
+        const from = Number(start);
+        const to = Number(end);
+        if (!Number.isFinite(from) || !Number.isFinite(to)) {
+            return;
+        }
+
+        const messages = this.allMessages().filter((message) => {
+            const time = historyMessageTime(message);
+            return time >= Math.min(from, to) && time <= Math.max(from, to);
+        });
+        if (!messages.length) {
+            return;
+        }
+
+        const sorted = messages.slice().sort((a, b) => (
+            historyMessageTime(a) - historyMessageTime(b)
+        ));
+        const first = sorted[0];
+        const last = sorted[sorted.length - 1];
+        const segment = {
+            start: historyMessageTime(first),
+            end: historyMessageTime(last),
+            firstId: first.id,
+            lastId: last.id,
+            kind: 'history',
+        };
+
+        if (direction === 'before' || direction === 'after') {
+            this.connectHistoryWindow(segment, direction);
+        } else {
+            this.addHistorySegment(segment);
+        }
+    }
+
+    noteLiveMessage(message) {
+        if (!message || message.is_history) {
+            return;
+        }
+
+        const time = historyMessageTime(message);
+        if (!time) {
+            return;
+        }
+
+        const live = this.historySegments.find((segment) => segment.kind === 'live');
+        if (!live) {
+            this.addHistorySegment({
+                start: time,
+                end: time,
+                firstId: message.id,
+                lastId: message.id,
+                kind: 'live',
+            });
+            return;
+        }
+
+        live.start = Math.min(live.start, time);
+        live.end = Math.max(live.end, time);
+        live.firstId = live.firstId || message.id;
+        live.lastId = message.id;
+        this.historySegments = this.historySegments
+            .slice()
+            .sort((a, b) => (a.start - b.start) || (a.end - b.end));
+        this.refreshHistoryGaps();
+    }
+
+    syncHistorySegments() {
+        const messages = this.allMessages();
+        const next = [];
+
+        this.historySegments.forEach((segment) => {
+            const inRange = messages.filter((message) => {
+                const time = historyMessageTime(message);
+                return time >= segment.start && time <= segment.end;
+            });
+            if (!inRange.length) {
+                return;
+            }
+
+            const sorted = inRange.slice().sort((a, b) => (
+                historyMessageTime(a) - historyMessageTime(b)
+            ));
+            const first = sorted[0];
+            const last = sorted[sorted.length - 1];
+            next.push({
+                ...segment,
+                start: historyMessageTime(first),
+                end: historyMessageTime(last),
+                firstId: first.id,
+                lastId: last.id,
+            });
+        });
+
+        this.historySegments = next;
+        this.refreshHistoryGaps();
+    }
+
+    markHistoryGapExhausted(gap, direction) {
+        if (!gap || !gap.key) {
+            return;
+        }
+        Vue.set(this.historyGapExhausted, `${gap.key}:${direction}`, true);
+        this.refreshHistoryGaps();
+    }
+
+    requestHistoryGap(gap, direction) {
+        const history = this.getNetwork()?.ircClient?.chathistory;
+        if (!history || !history.isSupported() || this.historyContextLoading) {
+            return Promise.resolve(false);
+        }
+
+        const boundaryId = direction === 'older' ?
+            gap.newer.firstId :
+            gap.older.lastId;
+        const boundary = boundaryId ? this.messagesObj.messageIds[boundaryId] : null;
+        const ref = this.historyReferenceForMessage(boundary);
+        if (!ref) {
+            return Promise.resolve(false);
+        }
+
+        const func = direction === 'older' ? 'before' : 'after';
+        const beforeCount = this.allMessages().length;
+        this.historyContextLoading = true;
+        this.isMessageTrimming = false;
+
+        return getBufferHistory(this, func, ref)
+            .then(() => {
+                const added = this.allMessages().length > beforeCount;
+                if (!added && !this.chathistory_retry_timeout) {
+                    this.markHistoryGapExhausted(gap, direction);
+                }
+                this.syncHistorySegments();
+                return added;
+            })
+            .catch(() => false)
+            .finally(() => {
+                this.historyContextLoading = false;
+            });
+    }
+
+    waitForTargetMessage(result, attempt = 0) {
+        const target = this.findLogResultMessage(result);
+        if (target && this.messagesObj.messageIds[target.id]) {
+            return Promise.resolve(target);
+        }
+
+        if (!this.addMessageBatch.queue().length || attempt >= 20) {
+            return Promise.resolve(null);
+        }
+
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                resolve(this.waitForTargetMessage(result, attempt + 1));
+            }, 100);
+        });
+    }
+
+    jumpToMessage(result = {}) {
+        const loaded = this.findLogResultMessage(result);
+        if (loaded) {
+            this.state.$nextTick(() => this.scrollToMessage(loaded.id));
+            return Promise.resolve(true);
+        }
+
+        const history = this.getNetwork()?.ircClient?.chathistory;
+        if (!history || !history.isSupported() || this.historyContextLoading) {
+            return Promise.resolve(false);
+        }
+
+        const ref = this.historyReferenceForResult(result);
+        if (!ref) {
+            return Promise.resolve(false);
+        }
+
+        this.historyJumpTarget = result;
+        this.historyContextLoading = true;
+        this.isMessageTrimming = false;
+
+        return getBufferHistory(this, 'around', ref)
+            .then(() => this.waitForTargetMessage(result))
+            .then((target) => {
+                if (!target) {
+                    this.historyJumpTarget = null;
+                    return false;
+                }
+
+                this.state.$nextTick(() => {
+                    this.scrollToMessage(target.id);
+                    setTimeout(() => {
+                        if (this.historyJumpTarget === result) {
+                            this.historyJumpTarget = null;
+                        }
+                    }, 1000);
+                });
+                return true;
+            })
+            .catch(() => {
+                this.historyJumpTarget = null;
+                return false;
+            })
+            .finally(() => {
+                this.historyContextLoading = false;
+            });
     }
 
     clearMessages() {
@@ -384,6 +789,14 @@ export default class BufferState {
         });
         this.messagesObj.messages.splice(0, this.messagesObj.messages.length);
         this.messagesObj.messageIds = Object.create(null);
+        this.historySegments = [];
+        this.historyGaps = [];
+        this.historyGapExhausted = {};
+        this.contextOlderRowId = 0;
+        this.contextNewerRowId = 0;
+        Object.keys(this.contextRowIds).forEach((key) => {
+            delete this.contextRowIds[key];
+        });
     }
 
     // Remove a block of messages between a time (server-time) range. Inclusive.
@@ -404,6 +817,7 @@ export default class BufferState {
 
         // Mark that something changed
         this.message_count++;
+        this.syncHistorySegments();
     }
 
     isServer() {
@@ -1257,6 +1671,15 @@ export default class BufferState {
             message.redacted_by = network.nick;
             message.redaction_reason = reason;
             message.is_pending = false;
+            this.state.$emit('message.redaction', {
+                networkId: this.networkid,
+                ircId: message.irc_id,
+                buffer: this,
+                message,
+                redactedBy: network.nick,
+                redactionReason: reason,
+                redactedAt: Date.now(),
+            });
         }
 
         // Use protocol_target if the message was rerouted
@@ -1374,6 +1797,7 @@ function createMessageBatch(bufferState) {
         if (newMessage.tags && newMessage.tags.label) {
             bufferState.messagesObj.messageLabels[newMessage.tags.label] = newMessage;
         }
+        bufferState.noteLiveMessage(newMessage);
         if (bufferState.isMessageTrimming) {
             trimMessages();
         }
@@ -1397,6 +1821,7 @@ function createMessageBatch(bufferState) {
                 if (msg.tags && msg.tags.label) {
                     bufferState.messagesObj.messageLabels[msg.tags.label] = msg;
                 }
+                bufferState.noteLiveMessage(msg);
             });
             if (bufferState.isMessageTrimming) {
                 trimMessages();
@@ -1408,6 +1833,10 @@ function createMessageBatch(bufferState) {
         bufferState.message_count++;
     };
     let trimMessages = () => {
+        if (bufferState.historyJumpTarget || bufferState.historyContextLoading) {
+            return;
+        }
+
         let scrollbackSize = bufferState.setting('scrollback_size');
         let length = bufferState.messagesObj.messages.length;
         if (length > scrollbackSize) {
@@ -1422,6 +1851,7 @@ function createMessageBatch(bufferState) {
                     delete bufferState.messagesObj.messageLabels[msg.tags.label];
                 }
             });
+            bufferState.syncHistorySegments();
         }
     };
 
@@ -1554,6 +1984,17 @@ function getBufferHistory(buffer, chathistoryFuncName, time, depth = 0, attempt 
                 buffer.flag('chathistory_available', false);
             }
             return undefined;
+        }
+
+        const historyTimes = event.commands
+            .map((command) => Number(command.time))
+            .filter((stamp) => Number.isFinite(stamp));
+        if (historyTimes.length) {
+            buffer.noteHistoryWindow(
+                Math.min(...historyTimes),
+                Math.max(...historyTimes),
+                chathistoryFuncName
+            );
         }
 
         if (typeof event.is_end !== 'undefined') {

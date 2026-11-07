@@ -8,6 +8,7 @@
                     && !buffer.joined,
                 'kiwi-statebrowser-channel--favorite': buffer.setting('favorite'),
                 'kiwi-statebrowser-channel--muted': isMuted,
+                'kiwi-statebrowser-channel--context': buffer.contextOnly,
             }"
             class="kiwi-statebrowser-channel"
         >
@@ -106,6 +107,11 @@ export default {
             return !this.buffer.setting('hide_message_counts');
         },
         maybePromptClose() {
+            if (this.buffer.contextOnly) {
+                this.closeBuffer();
+                return;
+            }
+
             const setting = this.buffer.setting('prompt_leave');
             if (setting === 'none' || (
                 setting !== 'all' && (
