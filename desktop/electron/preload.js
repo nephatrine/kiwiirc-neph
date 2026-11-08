@@ -71,4 +71,11 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
     media: {
         proxyUrl: (url) => `kiwi-media://media/${encodeURIComponent(url)}`,
     },
+    embedErrors: {
+        on: (handler) => {
+            const listener = (event, url, error) => handler({ url, error });
+            ipcRenderer.on('kiwi:embed-error', listener);
+            return () => ipcRenderer.removeListener('kiwi:embed-error', listener);
+        },
+    },
 });

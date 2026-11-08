@@ -380,6 +380,15 @@ export default {
                 });
             }
         });
+
+        this.listen(this.$state, 'link-preview.failed', (url) => {
+            this.filteredMessages.forEach((message) => {
+                if (message.mentioned_urls && message.mentioned_urls.includes(url)) {
+                    message.invalidateRender();
+                }
+            });
+            this.$forceUpdate();
+        });
     },
     methods: {
         isTemplateVue(template) {

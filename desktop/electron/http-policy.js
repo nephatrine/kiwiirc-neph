@@ -170,13 +170,36 @@ async function resolveTarget(rawUrl, allowPrivateNetworks, lookup = dns.lookup) 
     };
 }
 
-function pinnedLookup(address, family) {
+function pinnedLookup(addressOrAddresses, family) {
+    const addresses = (Array.isArray(addressOrAddresses) ?
+        addressOrAddresses :
+        [{ address: addressOrAddresses, family }])
+        .filter((entry) => entry && entry.address)
+        .map((entry) => ({
+            address: entry.address,
+            family: entry.family,
+        }));
+
     return (hostname, options, callback) => {
         let done = callback;
+        let lookupOptions = options;
         if (typeof options === 'function') {
             done = options;
+            lookupOptions = {};
         }
-        done(null, address, family);
+
+        if (!addresses.length) {
+            done(new Error('host did not resolve'));
+            return;
+        }
+
+        if (lookupOptions && lookupOptions.all) {
+            done(null, addresses);
+            return;
+        }
+
+        const entry = addresses[0];
+        done(null, entry && entry.address, entry && entry.family);
     };
 }
 

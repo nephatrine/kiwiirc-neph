@@ -1,5 +1,6 @@
 import {
     isPrivateAddress,
+    pinnedLookup,
     resolveTarget,
     validateHttpUrl
 } from '../../desktop/electron/http-policy';
@@ -54,6 +55,30 @@ describe('Desktop HTTP policy', () => {
         ]);
 
         await expect(resolveTarget('https://example.test/', false, lookup)).rejects.toThrow();
+    });
+
+    it('supports the all-address lookup form used by newer Node runtimes', () => {
+        const lookup = pinnedLookup([
+            { address: '2001:db8::1', family: 6 },
+            { address: '93.184.216.34', family: 4 },
+        ]);
+        const done = jest.fn();
+
+        lookup('example.test', { all: true }, done);
+
+        expect(done).toHaveBeenCalledWith(null, [
+            { address: '2001:db8::1', family: 6 },
+            { address: '93.184.216.34', family: 4 },
+        ]);
+    });
+
+    it('supports the single-address lookup form', () => {
+        const lookup = pinnedLookup('93.184.216.34', 4);
+        const done = jest.fn();
+
+        lookup('example.test', {}, done);
+
+        expect(done).toHaveBeenCalledWith(null, '93.184.216.34', 4);
     });
 
     it('builds a multipart body with fields and a file', () => {

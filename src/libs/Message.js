@@ -2,7 +2,12 @@
 
 import Vue from 'vue';
 import parseMessage from '@/libs/MessageParser';
-import { stripStyles, sanitizeUrl, canPreviewUrl, isSpoilerBlock } from '@/helpers/Misc';
+import {
+    stripStyles,
+    sanitizeUrl,
+    getPreviewCategory,
+    isSpoilerBlock
+} from '@/helpers/Misc';
 import toHtml from '@/libs/renderers/Html';
 import GlobalApi from '@/libs/GlobalApi';
 import BridgeCard from '@/components/BridgeCard';
@@ -285,7 +290,35 @@ export default class Message {
             // A bad regex pattern should not block all previews
         }
 
-        if (!canPreviewUrl(url)) {
+        const category = getPreviewCategory(url);
+        if (!category) {
+            return;
+        }
+
+        const readSetting = (name) => {
+            if (buffer && typeof buffer.setting === 'function') {
+                const value = buffer.setting(name);
+                if (value !== undefined) {
+                    return value;
+                }
+            }
+            return getState().setting('buffers.' + name);
+        };
+        const isChannel = !!buffer && typeof buffer.isChannel === 'function' && buffer.isChannel();
+        const isQuery = !!buffer && typeof buffer.isQuery === 'function' && buffer.isQuery();
+        let showMedia = true;
+        if (isChannel) {
+            showMedia = readSetting('inline_link_auto_previews');
+        } else if (isQuery) {
+            showMedia = readSetting('inline_link_auto_previews_query');
+        } else {
+            showMedia = readSetting('inline_link_auto_previews');
+        }
+        if (!showMedia) {
+            return;
+        }
+
+        if (category === 'metadata' && !readSetting('generic_link_previews')) {
             return;
         }
 

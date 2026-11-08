@@ -22,6 +22,23 @@ describe('Media Detection', () => {
         expect(Misc.getMediaInfo(formeScience).type).toBe('image');
     });
 
+    it('should detect Reddit share preview images', () => {
+        const post = 'https://share.redd.it/preview/post/1xn1uka?share=iN_gJn8na5a_cY2DpfKId';
+        expect(Misc.getMediaInfo(post).type).toBe('image');
+        expect(Misc.canPreviewUrl(post)).toBe(true);
+        expect(Misc.getMediaInfo('https://share.redd.it/preview/comment/1xn1uka').type)
+            .toBe('image');
+        expect(Misc.getMediaInfo('https://SHARE.REDD.IT/preview/post/1xn1uka').type)
+            .toBe('image');
+
+        expect(Misc.getMediaInfo('https://share.redd.it/preview/post/not-an-id').type)
+            .toBe('');
+        expect(Misc.getMediaInfo('https://share.redd.it.evil.com/preview/post/1xn1uka').type)
+            .toBe('');
+        expect(Misc.getMediaInfo('https://share.redd.it/preview/other/1xn1uka').type)
+            .toBe('');
+    });
+
     it('should detect X media previews', () => {
         const preview = 'https://jf.x.com/images/media-preview/2115941753798692948';
         expect(Misc.getMediaInfo(preview).type).toBe('image');
@@ -61,6 +78,12 @@ describe('Media Detection', () => {
         const yt3 = Misc.getMediaInfo('https://www.youtube.com/shorts/dQw4w9WgXcQ');
         expect(yt3.type).toBe('youtube-shorts');
         expect(yt3.id).toBe('dQw4w9WgXcQ');
+
+        const playlist = Misc.getMediaInfo(
+            'https://www.youtube.com/playlist?list=PL1234567890abcdef'
+        );
+        expect(playlist.type).toBe('youtube-playlist');
+        expect(playlist.id).toBe('PL1234567890abcdef');
     });
 
     it('should detect Twitch clips and channels', () => {
@@ -71,6 +94,10 @@ describe('Media Detection', () => {
         const channel1 = Misc.getMediaInfo('https://www.twitch.tv/twitchdev');
         expect(channel1.type).toBe('twitch-channel');
         expect(channel1.id).toBe('twitchdev');
+
+        const vod = Misc.getMediaInfo('https://www.twitch.tv/videos/123456789');
+        expect(vod.type).toBe('twitch-video');
+        expect(vod.id).toBe('123456789');
 
         // Should not match directory etc.
         expect(Misc.getMediaInfo('https://www.twitch.tv/directory').type).toBe('');
@@ -115,10 +142,12 @@ describe('Media Detection', () => {
 
     it('should detect Imgur', () => {
         const imgur1 = Misc.getMediaInfo('https://imgur.com/gallery/idabcde');
-        expect(imgur1.type).toBe('');
+        expect(imgur1.type).toBe('imgur');
+        expect(imgur1.id).toBe('idabcde');
 
         const imgur2 = Misc.getMediaInfo('https://imgur.com/a/idabcde');
-        expect(imgur2.type).toBe('');
+        expect(imgur2.type).toBe('imgur');
+        expect(imgur2.id).toBe('idabcde');
 
         const imgur3 = Misc.getMediaInfo('https://imgur.com/idabcde');
         expect(imgur3.type).toBe('image');
@@ -129,7 +158,8 @@ describe('Media Detection', () => {
         expect(imgur4.url).toBe('https://i.imgur.com/Bda2imW.png');
 
         const imgur5 = Misc.getMediaInfo('https://imgur.com/gallery/happy-national-columbo-day-yall-oh-wait-ChiTNd2');
-        expect(imgur5.type).toBe('');
+        expect(imgur5.type).toBe('imgur');
+        expect(imgur5.id).toBe('ChiTNd2');
 
         // Should not match excluded
         expect(Misc.getMediaInfo('https://imgur.com/about').type).toBe('');

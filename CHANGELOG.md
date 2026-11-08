@@ -26,6 +26,36 @@ and this project adheres to
   network icon.
 - **Desktop Window**: Remember the window size, position, and maximized state
   across launches.
+- **Link Previews**: Added provider-owned players and embeds for TED, Mixcloud,
+  Wistia, Loom, Art19, Pinterest, TikTok, Prezi, OpenStreetMap, Yandex Maps,
+  YouTube playlists, and Twitch VODs. Vimeo uses its official player and
+  supports channel, showcase, and player URLs. Imgur gallery/album pages use a
+  curated iframe; single-image Imgur links remain direct media. OpenStreetMap
+  uses its `export/embed.html` endpoint and Yandex Maps uses the public map
+  widget, both keyless. Prezi uses its public embed URL. SlideShare
+  presentations use its oEmbed iframe on desktop, while Flickr, Dailymotion,
+  Reddit, and Speaker Deck provide oEmbed/API cards. Reddit is oEmbed-only
+  because Reddit no longer serves unauthenticated JSON. Providers use browser
+  fetch on web and the native HTTP bridge on desktop; unsupported or blocked
+  requests fall back to the plain chat link.
+- **Amazon Previews**: Added URL-derived Amazon product cards on web and
+  desktop. The card uses the product ASIN and URL slug, links to the canonical
+  product page, and never fetches the Amazon page or uses PA-API/Creators API.
+- **Web Metadata Previews**: Added verified generic web allowlisting for NPR,
+  Fox News, The Independent, DW, W3C, and Apache. Added CORS-compatible named
+  cards for Wikipedia, Internet Archive, Stack Overflow, Fandom, X, Write.as,
+  and Lemma. Generic web pages outside the allowlist are not fetched.
+- **Tier D Previews**: Added desktop metadata cards for public pages using Open
+  Graph, Twitter Card, and JSON-LD fields. Manual previews are always available;
+  Show Media Previews controls automatic Tier A/C previews and Show Metadata
+  Previews controls automatic Tier B/D previews and is available on web for
+  named web-capable providers and the generic allowlist. Added desktop JSON/XML
+  oEmbed discovery, GitHub repository cards using the public API, Gitea/Forgejo,
+  Bitbucket, and GitLab repository cards, itch.io game cards, and GameTracker
+  server cards using the page title and full-width server banner. Tier B
+  failures fall back to page metadata, Tier C player failures fall back to Tier
+  B oEmbed cards and then Tier D page metadata on desktop or allowlisted web
+  hosts, and failed Tier D cards remove their preview handles.
 - **Desktop Chat Logs**: Added local SQLite chat history with FTS search,
   configurable retention, redaction handling, and a desktop search dialog.
   Redacted messages retain their local text and are marked in search results.
@@ -46,10 +76,30 @@ and this project adheres to
 
 ### Fixed
 
+- **Link Preview Cards**: Description text now wraps up to four lines instead of
+  truncating to one line. Long unbroken tokens wrap safely, and the existing
+  600-character limit remains as the content cap.
+- **Reddit Previews**: Extensionless `share.redd.it/preview/post` and
+  `/preview/comment` links now render as direct image previews.
+- **Amazon Previews**: Removed the ASIN image fallback. The legacy
+  `/images/P/<ASIN>` endpoint can return a 1×1 tracking pixel, and the real
+  product image ID cannot be derived from the ASIN without fetching the page or
+  using a gated API. Amazon cards are now text-only.
+- **Desktop Media**: Fixed native HTTP address lookups on Node runtimes that
+  request all DNS addresses, restoring direct image/audio/video previews.
+- **Desktop Embeds**: Added a valid HTTPS Referer for YouTube, Twitch, and Vimeo
+  embed requests, and a desktop-specific Twitch `parent` value, so those players
+  work under the `app://` origin. Twitch player `frame-ancestors` responses now
+  allow the `app:` origin without disabling the rest of Twitch's CSP, restoring
+  desktop channels, clips, and VODs.
+
+### Fixed
+
 - **Network Settings**: Show direct WebSocket paths in the main server field and
   select WebSocket transport with the protocol picker instead of a redundant
   advanced checkbox.
-- **Desktop Chat Logs**: Match word prefixes in search so `otter` finds `otters`.
+- **Desktop Chat Logs**: Match word prefixes in search so `otter` finds
+  `otters`.
 - **Desktop Menus**: Fixed Reload and Force Reload being blocked by the exit
   warning, added a native close confirmation, removed the nonfunctional Window
   menu on Linux and Windows, and open the configuration folder instead of

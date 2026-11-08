@@ -323,6 +323,9 @@ msgstr "Ban"
 msgid "preview"
 msgstr "Preview"
 
+msgid "link_preview_loading"
+msgstr "Loading preview..."
+
 #: {{count}} week
 msgid "week"
 msgstr "{{count}} Week"
@@ -441,11 +444,15 @@ msgstr "Share Typing Status"
 
 #: Show inline image previews
 msgid "settings_show_inline_previews"
-msgstr "Show Image Previews"
+msgstr "Show Media Previews"
 
 #: Hide preview cards
 msgid "settings_hide_preview_cards"
 msgstr "Hide Preview Cards"
+
+#: Fetch generic page metadata on desktop
+msgid "settings_generic_link_previews"
+msgstr "Show Metadata Previews"
 
 #: Limnoria
 msgid "settings_limnoria"

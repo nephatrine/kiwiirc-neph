@@ -8,6 +8,7 @@ const {
     net,
     safeStorage,
     screen,
+    session,
     shell,
 } = require('electron');
 const fs = require('node:fs/promises');
@@ -20,6 +21,8 @@ const { MEDIA_SCHEME } = require('./media-url');
 const { createProfileStore, MAX_STORAGE_BYTES } = require('./profile-store');
 const { createSecretStore } = require('./secrets');
 const { createChatLogStore } = require('./chat-log-store');
+const { addEmbedReferer } = require('./embed-referer');
+const { addAppFrameAncestor } = require('./twitch-embed-policy');
 const {
     loadWindowState,
     restoreWindowState,
@@ -101,7 +104,10 @@ if (!app.requestSingleInstanceLock()) {
         buildApplicationMenu();
         await registerAppProtocol();
         registerMediaProtocol();
+        registerEmbedRequestHeaders();
+        registerTwitchFramePolicy();
         createWindow();
+        registerEmbedErrorForwarding();
     }).catch((err) => {
         console.error('Failed to start desktop shell:', err);
         app.quit();
@@ -249,8 +255,12 @@ function registerDesktopConfigIpc() {
 
     ipcMain.handle('kiwi:http-request', (event, options) => {
         const policy = desktopHttpPolicy();
+        const requestedMax = Number(options.maxResponseBytes);
+        const maxResponseBytes = Number.isFinite(requestedMax) && requestedMax > 0 ?
+            Math.min(policy.maxResponseBytes, Math.floor(requestedMax)) :
+            policy.maxResponseBytes;
         return httpService.request(Object.assign({}, options, {
-            maxResponseBytes: policy.maxResponseBytes,
+            maxResponseBytes,
             timeoutMs: policy.timeoutMs,
         }), policy);
     });
@@ -481,6 +491,69 @@ async function registerAppProtocol() {
             return new Response('Not found', { status: 404 });
         }
     });
+}
+
+function registerEmbedRequestHeaders() {
+    session.defaultSession.webRequest.onBeforeSendHeaders(
+        {
+            urls: [
+                'https://www.youtube.com/*',
+                'https://www.youtube-nocookie.com/*',
+                'https://clips.twitch.tv/*',
+                'https://player.twitch.tv/*',
+                'https://www.twitch.tv/*',
+                'https://vimeo.com/*',
+                'https://*.vimeo.com/*',
+            ],
+        },
+        (details, callback) => {
+            // Electron's callback receives a response object, not an error.
+            // eslint-disable-next-line n/no-callback-literal
+            callback({
+                requestHeaders: addEmbedReferer(details.requestHeaders),
+            });
+        }
+    );
+}
+
+function registerTwitchFramePolicy() {
+    session.defaultSession.webRequest.onHeadersReceived(
+        {
+            urls: [
+                'https://clips.twitch.tv/*',
+                'https://player.twitch.tv/*',
+                'https://www.twitch.tv/*',
+            ],
+        },
+        (details, callback) => {
+            // Electron's callback receives a response object, not an error.
+            // eslint-disable-next-line n/no-callback-literal
+            callback({
+                responseHeaders: addAppFrameAncestor(details.responseHeaders),
+            });
+        }
+    );
+}
+
+function registerEmbedErrorForwarding() {
+    session.defaultSession.webRequest.onErrorOccurred(
+        {
+            urls: ['https://*/*'],
+        },
+        (details) => {
+            if (details.resourceType !== 'subFrame' ||
+                !mainWindow ||
+                mainWindow.isDestroyed()) {
+                return;
+            }
+
+            mainWindow.webContents.send(
+                'kiwi:embed-error',
+                details.url,
+                details.error || ''
+            );
+        }
+    );
 }
 
 function registerMediaProtocol() {

@@ -3,7 +3,39 @@
         :key="url"
         class="kiwi-url-embed"
     >
-        <template v-if="media.type === 'image'">
+        <template v-if="fallbackPreview">
+            <a
+                class="kiwi-url-embed-card"
+                :href="fallbackPreview.url || media.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                @click.stop
+            >
+                <img
+                    v-if="previewImage"
+                    :src="previewImage"
+                    alt=""
+                    loading="lazy"
+                    class="kiwi-url-embed-card-image"
+                    @error="onPreviewImageError"
+                >
+                <span class="kiwi-url-embed-card-body">
+                    <span class="kiwi-url-embed-card-site">
+                        {{ fallbackPreview.providerName }}
+                    </span>
+                    <span v-if="fallbackPreview.title" class="kiwi-url-embed-card-title">
+                        {{ fallbackPreview.title }}
+                    </span>
+                    <span
+                        v-if="fallbackPreview.description"
+                        class="kiwi-url-embed-card-description"
+                    >
+                        {{ fallbackPreview.description }}
+                    </span>
+                </span>
+            </a>
+        </template>
+        <template v-else-if="media.type === 'image'">
             <div class="kiwi-url-embed-image">
                 <img
                     :src="mediaUrl"
@@ -13,6 +45,44 @@
                     @load="onLoad"
                     @error="onError"
                     @click="openLightbox"
+                />
+            </div>
+        </template>
+        <template v-else-if="media.type === 'vimeo'">
+            <div class="kiwi-url-embed-vimeo" :style="containerStyle">
+                <iframe
+                    :src="`https://player.vimeo.com/video/${media.id}`"
+                    frameborder="0"
+                    allow="autoplay; fullscreen; picture-in-picture"
+                    allowfullscreen
+                    loading="lazy"
+                    @load="onLoad"
+                    @error="onFrameError"
+                />
+            </div>
+        </template>
+        <template v-else-if="media.type === 'embed'">
+            <div class="kiwi-url-embed-frame" :style="containerStyle">
+                <iframe
+                    :src="media.src"
+                    :allow="media.allow"
+                    frameborder="0"
+                    allowfullscreen
+                    loading="lazy"
+                    @load="onLoad"
+                    @error="onFrameError"
+                />
+            </div>
+        </template>
+        <template v-else-if="media.type === 'imgur'">
+            <div class="kiwi-url-embed-imgur" :style="containerStyle">
+                <iframe
+                    :src="`https://imgur.com/a/${media.id}/embed?pub=true&context=false`"
+                    frameborder="0"
+                    allow="fullscreen"
+                    loading="lazy"
+                    @load="onLoad"
+                    @error="onFrameError"
                 />
             </div>
         </template>
@@ -39,6 +109,58 @@
                 />
             </div>
         </template>
+        <template v-else-if="media.type === 'oembed' || media.type === 'metadata'">
+            <div
+                v-if="linkPreview && linkPreview.kind === 'embed'"
+                class="kiwi-url-embed-oembed-frame"
+                :style="linkPreviewEmbedStyle"
+            >
+                <iframe
+                    :src="linkPreview.embedUrl"
+                    allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                    frameborder="0"
+                    allowfullscreen
+                    loading="lazy"
+                    @load="onLoad"
+                    @error="onFrameError"
+                />
+            </div>
+            <a
+                v-else-if="linkPreview"
+                class="kiwi-url-embed-card"
+                :class="{ 'kiwi-url-embed-card--banner': linkPreview.imageLayout === 'banner' }"
+                :href="linkPreview.url || media.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                @click.stop
+            >
+                <img
+                    v-if="previewImage"
+                    :src="previewImage"
+                    alt=""
+                    loading="lazy"
+                    class="kiwi-url-embed-card-image"
+                    @error="onPreviewImageError"
+                >
+                <span class="kiwi-url-embed-card-body">
+                    <span class="kiwi-url-embed-card-site">
+                        {{ linkPreview.providerName }}
+                    </span>
+                    <span v-if="linkPreview.title" class="kiwi-url-embed-card-title">
+                        {{ linkPreview.title }}
+                    </span>
+                    <span
+                        v-if="linkPreview.description"
+                        class="kiwi-url-embed-card-description"
+                    >
+                        {{ linkPreview.description }}
+                    </span>
+                </span>
+            </a>
+            <div v-else-if="previewLoading" class="kiwi-url-embed-card-loading">
+                {{ $t('link_preview_loading') }}
+            </div>
+        </template>
         <template v-else-if="media.type === 'youtube'">
             <div class="kiwi-url-embed-youtube" :style="containerStyle">
                 <iframe
@@ -48,6 +170,20 @@
                     allowfullscreen
                     loading="lazy"
                     @load="onLoad"
+                    @error="onFrameError"
+                />
+            </div>
+        </template>
+        <template v-else-if="media.type === 'youtube-playlist'">
+            <div class="kiwi-url-embed-youtube" :style="containerStyle">
+                <iframe
+                    :src="`https://www.youtube-nocookie.com/embed/videoseries?list=${media.id}`"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                    allowfullscreen
+                    loading="lazy"
+                    @load="onLoad"
+                    @error="onFrameError"
                 />
             </div>
         </template>
@@ -60,6 +196,7 @@
                     allowfullscreen
                     loading="lazy"
                     @load="onLoad"
+                    @error="onFrameError"
                 />
             </div>
         </template>
@@ -72,6 +209,7 @@
                     allowfullscreen="true"
                     loading="lazy"
                     @load="onLoad"
+                    @error="onFrameError"
                 />
             </div>
         </template>
@@ -84,6 +222,20 @@
                     allowfullscreen="true"
                     loading="lazy"
                     @load="onLoad"
+                    @error="onFrameError"
+                />
+            </div>
+        </template>
+        <template v-else-if="media.type === 'twitch-video'">
+            <div class="kiwi-url-embed-twitch" :style="containerStyle">
+                <iframe
+                    :src="`https://player.twitch.tv/?video=${media.id}&parent=${hostname}&theme=${themeMode}`"
+                    frameborder="0"
+                    allow="autoplay; fullscreen"
+                    allowfullscreen="true"
+                    loading="lazy"
+                    @load="onLoad"
+                    @error="onFrameError"
                 />
             </div>
         </template>
@@ -95,6 +247,7 @@
                     allow="autoplay; fullscreen"
                     loading="lazy"
                     @load="onLoad"
+                    @error="onFrameError"
                 />
             </div>
         </template>
@@ -106,6 +259,7 @@
                     allow="autoplay; fullscreen"
                     loading="lazy"
                     @load="onLoad"
+                    @error="onFrameError"
                 />
             </div>
         </template>
@@ -118,6 +272,7 @@
                     allowfullscreen
                     loading="lazy"
                     @load="onLoad"
+                    @error="onFrameError"
                 />
             </div>
         </template>
@@ -130,6 +285,7 @@
                     allowfullscreen
                     loading="lazy"
                     @load="onLoad"
+                    @error="onFrameError"
                 />
             </div>
         </template>
@@ -142,6 +298,7 @@
                     allowfullscreen
                     loading="lazy"
                     @load="onLoad"
+                    @error="onFrameError"
                 />
             </div>
         </template>
@@ -153,6 +310,7 @@
                     allow="autoplay"
                     loading="lazy"
                     @load="onLoad"
+                    @error="onFrameError"
                 />
             </div>
         </template>
@@ -164,6 +322,7 @@
                     allow="autoplay; fullscreen"
                     loading="lazy"
                     @load="onLoad"
+                    @error="onFrameError"
                 />
             </div>
         </template>
@@ -175,6 +334,9 @@
 
 import * as Misc from '@/helpers/Misc';
 import { desktopMediaUrl } from '@/libs/desktop/Media';
+import { embedParentHostname } from '@/libs/desktop/Embed';
+import { resolveEmbedFallback, resolveLinkPreview } from '@/libs/LinkPreview';
+import { resolvePagePreview } from '@/libs/PagePreview';
 import ThemeManager from '@/libs/ThemeManager';
 
 const MAX_MEDIA_HEIGHT = 400;
@@ -183,9 +345,13 @@ export default {
     props: ['url', 'showPin', 'iframeSandboxOptions'],
     data() {
         return {
-            hostname: window.location.hostname,
+            hostname: embedParentHostname(),
             mediaError: false,
             themeMode: 'light',
+            linkPreview: null,
+            previewLoading: false,
+            fallbackPreview: null,
+            removeEmbedErrorListener: null,
         };
     },
     computed: {
@@ -199,6 +365,11 @@ export default {
         },
         mediaUrl() {
             return desktopMediaUrl(this.media.url);
+        },
+        previewImage() {
+            return this.linkPreview && this.linkPreview.image ?
+                desktopMediaUrl(this.linkPreview.image) :
+                '';
         },
         sameOriginFediverse() {
             return Misc.isSameOriginUrl(`${this.media.url}/embed`);
@@ -236,7 +407,17 @@ export default {
                 if (this.showPin) {
                     styles.maxWidth = '250px';
                 }
-            } else if (['youtube', 'twitch-clip', 'twitch-channel', 'giphy', 'streamable', 'redgifs', 'fediverse', 'soundcloud'].includes(type)) {
+            } else if (type === 'embed') {
+                if (this.media.aspectRatio) {
+                    styles.aspectRatio = this.media.aspectRatio;
+                }
+                if (this.media.height) {
+                    styles.height = this.media.height;
+                }
+                if (this.media.maxWidth) {
+                    styles.maxWidth = this.media.maxWidth;
+                }
+            } else if (['youtube', 'youtube-playlist', 'twitch-clip', 'twitch-channel', 'twitch-video', 'giphy', 'streamable', 'redgifs', 'fediverse', 'vimeo', 'imgur', 'soundcloud'].includes(type)) {
                 styles.aspectRatio = '16 / 9';
             } else if (type === 'spotify') {
                 delete styles.height;
@@ -244,10 +425,27 @@ export default {
 
             return styles;
         },
+        linkPreviewEmbedStyle() {
+            const styles = {
+                width: '100%',
+                margin: '0 auto',
+                maxWidth: this.showPin ? '600px' : '1000px',
+            };
+            if (this.showPin) {
+                styles.maxHeight = MAX_MEDIA_HEIGHT + 'px';
+            }
+            if (this.linkPreview && this.linkPreview.aspectRatio) {
+                styles.aspectRatio = this.linkPreview.aspectRatio;
+            }
+            return styles;
+        },
     },
     watch: {
         url() {
             this.mediaError = false;
+            this.linkPreview = null;
+            this.previewLoading = false;
+            this.fallbackPreview = null;
             this.updateEmbed();
         },
     },
@@ -259,8 +457,24 @@ export default {
         this.updateEmbed();
     },
     mounted() {
+        if (window.kiwiDesktop && window.kiwiDesktop.embedErrors) {
+            this.removeEmbedErrorListener = window.kiwiDesktop.embedErrors.on((event) => {
+                const frame = this.$el && this.$el.querySelector('iframe');
+                const src = frame ? frame.getAttribute('src') : '';
+                if (src && event.url === src) {
+                    this.onFrameError();
+                }
+            });
+        }
+
         if (this.media.type) {
             this.onLoad();
+        }
+    },
+    beforeDestroy() {
+        if (this.removeEmbedErrorListener) {
+            this.removeEmbedErrorListener();
+            this.removeEmbedErrorListener = null;
         }
     },
     methods: {
@@ -274,6 +488,29 @@ export default {
                 this.$emit('setHeight', 'auto');
             }
         },
+        onFrameError() {
+            if (this.fallbackPreview || this.previewLoading ||
+                this.media.type === 'oembed' ||
+                this.media.type === 'metadata') {
+                return;
+            }
+
+            this.previewLoading = true;
+            resolveEmbedFallback(this.media.url).then((preview) => {
+                this.fallbackPreview = preview;
+                this.linkPreview = preview;
+                this.previewLoading = false;
+                this.$nextTick(() => {
+                    this.onLoad();
+                });
+            }).catch(() => {
+                this.previewLoading = false;
+                this.mediaError = true;
+                this.$nextTick(() => {
+                    this.updateEmbed();
+                });
+            });
+        },
         onError() {
             // If direct media fails to load, there is nothing left to show.
             this.mediaError = true;
@@ -281,10 +518,59 @@ export default {
                 this.updateEmbed();
             });
         },
+        onPreviewImageError() {
+            if (this.linkPreview) {
+                this.linkPreview.image = '';
+            }
+            if (this.fallbackPreview) {
+                this.fallbackPreview.image = '';
+            }
+        },
         openLightbox() {
             this.$state.ui.lightbox_url = this.media.url;
         },
+        resolvePreview() {
+            this.loadPreview(() => resolveLinkPreview(this.media.url));
+        },
+        resolveMetadataPreview() {
+            this.loadPreview(() => resolvePagePreview(this.media.url));
+        },
+        loadPreview(loader) {
+            if (this.previewLoading || this.linkPreview) {
+                return;
+            }
+
+            this.previewLoading = true;
+            loader().then((preview) => {
+                this.linkPreview = preview;
+                this.previewLoading = false;
+                this.$nextTick(() => {
+                    this.onLoad();
+                });
+            }).catch(() => {
+                if (this.media.type === 'metadata') {
+                    Misc.markPreviewFailed(this.media.url);
+                    this.$state.$emit('link-preview.failed', this.media.url);
+                }
+                this.linkPreview = null;
+                this.previewLoading = false;
+                this.mediaError = true;
+                this.$nextTick(() => {
+                    this.updateEmbed();
+                });
+            });
+        },
         updateEmbed() {
+            if (this.media.type === 'oembed') {
+                this.resolvePreview();
+                return;
+            }
+
+            if (this.media.type === 'metadata') {
+                this.resolveMetadataPreview();
+                return;
+            }
+
             if (this.media.type) {
                 this.$nextTick(() => {
                     this.onLoad();
@@ -338,6 +624,81 @@ export default {
     display: block;
 }
 
+.kiwi-url-embed-card {
+    display: flex;
+    max-width: 520px;
+    overflow: hidden;
+    border: 1px solid rgb(127 127 127 / 30%);
+    border-radius: 4px;
+    background: rgb(127 127 127 / 5%);
+    color: inherit;
+    text-decoration: none;
+}
+
+.kiwi-url-embed-card-image {
+    width: 160px;
+    max-height: 140px;
+    object-fit: cover;
+    flex: 0 0 auto;
+}
+
+.kiwi-url-embed-card--banner {
+    display: block;
+    max-width: 560px;
+}
+
+.kiwi-url-embed-card--banner .kiwi-url-embed-card-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    object-fit: contain;
+}
+
+.kiwi-url-embed-card--banner .kiwi-url-embed-card-body {
+    padding: 0.5em 0.8em;
+}
+
+.kiwi-url-embed-card-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 0.6em 0.8em;
+}
+
+.kiwi-url-embed-card-site {
+    opacity: 0.7;
+    font-size: 0.8em;
+    text-transform: uppercase;
+}
+
+.kiwi-url-embed-card-title {
+    margin-top: 0.2em;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kiwi-url-embed-card-description {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    max-height: 5.4em;
+    margin-top: 0.3em;
+    opacity: 0.8;
+    font-size: 0.9em;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.kiwi-url-embed-card-loading {
+    padding: 0.5em;
+    opacity: 0.7;
+}
+
 .kiwi-url-embed-audio,
 .kiwi-url-embed-video {
     width: 100%;
@@ -370,7 +731,11 @@ export default {
 .kiwi-url-embed-fediverse,
 .kiwi-url-embed-giphy,
 .kiwi-url-embed-streamable,
-.kiwi-url-embed-redgifs {
+.kiwi-url-embed-redgifs,
+.kiwi-url-embed-vimeo,
+.kiwi-url-embed-imgur,
+.kiwi-url-embed-frame,
+.kiwi-url-embed-oembed-frame {
     position: relative;
     width: 100%;
     margin: 0;
@@ -408,6 +773,10 @@ export default {
 .kiwi-url-embed-giphy iframe,
 .kiwi-url-embed-streamable iframe,
 .kiwi-url-embed-redgifs iframe,
+.kiwi-url-embed-vimeo iframe,
+.kiwi-url-embed-imgur iframe,
+.kiwi-url-embed-frame iframe,
+.kiwi-url-embed-oembed-frame iframe,
 .kiwi-url-embed-spotify iframe,
 .kiwi-url-embed-soundcloud iframe,
 .kiwi-url-embed-steam iframe {

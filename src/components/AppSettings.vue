@@ -169,6 +169,13 @@
                                 <span>{{ $t('settings_show_inline_previews') }} </span>
                                 <input v-model="settingBufferInlineLinkPreviews" type="checkbox">
                             </label>
+                            <label
+                                v-if="settingBufferInlineLinkPreviews"
+                                class="u-checkbox-wrapper"
+                            >
+                                <span>{{ $t('settings_generic_link_previews') }} </span>
+                                <input v-model="settingBufferGenericLinkPreviews" type="checkbox">
+                            </label>
                             <label class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_hide_preview_cards') }} </span>
                                 <input v-model="settingBufferHidePreviewCards" type="checkbox">
@@ -482,6 +489,7 @@ export default {
             },
         },
         settingBufferHidePreviewCards: bindSetting('buffers.hide_preview_cards'),
+        settingBufferGenericLinkPreviews: bindSetting('buffers.generic_link_previews'),
         settingAdvancedEnable: {
             get() {
                 return this.$state.ui.show_advanced_tab;

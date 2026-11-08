@@ -8,6 +8,20 @@ import { saveUrl as desktopSaveUrl } from '@/libs/desktop/Files';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import { urlRegex } from './TextFormatting';
 import { each, escapeRegExp, isPlainObject, setPath } from '@/helpers/Utils';
+import { getLinkPreviewProvider } from '@/libs/LinkPreviewProviders';
+import { getMediaEmbed } from '@/libs/MediaEmbeds';
+import {
+    isWebGenericHost,
+    parseAmazonProduct,
+    parseBitbucketRepo,
+    parseGiteaRepo,
+    parseGitHubRepo,
+    parseGitLabRepo,
+    parseGameTrackerServer,
+    parseItchGame
+} from '@/libs/PagePreview';
+
+const failedPreviewUrls = new Set();
 
 const styleStripRegexp = new RegExp(
     // Decimal Colours
@@ -117,6 +131,13 @@ export function getMediaInfo(url) {
 
     const cleanUrl = url.split('?')[0].split('#')[0].toLowerCase();
 
+    // Reddit share previews are extensionless but return image/* for valid
+    // post and comment IDs.
+    if (/^https?:\/\/share\.redd\.it\/preview\/(?:post|comment)\/[a-z0-9]+(?:[/?#]|$)/i.test(url)) {
+        info.type = 'image';
+        return info;
+    }
+
     // X/Twitter media previews are extensionless but return image/* for valid
     // media IDs. Invalid IDs return 404, which UrlEmbed discards on @error.
     if (/^https?:\/\/(?:[^/]+\.)?x\.com\/images\/media-preview\/\d+$/.test(cleanUrl)) {
@@ -156,6 +177,15 @@ export function getMediaInfo(url) {
         return info;
     }
 
+    const ytPlaylistMatch = url.match(
+        /youtube\.com\/(?:playlist|embed\/videoseries)\?(?:[^#]*&)?list=([a-z0-9_-]+)/i
+    );
+    if (ytPlaylistMatch) {
+        info.type = 'youtube-playlist';
+        info.id = ytPlaylistMatch[1];
+        return info;
+    }
+
     const ytMatch = url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i);
     if (ytMatch) {
         info.type = 'youtube';
@@ -168,6 +198,12 @@ export function getMediaInfo(url) {
     if (twitchClipMatch) {
         info.type = 'twitch-clip';
         info.id = twitchClipMatch[1];
+        return info;
+    }
+    const twitchVodMatch = url.match(/twitch\.tv\/videos\/(\d+)/i) || url.match(/player\.twitch\.tv\/?\?.*\bvideo=(\d+)/i);
+    if (twitchVodMatch) {
+        info.type = 'twitch-video';
+        info.id = twitchVodMatch[1];
         return info;
     }
     const twitchChannelMatch = url.match(/twitch\.tv\/([a-z0-9_]+)/i);
@@ -244,6 +280,15 @@ export function getMediaInfo(url) {
         }
     }
 
+    const imgurGalleryMatch = url.match(
+        /^https?:\/\/(?:www\.)?imgur\.com\/(?:gallery|a)\/(?:[^/?#]+-)?([a-z0-9]+)(?:[?#/]|$)/i
+    );
+    if (imgurGalleryMatch) {
+        info.type = 'imgur';
+        info.id = imgurGalleryMatch[1];
+        return info;
+    }
+
     // Spotify
     const spotifyMatch = url.match(/open\.spotify\.com\/(?:intl-[a-z-]+\/)?(track|album|playlist|episode|show|artist)\/([a-z0-9]{22})/i);
     if (spotifyMatch) {
@@ -271,6 +316,103 @@ export function getMediaInfo(url) {
         }
     }
 
+    const vimeoMatch = url.match(
+        /^https?:\/\/(?:(?:www\.)?vimeo\.com\/(?:.*\/)?(\d+)|player\.vimeo\.com\/video\/(\d+))(?:[/?#].*)?$/i
+    );
+    if (vimeoMatch) {
+        info.type = 'vimeo';
+        info.id = vimeoMatch[1] || vimeoMatch[2];
+        return info;
+    }
+
+    const mediaEmbed = getMediaEmbed(url);
+    if (mediaEmbed) {
+        info.type = mediaEmbed.type;
+        info.provider = mediaEmbed.provider;
+        info.id = mediaEmbed.id;
+        info.src = mediaEmbed.src;
+        info.aspectRatio = mediaEmbed.aspectRatio;
+        info.height = mediaEmbed.height;
+        info.maxWidth = mediaEmbed.maxWidth;
+        info.allow = mediaEmbed.allow;
+        return info;
+    }
+
+    const isDesktop = typeof window !== 'undefined' && !!window.kiwiDesktop;
+
+    const gitHubRepo = parseGitHubRepo(url);
+    if (gitHubRepo) {
+        info.type = 'metadata';
+        info.provider = 'github';
+        info.id = `${gitHubRepo.owner}/${gitHubRepo.repo}`;
+        return info;
+    }
+
+    const giteaRepo = parseGiteaRepo(url);
+    if (giteaRepo) {
+        if (giteaRepo.web || isDesktop) {
+            info.type = 'metadata';
+            info.provider = 'gitea';
+            info.id = `${giteaRepo.host}/${giteaRepo.owner}/${giteaRepo.repo}`;
+        }
+        return info;
+    }
+
+    const gitLabRepo = parseGitLabRepo(url);
+    if (gitLabRepo) {
+        info.type = 'metadata';
+        info.provider = 'gitlab';
+        info.id = gitLabRepo.projectPath;
+        return info;
+    }
+
+    const bitbucketRepo = parseBitbucketRepo(url);
+    if (bitbucketRepo) {
+        info.type = 'metadata';
+        info.provider = 'bitbucket';
+        info.id = `${bitbucketRepo.workspace}/${bitbucketRepo.repo}`;
+        return info;
+    }
+
+    const gameTracker = parseGameTrackerServer(url);
+    if (gameTracker && isDesktop) {
+        info.type = 'metadata';
+        info.provider = 'gametracker';
+        info.id = gameTracker.server;
+        return info;
+    }
+
+    const itchGame = parseItchGame(url);
+    if (itchGame && isDesktop) {
+        info.type = 'metadata';
+        info.provider = 'itch';
+        info.id = `${itchGame.user}/${itchGame.game}`;
+        return info;
+    }
+
+    const amazonProduct = parseAmazonProduct(url);
+    if (amazonProduct) {
+        info.type = 'metadata';
+        info.provider = 'amazon';
+        info.id = amazonProduct.asin;
+        return info;
+    }
+
+    const previewProvider = getLinkPreviewProvider(url);
+    if (previewProvider) {
+        if (previewProvider.web || isDesktop) {
+            info.type = 'oembed';
+            info.id = previewProvider.id;
+        }
+        return info;
+    }
+
+    if ((isDesktop || isWebGenericHost(url)) && /^https?:\/\//i.test(url)) {
+        info.type = 'metadata';
+        info.provider = 'generic';
+        return info;
+    }
+
     return info;
 }
 
@@ -279,8 +421,30 @@ export function getMediaInfo(url) {
  * @param {string} url The URL to check
  * @returns {boolean}
  */
+export function markPreviewFailed(url) {
+    if (url) {
+        failedPreviewUrls.add(url);
+    }
+}
+
+export function isPreviewFailed(url) {
+    return !!url && failedPreviewUrls.has(url);
+}
+
+export function clearPreviewFailures() {
+    failedPreviewUrls.clear();
+}
+
 export function canPreviewUrl(url) {
-    return !!url && !!getMediaInfo(url).type;
+    return !!url && !isPreviewFailed(url) && !!getMediaInfo(url).type;
+}
+
+export function getPreviewCategory(url) {
+    const type = getMediaInfo(url).type;
+    if (!type) {
+        return '';
+    }
+    return type === 'metadata' || type === 'oembed' ? 'metadata' : 'media';
 }
 
 /**

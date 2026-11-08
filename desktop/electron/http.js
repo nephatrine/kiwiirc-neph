@@ -127,7 +127,7 @@ function requestOnce(target, options, policy) {
             path: `${target.url.pathname || '/'}${target.url.search || ''}`,
             method: options.method || 'GET',
             headers,
-            lookup: pinnedLookup(target.address, target.family),
+            lookup: pinnedLookup(target.addresses || target.address, target.family),
             agent: false,
         };
 
@@ -205,6 +205,7 @@ async function request(options, policy) {
             timeoutMs: options.timeoutMs,
             maxResponseBytes: options.maxResponseBytes,
         }, policy);
+        response.url = target.url.href;
 
         if (!REDIRECT_CODES.has(response.status) || !response.headers.location) {
             return response;

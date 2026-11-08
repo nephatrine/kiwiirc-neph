@@ -18,6 +18,48 @@ function isMediaContentType(value) {
     return MEDIA_TYPES.some((prefix) => type.startsWith(prefix));
 }
 
+function detectImageContentType(body) {
+    if (!body || !body.length) {
+        return '';
+    }
+
+    const bytes = Buffer.isBuffer(body) ? body : Buffer.from(body);
+    if (bytes.length >= 8 &&
+        bytes[0] === 0x89 &&
+        bytes[1] === 0x50 &&
+        bytes[2] === 0x4e &&
+        bytes[3] === 0x47 &&
+        bytes[4] === 0x0d &&
+        bytes[5] === 0x0a &&
+        bytes[6] === 0x1a &&
+        bytes[7] === 0x0a) {
+        return 'image/png';
+    }
+
+    if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+        return 'image/jpeg';
+    }
+
+    if (bytes.length >= 6) {
+        const gif = bytes.toString('ascii', 0, 6);
+        if (gif === 'GIF87a' || gif === 'GIF89a') {
+            return 'image/gif';
+        }
+    }
+
+    if (bytes.length >= 12 &&
+        bytes.toString('ascii', 0, 4) === 'RIFF' &&
+        bytes.toString('ascii', 8, 12) === 'WEBP') {
+        return 'image/webp';
+    }
+
+    if (bytes.length >= 2 && bytes[0] === 0x42 && bytes[1] === 0x4d) {
+        return 'image/bmp';
+    }
+
+    return '';
+}
+
 function mediaHeaders(upstream, contentType, corsOrigin) {
     const headers = {
         'Cross-Origin-Resource-Policy': 'cross-origin',
@@ -69,10 +111,13 @@ async function handleMediaRequest(request, policy, allowedOrigins = []) {
             return new Response('Media unavailable', { status: 502 });
         }
 
-        const contentType = String(response.headers['content-type'] || '')
+        let contentType = String(response.headers['content-type'] || '')
             .split(';')[0]
             .trim()
             .toLowerCase();
+        if (!isMediaContentType(contentType) && contentType === 'application/octet-stream') {
+            contentType = detectImageContentType(response.body) || contentType;
+        }
         if (!isMediaContentType(contentType)) {
             return new Response('Not media', { status: 415 });
         }
@@ -88,6 +133,7 @@ async function handleMediaRequest(request, policy, allowedOrigins = []) {
 }
 
 module.exports = {
+    detectImageContentType,
     handleMediaRequest,
     isMediaContentType,
     mediaHeaders,

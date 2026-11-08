@@ -26,11 +26,18 @@ function headersToObject(headers) {
 }
 
 function responseFromResult(result) {
-    return new Response(new Uint8Array(result.body || []), {
+    const response = new Response(new Uint8Array(result.body || []), {
         status: result.status,
         statusText: result.statusText,
         headers: result.headers || {},
     });
+    if (result.url) {
+        Object.defineProperty(response, 'url', {
+            configurable: true,
+            value: result.url,
+        });
+    }
+    return response;
 }
 
 export function isDesktop() {
@@ -47,12 +54,17 @@ export async function desktopFetch(url, options = {}) {
         return fetch(url, options);
     }
 
-    const result = await bridge.request({
+    const request = {
         url,
         method: options.method || 'GET',
         headers: headersToObject(options.headers),
         body: options.body,
-    });
+    };
+    if (options.maxResponseBytes) {
+        request.maxResponseBytes = options.maxResponseBytes;
+    }
+
+    const result = await bridge.request(request);
     return responseFromResult(result);
 }
 

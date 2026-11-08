@@ -1,6 +1,7 @@
 import getState from '@/libs/state';
 import Message from '@/libs/Message';
 import toHtml from '@/libs/renderers/Html';
+import { clearPreviewFailures, markPreviewFailed } from '@/helpers/Misc';
 
 function urlBlock(url) {
     return [{
@@ -58,11 +59,28 @@ function autoEmbedReply(text, original, tags) {
 describe('link preview rendering', () => {
     beforeEach(() => {
         getState().setting('buffers.show_link_previews', true);
+        getState().setting('buffers.inline_link_auto_previews', true);
+        getState().setting('buffers.generic_link_previews', false);
+        clearPreviewFailures();
     });
 
-    it('does not add a preview handle to a non-media link', () => {
+    afterEach(() => {
+        clearPreviewFailures();
+        delete window.kiwiDesktop;
+        delete window.kiwi;
+    });
+
+    it('does not add a preview handle to a non-media link without desktop', () => {
         expect(toHtml(urlBlock('https://example.com/article'), false))
             .not.toContain('data-url');
+    });
+
+    it('adds a manual preview handle to generic links on desktop', () => {
+        window.kiwiDesktop = {};
+        window.kiwi = { state: getState() };
+
+        expect(toHtml(urlBlock('https://example.com/article'), false))
+            .toContain('data-url');
     });
 
     it('adds preview handles to native media', () => {
@@ -70,13 +88,55 @@ describe('link preview rendering', () => {
             .toContain('data-url');
     });
 
+    it('hides the preview handle after a metadata preview fails', () => {
+        const url = 'https://example.com/article';
+        window.kiwiDesktop = {};
+        window.kiwi = { state: getState() };
+
+        expect(toHtml(urlBlock(url), false)).toContain('data-url');
+        markPreviewFailed(url);
+        expect(toHtml(urlBlock(url), false)).not.toContain('data-url');
+    });
+
     it('does not auto-embed non-media links', () => {
+        expect(autoEmbed('https://example.com/article')).toBeNull();
+    });
+
+    it('auto-embeds generic metadata previews when metadata previews are enabled', () => {
+        const state = getState();
+        state.setting('buffers.inline_link_auto_previews', true);
+        state.setting('buffers.generic_link_previews', true);
+        window.kiwiDesktop = {};
+        window.kiwi = { state };
+
+        expect(autoEmbed('https://example.com/article'))
+            .toBe('https://example.com/article');
+    });
+
+    it('does not auto-embed generic metadata previews when metadata previews are disabled', () => {
+        const state = getState();
+        state.setting('buffers.inline_link_auto_previews', true);
+        state.setting('buffers.generic_link_previews', false);
+        window.kiwiDesktop = {};
+        window.kiwi = { state };
+
         expect(autoEmbed('https://example.com/article')).toBeNull();
     });
 
     it('auto-embeds native media', () => {
         expect(autoEmbed('https://example.com/image.jpg'))
             .toBe('https://example.com/image.jpg');
+    });
+
+    it('does not auto-embed anything when media previews are disabled', () => {
+        const state = getState();
+        state.setting('buffers.inline_link_auto_previews', false);
+        state.setting('buffers.generic_link_previews', true);
+        window.kiwiDesktop = {};
+        window.kiwi = { state };
+
+        expect(autoEmbed('https://example.com/image.jpg')).toBeNull();
+        expect(autoEmbed('https://example.com/article')).toBeNull();
     });
 
     it('does not auto-embed a [PREVIEW] reply when the original preview is open', () => {

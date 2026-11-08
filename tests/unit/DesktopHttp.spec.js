@@ -82,6 +82,17 @@ describe('Desktop HTTP adapter', () => {
         expect(isDesktop()).toBe(true);
     });
 
+    it('exposes the final native response URL after redirects', async() => {
+        const request = jest.fn().mockResolvedValue(Object.assign(nativeResult(), {
+            url: 'https://example.com/final',
+        }));
+        window.kiwiDesktop = { http: { request } };
+
+        const response = await desktopFetch('https://example.com/start');
+
+        expect(response.url).toBe('https://example.com/final');
+    });
+
     it('sends a file upload through the bridge', async() => {
         const upload = jest.fn().mockResolvedValue(nativeResult());
         window.kiwiDesktop = { http: { upload } };

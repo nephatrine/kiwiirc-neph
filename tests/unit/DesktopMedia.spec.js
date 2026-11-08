@@ -4,6 +4,7 @@ import {
     encodeMediaUrl
 } from '../../desktop/electron/media-url';
 import {
+    detectImageContentType,
     isMediaContentType,
     mediaHeaders
 } from '../../desktop/electron/media';
@@ -58,6 +59,18 @@ describe('Desktop media proxy', () => {
         expect(isMediaContentType('text/html')).toBe(false);
         expect(isMediaContentType('application/json')).toBe(false);
         expect(isMediaContentType('')).toBe(false);
+    });
+
+    it('detects common image types served as octet-stream', () => {
+        expect(detectImageContentType(Buffer.from([
+            0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+        ]))).toBe('image/png');
+        expect(detectImageContentType(Buffer.from([
+            0xff, 0xd8, 0xff, 0xe0,
+        ]))).toBe('image/jpeg');
+        expect(detectImageContentType(Buffer.from('GIF89a'))).toBe('image/gif');
+        expect(detectImageContentType(Buffer.from('RIFF0000WEBP'))).toBe('image/webp');
+        expect(detectImageContentType(Buffer.from('not an image'))).toBe('');
     });
 
     it('forwards safe response headers and sets no-sniff', () => {

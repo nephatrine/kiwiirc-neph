@@ -93,7 +93,9 @@ Native desktop HTTP is controlled separately:
 
 Direct image, audio, and video previews use the `kiwi-media://` protocol in
 desktop builds. It follows the same private-network policy as native HTTP and
-does not proxy iframe embeds.
+does not proxy iframe embeds. YouTube and Twitch embeds receive a scoped HTTPS
+`Referer` from the Electron session so the players accept the `app://` desktop
+origin; Twitch uses `parent=localhost` in desktop builds.
 
 ## Profile Data
 
@@ -138,10 +140,10 @@ result loads surrounding history around the target; if the loaded context is not
 contiguous with the current scrollback, a gap marker offers controls to load
 older or newer messages. For unjoined channels, or when server history cannot
 provide the target, a temporary read-only History buffer is built from local
-logs; it is not joined and is discarded when closed or when the app exits.
-When local logs outlast server history, an exhausted gap can open that local
-context view without changing the live channel. Chat logs are not included in
-profile export/import.
+logs; it is not joined and is discarded when closed or when the app exits. When
+local logs outlast server history, an exhausted gap can open that local context
+view without changing the live channel. Chat logs are not included in profile
+export/import.
 
 ## Profile Transfer
 
@@ -200,8 +202,8 @@ plugin:
 The repository is mounted at `/workspace`; generated files are written back to
 `dist/` and `desktop/release/`. The release directory includes a `SHA256SUMS`
 file covering the installers. Node modules, Wine, and package-manager caches are
-kept in `~/.cache/kiwiirc-desktop-builder`, so the host `node_modules`
-directories are not replaced.
+kept in `~/.cache/kiwiirc-builder`, so the host `node_modules` directories are
+not replaced.
 
 The first build initializes Wine and downloads the Electron runtimes for both
 platforms, so it takes longer than later builds.
