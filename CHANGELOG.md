@@ -66,6 +66,22 @@ and this project adheres to
 
 ### Changed
 
+- **Link Preview Cards**: Native link preview cards now follow the bridge card
+  layout with a left accent border, content-first hierarchy, and thumbnails
+  below the text. Thumbnails open in the media lightbox instead of navigating
+  away from the chat. Descriptions wrap without a line clamp and remain subject
+  to the 600-character content cap.
+- **Bridge Cards**: `Description:` labels are stripped from bridge card bodies.
+  `URL:` lines become the card link instead of visible text, and clicking the
+  card outside its thumbnails or body links opens that URL. `Image:` lines are
+  parsed as media: a single image with no thumbnail becomes the card thumbnail,
+  while additional or multiple images render outside the card in a lightbox
+  gallery.
+- **Desktop Previews**: Desktop now defaults to hiding bridged preview cards.
+  Set `buffers.hide_preview_cards` to `false` in `config.json5` to show them by
+  default.
+- **App Settings**: Renamed “Hide Preview Cards” to “Hide Bridged Previews” on
+  desktop and web.
 - **Profile Transfer**: Profile import is limited to Personal setup mode. Export
   remains available in every setup for migration to a personal installation.
 

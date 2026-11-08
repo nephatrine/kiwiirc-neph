@@ -436,9 +436,9 @@ msgstr "Share Typing Status"
 msgid "settings_show_inline_previews"
 msgstr "Show Media Previews"
 
-#: Hide preview cards
+#: Hide bridged preview cards
 msgid "settings_hide_preview_cards"
-msgstr "Hide Preview Cards"
+msgstr "Hide Bridged Previews"
 
 #: Automatically show metadata previews
 msgid "settings_generic_link_previews"

@@ -17,10 +17,12 @@
                     alt=""
                     loading="lazy"
                     class="kiwi-url-embed-card-image"
+                    @click.stop.prevent="openPreviewImage"
                     @error="onPreviewImageError"
                 >
                 <span class="kiwi-url-embed-card-body">
                     <span class="kiwi-url-embed-card-site">
+                        <i class="bx bx-link" aria-hidden="true" />
                         {{ fallbackPreview.providerName }}
                     </span>
                     <span v-if="fallbackPreview.title" class="kiwi-url-embed-card-title">
@@ -140,10 +142,12 @@
                     alt=""
                     loading="lazy"
                     class="kiwi-url-embed-card-image"
+                    @click.stop.prevent="openPreviewImage"
                     @error="onPreviewImageError"
                 >
                 <span class="kiwi-url-embed-card-body">
                     <span class="kiwi-url-embed-card-site">
+                        <i class="bx bx-link" aria-hidden="true" />
                         {{ linkPreview.providerName }}
                     </span>
                     <span v-if="linkPreview.title" class="kiwi-url-embed-card-title">
@@ -529,6 +533,13 @@ export default {
         openLightbox() {
             this.$state.ui.lightbox_url = this.media.url;
         },
+        openPreviewImage() {
+            const image = (this.linkPreview && this.linkPreview.image) ||
+                (this.fallbackPreview && this.fallbackPreview.image);
+            if (image) {
+                this.$state.ui.lightbox_url = image;
+            }
+        },
         resolvePreview() {
             this.loadPreview(() => resolveLinkPreview(this.media.url));
         },
@@ -625,77 +636,98 @@ export default {
 }
 
 .kiwi-url-embed-card {
+    box-sizing: border-box;
     display: flex;
-    max-width: 520px;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 33em;
     overflow: hidden;
-    border: 1px solid rgb(127 127 127 / 30%);
+    padding: 10px 12px;
+    border: 0;
+    border-left: 3px solid rgb(127 127 127 / 45%);
     border-radius: 4px;
-    background: rgb(127 127 127 / 5%);
+    background: rgb(127 127 127 / 6%);
     color: inherit;
     text-decoration: none;
 }
 
 .kiwi-url-embed-card-image {
-    width: 160px;
-    max-height: 140px;
-    object-fit: cover;
+    display: block;
     flex: 0 0 auto;
+    order: 2;
+    width: auto;
+    max-width: 100%;
+    height: 128px;
+    max-height: 128px;
+    border-radius: 3px;
+    object-fit: contain;
+    align-self: flex-start;
+    cursor: pointer;
 }
 
 .kiwi-url-embed-card--banner {
-    display: block;
     max-width: 560px;
+    gap: 0;
+    padding: 0;
 }
 
 .kiwi-url-embed-card--banner .kiwi-url-embed-card-image {
-    display: block;
+    order: 0;
     width: 100%;
     height: auto;
     max-height: none;
-    object-fit: contain;
+    border-radius: 0;
 }
 
 .kiwi-url-embed-card--banner .kiwi-url-embed-card-body {
-    padding: 0.5em 0.8em;
+    order: 1;
+    padding: 10px 12px;
 }
 
 .kiwi-url-embed-card-body {
     display: flex;
     flex-direction: column;
+    order: 1;
+    gap: 6px;
     min-width: 0;
-    padding: 0.6em 0.8em;
+    padding: 0;
 }
 
 .kiwi-url-embed-card-site {
-    opacity: 0.7;
-    font-size: 0.8em;
-    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    opacity: 0.8;
+    font-size: 0.85em;
+}
+
+.kiwi-url-embed-card-site .bx {
+    font-size: 1em;
 }
 
 .kiwi-url-embed-card-title {
-    margin-top: 0.2em;
+    font-size: 1.08em;
     font-weight: 600;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+    white-space: normal;
 }
 
 .kiwi-url-embed-card-description {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 4;
-    max-height: 5.4em;
-    margin-top: 0.3em;
     opacity: 0.8;
     font-size: 0.9em;
-    line-height: 1.35;
+    line-height: 1.4;
     overflow-wrap: anywhere;
     white-space: normal;
 }
 
 .kiwi-url-embed-card-loading {
-    padding: 0.5em;
+    box-sizing: border-box;
+    max-width: 33em;
+    padding: 10px 12px;
+    border-left: 3px solid rgb(127 127 127 / 45%);
+    border-radius: 4px;
+    background: rgb(127 127 127 / 6%);
     opacity: 0.7;
 }
 

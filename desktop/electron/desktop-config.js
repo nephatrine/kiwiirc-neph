@@ -19,6 +19,9 @@ const DEFAULT_CONFIG = {
         nick: 'kiwi_?',
         remember_buffers: true,
     },
+    buffers: {
+        hide_preview_cards: true,
+    },
     fileupload: {
         service: 'none',
         litterbox: {

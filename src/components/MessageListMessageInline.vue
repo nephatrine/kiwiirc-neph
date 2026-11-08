@@ -294,7 +294,7 @@ export default {
     display: flex;
     flex-direction: column;
     width: 100%;
-    padding: 10px 12px;
+    padding: 0;
     white-space: normal;
 }
 

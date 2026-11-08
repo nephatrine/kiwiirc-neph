@@ -25,6 +25,16 @@ describe('Desktop configuration', () => {
         expect(DEFAULT_CONFIG.kiwiServer).toBe('');
         expect(DEFAULT_CONFIG.presetNetworks).toEqual([]);
         expect(DEFAULT_CONFIG.startupOptions.server).toBe('');
+        expect(DEFAULT_CONFIG.buffers.hide_preview_cards).toBe(true);
+    });
+
+    it('allows the desktop default for hiding bridged previews to be overridden', () => {
+        const merged = mergeConfig(DEFAULT_CONFIG, {
+            buffers: { hide_preview_cards: false },
+        });
+
+        expect(merged.buffers.hide_preview_cards).toBe(false);
+        expect(DEFAULT_CONFIG.buffers.hide_preview_cards).toBe(true);
     });
 
     it('deep merges objects and replaces arrays', () => {

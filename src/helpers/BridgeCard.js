@@ -38,8 +38,10 @@ export function parseBridgeCard(text) {
         forwarded: lines[0].startsWith('[FWD] '),
         author: '',
         title: '',
+        url: '',
         fields: [],
         thumbnails: [],
+        images: [],
         footer: '',
         body: '',
     };
@@ -102,6 +104,15 @@ export function parseBridgeCard(text) {
             continue;
         }
 
+        const image = labelValue(line, 'Image:');
+        if (image !== null) {
+            const cleanImage = sanitizeUrl(image);
+            if (cleanImage) {
+                card.images.push(cleanImage);
+            }
+            continue;
+        }
+
         const footer = labelValue(line, 'Footer:');
         if (footer !== null) {
             if (!hasFooter && footer) {
@@ -113,7 +124,31 @@ export function parseBridgeCard(text) {
             continue;
         }
 
+        const description = labelValue(line, 'Description:');
+        if (description !== null) {
+            if (description) {
+                bodyLines.push(description);
+            }
+            continue;
+        }
+
+        const url = labelValue(line, 'URL:');
+        if (url !== null) {
+            if (!card.url) {
+                const cleanUrl = sanitizeUrl(url);
+                if (cleanUrl) {
+                    card.url = cleanUrl;
+                }
+            }
+            continue;
+        }
+
         bodyLines.push(line);
+    }
+
+    if (!card.thumbnails.length && card.images.length === 1) {
+        card.thumbnails = card.images.slice();
+        card.images = [];
     }
 
     card.body = bodyLines.join('\n');

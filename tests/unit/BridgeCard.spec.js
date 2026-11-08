@@ -22,11 +22,13 @@ describe('bridge card parsing', () => {
             forwarded: false,
             author: 'Alice',
             title: 'A title',
+            url: '',
             fields: [
                 { key: 'First', value: 'one' },
                 { key: 'Second', value: 'two: three' },
             ],
             thumbnails: ['https://cdn.example/thumb.png'],
+            images: [],
             footer: 'A footer',
             body: 'Body line one\nBody line two',
         });
@@ -68,6 +70,59 @@ describe('bridge card parsing', () => {
         ]);
     });
 
+    test('uses a single image as the thumbnail when no thumbnail exists', () => {
+        const card = parseBridgeCard([
+            '[PREVIEW]',
+            'Image: https://cdn.example/image.png',
+            'Body line',
+        ].join('\n'));
+
+        expect(card.thumbnails).toEqual(['https://cdn.example/image.png']);
+        expect(card.images).toEqual([]);
+        expect(card.body).toBe('Body line');
+    });
+
+    test('keeps an image outside the card when a thumbnail already exists', () => {
+        const card = parseBridgeCard([
+            '[PREVIEW]',
+            'Thumbnail: https://cdn.example/thumb.png',
+            'Image: https://cdn.example/full.png',
+            'Body line',
+        ].join('\n'));
+
+        expect(card.thumbnails).toEqual(['https://cdn.example/thumb.png']);
+        expect(card.images).toEqual(['https://cdn.example/full.png']);
+        expect(card.body).toBe('Body line');
+    });
+
+    test('collects multiple images for a gallery', () => {
+        const card = parseBridgeCard([
+            '[PREVIEW]',
+            'Image: https://cdn.example/one.png',
+            'Image: https://cdn.example/two.png',
+            'Body line',
+        ].join('\n'));
+
+        expect(card.thumbnails).toEqual([]);
+        expect(card.images).toEqual([
+            'https://cdn.example/one.png',
+            'https://cdn.example/two.png',
+        ]);
+        expect(card.body).toBe('Body line');
+    });
+
+    test('ignores unsafe images', () => {
+        const card = parseBridgeCard([
+            '[PREVIEW]',
+            'Image: javascript:alert(1)',
+            'Body line',
+        ].join('\n'));
+
+        expect(card.thumbnails).toEqual([]);
+        expect(card.images).toEqual([]);
+        expect(card.body).toBe('Body line');
+    });
+
     test('treats malformed fields and unknown labels as body text', () => {
         const card = parseBridgeCard([
             '[PREVIEW]',
@@ -100,9 +155,36 @@ describe('bridge card parsing', () => {
         ]);
         expect(card.footer).toBe('A footer');
         expect(card.body).toBe([
-            'Description: All credit goes to the creators.',
+            'All credit goes to the creators.',
             'Body line',
         ].join('\n'));
+    });
+
+    test('strips description labels and extracts safe card URLs', () => {
+        const card = parseBridgeCard([
+            '[PREVIEW]',
+            'Title: A title',
+            'Description: All credit goes to the creators.',
+            'URL: https://example.com/post',
+            'Body line',
+        ].join('\n'));
+
+        expect(card.body).toBe([
+            'All credit goes to the creators.',
+            'Body line',
+        ].join('\n'));
+        expect(card.url).toBe('https://example.com/post');
+    });
+
+    test('ignores unsafe card URLs', () => {
+        const card = parseBridgeCard([
+            '[PREVIEW]',
+            'URL: javascript:alert(1)',
+            'Body line',
+        ].join('\n'));
+
+        expect(card.url).toBe('');
+        expect(card.body).toBe('Body line');
     });
 
     test('recognizes labels with leading tabs', () => {
@@ -238,8 +320,10 @@ describe('bridge card messages', () => {
             forwarded: false,
             author: 'Alice',
             title: 'A title',
+            url: '',
             fields: [{ key: 'Key', value: 'Value' }],
             thumbnails: ['https://cdn.example/thumb.png'],
+            images: [],
             footer: 'Footer',
             body: 'Body text',
         });
@@ -273,6 +357,7 @@ describe('BridgeCard component', () => {
             vm = null;
         }
         delete Vue.prototype.$state;
+        jest.restoreAllMocks();
     });
 
     function mountCard(card) {
@@ -299,8 +384,10 @@ describe('BridgeCard component', () => {
             forwarded: false,
             author: '',
             title: '',
+            url: '',
             fields: [],
             thumbnails,
+            images: [],
             footer: '',
             body: '',
         };
@@ -337,5 +424,108 @@ describe('BridgeCard component', () => {
         images[1].click();
         await Vue.nextTick();
         expect(s.ui.lightbox_url).toBe(urls[1]);
+    });
+
+    test('renders a single external image outside the card surface', async() => {
+        const image = 'https://cdn.example/full.png';
+        const component = mountCard({
+            ...cardWithThumbnails([]),
+            images: [image],
+        });
+
+        await Vue.nextTick();
+        const surface = component.$el.querySelector('.kiwi-bridge-card-surface');
+        const gallery = component.$el.querySelector('.kiwi-bridge-card-images');
+        const images = gallery.querySelectorAll('.kiwi-bridge-card-image');
+        expect(surface.querySelector('.kiwi-bridge-card-image')).toBeNull();
+        expect(images).toHaveLength(1);
+        expect(gallery.classList.contains('kiwi-bridge-card-images--single')).toBe(true);
+
+        images[0].click();
+        await Vue.nextTick();
+        expect(s.ui.lightbox_url).toBe(image);
+    });
+
+    test('renders multiple external images as a gallery', async() => {
+        const images = [
+            'https://cdn.example/one.png',
+            'https://cdn.example/two.png',
+        ];
+        const component = mountCard({
+            ...cardWithThumbnails([]),
+            images,
+        });
+
+        await Vue.nextTick();
+        const gallery = component.$el.querySelector('.kiwi-bridge-card-images');
+        expect(gallery.querySelectorAll('.kiwi-bridge-card-image')).toHaveLength(2);
+        expect(gallery.classList.contains('kiwi-bridge-card-images--single')).toBe(false);
+    });
+
+    test('does not open the card URL when clicking an external image', async() => {
+        const open = jest.spyOn(window, 'open').mockImplementation(() => null);
+        const image = 'https://cdn.example/full.png';
+        const component = mountCard({
+            ...cardWithThumbnails([]),
+            url: 'https://example.com/post',
+            images: [image],
+        });
+
+        await Vue.nextTick();
+        component.$el.querySelector('.kiwi-bridge-card-image').click();
+        await Vue.nextTick();
+
+        expect(s.ui.lightbox_url).toBe(image);
+        expect(open).not.toHaveBeenCalled();
+        open.mockRestore();
+    });
+
+    test('renders a linked title when the card has a URL', async() => {
+        const component = mountCard({
+            ...cardWithThumbnails([]),
+            title: 'A title',
+            url: 'https://example.com/post',
+        });
+
+        await Vue.nextTick();
+        const title = component.$el.querySelector('.kiwi-bridge-card-title');
+        expect(title.tagName).toBe('A');
+        expect(title.getAttribute('href')).toBe('https://example.com/post');
+    });
+
+    test('opens the card URL when clicking outside links and thumbnails', async() => {
+        const open = jest.spyOn(window, 'open').mockImplementation(() => null);
+        const component = mountCard({
+            ...cardWithThumbnails([]),
+            title: 'A title',
+            url: 'https://example.com/post',
+        });
+
+        await Vue.nextTick();
+        component.$el.querySelector('.kiwi-bridge-card-surface').click();
+
+        expect(open).toHaveBeenCalledWith(
+            'https://example.com/post',
+            '_blank',
+            'noopener,noreferrer'
+        );
+        open.mockRestore();
+    });
+
+    test('does not open the card URL when clicking a thumbnail', async() => {
+        const open = jest.spyOn(window, 'open').mockImplementation(() => null);
+        const url = 'https://cdn.example/thumb.png';
+        const component = mountCard({
+            ...cardWithThumbnails([url]),
+            url: 'https://example.com/post',
+        });
+
+        await Vue.nextTick();
+        component.$el.querySelector('.kiwi-bridge-card-thumbnail-image').click();
+        await Vue.nextTick();
+
+        expect(s.ui.lightbox_url).toBe(url);
+        expect(open).not.toHaveBeenCalled();
+        open.mockRestore();
     });
 });

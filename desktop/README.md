@@ -61,6 +61,9 @@ Windows: %APPDATA%\KiwiIRC\config.json5
 Use **File → Open Desktop Configuration Folder** to create the file and open its
 folder, and **File → Reload Desktop Configuration** after editing it.
 
+Desktop defaults `buffers.hide_preview_cards` to `true`. Set it to `false` in
+`config.json5` to show bridged preview cards by default.
+
 The file is JSON5, so comments are allowed. For example, to use a webirc
 gateway:
 
