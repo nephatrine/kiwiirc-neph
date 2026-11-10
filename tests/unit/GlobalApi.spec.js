@@ -115,6 +115,24 @@ describe('GlobalApi plugin surface', () => {
         expect(api.sideBarPlugins[0].title()).toBe('Channels');
     });
 
+    it('addSettingsBlock routes general and network blocks', () => {
+        let component = { name: 'Thing' };
+        api.addSettingsBlock('general', component, {
+            title: 'General Block',
+            props: { extra: true },
+        });
+        api.addSettingsBlock('network', component, {
+            title: 'Network Block',
+        });
+        api.addSettingsBlock('nope', component);
+
+        expect(api.generalSettingsBlocks).toHaveLength(1);
+        expect(api.networkSettingsBlocks).toHaveLength(1);
+        expect(api.generalSettingsBlocks[0].props).toEqual({ extra: true });
+        expect(api.generalSettingsBlocks[0].title()).toBe('General Block');
+        expect(api.networkSettingsBlocks[0].title()).toBe('Network Block');
+    });
+
     it('addView registers a view that showView can present', () => {
         api.addView('myview', { name: 'Thing' });
 
@@ -186,6 +204,29 @@ describe('GlobalApi plugin surface', () => {
         expect(api.getService('missing')).toBeNull();
         api.registerService('', service);
         expect(api.getService('')).toBeNull();
+    });
+
+    it('registers lower-case plugin commands', () => {
+        const handler = jest.fn();
+
+        api.registerCommand('LIM', handler);
+        api.registerCommand('', handler);
+
+        expect(api.commands.lim).toBe(handler);
+        expect(Object.keys(api.commands)).toEqual(['lim']);
+    });
+
+    it('registers named autocomplete providers', () => {
+        const provider = { suggest: () => null };
+
+        api.addAutocompleteProvider('suggest-limnoria', provider);
+        api.addAutocompleteProvider('', provider);
+        api.addAutocompleteProvider('invalid', {});
+
+        expect(api.autocompleteProviders['suggest-limnoria']).toBe(provider);
+        expect(api.autocompleteProviders.invalid).toBeUndefined();
+        expect(Object.keys(api.autocompleteProviders))
+            .toEqual(['suggest-limnoria']);
     });
 
     it('versionMatches compares against the build version', () => {

@@ -46,11 +46,15 @@ export default class GlobalApi extends EventEmitter {
         this.userboxInfoPlugins = [];
         this.userboxWhoisPlugins = [];
         this.appSettingsPlugins = [];
+        this.generalSettingsBlocks = [];
+        this.networkSettingsBlocks = [];
         this.serverViewPlugins = [];
         this.aboutBufferPlugins = [];
         this.messageInfoPlugins = [];
         this.tabs = Object.create(null);
         this.services = Object.create(null);
+        this.commands = Object.create(null);
+        this.autocompleteProviders = Object.create(null);
         this.isReady = false;
         /** Reactive media playback state reported by plugins */
         this.media = Vue.observable({
@@ -143,6 +147,31 @@ export default class GlobalApi extends EventEmitter {
      */
     getService(name) {
         return this.services[name] || null;
+    }
+
+    /**
+     * Register an input command handler.
+     * @param {String} name Command name without the leading slash
+     * @param {Function} handler Called with (event, command, params, context)
+     */
+    registerCommand(name, handler) {
+        const command = String(name || '').toLowerCase();
+        if (!command || typeof handler !== 'function') {
+            return;
+        }
+        this.commands[command] = handler;
+    }
+
+    /**
+     * Register a local autocomplete provider.
+     * @param {String} name Stable provider identifier
+     * @param {Object} provider Object with suggest() and optional hint()
+     */
+    addAutocompleteProvider(name, provider) {
+        if (!name || !provider || typeof provider.suggest !== 'function') {
+            return;
+        }
+        this.autocompleteProviders[name] = provider;
     }
 
     setState(state) {
@@ -338,6 +367,29 @@ export default class GlobalApi extends EventEmitter {
             break;
         case 'server':
             this.serverViewPlugins.push(plugin);
+            break;
+        default:
+            break;
+        }
+    }
+
+    /**
+     * Add a plugin settings block to the bottom of an existing settings tab.
+     * - addSettingsBlock('general', component, args)
+     * - addSettingsBlock('network', component, args)
+     * @param {String} type Which settings tab to append to
+     * @param {Object} component The vue.js component object to display
+     * @param {Object} args Optional arguments for this plugin { title: '', props: {} }
+     */
+    addSettingsBlock(type, component, args = {}) {
+        const plugin = Misc.makePluginObject(nextPluginId++, component, args);
+
+        switch (type) {
+        case 'general':
+            this.generalSettingsBlocks.push(plugin);
+            break;
+        case 'network':
+            this.networkSettingsBlocks.push(plugin);
             break;
         default:
             break;

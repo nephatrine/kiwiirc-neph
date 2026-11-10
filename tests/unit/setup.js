@@ -1,5 +1,11 @@
 import Vue from 'vue';
 
+/* eslint-disable no-underscore-dangle */
+
+// src/main.js supplies these through webpack's DefinePlugin; jest does not.
+global.__VERSION__ = '2.0.0';
+global.__COMMITHASH__ = 'testhash';
+
 /*
  * The real app registers these globals in src/main.js. Tests mount components
  * directly, so mirror the small parts those components rely on. Without these,

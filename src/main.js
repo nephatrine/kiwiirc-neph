@@ -42,6 +42,8 @@ import AvailableLocales from '@/res/locales/available.json';
 import FallbackLocale from '@/../static/locales/en-us.json';
 
 // Global utilities
+// CommandTree is exposed to suggest-* plugins through kiwi.require().
+import '@/helpers/CommandTree';
 import '@/components/utils/TabbedView';
 import '@/components/utils/InputText';
 import '@/components/utils/IrcInput';
