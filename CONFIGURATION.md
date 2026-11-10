@@ -270,22 +270,22 @@ is used when a URL fragment supplies multiple connections.
 
 ## Connection and Network Defaults
 
-| Key                            | Default            | Description                                                                 |
-| ------------------------------ | ------------------ | --------------------------------------------------------------------------- |
-| `kiwiServer`                   | `/webirc/kiwiirc/` | WebSocket gateway URL. Empty disables gateway connections.                  |
-| `restricted`                   | `true`             | Locks the client to one network and makes connection details read-only.     |
-| `autoReconnect`                | `false`            | Reconnect automatically after a disconnect.                                 |
-| `autoReconnectMaxWait`         | `30000`            | Maximum reconnect delay in milliseconds.                                    |
-| `autoReconnectMaxRetries`      | `10`               | Maximum reconnect attempts.                                                 |
-| `disconnectOnSaslFail`         | `true`             | Disconnect when SASL authentication fails.                                  |
-| `defaultSaslMechanism`         | `AUTO`             | `AUTO` prefers SCRAM-SHA-256 over PLAIN.                                    |
-| `quitMessage`                  | `Page closed`      | Quit message sent when the client disconnects.                              |
-| `warnOnExit`                   | `true`             | Warn before leaving the page while connected.                               |
-| `persistencePreference`        | `keep`             | Per-network `draft/persistence` preference: `keep`, `default`, `on`, `off`. |
-| `hideSettings`                 | `null`             | Hide the settings button in the state browser.                              |
-| `hide_advanced`                | unset              | Hide the Advanced tab in app settings.                                      |
-| `allowRegisterProtocolHandler` | `false`            | Offer `irc://` and `ircs://` protocol registration when supported.          |
-| `ircFramework`                 | unset              | Advanced options passed to the `irc-framework` client.                      |
+| Key                            | Default            | Description                                                                                                                                  |
+| ------------------------------ | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kiwiServer`                   | `/webirc/kiwiirc/` | WebSocket gateway URL. Empty disables gateway connections.                                                                                   |
+| `restricted`                   | `true`             | Locks the client to one network and makes connection details read-only.                                                                      |
+| `autoReconnect`                | `false`            | Reconnect automatically after a disconnect.                                                                                                  |
+| `autoReconnectMaxWait`         | `30000`            | Maximum reconnect delay in milliseconds.                                                                                                     |
+| `autoReconnectMaxRetries`      | `10`               | Maximum reconnect attempts.                                                                                                                  |
+| `disconnectOnSaslFail`         | `true`             | Disconnect when SASL authentication fails.                                                                                                   |
+| `defaultSaslMechanism`         | `AUTO`             | `AUTO` prefers SCRAM-SHA-256 over PLAIN.                                                                                                     |
+| `quitMessage`                  | `Page closed`      | Quit message sent when the client disconnects.                                                                                               |
+| `warnOnExit`                   | `true`             | Warn before leaving the page while connected.                                                                                                |
+| `persistencePreference`        | `keep`             | Per-network `draft/persistence` preference: `keep`, `default`, `on`, `off`.                                                                  |
+| `hideSettings`                 | `null`             | Hide the settings button in the state browser.                                                                                               |
+| `hide_advanced`                | unset              | Hide the Advanced tab in app settings.                                                                                                       |
+| `allowRegisterProtocolHandler` | `false`/`true`     | Offer `irc://`/`ircs://` registration in Personal startup when a gateway is configured. Web defaults to `false`; desktop defaults to `true`. |
+| `ircFramework`                 | unset              | Advanced options passed to the `irc-framework` client.                                                                                       |
 
 ### Per-Network Defaults
 

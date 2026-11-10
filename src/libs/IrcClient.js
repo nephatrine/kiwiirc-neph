@@ -4,6 +4,7 @@ import strftime from 'strftime';
 import Irc from 'irc-framework';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import { each, find } from '@/helpers/Utils';
+import { extractBuffers } from '@/helpers/Misc';
 import { byteLength } from '@/helpers/LoginFields';
 import { buildOutgoingMessage, serializeOutgoingMessage } from '@/helpers/IrcSerialization';
 import typingMiddleware from './TypingMiddleware';
@@ -1306,6 +1307,21 @@ function clientMiddleware(state, network) {
                         network: network,
                         buffer: serverBuffer,
                     });
+                });
+            }
+
+            // Add any channels configured as the network's initial join list.
+            // Existing disabled buffers are left alone so the setting does not
+            // override a user's later choice.
+            if (network.connection.channels) {
+                extractBuffers(network.connection.channels).forEach(({ name, key }) => {
+                    const existed = !!network.bufferByName(name);
+                    const buffer = state.addBuffer(network.id, name);
+                    if (!buffer || existed) {
+                        return;
+                    }
+                    buffer.enabled = true;
+                    buffer.key = key || '';
                 });
             }
 

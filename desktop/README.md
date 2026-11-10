@@ -63,8 +63,9 @@ folder, and **File → Reload Desktop Configuration** after editing it.
 
 Desktop defaults `buffers.hide_preview_cards` and `buffers.show_topic_in_header`
 to `true`. It also defaults `buffers.scrollback_size` to `500` instead of the
-web default of `250`. Set any of these in `config.json5` to override the desktop
-defaults.
+web default of `250`, and enables `allowRegisterProtocolHandler` by default. The
+protocol registration action still requires Personal startup and a configured
+gateway. Set any of these in `config.json5` to override the desktop defaults.
 
 The file is JSON5, so comments are allowed. For example, to use a webirc
 gateway:

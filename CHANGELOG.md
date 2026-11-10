@@ -10,6 +10,10 @@ and this project adheres to
 
 ### Added
 
+- **IRC Links**: Personal startup now handles `irc://` and `ircs://` links by
+  focusing an existing network or opening a prefilled Add Network page. Initial
+  channel lists can be captured in network settings, and existing networks
+  prompt before joining channels from a link.
 - **Emoji Packs**: Added a global Emoji Packs settings block with a Local
   Packs/Remote Packs preference, moved Load Remote Emoji out of Chat Messages,
   moved the per-channel pack controls into the network App Settings tab, and
@@ -103,6 +107,9 @@ and this project adheres to
 
 ### Changed
 
+- **Desktop**: `allowRegisterProtocolHandler` now defaults to `true` for desktop
+  installations. The default IRC client action still requires Personal startup
+  and a configured gateway.
 - **App Settings**: Reordered Channel Defaults and shortened its labels.
 - **Chat Messages**: Reorganized message settings, renamed preview and nickname
   labels, defaulted presence changes off, and defaulted desktop scrollback to
@@ -188,6 +195,13 @@ and this project adheres to
 
 ### Fixed
 
+- **File Uploads**: Uploaded links are now tracked as pending messages and
+  confirmed by the server echo, so the sender no longer sees a duplicate copy.
+- **Desktop Settings**: The default IRC handler action is only offered on
+  HTTP(S) origins, and registration failures are ignored instead of surfacing an
+  unexpected error in the desktop shell.
+- **WebDAV Uploads**: The WebDAV password is now retained in the desktop secret
+  store and restored on startup instead of being dropped from the saved secrets.
 - **Desktop Connection**: Disabled renderer background throttling so IRC
   keepalives and reconnect timers keep running while the window is minimized or
   behind another application. Stalled connection attempts now time out instead

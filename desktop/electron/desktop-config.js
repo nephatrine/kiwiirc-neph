@@ -7,6 +7,7 @@ const CONFIG_FILENAME = 'config.json5';
 const DEFAULT_CONFIG = {
     windowTitle: 'Kiwi IRC',
     startupScreen: 'personal',
+    allowRegisterProtocolHandler: true,
     kiwiServer: '',
     restricted: false,
     theme: 'Kiwi Dark',

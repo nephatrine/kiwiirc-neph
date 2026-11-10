@@ -140,6 +140,7 @@ function createNewState() {
                                 encoding: network.connection.encoding,
                                 bncnetid: network.connection.bncnetid,
                                 account: network.connection.account,
+                                channels: network.connection.channels || '',
                             },
                             auto_commands: network.auto_commands,
                             settings: deepClone(network.settings),
@@ -408,6 +409,7 @@ function createNewState() {
                 network.connection.path = serverInfo.path || '';
                 network.connection.encoding = serverInfo.encoding || 'utf8';
                 network.connection.bncnetid = serverInfo.bncnetid || '';
+                network.connection.channels = serverInfo.channels || '';
 
                 if (serverInfo.services) {
                     network.services = serverInfo.services;

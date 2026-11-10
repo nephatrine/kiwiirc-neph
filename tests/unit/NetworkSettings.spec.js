@@ -104,6 +104,26 @@ describe('NetworkSettings server details', () => {
         ).toBeNull();
     });
 
+    it('shows the initial channel list only before channels exist', async() => {
+        network.connection.channels = '#one,#two key';
+        const comp = mount();
+
+        const input = fieldByLabel(comp, 'settings_channels');
+        expect(input).not.toBeNull();
+        expect(input.value).toBe('#one,#two key');
+        expect(input.disabled).toBe(false);
+        expect(input.placeholder).toBe('');
+
+        input.value = '#three';
+        input.dispatchEvent(new Event('input'));
+        await Vue.nextTick();
+        expect(network.connection.channels).toBe('#three');
+
+        s.addBuffer(network.id, '#existing');
+        await Vue.nextTick();
+        expect(comp.$el.querySelector('.kiwi-networksettings-channels')).toBeNull();
+    });
+
     it('locks only network details in restricted mode', async() => {
         s.settings.restricted = true;
         network.connection.account = 'account';

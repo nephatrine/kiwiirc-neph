@@ -22,6 +22,7 @@ describe('Desktop configuration', () => {
 
     it('uses a personal startup screen with no default network or gateway', () => {
         expect(DEFAULT_CONFIG.startupScreen).toBe('personal');
+        expect(DEFAULT_CONFIG.allowRegisterProtocolHandler).toBe(true);
         expect(DEFAULT_CONFIG.kiwiServer).toBe('');
         expect(DEFAULT_CONFIG.presetNetworks).toEqual([]);
         expect(DEFAULT_CONFIG.startupOptions.server).toBe('');
@@ -29,6 +30,15 @@ describe('Desktop configuration', () => {
         expect(DEFAULT_CONFIG.buffers.show_topic_in_header).toBe(true);
         expect(DEFAULT_CONFIG.buffers.scrollback_size).toBe(500);
         expect(DEFAULT_CONFIG.desktopHttp.maxUploadBytes).toBe(268435456);
+    });
+
+    it('allows desktop protocol registration to be disabled', () => {
+        const merged = mergeConfig(DEFAULT_CONFIG, {
+            allowRegisterProtocolHandler: false,
+        });
+
+        expect(merged.allowRegisterProtocolHandler).toBe(false);
+        expect(DEFAULT_CONFIG.allowRegisterProtocolHandler).toBe(true);
     });
 
     it('allows the desktop default for hiding bridged previews to be overridden', () => {

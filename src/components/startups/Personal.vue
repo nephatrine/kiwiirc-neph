@@ -2,43 +2,7 @@
     <div class="kiwi-personal">
         <h1>{{ $t('personal_client') }}</h1>
 
-        <div v-if="server && server.server && !readyToShowOptions" />
-        <div v-else-if="server && server.server">
-            <div v-if="addedNetworkToExisting">
-                <p>
-                    {{ $t('personal_added_to_existing') }}
-                </p>
-            </div>
-            <div v-else>
-                <p v-html="$t('personal_connect_to', { network: `<b>${server.server}</b>` })" />
-                <button
-                    v-if="hasOtherTab"
-                    type="button"
-                    class="u-button u-button-primary"
-                    @click="addNetworkToExistingTab"
-                >
-                    {{ $t('personal_add_existing_tab') }}
-                </button>
-                <button
-                    v-else
-                    type="button"
-                    class="u-button u-button-primary"
-                    @click="addNetwork()"
-                >
-                    Add network to Kiwi
-                </button>
-
-                <br>
-                <button
-                    type="button"
-                    class="u-button u-button-primary"
-                    @click="addNetwork(true)"
-                >
-                    {{ $t('personal_connect_temporary') }}
-                </button> <br>
-            </div>
-        </div>
-        <div v-else>
+        <div>
             <p>{{ $t('personal_addjoin') }}</p>
             <p>{{ $t('personal_return') }}</p>
 
@@ -63,180 +27,165 @@
 import * as TextFormatting from '@/helpers/TextFormatting';
 import * as Misc from '@/helpers/Misc';
 import BouncerProvider from '@/libs/BouncerProvider';
-import IPC from '@/libs/IPC';
 
 let firstRun = true;
 
 export default {
-    data: function data() {
-        return {
-            hasOtherTab: false,
-            addedNetworkToExisting: false,
-            server: null,
-            readyToShowOptions: false,
-            starting: false,
-        };
-    },
     computed: {
         networks() {
             return this.$state.networks;
         },
-        hasFragment() {
-            return window.location.hash && window.location.hash.length > 1;
-        },
     },
     created: function created() {
         this.$state.setting('allowRegisterProtocolHandler', true);
-
-        // Enable IPC listeners
-        // This is used to allow opening new servers in existing tab
-        IPC.init();
-
-        let server = null;
-        if (this.hasFragment) {
-            server = this.parseFragment();
-            this.server = server;
-        }
-
-        if (server) {
-            this.findOtherTabs().then((hasOtherTab) => {
-                if (hasOtherTab) {
-                    this.hasOtherTab = true;
-                    // Don't start the main kiwi app here as it's already open elsewhere
-                } else {
-                    this.listenForOtherTabs();
-                    this.init();
-                }
-
-                this.readyToShowOptions = true;
-            });
-        } else {
-            this.listenForOtherTabs();
-            this.init();
-        }
+        this.handleLaunch();
     },
     methods: {
-        listenForOtherTabs() {
-            IPC.on('message', (e) => { // respond to other tabs that are looking
-                let msg = e.data;
-                if (msg.type === 'ping' && this.networks.length > 0) {
-                    IPC.send({ type: 'pong' });
-                } else if (msg.type === 'addNetwork') {
-                    let network = this.networks.find((n) => n.name === msg.server);
-                    if (!network) {
-                        network = this.$state.addNetwork(msg.server, msg.nick || ('Guest' + Math.floor(Math.random() * 100)), msg);
-                    }
-                    network.showServerBuffer('settings');
-                }
-            });
-        },
         addEmptyNetwork() {
             let nick = 'Guest' + Math.floor(Math.random() * 100);
             let network = this.$state.addNetwork(TextFormatting.t('new_network'), nick, {});
             network.showServerBuffer('settings');
         },
-        async findOtherTabs() { // ping other tabs to try find one with added networks
-            return new Promise((resolve, reject) => {
-                const handleIPCMessage = (e) => {
-                    let msg = e.data;
-                    if (msg.type === 'pong') {
-                        clearTimeout(timer);
-                        resolve(true);
-                    }
-                };
-
-                let timer = setTimeout((e) => {
-                    IPC.removeListener('message', handleIPCMessage);
-                    resolve(false);
-                }, 200);
-
-                IPC.on('message', handleIPCMessage);
-                IPC.send({ type: 'ping' });
-            });
-        },
-        addNetworkToExistingTab() {
-            let nick = 'Guest' + Math.floor(Math.random() * 100);
-            let con = this.server;
-
-            this.$state.addNetwork(TextFormatting.t('new_network'), nick, {});
-
-            IPC.send({
-                nick: nick,
-                server: con.server,
-                port: con.port,
-                tls: con.tls,
-                direct: con.direct,
-                password: con.password || '',
-                type: 'addNetwork',
-            });
-
-            window.location.hash = '';
-
-            this.addedNetworkToExisting = true;
-        },
-        async addNetwork(temporary = false) {
-            if (!this.server || this.starting) {
-                return;
-            }
-            this.starting = true;
-
-            let con = this.server;
-
-            if (temporary) {
-                try {
-                    await this.$state.persistence.forgetState();
-                } catch (err) {
-                    this.$state.resetState();
-                    window.console.warn('Failed to clear saved state', err);
-                }
-                this.$state.persistence.storageKey = null;
-
-                this.init();
+        async handleLaunch() {
+            const connection = this.parseFragment();
+            if (connection) {
+                window.location.hash = '';
             }
 
-            let network = this.$state.getNetworkFromAddress(con.server);
-            if (!network) {
-                network = this.$state.addNetwork(con.server, con.nick || ('Guest' + Math.floor(Math.random() * 100)), {
-                    server: con.server,
-                    port: con.port,
-                    tls: con.tls,
-                    direct: con.direct,
-                    password: con.password || '',
-                });
+            await this.init();
+
+            if (connection) {
+                this.applyIrcLink(connection);
             }
-
-            // A saved network may still carry transport settings from an
-            // older deployment. The current connection attempt wins.
-            network.connection.server = con.server;
-            network.connection.port = con.port;
-            network.connection.tls = con.tls;
-            network.connection.direct = !!con.direct;
-            network.connection.path = con.path || '';
-
-            window.location.hash = '';
-            network.showServerBuffer('settings');
-
-            this.$emit('start', {
-                fallbackComponent: this.constructor,
-            });
-            this.starting = false;
         },
         parseFragment() {
-            if (window.location.hash.substr(1)) {
-                let fragment = window.location.hash.substr(1);
-
-                // Check to see if we're dealing with an encoded irc: uri (browsers do this
-                // when clicking an IRC link)
-                let uriCheck = fragment.substr(0, 7).toLowerCase();
-                if (uriCheck === 'ircs%3a' || uriCheck.substr(0, 6) === 'irc%3a') {
-                    fragment = decodeURIComponent(fragment);
-                }
-
-                let connections = Misc.parseIrcUri(fragment);
-                let con = connections[0];
-                return con;
+            if (!window.location.hash || window.location.hash.length < 2) {
+                return null;
             }
-            return null;
+
+            let fragment = window.location.hash.substr(1);
+            const uriCheck = fragment.substr(0, 7).toLowerCase();
+            if (uriCheck === 'ircs%3a' || uriCheck.substr(0, 6) === 'irc%3a') {
+                try {
+                    fragment = decodeURIComponent(fragment);
+                } catch {
+                    return null;
+                }
+            }
+
+            if (!/^ircs?:\/\//i.test(fragment)) {
+                return null;
+            }
+
+            const connection = Misc.parseIrcUri(fragment)[0];
+            if (!connection || !connection.server ||
+                !/^[a-z0-9.-]+$/i.test(connection.server)
+            ) {
+                return null;
+            }
+            if (!Number.isInteger(connection.port) ||
+                connection.port < 1 ||
+                connection.port > 65535
+            ) {
+                return null;
+            }
+
+            connection.nick = String(connection.nick || '')
+                .replace(/[\x00-\x20\x7F]/g, '')
+                .slice(0, 64);
+            connection.channels = (connection.channels || []).filter((name) => (
+                /^[#&][^\s,\x00-\x1F\x7F]+$/.test(name)
+            ));
+
+            return connection;
+        },
+        applyIrcLink(connection) {
+            const existing = this.$state.getNetworkFromAddress(connection.server);
+            if (existing) {
+                this.focusNetwork(existing);
+                this.promptJoinChannels(existing, connection.channels);
+                return;
+            }
+
+            const nick = connection.nick ||
+                ('Guest' + Math.floor(Math.random() * 100));
+            const network = this.$state.addNetwork(connection.server, nick, {
+                server: connection.server,
+                port: connection.port,
+                tls: connection.tls,
+                direct: connection.direct,
+                encoding: connection.encoding,
+                channels: connection.channels.join(','),
+            });
+
+            network.connection.server = connection.server;
+            network.connection.port = connection.port;
+            network.connection.tls = connection.tls;
+            network.connection.direct = !!connection.direct;
+            network.connection.path = connection.path || '';
+            network.connection.encoding = connection.encoding || 'utf8';
+            network.connection.channels = connection.channels.join(',');
+            network.showServerBuffer('settings');
+        },
+        focusNetwork(network) {
+            this.$state.$emit('active.component', null);
+            this.$state.setActiveBuffer(network.id, network.serverBuffer().name);
+        },
+        missingChannels(network, channels) {
+            return (channels || []).filter((name) => {
+                const buffer = network.bufferByName(name);
+                return !buffer || !buffer.joined;
+            });
+        },
+        appendChannels(network, channels) {
+            const parsed = Misc.extractBuffers(network.connection.channels || '');
+            const seen = new Set(parsed.map((buffer) => buffer.name.toLowerCase()));
+
+            (channels || []).forEach((name) => {
+                const key = name.toLowerCase();
+                if (seen.has(key)) {
+                    return;
+                }
+                seen.add(key);
+                parsed.push({ name, key: '' });
+            });
+
+            const names = parsed.map((buffer) => buffer.name).join(',');
+            const keys = parsed.map((buffer) => buffer.key || '')
+                .join(',')
+                .replace(/,+$/, '');
+            network.connection.channels = keys ? names + ' ' + keys : names;
+        },
+        promptJoinChannels(network, channels) {
+            const missing = this.missingChannels(network, channels);
+            if (!missing.length) {
+                return;
+            }
+
+            const message = this.$t('personal_join_channels_confirm', {
+                network: network.name || network.connection.server,
+                channels: missing.join('\n'),
+            });
+            if (typeof window.confirm === 'function' && !window.confirm(message)) {
+                return;
+            }
+
+            if (network.state !== 'connected') {
+                this.appendChannels(network, missing);
+                return;
+            }
+
+            missing.forEach((name) => {
+                const existed = !!network.bufferByName(name);
+                const buffer = this.$state.addBuffer(network.id, name);
+                if (!buffer) {
+                    return;
+                }
+                buffer.enabled = true;
+                if (!existed || !buffer.joined) {
+                    network.ircClient.join(name, buffer.key || '');
+                }
+            });
         },
         toggleStateBrowser() {
             this.$state.$emit('statebrowser.show');

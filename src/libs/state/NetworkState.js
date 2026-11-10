@@ -47,6 +47,8 @@ export default class NetworkState {
             nick: '',
             account: '',
             sasl_mechanism: 'AUTO',
+            // Initial channel list, e.g. "#one,#two key1,key2".
+            channels: '',
         };
         const config = appState.settings || {};
         const bufferDefaults = config.buffers || {};

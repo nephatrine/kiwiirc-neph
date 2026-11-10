@@ -163,6 +163,48 @@ describe('AppSettings channel defaults', () => {
         expect(s.setting('emojiPackPreference')).toBe('remote');
     });
 
+    it('only offers protocol registration in Personal mode with a gateway', () => {
+        const descriptor = Object.getOwnPropertyDescriptor(
+            navigator,
+            'registerProtocolHandler'
+        );
+        const handler = jest.fn();
+
+        try {
+            Object.defineProperty(navigator, 'registerProtocolHandler', {
+                configurable: true,
+                value: undefined,
+            });
+            s.setting('startupScreen', 'personal');
+            s.setting('kiwiServer', '/webirc/kiwiirc/');
+            s.setting('allowRegisterProtocolHandler', true);
+            expect(AppSettings.computed.canRegisterProtocolHandler.call({ $state: s }))
+                .toBe(false);
+
+            Object.defineProperty(navigator, 'registerProtocolHandler', {
+                configurable: true,
+                value: handler,
+            });
+            expect(AppSettings.computed.canRegisterProtocolHandler.call({ $state: s }))
+                .toBe(true);
+
+            s.setting('startupScreen', 'customServer');
+            expect(AppSettings.computed.canRegisterProtocolHandler.call({ $state: s }))
+                .toBe(false);
+
+            s.setting('startupScreen', 'personal');
+            s.setting('kiwiServer', '');
+            expect(AppSettings.computed.canRegisterProtocolHandler.call({ $state: s }))
+                .toBe(false);
+        } finally {
+            if (descriptor) {
+                Object.defineProperty(navigator, 'registerProtocolHandler', descriptor);
+            } else {
+                delete navigator.registerProtocolHandler;
+            }
+        }
+    });
+
     it('lists upload services by platform', () => {
         delete window.kiwiDesktop;
         expect(AppSettings.computed.fileuploadServices.call({}).map((service) => (

@@ -486,6 +486,10 @@ msgstr "Channel Defaults"
 msgid "settings_channel_defaults_hint"
 msgstr "These defaults apply to channels without their own override."
 
+#: Initial channel list for a network
+msgid "settings_channels"
+msgstr "Channels (Comma-Delimited)"
+
 #: Default notifications
 msgid "settings_alert_on"
 msgstr "Default Notifications"
@@ -2011,6 +2015,10 @@ msgstr "Add your networks. Join your channels."
 #: They will be here when you come back.
 msgid "personal_return"
 msgstr "They will be here when you come back."
+
+#: Ask whether to join channels from an IRC link
+msgid "personal_join_channels_confirm"
+msgstr "Join these channels on {{network}}?\n\n{{channels}}"
 
 #: Add a Network
 msgid "personal_add"

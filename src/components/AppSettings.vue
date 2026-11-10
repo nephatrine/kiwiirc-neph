@@ -897,7 +897,15 @@ export default {
             return val === '1';
         },
         canRegisterProtocolHandler() {
-            return !!navigator.registerProtocolHandler && this.$state.setting('allowRegisterProtocolHandler');
+            if (this.$state.setting('startupScreen') !== 'personal' ||
+                !String(this.$state.setting('kiwiServer') || '').trim() ||
+                !navigator.registerProtocolHandler ||
+                !this.$state.setting('allowRegisterProtocolHandler')
+            ) {
+                return false;
+            }
+            return document.location.protocol === 'http:' ||
+                document.location.protocol === 'https:';
         },
         activeNetworkIsUtf8() {
             let activeNetwork = this.$state.getActiveNetwork();
@@ -1317,9 +1325,27 @@ export default {
             });
         },
         makeDefaultProtocolHandler() {
+            if (!this.canRegisterProtocolHandler) {
+                return;
+            }
+
             const { origin, pathname } = document.location;
-            navigator.registerProtocolHandler('irc', origin + pathname + '#%s', 'Kiwi IRC');
-            navigator.registerProtocolHandler('ircs', origin + pathname + '#%s', 'Kiwi IRC');
+            try {
+                navigator.registerProtocolHandler(
+                    'irc',
+                    origin + pathname + '#%s',
+                    'Kiwi IRC'
+                );
+                navigator.registerProtocolHandler(
+                    'ircs',
+                    origin + pathname + '#%s',
+                    'Kiwi IRC'
+                );
+            } catch {
+                // Some embedded/desktop origins reject custom schemes even
+                // though the API exists. The button is hidden there, but avoid
+                // surfacing a stray unhandled error if it is invoked directly.
+            }
         },
     },
 };

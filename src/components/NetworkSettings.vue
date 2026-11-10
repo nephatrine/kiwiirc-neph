@@ -48,6 +48,17 @@
                     :show-path="!isBouncerManaged && network.connection.direct"
                 />
 
+                <div
+                    v-if="!hasChannels && !isBouncerManaged && !isBouncerController"
+                    class="kiwi-networksettings-channels"
+                >
+                    <input-text
+                        v-model="network.connection.channels"
+                        :label="$t('settings_channels')"
+                        :disabled="connectionDetailsLocked"
+                    />
+                </div>
+
                 <div v-if="isPersonalMode" class="kiwi-networksettings-password-memory">
                     <label class="u-checkbox-wrapper">
                         <span>{{ $t('settings_remember_password_network') }}</span>
@@ -323,6 +334,9 @@ export default {
         },
         isConnected() {
             return this.network.state === 'connected';
+        },
+        hasChannels() {
+            return this.network.buffers.some((buffer) => buffer.isChannel());
         },
         nickLen() {
             return this.supportLimit('NICKLEN');
