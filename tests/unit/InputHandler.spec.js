@@ -1,6 +1,13 @@
 import { TextEncoder } from 'util';
 import InputHandler from '@/libs/InputHandler';
+import GlobalApi from '@/libs/GlobalApi';
 import * as TextFormatting from '@/helpers/TextFormatting';
+
+/* eslint-disable no-underscore-dangle */
+
+// src/main.js supplies these through webpack's DefinePlugin; jest does not.
+global.__VERSION__ = '2.0.0';
+global.__COMMITHASH__ = 'testhash';
 
 // jsdom lacks TextEncoder, which the advertised byte-limit checks use.
 if (typeof global.TextEncoder === 'undefined') {
@@ -104,6 +111,37 @@ describe('InputHandler /fakesub', () => {
         handler.processLine('/fakesub Hello', { network, buffer });
 
         expect(network.appState.addMessage).not.toHaveBeenCalled();
+        expect(network.ircClient.raw).not.toHaveBeenCalled();
+    });
+});
+
+describe('InputHandler plugin commands', () => {
+    it('dispatches registered commands case-insensitively', () => {
+        const handler = makeHandler();
+        const { network, buffer } = makeContext();
+        const api = GlobalApi.singleton();
+        const pluginHandler = jest.fn((event) => {
+            event.handled = true;
+        });
+
+        api.registerCommand('LIM', pluginHandler);
+
+        try {
+            handler.processLine('/LiM hello world', { network, buffer });
+        } finally {
+            delete api.commands.lim;
+        }
+
+        expect(pluginHandler).toHaveBeenCalledWith(
+            expect.objectContaining({
+                command: 'LiM',
+                params: 'hello world',
+                handled: true,
+            }),
+            'LiM',
+            'hello world',
+            { network, buffer }
+        );
         expect(network.ircClient.raw).not.toHaveBeenCalled();
     });
 });

@@ -1,14 +1,6 @@
 import ControlInput from '@/components/ControlInput';
 
-jest.mock('@/libs/LazyLoad', () => {
-    const commands = jest.requireActual('@/libs/LimnoriaCommands');
-    return {
-        getLimnoriaCommands: () => commands,
-        loadLimnoriaCommands: () => Promise.resolve(commands),
-    };
-});
-
-describe('ControlInput Limnoria autocomplete', () => {
+describe('ControlInput autocomplete', () => {
     function makeContext() {
         const input = {
             getRawText: jest.fn(() => '/lim net'),
@@ -16,34 +8,26 @@ describe('ControlInput Limnoria autocomplete', () => {
             setCurrentWord: jest.fn(),
         };
         const network = {
+            id: 1,
             state: 'connected',
             nick: 'TestNick',
             caseCompare: (left, right) => (
                 String(left).toLowerCase() === String(right).toLowerCase()
             ),
             hasCap: jest.fn((cap) => cap === 'message-tags'),
-            setting: jest.fn((name) => {
-                if (name === 'limnoriaSuggestions') {
-                    return true;
-                }
-                if (name === 'limnoriaName') {
-                    return 'SupyBot';
-                }
-                if (name === 'limnoriaPrefix') {
-                    return '!';
-                }
-                if (name === 'limnoriaPlugins') {
-                    return 'Admin, Channel, Config, Misc, Owner, User';
-                }
-                return '';
-            }),
+            supportsTag: jest.fn(() => true),
+            setting: jest.fn(() => ''),
             ircClient: {
                 tagmsg: jest.fn(),
             },
         };
         const context = {
             network,
-            buffer: {},
+            buffer: {
+                name: '#test',
+                isChannel: () => true,
+                isQuery: () => false,
+            },
             $refs: {
                 input,
                 autocomplete: {
@@ -52,32 +36,31 @@ describe('ControlInput Limnoria autocomplete', () => {
             },
             $state: {
                 setting: jest.fn(() => true),
+                ui: {
+                    autocomplete_always_networks: [],
+                },
             },
             $nextTick: (cb) => cb(),
-            limnoria_pending: null,
-            limnoria_commands_ready: true,
-            limnoria_commands_loading: false,
+            autocompleteProviders: {},
             autocomplete_items: [],
             autocomplete_filter: '',
             autocomplete_filtering: true,
-            autocomplete_limnoria: false,
+            autocomplete_remote: false,
+            autocomplete_remote_context: null,
+            autocomplete_pending: null,
             autocomplete_open: false,
-            limnoriaEnabledPlugins: ControlInput.methods.limnoriaEnabledPlugins,
-            ensureLimnoriaCommands: ControlInput.methods.ensureLimnoriaCommands,
-            limnoriaCommandSuggestionsFor: ControlInput.methods.limnoriaCommandSuggestionsFor,
-            shouldCompleteLimnoria: ControlInput.methods.shouldCompleteLimnoria,
+            providerAutocompleteResult: ControlInput.methods.providerAutocompleteResult,
+            openProviderAutocomplete: ControlInput.methods.openProviderAutocomplete,
             shouldCompleteEmoji: ControlInput.methods.shouldCompleteEmoji,
             emojiAutocompleteToken: ControlInput.methods.emojiAutocompleteToken,
             applyEmojiAutocompleteValue: ControlInput.methods.applyEmojiAutocompleteValue,
-            openLimnoriaAutocomplete: ControlInput.methods.openLimnoriaAutocomplete,
-            maybeRequestLimnoriaAutocomplete: ControlInput.methods.maybeRequestLimnoriaAutocomplete,
-            limnoriaAutocompleteContext: ControlInput.methods.limnoriaAutocompleteContext,
-            limnoriaInputText: ControlInput.methods.limnoriaInputText,
-            limnoriaSyntaxGhost: ControlInput.methods.limnoriaSyntaxGhost,
+            maybeRequestAutocomplete: ControlInput.methods.maybeRequestAutocomplete,
+            clearAutocompletePending: ControlInput.methods.clearAutocompletePending,
+            requestAutocomplete: ControlInput.methods.requestAutocomplete,
+            onAutocompleteRequestEcho: ControlInput.methods.onAutocompleteRequestEcho,
+            onAutocompleteResponse: ControlInput.methods.onAutocompleteResponse,
             current_input_value: '',
-            clearLimnoriaPending: ControlInput.methods.clearLimnoriaPending,
-            requestLimnoriaAutocomplete: ControlInput.methods.requestLimnoriaAutocomplete,
-            onLimnoriaResponse: ControlInput.methods.onLimnoriaResponse,
+            onAutocompleteToggle: ControlInput.methods.onAutocompleteToggle,
             onAutocompleteCancel: ControlInput.methods.onAutocompleteCancel,
             onAutocompleteTemp: ControlInput.methods.onAutocompleteTemp,
             onAutocompleteSelected: ControlInput.methods.onAutocompleteSelected,
@@ -87,236 +70,326 @@ describe('ControlInput Limnoria autocomplete', () => {
         return { context, network, input };
     }
 
-    it('sends an autocomplete request after /lim text', () => {
+    it('sends an autocomplete request for /auto text', () => {
         const { context, network } = makeContext();
 
-        expect(ControlInput.methods.requestLimnoriaAutocomplete.call(context, '/lim net'))
-            .toBe(true);
-        expect(network.ircClient.tagmsg).toHaveBeenCalledWith('SupyBot', {
-            '+draft/autocomplete-request': 'net',
+        expect(ControlInput.methods.requestAutocomplete.call(
+            context,
+            '/auto SupyBot: foo'
+        )).toBe(true);
+        expect(network.ircClient.tagmsg).toHaveBeenCalledWith('#test', {
+            '+draft/autocomplete-request': 'SupyBot: foo',
         });
-        context.clearLimnoriaPending();
+        expect(context.autocomplete_remote_context).toEqual({
+            prefix: '/auto ',
+            text: 'SupyBot: foo',
+        });
+        context.clearAutocompletePending();
     });
 
-    it('shows local /lim command suggestions', () => {
-        const { context } = makeContext();
+    it('sends always-auto requests without the /auto prefix', () => {
+        const { context, network } = makeContext();
+        context.autocompleteAlways = true;
 
-        expect(ControlInput.methods.shouldCompleteLimnoria.call(context, '/lim cap'))
-            .toBe(false);
-        expect(ControlInput.methods.shouldCompleteLimnoria.call(
+        expect(ControlInput.methods.requestAutocomplete.call(
             context,
-            '/lim channel cap'
+            'SupyBot: foo'
         )).toBe(true);
-        expect(ControlInput.methods.shouldCompleteLimnoria.call(
+        expect(network.ircClient.tagmsg).toHaveBeenCalledWith('#test', {
+            '+draft/autocomplete-request': 'SupyBot: foo',
+        });
+        expect(context.autocomplete_remote_context).toEqual({
+            prefix: '',
+            text: 'SupyBot: foo',
+        });
+        context.clearAutocompletePending();
+    });
+
+    it('keeps slash commands local in always-auto mode', () => {
+        const { context, network } = makeContext();
+        context.autocompleteAlways = true;
+
+        expect(ControlInput.methods.maybeRequestAutocomplete.call(
             context,
-            '/msg SupyBot net'
+            '/lim cap'
         )).toBe(false);
+        expect(network.ircClient.tagmsg).not.toHaveBeenCalled();
+    });
 
-        expect(ControlInput.methods.openLimnoriaAutocomplete.call(
+    it('toggles always-auto mode per network', () => {
+        const { context, network } = makeContext();
+
+        ControlInput.methods.onAutocompleteToggle.call(context, { network });
+        expect(context.$state.ui.autocomplete_always_networks).toEqual([network.id]);
+
+        ControlInput.methods.onAutocompleteToggle.call(context, { network });
+        expect(context.$state.ui.autocomplete_always_networks).toEqual([]);
+    });
+
+    it('returns the first active autocomplete provider result', () => {
+        const { context } = makeContext();
+        const first = {
+            suggest: jest.fn(() => null),
+        };
+        const second = {
+            suggest: jest.fn(() => ({
+                active: true,
+                items: [{ text: 'join', type: 'command' }],
+                filter: 'jo',
+                filtering: false,
+            })),
+        };
+        context.autocompleteProviders = {
+            first,
+            second,
+        };
+
+        const result = ControlInput.methods.providerAutocompleteResult.call(
             context,
-            '/lim channel cap',
-            'cap',
-            true
+            '/lim jo',
+            'jo'
+        );
+
+        expect(first.suggest).toHaveBeenCalledWith({
+            input: '/lim jo',
+            token: 'jo',
+            network: context.network,
+            buffer: context.buffer,
+        });
+        expect(second.suggest).toHaveBeenCalledWith({
+            input: '/lim jo',
+            token: 'jo',
+            network: context.network,
+            buffer: context.buffer,
+        });
+        expect(result).toEqual({
+            active: true,
+            items: [{ text: 'join', type: 'command' }],
+            filter: 'jo',
+            filtering: false,
+        });
+    });
+
+    it('treats an active provider with no items as handled', () => {
+        const { context } = makeContext();
+        context.autocompleteProviders = {
+            empty: {
+                suggest: () => ({ active: true, items: [] }),
+            },
+        };
+
+        const result = ControlInput.methods.providerAutocompleteResult.call(
+            context,
+            '/lim ',
+            ''
+        );
+        context.autocomplete_open = true;
+
+        expect(result).toEqual({
+            active: true,
+            items: [],
+            filter: '',
+            filtering: true,
+        });
+        expect(ControlInput.methods.openProviderAutocomplete.call(
+            context,
+            result,
+            ''
         )).toBe(true);
-        expect(context.autocomplete_items.map((item) => item.text))
-            .toEqual(['capability']);
-        expect(context.autocomplete_filter).toBe('cap');
-        expect(context.autocomplete_filtering).toBe(true);
+        expect(context.autocomplete_open).toBe(false);
+    });
+
+    it('opens provider suggestions with their filter settings', () => {
+        const { context } = makeContext();
+        const result = {
+            active: true,
+            items: [{ text: 'join', type: 'command' }],
+            filter: 'jo',
+            filtering: false,
+        };
+
+        expect(ControlInput.methods.openProviderAutocomplete.call(
+            context,
+            result,
+            'join'
+        )).toBe(true);
+        expect(context.autocomplete_items).toEqual(result.items);
+        expect(context.autocomplete_filter).toBe('jo');
+        expect(context.autocomplete_filtering).toBe(false);
         expect(context.autocomplete_open).toBe(true);
     });
 
-    it('shows a syntax hint for resolved Limnoria commands', () => {
-        const { context, input } = makeContext();
+    it('uses the first non-empty provider hint', () => {
+        const { context } = makeContext();
+        context.current_input_value = '/lim time ctime';
+        context.autocompleteProviders = {
+            empty: {
+                suggest: () => null,
+                hint: () => '',
+            },
+            limnoria: {
+                suggest: () => null,
+                hint: () => 'time ctime [<seconds since epoch>]',
+            },
+        };
 
-        input.getRawText.mockReturnValue('/lim time ctime ');
-        context.current_input_value = '/lim time ctime ';
-        expect(ControlInput.methods.limnoriaSyntaxGhost.call(context))
-            .toBe('time ctime [<seconds since epoch>]');
-
-        input.getRawText.mockReturnValue('/lim time ');
-        context.current_input_value = '/lim time ';
-        expect(ControlInput.methods.limnoriaSyntaxGhost.call(context)).toBe('');
-
-        input.getRawText.mockReturnValue('/msg SupyBot time ctime');
-        context.current_input_value = '/msg SupyBot time ctime';
-        expect(ControlInput.methods.limnoriaSyntaxGhost.call(context))
+        expect(ControlInput.computed.providerAutocompleteHint.call(context))
             .toBe('time ctime [<seconds since epoch>]');
     });
 
-    it('honors the configured Limnoria plugin list', () => {
+    it('does not send remote requests for /lim, /msg, or prefix text', () => {
         const { context, network } = makeContext();
-        network.setting.mockImplementation((name) => {
-            if (name === 'limnoriaSuggestions') {
-                return true;
-            }
-            if (name === 'limnoriaName') {
-                return 'SupyBot';
-            }
-            if (name === 'limnoriaPlugins') {
-                return 'Admin';
-            }
-            return '';
-        });
 
-        expect(ControlInput.methods.shouldCompleteLimnoria.call(
+        expect(ControlInput.methods.maybeRequestAutocomplete.call(context, '/lim cap'))
+            .toBe(false);
+        expect(ControlInput.methods.maybeRequestAutocomplete.call(
             context,
-            '/lim games '
+            '/msg SupyBot net'
         )).toBe(false);
-        expect(ControlInput.methods.shouldCompleteLimnoria.call(
-            context,
-            '/lim admin'
-        )).toBe(true);
-
-        expect(ControlInput.methods.openLimnoriaAutocomplete.call(
-            context,
-            '/lim ',
-            '',
-            true
-        )).toBe(true);
-        expect(context.autocomplete_items.length).toBeGreaterThan(0);
-        expect(context.autocomplete_items.every((item) => item.plugin === 'Admin'))
-            .toBe(true);
+        expect(ControlInput.methods.maybeRequestAutocomplete.call(context, '!net'))
+            .toBe(false);
+        expect(network.ircClient.tagmsg).not.toHaveBeenCalled();
     });
 
-    it('requests remote autocomplete even when local suggestions exist', () => {
+    it('sends /auto requests to a query target', () => {
         const { context, network } = makeContext();
+        context.buffer = {
+            name: 'SupyBot',
+            isChannel: () => false,
+            isQuery: () => true,
+        };
 
-        expect(ControlInput.methods.maybeRequestLimnoriaAutocomplete.call(
+        expect(ControlInput.methods.requestAutocomplete.call(
             context,
-            '/lim cap'
+            '/auto misc '
         )).toBe(true);
         expect(network.ircClient.tagmsg).toHaveBeenCalledWith('SupyBot', {
-            '+draft/autocomplete-request': 'cap',
+            '+draft/autocomplete-request': 'misc ',
         });
-        context.clearLimnoriaPending();
+        context.clearAutocompletePending();
     });
 
     it('does not request again while a request is pending or remote mode is active', () => {
         const { context, network } = makeContext();
-        context.limnoria_pending = { timer: null };
+        context.autocomplete_pending = { timer: null };
 
-        expect(ControlInput.methods.maybeRequestLimnoriaAutocomplete.call(
+        expect(ControlInput.methods.maybeRequestAutocomplete.call(
             context,
-            '/lim net'
+            '/auto net'
         )).toBe(false);
         expect(network.ircClient.tagmsg).not.toHaveBeenCalled();
 
-        context.limnoria_pending = null;
-        context.autocomplete_limnoria = true;
-        expect(ControlInput.methods.maybeRequestLimnoriaAutocomplete.call(
+        context.autocomplete_pending = null;
+        context.autocomplete_remote = true;
+        expect(ControlInput.methods.maybeRequestAutocomplete.call(
             context,
-            '/lim net'
+            '/auto net'
         )).toBe(false);
         expect(network.ircClient.tagmsg).not.toHaveBeenCalled();
     });
 
-    it('recognizes /msg and prefix invocation forms', () => {
-        const { context } = makeContext();
-
-        expect(ControlInput.methods.limnoriaAutocompleteContext.call(
-            context,
-            '/msg supybot net'
-        )).toEqual({
-            name: 'SupyBot',
-            text: 'net',
-            prefix: '/msg supybot ',
-        });
-        expect(ControlInput.methods.limnoriaAutocompleteContext.call(context, '!net'))
-            .toEqual({
-                name: 'SupyBot',
-                text: 'net',
-                prefix: '!',
-            });
-        expect(ControlInput.methods.limnoriaAutocompleteContext.call(context, '!'))
-            .toBeNull();
-        expect(ControlInput.methods.limnoriaAutocompleteContext.call(
-            context,
-            '/msg OtherBot net'
-        )).toBeNull();
-    });
-
-    it('sends stripped requests privately for every invocation form', () => {
-        const { context, network } = makeContext();
-
-        ControlInput.methods.requestLimnoriaAutocomplete.call(context, '!net');
-        expect(network.ircClient.tagmsg).toHaveBeenLastCalledWith('SupyBot', {
-            '+draft/autocomplete-request': 'net',
-        });
-        context.clearLimnoriaPending();
-
-        ControlInput.methods.requestLimnoriaAutocomplete.call(
-            context,
-            '/msg SupyBot net'
-        );
-        expect(network.ircClient.tagmsg).toHaveBeenLastCalledWith('SupyBot', {
-            '+draft/autocomplete-request': 'net',
-        });
-        context.clearLimnoriaPending();
-    });
-
-    it('turns a response into full command suggestions', () => {
+    it('turns bot responses into sourced command suggestions', () => {
         const { context, input } = makeContext();
-        context.autocomplete_items = [{
-            text: 'capability',
-            description: 'capability <add|remove> ...',
-            help: 'Adds or removes a capability.',
-            type: 'command',
-        }];
-        context.autocomplete_open = true;
-        context.limnoria_pending = {
-            text: 'net',
-            prefix: '/lim ',
-            name: 'SupyBot',
+        input.getRawText.mockReturnValue('/auto misc ');
+        context.autocomplete_items = [
+            { text: '/action', type: 'command' },
+            { text: '/msg', type: 'command' },
+        ];
+        context.autocomplete_open = false;
+        context.autocomplete_pending = {
+            text: 'misc ',
+            prefix: '/auto ',
+            target: '#test',
             label: '',
             msgid: '',
             timer: null,
         };
 
-        ControlInput.methods.onLimnoriaResponse.call(context, {
+        ControlInput.methods.onAutocompleteResponse.call(context, {
             network: context.network,
             event: {
-                nick: 'SupyBot',
+                nick: 'BotOne',
                 tags: {
-                    '+draft/autocomplete-response': 'work\twork2',
+                    '+draft/autocomplete-response': 'help\tinfo',
                 },
             },
         });
 
         expect(context.autocomplete_open).toBe(true);
         expect(context.autocomplete_items.map((item) => item.text))
-            .toEqual(['network', 'network2']);
-        expect(context.autocomplete_items.every((item) => item.limnoria)).toBe(true);
-        expect(context.autocomplete_items.every((item) => item.prefix === '/lim '))
+            .toEqual(['misc help', 'misc info']);
+        expect(context.autocomplete_items.every((item) => item.remote)).toBe(true);
+        expect(context.autocomplete_items.every((item) => item.description === 'BotOne'))
             .toBe(true);
-        expect(context.autocomplete_limnoria).toBe(true);
+        expect(context.autocomplete_items.every((item) => item.prefix === '/auto '))
+            .toBe(true);
+        expect(context.autocomplete_remote).toBe(true);
         expect(context.autocomplete_filtering).toBe(true);
-        expect(context.limnoria_pending).toBeNull();
+        expect(context.autocomplete_pending).not.toBeNull();
         expect(context.$refs.autocomplete.resetSelection).toHaveBeenCalled();
         expect(input.setPlainText).not.toHaveBeenCalled();
     });
 
-    it('keeps local suggestions when a response is empty', () => {
-        const { context } = makeContext();
-        context.autocomplete_items = [{
-            text: 'capability',
-            description: 'capability <add|remove> ...',
-            help: 'Adds or removes a capability.',
-            type: 'command',
-        }];
-        context.autocomplete_open = true;
-        context.limnoria_pending = {
-            text: 'net',
-            prefix: '/lim ',
-            name: 'SupyBot',
+    it('accumulates responses from multiple bots', () => {
+        const { context, input } = makeContext();
+        input.getRawText.mockReturnValue('/auto misc ');
+        context.autocomplete_pending = {
+            text: 'misc ',
+            prefix: '/auto ',
+            target: '#test',
             label: '',
             msgid: '',
             timer: null,
         };
 
-        ControlInput.methods.onLimnoriaResponse.call(context, {
+        ControlInput.methods.onAutocompleteResponse.call(context, {
             network: context.network,
             event: {
-                nick: 'SupyBot',
+                nick: 'BotOne',
+                tags: { '+draft/autocomplete-response': 'help' },
+            },
+        });
+        ControlInput.methods.onAutocompleteResponse.call(context, {
+            network: context.network,
+            event: {
+                nick: 'BotTwo',
+                tags: { '+draft/autocomplete-response': 'help\tversion' },
+            },
+        });
+
+        expect(context.autocomplete_items.map((item) => (
+            `${item.description}:${item.text}`
+        ))).toEqual([
+            'BotOne:misc help',
+            'BotTwo:misc help',
+            'BotTwo:misc version',
+        ]);
+    });
+
+    it('keeps the list open when a response is empty', () => {
+        const { context, input } = makeContext();
+        input.getRawText.mockReturnValue('/auto misc ');
+        context.autocomplete_items = [{
+            text: 'misc help',
+            description: 'BotOne',
+            type: 'command',
+            remote: true,
+            prefix: '/auto ',
+        }];
+        context.autocomplete_open = true;
+        context.autocomplete_pending = {
+            text: 'misc ',
+            prefix: '/auto ',
+            target: '#test',
+            label: '',
+            msgid: '',
+            timer: null,
+        };
+
+        ControlInput.methods.onAutocompleteResponse.call(context, {
+            network: context.network,
+            event: {
+                nick: 'BotTwo',
                 tags: {
                     '+draft/autocomplete-response': '',
                 },
@@ -324,34 +397,35 @@ describe('ControlInput Limnoria autocomplete', () => {
         });
 
         expect(context.autocomplete_items.map((item) => item.text))
-            .toEqual(['capability']);
+            .toEqual(['misc help']);
         expect(context.autocomplete_open).toBe(true);
-        expect(context.autocomplete_limnoria).toBe(false);
-        expect(context.limnoria_pending).toBeNull();
+        expect(context.autocomplete_remote).toBe(false);
+        expect(context.autocomplete_pending).not.toBeNull();
     });
 
-    it('does not apply temporary Limnoria previews', () => {
+    it('does not apply temporary remote previews', () => {
         const { context, input } = makeContext();
-        context.autocomplete_limnoria = true;
+        context.autocomplete_remote = true;
         context.autocomplete_filtering = false;
 
         ControlInput.methods.onAutocompleteTemp.call(context, 'network', {
-            limnoria: true,
+            remote: true,
         });
 
         expect(input.setPlainText).not.toHaveBeenCalled();
     });
 
-    it('replaces the whole /lim command when a suggestion is selected', () => {
+    it('replaces the whole /auto command when a suggestion is selected', () => {
         const { context, input } = makeContext();
-        context.autocomplete_limnoria = true;
+        context.autocomplete_remote = true;
 
-        ControlInput.methods.onAutocompleteSelected.call(context, 'network', {
-            limnoria: true,
+        ControlInput.methods.onAutocompleteSelected.call(context, 'misc help', {
+            remote: true,
+            prefix: '/auto ',
         });
 
-        expect(input.setPlainText).toHaveBeenCalledWith('/lim network');
-        expect(context.autocomplete_limnoria).toBe(false);
+        expect(input.setPlainText).toHaveBeenCalledWith('/auto misc help');
+        expect(context.autocomplete_remote).toBe(false);
         expect(context.autocomplete_open).toBe(false);
     });
 
@@ -368,10 +442,10 @@ describe('ControlInput Limnoria autocomplete', () => {
 
     it('clears a pending request when the user selects a local suggestion', () => {
         const { context, input } = makeContext();
-        context.limnoria_pending = {
-            text: 'net',
-            prefix: '/lim ',
-            name: 'SupyBot',
+        context.autocomplete_pending = {
+            text: 'misc ',
+            prefix: '/auto ',
+            target: '#test',
             label: '',
             msgid: '',
             timer: null,
@@ -383,18 +457,22 @@ describe('ControlInput Limnoria autocomplete', () => {
         });
 
         expect(input.setCurrentWord).toHaveBeenCalledWith('capability');
-        expect(context.limnoria_pending).toBeNull();
+        expect(context.autocomplete_pending).toBeNull();
         expect(context.autocomplete_open).toBe(false);
     });
 
     it('clears a pending request when autocomplete is cancelled', () => {
         const { context } = makeContext();
         context.autocomplete_open = true;
-        context.autocomplete_limnoria = true;
-        context.limnoria_pending = {
-            text: 'net',
-            prefix: '/lim ',
-            name: 'SupyBot',
+        context.autocomplete_remote = true;
+        context.autocomplete_remote_context = {
+            prefix: '/auto ',
+            text: 'misc ',
+        };
+        context.autocomplete_pending = {
+            text: 'misc ',
+            prefix: '/auto ',
+            target: '#test',
             label: '',
             msgid: '',
             timer: null,
@@ -402,25 +480,73 @@ describe('ControlInput Limnoria autocomplete', () => {
 
         ControlInput.methods.onAutocompleteCancel.call(context);
 
-        expect(context.limnoria_pending).toBeNull();
+        expect(context.autocomplete_pending).toBeNull();
         expect(context.autocomplete_open).toBe(false);
-        expect(context.autocomplete_limnoria).toBe(false);
+        expect(context.autocomplete_remote).toBe(false);
+        expect(context.autocomplete_remote_context).toBeNull();
+    });
+});
+
+describe('ControlInput autocomplete key handling', () => {
+    test('does not request remote autocomplete when an open list consumes Tab', () => {
+        const handleOnKeyDown = jest.fn(() => true);
+        const maybeRequestAutocomplete = jest.fn();
+        const submitForm = jest.fn();
+        const maybeReplaceEmoji = jest.fn();
+        const context = {
+            autocomplete_open: true,
+            $refs: {
+                autocomplete: { handleOnKeyDown },
+                input: { getRawText: jest.fn(() => '/auto misc ') },
+            },
+            maybeRequestAutocomplete,
+            submitForm,
+            maybeReplaceEmoji,
+        };
+
+        ControlInput.methods.inputKeyDown.call(context, {
+            key: 'Tab',
+            shiftKey: false,
+            altKey: false,
+            metaKey: false,
+            ctrlKey: false,
+            preventDefault: jest.fn(),
+        });
+
+        expect(handleOnKeyDown).toHaveBeenCalled();
+        expect(maybeRequestAutocomplete).not.toHaveBeenCalled();
+        expect(submitForm).not.toHaveBeenCalled();
+        expect(maybeReplaceEmoji).not.toHaveBeenCalled();
     });
 
-    it('restores /msg and Limnoria-prefix invocation text', () => {
-        const { context, input } = makeContext();
+    test('accepts the highlighted item and sends on Enter', () => {
+        const handleOnKeyDown = jest.fn(() => true);
+        const submitForm = jest.fn();
+        const maybeReplaceEmoji = jest.fn();
+        const context = {
+            autocomplete_open: true,
+            $refs: {
+                autocomplete: { handleOnKeyDown },
+                input: { getRawText: jest.fn(() => 'misc ') },
+            },
+            submitForm,
+            maybeReplaceEmoji,
+        };
+        const event = {
+            key: 'Enter',
+            shiftKey: false,
+            altKey: false,
+            metaKey: false,
+            ctrlKey: false,
+            preventDefault: jest.fn(),
+        };
 
-        ControlInput.methods.applyAutocompleteValue.call(context, 'network', {
-            limnoria: true,
-            prefix: '/msg SupyBot ',
-        });
-        expect(input.setPlainText).toHaveBeenLastCalledWith('/msg SupyBot network');
+        ControlInput.methods.inputKeyDown.call(context, event);
 
-        ControlInput.methods.applyAutocompleteValue.call(context, 'network', {
-            limnoria: true,
-            prefix: '!',
-        });
-        expect(input.setPlainText).toHaveBeenLastCalledWith('!network');
+        expect(handleOnKeyDown).toHaveBeenCalledWith(event);
+        expect(maybeReplaceEmoji).toHaveBeenCalled();
+        expect(submitForm).toHaveBeenCalledWith(false);
+        expect(event.preventDefault).toHaveBeenCalled();
     });
 });
 
@@ -587,5 +713,100 @@ describe('ControlInput as-typed emoji conversion', () => {
         ControlInput.methods.maybeReplaceEmoji.call(context);
 
         expect(input.setCurrentWord).toHaveBeenCalledWith('😄test', false, true);
+    });
+});
+
+describe('ControlInput accidental command warning', () => {
+    function makeContext(ircText, warnEnabled = true) {
+        const input = {
+            getValue: jest.fn(() => ircText),
+            buildIrcText: jest.fn(() => ircText),
+            reset: jest.fn(),
+            focus: jest.fn(),
+        };
+        const context = {
+            $refs: { input },
+            $state: {
+                setting: jest.fn((name) => {
+                    if (name === 'buffers.warn_expected_command') {
+                        return warnEnabled;
+                    }
+                    if (name === 'buffers.emoji_convert_as_typed') {
+                        return false;
+                    }
+                    return undefined;
+                }),
+                $emit: jest.fn(),
+            },
+            showCommandWarning: false,
+            has_focus: true,
+            keep_focus: false,
+            buffer: undefined,
+            network: undefined,
+            historyAdd: jest.fn(),
+            stopTyping: jest.fn(),
+            $nextTick: (cb) => cb(),
+        };
+        context.submitForm = ControlInput.methods.submitForm;
+        return { context, input };
+    }
+
+    test('cancels the first send and shows the warning', () => {
+        const { context, input } = makeContext(' /join #chan');
+
+        ControlInput.methods.submitForm.call(context);
+
+        expect(context.showCommandWarning).toBe(true);
+        expect(context.$state.$emit).not.toHaveBeenCalled();
+        expect(input.reset).not.toHaveBeenCalled();
+    });
+
+    test('sends a correctly formed command immediately', () => {
+        const { context } = makeContext('/join #chan');
+
+        ControlInput.methods.submitForm.call(context);
+
+        expect(context.showCommandWarning).toBe(false);
+        expect(context.$state.$emit).toHaveBeenCalledWith('input.raw', '/join #chan');
+    });
+
+    test('sends the space-prefixed text on the second attempt', () => {
+        const { context, input } = makeContext(' /join #chan');
+        context.showCommandWarning = true;
+
+        ControlInput.methods.submitForm.call(context);
+
+        expect(context.showCommandWarning).toBe(false);
+        expect(context.$state.$emit).toHaveBeenCalledWith('input.raw', ' /join #chan');
+        expect(input.reset).toHaveBeenCalledWith('', false);
+    });
+
+    test('force-sends from the Send as Message action', () => {
+        const { context } = makeContext(' /join #chan');
+        context.showCommandWarning = true;
+
+        ControlInput.methods.sendCommandWarning.call(context);
+
+        expect(context.$state.$emit).toHaveBeenCalledWith('input.raw', ' /join #chan');
+        expect(context.showCommandWarning).toBe(false);
+    });
+
+    test('dismisses the warning and focuses the input', () => {
+        const { context, input } = makeContext(' /join #chan');
+        context.showCommandWarning = true;
+
+        ControlInput.methods.dismissCommandWarning.call(context);
+
+        expect(context.showCommandWarning).toBe(false);
+        expect(input.focus).toHaveBeenCalled();
+    });
+
+    test('sends immediately when the warning setting is disabled', () => {
+        const { context } = makeContext(' /join #chan', false);
+
+        ControlInput.methods.submitForm.call(context);
+
+        expect(context.showCommandWarning).toBe(false);
+        expect(context.$state.$emit).toHaveBeenCalledWith('input.raw', ' /join #chan');
     });
 });

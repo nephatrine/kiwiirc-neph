@@ -1,11 +1,11 @@
 'kiwi public';
 
 import {
-    LIMNORIA_AUTOCOMPLETE_REQUEST,
-    LIMNORIA_AUTOCOMPLETE_RESPONSE
-} from './Limnoria';
+    AUTOCOMPLETE_REQUEST,
+    AUTOCOMPLETE_RESPONSE
+} from './Autocomplete';
 
-export default function limnoriaMiddleware(network) {
+export default function autocompleteMiddleware(network) {
     return function middleware(client, rawEvents, parsedEvents) {
         parsedEvents.use((command, event, clientArg, next) => {
             if (!event || !event.tags) {
@@ -19,16 +19,16 @@ export default function limnoriaMiddleware(network) {
                 return;
             }
 
-            if (event.tags[LIMNORIA_AUTOCOMPLETE_RESPONSE] !== undefined) {
-                network.appState.$emit('limnoria.autocomplete.response', {
+            if (event.tags[AUTOCOMPLETE_RESPONSE] !== undefined) {
+                network.appState.$emit('autocomplete.response', {
                     network,
                     event,
                 });
                 return;
             }
 
-            if (event.tags[LIMNORIA_AUTOCOMPLETE_REQUEST] !== undefined) {
-                network.appState.$emit('limnoria.autocomplete.request', {
+            if (event.tags[AUTOCOMPLETE_REQUEST] !== undefined) {
+                network.appState.$emit('autocomplete.request', {
                     network,
                     event,
                 });

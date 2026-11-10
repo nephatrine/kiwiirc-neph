@@ -2,7 +2,7 @@
     <div class="kiwi-autocomplete kiwi-theme-bg">
         <div
             v-for="item in filteredAndLimitedItems"
-            :key="item.type + (item.filterText || item.text)"
+            :key="item.key || item.type + (item.filterText || item.text)"
             :class="[
                 'kiwi-autocomplete-item',
                 `kiwi-autocomplete-type--${item.type ? item.type : 'default'}`,
@@ -192,34 +192,30 @@ export default {
         },
         handleOnKeyDown(event) {
             let handled = false;
+            const isShiftTab = event.key === 'Tab' && event.shiftKey;
+            const isPlainEnter = event.key === 'Enter' &&
+                !event.shiftKey &&
+                !event.altKey;
+            const wordBreakKeyCodes = [' ', ';', ',', '.'];
 
-            let cancelKeyCodes = [
-                'Enter', // return
-                ' ', // space
-                ';', // semi-colon
-                ',', // comma
-                '.', // period
-            ];
-
-            if (cancelKeyCodes.indexOf(event.key) > -1) {
-                // If no item is selected (ie. on an empty list), leave the return key
-                // to do its default action as if the autocomplete box isn't active.
+            if (isPlainEnter || (event.key === 'Tab' && !isShiftTab)) {
+                // Enter and Tab accept the highlighted suggestion. Modified
+                // Enter is left to ControlInput so it can insert a newline.
                 if (!this.selectedItem) {
                     this.cancel();
-                } else if (event.key === ' ' &&
-                    /\s/.test(this.itemValue(this.selectedItem) || '')
-                ) {
-                    // A space should not replace the input with a multi-word
-                    // suggestion. Let the space be typed instead.
-                    return false;
+                    if (event.key === 'Tab') {
+                        event.preventDefault();
+                        handled = true;
+                    }
                 } else {
                     this.selectCurrentItem();
-                    if (event.key === 'Enter') {
-                        event.preventDefault();
-                    }
+                    event.preventDefault();
                     handled = true;
                 }
-            } else if (event.key === 'ArrowUp' || (event.key === 'Tab' && event.shiftKey)) {
+            } else if (wordBreakKeyCodes.indexOf(event.key) > -1) {
+                // Word breaks should be typed normally, never accept a suggestion.
+                this.cancel();
+            } else if (event.key === 'ArrowUp' || isShiftTab) {
                 // Up or tab + shift
                 if (this.selected_idx > 0) {
                     this.selected_idx--;
@@ -230,8 +226,8 @@ export default {
 
                 event.preventDefault();
                 handled = true;
-            } else if ((event.key === 'ArrowDown' && !event.altKey) || event.key === 'Tab') {
-                // Down or tab
+            } else if (event.key === 'ArrowDown' && !event.altKey) {
+                // Down
                 if (this.selected_idx < this.filteredItems.length - 1) {
                     this.selected_idx++;
                 } else {

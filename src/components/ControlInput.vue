@@ -6,6 +6,7 @@
             'kiwi-controlinput--show-tools': shouldShowTools,
             'kiwi-controlinput--show-tools--inline': shouldShowToolsInline,
             'kiwi-controlinput--selfuser-open': selfuser_open,
+            'kiwi-controlinput--autocomplete-always': autocompleteAlwaysActive,
         }"
         class="kiwi-controlinput kiwi-theme-bg"
         @dragover="onUploadDragOver"
@@ -33,7 +34,50 @@
         </div>
 
         <div v-if="serviceArgGhost()" class="kiwi-controlinput-ns-hint">{{ serviceArgGhost() }}</div>
-        <div v-if="limnoriaSyntaxGhost()" class="kiwi-controlinput-ns-hint">{{ limnoriaSyntaxGhost() }}</div>
+        <div v-if="providerAutocompleteHint" class="kiwi-controlinput-ns-hint">
+            {{ providerAutocompleteHint }}
+        </div>
+        <div
+            v-if="autocompleteAlwaysActive"
+            class="kiwi-controlinput-autocomplete-hint"
+            role="status"
+            aria-live="polite"
+        >
+            <i class="bx bx-bolt-circle" aria-hidden="true" />
+            <span>{{ $t('autocomplete_always_hint') }}</span>
+        </div>
+        <div
+            v-if="showCommandWarning"
+            class="kiwi-controlinput-command-warn"
+            role="alert"
+            aria-live="assertive"
+        >
+            <div class="kiwi-controlinput-command-text">
+                <i class="bx bx-error" aria-hidden="true" />
+                <div>
+                    <strong>{{ $t('command_accidental_title') }}</strong>
+                    <div>{{ $t('command_accidental_text') }}</div>
+                </div>
+            </div>
+            <div class="u-input-confirm">
+                <button
+                    type="button"
+                    class="u-button u-button-warning"
+                    @mousedown.prevent
+                    @click="sendCommandWarning"
+                >
+                    {{ $t('command_accidental_send') }}
+                </button>
+                <button
+                    type="button"
+                    class="u-button"
+                    @mousedown.prevent
+                    @click="dismissCommandWarning"
+                >
+                    {{ $t('command_accidental_edit') }}
+                </button>
+            </div>
+        </div>
         <div class="kiwi-controlinput-inner">
             <typing-users-list :buffer="buffer" />
             <away-status-indicator
@@ -58,7 +102,7 @@
             </div>
             <form
                 class="kiwi-controlinput-form"
-                @submit.prevent="submitForm"
+                @submit.prevent="submitForm(false)"
                 @click="maybeHidePlugins"
             >
                 <div class="kiwi-controlinput-input-wrap">
@@ -206,13 +250,13 @@ import * as EmojiProvider from '@/libs/EmojiProvider';
 import * as Emoji from '@/helpers/Emoji';
 import * as settingTools from '@/libs/settingTools';
 import {
-    LIMNORIA_AUTOCOMPLETE_REQUEST,
-    LIMNORIA_AUTOCOMPLETE_RESPONSE,
-    LIMNORIA_AUTOCOMPLETE_TIMEOUT,
-    limnoriaSettings,
-    parseLimnoriaResponses
-} from '@/libs/Limnoria';
-import { getLimnoriaCommands, loadLimnoriaCommands } from '@/libs/LazyLoad';
+    AUTOCOMPLETE_REQUEST,
+    AUTOCOMPLETE_RESPONSE,
+    AUTOCOMPLETE_TIMEOUT,
+    autocompleteCommandContext,
+    canRequestAutocomplete,
+    parseAutocompleteResponses
+} from '@/libs/Autocomplete';
 import Logger from '@/libs/Logger';
 
 import autocompleteCommands from '@/res/autocompleteCommands';
@@ -273,8 +317,6 @@ import SelfUser from './SelfUser';
 import AwayStatusIndicator from './AwayStatusIndicator';
 import TypingUsersList from './TypingUsersList';
 
-let log = Logger.namespace('ControlInput');
-
 const EMOJI_AUTOCOMPLETE_RE = /:([^\p{Cc}\p{Cf}\p{Cs}\p{Zl}\p{Zp}\p{Zs}/:]+)(?:\/([^\p{Cc}\p{Cf}\p{Cs}\p{Zl}\p{Zp}\p{Zs}:]+))?$/u;
 
 function trailingEmojiToken(value) {
@@ -307,17 +349,13 @@ export default {
             self: this,
             selfuser_open: false,
             autocomplete_open: false,
-            autocomplete_limnoria: false,
-            limnoria_commands_ready: false,
-            limnoria_commands_loading: false,
+            autocomplete_remote: false,
+            autocomplete_remote_context: null,
+            autocompleteProviders: GlobalApi.singleton().autocompleteProviders,
             autocomplete_items: [],
             autocomplete_filter: '',
-            // Not filtering through the autocomplete list means that the entire word is put
-            // in place when cycling through items. Just as with traditional IRC clients when
-            // tabbing through nicks.
-            // When filtering through the list, we keep typing more of the word we want as the
-            // autocomplete list filters its results to show us the relevant items, not replacing
-            // the current word until we select an item.
+            // Typing filters the suggestion list. Tab or Enter accepts the
+            // highlighted item; the arrow keys navigate without inserting.
             autocomplete_filtering: true,
             active_tool: null,
             active_tool_props: {},
@@ -337,6 +375,34 @@ export default {
             return activeNetwork ?
                 activeNetwork.nick :
                 '';
+        },
+        providerAutocompleteHint() {
+            if (!this.network || !this.buffer) {
+                return '';
+            }
+
+            const input = this.current_input_value || '';
+            const providers = Object.entries(this.autocompleteProviders || {});
+            for (let i = 0; i < providers.length; i += 1) {
+                const name = providers[i][0];
+                const provider = providers[i][1];
+                if (!provider || typeof provider.hint !== 'function') {
+                    continue;
+                }
+                try {
+                    const hint = provider.hint({
+                        input,
+                        network: this.network,
+                        buffer: this.buffer,
+                    });
+                    if (hint) {
+                        return String(hint);
+                    }
+                } catch (err) {
+                    Logger.error('Autocomplete hint provider failed', name, err);
+                }
+            }
+            return '';
         },
         networkState() {
             let activeNetwork = this.$state.getActiveNetwork();
@@ -427,6 +493,25 @@ export default {
                 }
             },
         },
+        autocompleteAlways() {
+            if (!this.network) {
+                return false;
+            }
+            const networks = this.$state.ui.autocomplete_always_networks || [];
+            return networks.indexOf(this.network.id) !== -1;
+        },
+        autocompleteAlwaysActive() {
+            if (!this.autocompleteAlways || !this.buffer) {
+                return false;
+            }
+            const isMessageBuffer =
+                typeof this.buffer.isChannel === 'function' &&
+                (this.buffer.isChannel() || (
+                    typeof this.buffer.isQuery === 'function' &&
+                    this.buffer.isQuery()
+                ));
+            return isMessageBuffer && canRequestAutocomplete(this.network);
+        },
     },
     watch: {
         history_pos(newVal) {
@@ -438,22 +523,25 @@ export default {
                 this.inputRestore();
             }
 
-            this.clearLimnoriaPending();
+            this.clearAutocompletePending();
             this.autocomplete_open = false;
-            this.autocomplete_limnoria = false;
+            this.autocomplete_remote = false;
+            this.autocomplete_remote_context = null;
         },
     },
     created() {
         this.typingTimer = null;
         this.lastTypingTime = 0;
-        this.limnoria_pending = null;
-        this.limnoria_request_seq = 0;
+        this.autocomplete_pending = null;
 
-        this.listen(this.$state, 'limnoria.autocomplete.request', (payload) => {
-            this.onLimnoriaRequestEcho(payload);
+        this.listen(this.$state, 'autocomplete.request', (payload) => {
+            this.onAutocompleteRequestEcho(payload);
         });
-        this.listen(this.$state, 'limnoria.autocomplete.response', (payload) => {
-            this.onLimnoriaResponse(payload);
+        this.listen(this.$state, 'autocomplete.response', (payload) => {
+            this.onAutocompleteResponse(payload);
+        });
+        this.listen(this.$state, 'autocomplete.toggle', (payload) => {
+            this.onAutocompleteToggle(payload);
         });
 
         this.listen(this.$state, 'document.keydown', (ev) => {
@@ -650,24 +738,32 @@ export default {
                 return;
             }
             try {
+                if (service.maxBytes && file.size > service.maxBytes) {
+                    this.showUploadError(file, 'fileupload_too_large', {
+                        service: service.label,
+                    });
+                    return;
+                }
                 let url = await service.upload(file, {
-                    retention: effectiveRetention(this.$state, service, network),
+                    retention: effectiveRetention(this.$state, service),
                     network,
+                    state: this.$state,
                 });
                 buffer.say(url);
             } catch (err) {
                 this.showUploadError(file);
             }
         },
-        showUploadError(file) {
+        showUploadError(file, key = 'fileupload_failed', params = {}) {
             if (!this.buffer) {
                 return;
             }
             this.$state.addMessage(this.buffer, {
                 time: Date.now(),
                 nick: '*',
-                message: this.$t('fileupload_failed', {
+                message: this.$t(key, {
                     name: file && file.name ? file.name : '',
+                    ...params,
                 }),
                 type: 'error',
             });
@@ -701,138 +797,98 @@ export default {
         toggleMonospace() {
             this.$refs.input.toggleMonospace();
         },
-        limnoriaEnabledPlugins() {
-            if (!this.network) {
-                return [];
-            }
-            return limnoriaSettings(this.network).plugins;
-        },
-        ensureLimnoriaCommands() {
-            if (this.limnoria_commands_ready || this.limnoria_commands_loading) {
-                return;
-            }
-
-            this.limnoria_commands_loading = true;
-            loadLimnoriaCommands()
-                .then(() => {
-                    this.limnoria_commands_ready = true;
-                })
-                .catch((err) => {
-                    log.error('Failed to load Limnoria commands', err);
-                })
-                .finally(() => {
-                    this.limnoria_commands_loading = false;
-                });
-        },
-        limnoriaCommandSuggestionsFor(inputVal) {
-            const commands = getLimnoriaCommands();
-            if (!commands) {
-                this.ensureLimnoriaCommands();
-                return [];
-            }
-            return commands.limnoriaCommandSuggestions(
-                inputVal,
-                this.limnoriaEnabledPlugins()
-            );
-        },
-        shouldCompleteLimnoria(inputVal) {
-            if (!this.network || !this.buffer || this.network.state !== 'connected') {
-                return false;
-            }
-            const limnoria = limnoriaSettings(this.network);
-            if (!limnoria.suggestions || !limnoria.name) {
-                return false;
-            }
-            return this.limnoriaCommandSuggestionsFor(inputVal).length > 0;
-        },
-        openLimnoriaAutocomplete(inputVal, currentToken, filtering) {
-            const items = this.limnoriaCommandSuggestionsFor(inputVal);
-            if (items.length === 0) {
-                return false;
-            }
-            this.openAutoComplete(items);
-            this.autocomplete_filter = currentToken;
-            this.autocomplete_filtering = filtering;
-            return true;
-        },
-        maybeRequestLimnoriaAutocomplete(inputVal) {
-            if (this.limnoria_pending || this.autocomplete_limnoria) {
-                return false;
-            }
-            return this.requestLimnoriaAutocomplete(inputVal);
-        },
-        limnoriaAutocompleteContext(inputVal) {
-            if (!this.network || !this.buffer || this.network.state !== 'connected') {
+        providerAutocompleteResult(inputVal, currentToken) {
+            if (!this.network || !this.buffer) {
                 return null;
             }
-            if (typeof this.network.ircClient.tagmsg !== 'function' ||
-                !this.network.hasCap('message-tags')
-            ) {
-                return null;
-            }
-            const limnoria = limnoriaSettings(this.network);
-            if (!limnoria.suggestions || !limnoria.name) {
-                return null;
-            }
-            const name = limnoria.name;
 
-            const limMatch = /^\/lim\s+(.+)$/i.exec(inputVal);
-            if (limMatch && limMatch[1].trim()) {
-                return {
-                    name,
-                    text: limMatch[1],
-                    prefix: limMatch[0].slice(0, limMatch[0].length - limMatch[1].length),
-                };
-            }
-
-            const msgPrefix = '/msg ' + name + ' ';
-            if (inputVal.toLowerCase().indexOf(msgPrefix.toLowerCase()) === 0) {
-                const text = inputVal.slice(msgPrefix.length);
-                if (text.trim()) {
-                    return {
-                        name,
-                        text,
-                        prefix: inputVal.slice(0, msgPrefix.length),
-                    };
+            const providers = Object.entries(this.autocompleteProviders || {});
+            for (let i = 0; i < providers.length; i += 1) {
+                const name = providers[i][0];
+                const provider = providers[i][1];
+                if (!provider || typeof provider.suggest !== 'function') {
+                    continue;
                 }
-                return null;
-            }
-
-            if (limnoria.prefix &&
-                inputVal.indexOf(limnoria.prefix) === 0 &&
-                inputVal.length > limnoria.prefix.length
-            ) {
-                const text = inputVal.slice(limnoria.prefix.length);
-                if (text.trim()) {
-                    return {
+                try {
+                    const result = provider.suggest({
+                        input: inputVal,
+                        token: currentToken,
+                        network: this.network,
+                        buffer: this.buffer,
+                    });
+                    if (result && result.active) {
+                        return {
+                            active: true,
+                            items: Array.isArray(result.items) ? result.items : [],
+                            filter: typeof result.filter === 'string' ?
+                                result.filter :
+                                currentToken,
+                            filtering: result.filtering !== false,
+                        };
+                    }
+                } catch (err) {
+                    Logger.error(
+                        'Autocomplete suggestion provider failed',
                         name,
-                        text,
-                        prefix: limnoria.prefix,
-                    };
+                        err
+                    );
                 }
             }
-
             return null;
         },
-        clearLimnoriaPending() {
-            if (!this.limnoria_pending) {
+        openProviderAutocomplete(result, currentToken, filtering) {
+            if (!result || !result.active) {
+                return false;
+            }
+            if (result.items.length === 0) {
+                this.autocomplete_open = false;
+                return true;
+            }
+            this.openAutoComplete(result.items);
+            this.autocomplete_filter = typeof result.filter === 'string' ?
+                result.filter :
+                currentToken;
+            this.autocomplete_filtering = typeof filtering === 'boolean' ?
+                filtering :
+                result.filtering;
+            return true;
+        },
+        maybeRequestAutocomplete(inputVal) {
+            if (this.autocomplete_pending || this.autocomplete_remote) {
+                return false;
+            }
+            return this.requestAutocomplete(inputVal);
+        },
+        clearAutocompletePending() {
+            if (!this.autocomplete_pending) {
                 return;
             }
-            clearTimeout(this.limnoria_pending.timer);
-            this.limnoria_pending = null;
+            clearTimeout(this.autocomplete_pending.timer);
+            this.autocomplete_pending = null;
         },
-        requestLimnoriaAutocomplete(inputVal) {
-            const context = this.limnoriaAutocompleteContext(inputVal);
+        requestAutocomplete(inputVal) {
+            if (!canRequestAutocomplete(this.network)) {
+                return false;
+            }
+            const context = autocompleteCommandContext(
+                inputVal,
+                this.buffer,
+                this.autocompleteAlways
+            );
             if (!context) {
                 return false;
             }
 
-            this.clearLimnoriaPending();
+            this.clearAutocompletePending();
+            this.autocomplete_remote_context = {
+                prefix: context.prefix,
+                text: context.text,
+            };
             const label = this.network.hasCap('labeled-response') ?
                 Misc.generateLabel() :
                 '';
             const tags = {
-                [LIMNORIA_AUTOCOMPLETE_REQUEST]: context.text,
+                [AUTOCOMPLETE_REQUEST]: context.text,
             };
             if (label) {
                 tags.label = label;
@@ -841,23 +897,23 @@ export default {
             const pending = {
                 text: context.text,
                 prefix: context.prefix,
-                name: context.name,
+                target: context.target,
                 label,
                 msgid: '',
                 timer: null,
             };
-            this.limnoria_pending = pending;
+            this.autocomplete_pending = pending;
             pending.timer = setTimeout(() => {
-                if (this.limnoria_pending === pending) {
-                    this.limnoria_pending = null;
+                if (this.autocomplete_pending === pending) {
+                    this.autocomplete_pending = null;
                 }
-            }, LIMNORIA_AUTOCOMPLETE_TIMEOUT);
+            }, AUTOCOMPLETE_TIMEOUT);
 
-            this.network.ircClient.tagmsg(context.name, tags);
+            this.network.ircClient.tagmsg(context.target, tags);
             return true;
         },
-        onLimnoriaRequestEcho(payload) {
-            const pending = this.limnoria_pending;
+        onAutocompleteRequestEcho(payload) {
+            const pending = this.autocomplete_pending;
             if (!pending || !payload || payload.network !== this.network) {
                 return;
             }
@@ -871,7 +927,7 @@ export default {
             if (pending.label && event.tags.label && event.tags.label !== pending.label) {
                 return;
             }
-            const request = event.tags[LIMNORIA_AUTOCOMPLETE_REQUEST];
+            const request = event.tags[AUTOCOMPLETE_REQUEST];
             if (typeof request === 'string' && request !== pending.text) {
                 return;
             }
@@ -879,8 +935,8 @@ export default {
                 pending.msgid = event.tags.msgid;
             }
         },
-        onLimnoriaResponse(payload) {
-            const pending = this.limnoria_pending;
+        onAutocompleteResponse(payload) {
+            const pending = this.autocomplete_pending;
             if (!pending || !payload || payload.network !== this.network) {
                 return;
             }
@@ -888,7 +944,7 @@ export default {
             if (!event || !event.tags) {
                 return;
             }
-            if (event.nick && !this.network.caseCompare(event.nick, pending.name)) {
+            if (event.nick && this.network.caseCompare(event.nick, this.network.nick)) {
                 return;
             }
 
@@ -901,42 +957,66 @@ export default {
             if (!current.startsWith(pending.prefix) ||
                 current.slice(pending.prefix.length) !== pending.text
             ) {
-                this.clearLimnoriaPending();
+                this.clearAutocompletePending();
+                this.autocomplete_open = false;
+                this.autocomplete_remote = false;
+                this.autocomplete_remote_context = null;
                 return;
             }
 
-            const responses = parseLimnoriaResponses(
+            const responses = parseAutocompleteResponses(
                 pending.text,
-                event.tags[LIMNORIA_AUTOCOMPLETE_RESPONSE]
+                event.tags[AUTOCOMPLETE_RESPONSE]
             );
-            this.clearLimnoriaPending();
             if (responses.length === 0) {
                 return;
             }
 
-            if (this.$refs.autocomplete) {
-                this.$refs.autocomplete.resetSelection();
+            const source = event.nick || pending.target;
+            const firstResponse = !this.autocomplete_remote;
+            const existingKeys = firstResponse ?
+                new Set() :
+                new Set(this.autocomplete_items.map((item) => item.key));
+            const newItems = responses
+                .map((text) => {
+                    const key = `${source}\u0000${text}`;
+                    return {
+                        text,
+                        description: source,
+                        type: 'command',
+                        remote: true,
+                        prefix: pending.prefix,
+                        key,
+                    };
+                })
+                .filter((item) => !existingKeys.has(item.key));
+
+            if (newItems.length === 0) {
+                return;
             }
-            this.autocomplete_items = responses.map((text) => ({
-                text,
-                description: 'Limnoria',
-                type: 'command',
-                limnoria: true,
-                prefix: pending.prefix,
-            }));
+
+            // The first remote response starts a clean list. Local command
+            // suggestions may still be cached from before the popup closed.
+            this.autocomplete_items = firstResponse ?
+                newItems :
+                this.autocomplete_items.concat(newItems);
             this.autocomplete_filter = '';
             this.autocomplete_filtering = true;
-            this.autocomplete_limnoria = true;
+            this.autocomplete_remote = true;
             this.autocomplete_open = true;
-            this.$nextTick(() => {
-                if (this.$refs.autocomplete) {
-                    this.$refs.autocomplete.resetSelection();
-                }
-            });
+            if (firstResponse) {
+                this.$nextTick(() => {
+                    if (this.$refs.autocomplete) {
+                        this.$refs.autocomplete.resetSelection();
+                    }
+                });
+            }
         },
         applyAutocompleteValue(selectedValue, selectedItem) {
-            if (selectedItem && selectedItem.limnoria) {
-                const prefix = selectedItem.prefix || '/lim ';
+            if (selectedItem && selectedItem.remote) {
+                const prefix = typeof selectedItem.prefix === 'string' ?
+                    selectedItem.prefix :
+                    '';
                 this.$refs.input.setPlainText(prefix + selectedValue);
             } else if (selectedItem && selectedItem.type === 'emoji') {
                 this.applyEmojiAutocompleteValue(selectedValue);
@@ -961,21 +1041,44 @@ export default {
                 true
             );
         },
+        onAutocompleteToggle(payload) {
+            if (!payload || !payload.network) {
+                return;
+            }
+
+            const networks = this.$state.ui.autocomplete_always_networks || [];
+            const networkId = payload.network.id;
+            const idx = networks.indexOf(networkId);
+            if (idx === -1) {
+                networks.push(networkId);
+            } else {
+                networks.splice(idx, 1);
+            }
+
+            if (payload.network === this.network) {
+                this.clearAutocompletePending();
+                this.autocomplete_open = false;
+                this.autocomplete_remote = false;
+                this.autocomplete_remote_context = null;
+            }
+        },
         onAutocompleteCancel() {
-            this.clearLimnoriaPending();
+            this.clearAutocompletePending();
             this.autocomplete_open = false;
-            this.autocomplete_limnoria = false;
+            this.autocomplete_remote = false;
+            this.autocomplete_remote_context = null;
         },
         onAutocompleteTemp(selectedValue, selectedItem) {
-            if (!this.autocomplete_filtering && !this.autocomplete_limnoria) {
+            if (!this.autocomplete_filtering && !this.autocomplete_remote) {
                 this.applyAutocompleteValue(selectedValue, selectedItem);
             }
         },
         onAutocompleteSelected(selectedValue, selectedItem) {
             this.applyAutocompleteValue(selectedValue, selectedItem);
-            this.clearLimnoriaPending();
+            this.clearAutocompletePending();
             this.autocomplete_open = false;
-            this.autocomplete_limnoria = false;
+            this.autocomplete_remote = false;
+            this.autocomplete_remote_context = null;
         },
         inputKeyDown(event) {
             let meta = false;
@@ -992,24 +1095,29 @@ export default {
                 !event.metaKey &&
                 !event.ctrlKey;
             let inputText = '';
-            let limnoriaRequested = false;
-            if (isPlainTab) {
-                inputText = this.$refs.input.getRawText();
-                limnoriaRequested = this.maybeRequestLimnoriaAutocomplete(inputText);
-            }
-            const limnoriaPending = !!this.limnoria_pending;
+            let autocompleteRequested = false;
 
-            // If autocomplete has handled the event, don't also handle it here
+            // Let an open list consume Tab/Enter and word-break keys before
+            // starting a remote autocomplete request.
             const hasAutocomplete = this.autocomplete_open && this.$refs.autocomplete;
-            if (hasAutocomplete && this.$refs.autocomplete.handleOnKeyDown(event)) {
+            const autocompleteHandled = hasAutocomplete &&
+                this.$refs.autocomplete.handleOnKeyDown(event);
+            if (autocompleteHandled) {
+                // Enter accepts the highlighted item and sends it. Tab only
+                // completes, letting the user keep editing.
+                if (event.key === 'Enter' && !event.shiftKey && !event.altKey) {
+                    this.maybeReplaceEmoji();
+                    event.preventDefault();
+                    this.submitForm(false);
+                }
                 return;
             }
 
-            // When not filtering, select the current autocomplete item so that we can type any
-            // character directly after a nick
-            if (hasAutocomplete && !this.autocomplete_filtering && !this.autocomplete_limnoria) {
-                this.$refs.autocomplete.selectCurrentItem();
+            if (isPlainTab) {
+                inputText = this.$refs.input.getRawText();
+                autocompleteRequested = this.maybeRequestAutocomplete(inputText);
             }
+            const autocompletePending = !!this.autocomplete_pending;
 
             if (event.key === 'Enter' && (
                 (event.altKey && !event.shiftKey && !event.metaKey && !event.ctrlKey) ||
@@ -1022,7 +1130,7 @@ export default {
                 this.maybeReplaceEmoji();
                 // Send message when enter is pressed
                 event.preventDefault();
-                this.submitForm();
+                this.submitForm(false);
             } else if (event.key === 'Escape' && this.showCommandWarning) {
                 // Close command warning if the user presses escape
                 this.showCommandWarning = false;
@@ -1062,13 +1170,21 @@ export default {
                 // Tab key was just pressed, start general auto completion
                 let currentWord = this.$refs.input.getCurrentWord();
                 let currentToken = currentWord.word.substr(0, currentWord.position);
+                const providerResult = this.providerAutocompleteResult(
+                    inputText,
+                    currentToken
+                );
 
-                if (this.openLimnoriaAutocomplete(inputText, currentToken, true)) {
+                if (this.openProviderAutocomplete(
+                    providerResult,
+                    currentToken,
+                    true
+                )) {
                     event.preventDefault();
                     return;
                 }
 
-                if (limnoriaRequested || limnoriaPending) {
+                if (autocompleteRequested || autocompletePending) {
                     event.preventDefault();
                     return;
                 }
@@ -1118,9 +1234,9 @@ export default {
                 this.openAutoComplete(items);
                 this.autocomplete_filter = currentToken;
 
-                // Disable filtering so that tabbing cycles through words more like
-                // traditional IRC clients.
-                this.autocomplete_filtering = false;
+                // Keep filtering enabled so typing refines the list; Tab accepts
+                // the highlighted suggestion and the arrow keys navigate.
+                this.autocomplete_filtering = true;
                 event.preventDefault();
             } else if (meta && event.key === 'k') {
                 // meta + k
@@ -1150,6 +1266,19 @@ export default {
         },
         inputKeyUp(event) {
             let inputVal = this.$refs.input.getRawText();
+
+            if (this.autocomplete_remote && this.autocomplete_remote_context) {
+                const context = this.autocomplete_remote_context;
+                if (!inputVal.startsWith(context.prefix) ||
+                    inputVal.slice(context.prefix.length) !== context.text
+                ) {
+                    this.clearAutocompletePending();
+                    this.autocomplete_open = false;
+                    this.autocomplete_remote = false;
+                    this.autocomplete_remote_context = null;
+                }
+            }
+
             let currentWord = this.$refs.input.getCurrentWord();
             let currentToken = currentWord.word.substr(0, currentWord.position);
             let autocompleteTokens = this.$state.setting('autocompleteTokens');
@@ -1158,9 +1287,10 @@ export default {
             let hsArgItems = this.hsArgContextItems(inputVal);
             let histArgItems = this.histArgContextItems(inputVal);
             let bncArgItems = this.bouncerservArgContextItems(inputVal);
-            let limnoriaItems = this.shouldCompleteLimnoria(inputVal) ?
-                this.limnoriaCommandSuggestionsFor(inputVal) :
-                [];
+            let providerResult = this.providerAutocompleteResult(
+                inputVal,
+                currentToken
+            );
             let emojiToken = this.emojiAutocompleteToken(currentToken);
             let emojiItems = emojiToken ?
                 Emoji.getEmojiAutocompleteItems(emojiToken, this.buffer) :
@@ -1170,7 +1300,7 @@ export default {
                 this.onAutocompleteCancel();
             } else if (
                 this.autocomplete_open &&
-                !this.autocomplete_limnoria &&
+                !this.autocomplete_remote &&
                 currentToken === '' &&
                 !this.shouldCompleteNickserv(inputVal) &&
                 !this.shouldCompleteChanserv(inputVal) &&
@@ -1182,7 +1312,7 @@ export default {
                 hsArgItems.length === 0 &&
                 histArgItems.length === 0 &&
                 bncArgItems.length === 0 &&
-                limnoriaItems.length === 0
+                (!providerResult || providerResult.items.length === 0)
             ) {
                 // Empty token closes the list, unless a service completion
                 // still wants it open (subcommand or argument suggestions).
@@ -1191,18 +1321,18 @@ export default {
                 // next arrow falls through to message history instead.
                 this.autocomplete_open = false;
             } else if (this.autocomplete_open) {
-                if (!this.autocomplete_limnoria && emojiToken) {
+                if (!this.autocomplete_remote && emojiToken) {
                     if (emojiItems.length) {
                         this.autocomplete_items = emojiItems;
                         this.autocomplete_filtering = true;
                     } else {
                         this.autocomplete_open = false;
                     }
-                } else if (!this.autocomplete_limnoria && this.isEmojiAutocomplete()) {
+                } else if (!this.autocomplete_remote && this.isEmojiAutocomplete()) {
                     this.autocomplete_open = false;
-                } else if (!this.autocomplete_limnoria &&
-                    /^\/lim\s+/i.test(inputVal) &&
-                    limnoriaItems.length === 0
+                } else if (!this.autocomplete_remote &&
+                    providerResult &&
+                    providerResult.items.length === 0
                 ) {
                     this.autocomplete_open = false;
                 } else if (currentToken[0] === '@') {
@@ -1223,9 +1353,8 @@ export default {
                 // Just typed # so start the command auto completion
                 this.openAutoComplete(this.buildAutoCompleteItems({ buffers: true }));
                 this.autocomplete_filtering = true;
-            } else if (limnoriaItems.length > 0) {
-                this.openAutoComplete(limnoriaItems);
-                this.autocomplete_filtering = true;
+            } else if (providerResult && providerResult.items.length > 0) {
+                this.openProviderAutocomplete(providerResult, currentToken);
             } else if (this.shouldCompleteNickserv(inputVal)) {
                 this.openAutoComplete(this.buildAutoCompleteItems({ nickserv: true }));
                 this.autocomplete_filtering = true;
@@ -1292,12 +1421,12 @@ export default {
 
             if (this.autocomplete_open &&
                 this.autocomplete_filtering &&
-                !this.autocomplete_limnoria
+                !this.autocomplete_remote
             ) {
                 this.autocomplete_filter = emojiToken || currentToken;
             }
         },
-        submitForm() {
+        submitForm(force = false) {
             let rawInput = this.$refs.input.getValue();
             if (!rawInput) {
                 if (!this.has_focus && this.keep_focus) {
@@ -1312,7 +1441,7 @@ export default {
 
             // Show a warning if a command is preceded by spaces
             let warnExpectedCommand = this.$state.setting('buffers.warn_expected_command');
-            if (warnExpectedCommand && !this.showCommandWarning) {
+            if (!force && warnExpectedCommand && !this.showCommandWarning) {
                 const spacePrecededCommand = /^\s+\//;
                 const hasPrecedingSpace = ircText.split('\n').some(
                     (line) => spacePrecededCommand.test(Misc.stripStyles(line))
@@ -1332,9 +1461,21 @@ export default {
 
             this.historyAdd(rawInput);
 
+            this.showCommandWarning = false;
             this.$refs.input.reset('', this.keep_focus);
 
             this.stopTyping(false);
+        },
+        sendCommandWarning() {
+            this.submitForm(true);
+        },
+        dismissCommandWarning() {
+            this.showCommandWarning = false;
+            this.$nextTick(() => {
+                if (this.$refs.input) {
+                    this.$refs.input.focus();
+                }
+            });
         },
         historyAdd(rawInput) {
             // Add to history, keeping the history trimmed to the last 50 entries
@@ -1378,7 +1519,7 @@ export default {
         openAutoComplete(items) {
             if (this.$state.setting('showAutocomplete')) {
                 this.autocomplete_items = items;
-                this.autocomplete_limnoria = false;
+                this.autocomplete_remote = false;
                 this.autocomplete_open = true;
             }
         },
@@ -1657,65 +1798,6 @@ export default {
                 type: 'command',
             }));
         },
-        limnoriaInputText(inputVal) {
-            if (!this.network) {
-                return '';
-            }
-            const limnoria = limnoriaSettings(this.network);
-            if (!limnoria.name) {
-                return '';
-            }
-
-            const limMatch = /^\/lim\s+(.+)$/i.exec(inputVal);
-            if (limMatch && limMatch[1].trim()) {
-                return limMatch[1];
-            }
-
-            const msgPrefix = '/msg ' + limnoria.name + ' ';
-            if (inputVal.toLowerCase().indexOf(msgPrefix.toLowerCase()) === 0) {
-                const text = inputVal.slice(msgPrefix.length);
-                if (text.trim()) {
-                    return text;
-                }
-            }
-
-            if (limnoria.prefix &&
-                inputVal.indexOf(limnoria.prefix) === 0 &&
-                inputVal.length > limnoria.prefix.length
-            ) {
-                const text = inputVal.slice(limnoria.prefix.length);
-                if (text.trim()) {
-                    return text;
-                }
-            }
-
-            return '';
-        },
-        limnoriaSyntaxGhost() {
-            if (!this.network || !this.$refs.input) {
-                return '';
-            }
-            const limnoria = limnoriaSettings(this.network);
-            if (!limnoria.suggestions || !limnoria.name) {
-                return '';
-            }
-            const mirror = this.current_input_value;
-            if (typeof mirror !== 'string' || mirror.length === 0) {
-                return '';
-            }
-            const text = this.limnoriaInputText(this.$refs.input.getRawText());
-            if (!text) {
-                return '';
-            }
-
-            const commands = this.limnoria_commands_ready ? getLimnoriaCommands() : null;
-            if (!commands) {
-                this.ensureLimnoriaCommands();
-                return '';
-            }
-
-            return commands.limnoriaCommandSyntax(text);
-        },
         serviceArgGhost() {
             if (!this.network) {
                 return '';
@@ -1964,6 +2046,11 @@ export default {
     max-height: 40%;
 }
 
+.kiwi-controlinput--autocomplete-always {
+    border-top-color: var(--brand-primary);
+    box-shadow: inset 0 2px 0 var(--brand-primary);
+}
+
 .kiwi-controlinput,
 .kiwi-controlinput-inner {
     padding: 0;
@@ -2026,28 +2113,40 @@ export default {
 
 .kiwi-controlinput-command-warn {
     position: absolute;
+    right: 10px;
     bottom: 100%;
-    margin-left: 10px;
-    padding: 6px 10px 10px 10px;
+    left: 10px;
+    box-sizing: border-box;
+    padding: 8px 10px;
     border: 1px solid;
     border-radius: 10px 10px 0 0;
     z-index: 1;
 
     .kiwi-controlinput-command-text {
         display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        padding-top: 10px;
-        font-weight: 700;
+        align-items: flex-start;
+        gap: 8px;
+        line-height: 1.4;
+    }
+
+    .kiwi-controlinput-command-text strong {
+        display: block;
+        margin-bottom: 2px;
     }
 
     .bx-error {
-        margin-right: 2px;
+        margin-top: 2px;
     }
 
     .u-input-confirm {
-        padding: initial;
-        padding-left: 10px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 8px 0 0;
+    }
+
+    .u-input-confirm .u-button {
+        margin: 0;
     }
 }
 
@@ -2116,6 +2215,15 @@ export default {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.kiwi-controlinput-autocomplete-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    color: var(--brand-primary);
+    font-size: 0.85em;
 }
 
 .kiwi-controlinput-active-tool {

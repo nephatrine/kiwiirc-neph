@@ -7,8 +7,9 @@ import { rollDice, formatRoll } from '@/helpers/Dice';
 import { each } from '@/helpers/Utils';
 import AliasRewriter from './AliasRewriter';
 import { addTwitchUserNotice } from './TwitchMiddleware';
-import { limnoriaSettings } from './Limnoria';
-import { limnoriaCommandDelivery, limnoriaCommandPath } from './LimnoriaCommandIndex';
+import { canRequestAutocomplete } from './Autocomplete';
+import GlobalApi from './GlobalApi';
+import Logger from './Logger';
 
 // Map of commandName=commandHandlerFn
 const inputCommands = {};
@@ -163,6 +164,18 @@ export default class InputHandler {
 
         // Plugins may tap into this event to handle a command themselves
         this.state.$emit('input.command.' + command, eventObj, command, params, context);
+        if (eventObj.handled) {
+            return;
+        }
+
+        const pluginCommand = GlobalApi.singleton().commands[command.toLowerCase()];
+        if (pluginCommand) {
+            try {
+                pluginCommand.call(this, eventObj, command, params, context);
+            } catch (err) {
+                Logger.error('Plugin command failed', command, err);
+            }
+        }
         if (eventObj.handled) {
             return;
         }
@@ -330,52 +343,28 @@ inputCommands.roll = function inputCommandRoll(event, command, line, context) {
     handleMessage.call(this, 'action', event, command, buffer.name + ' ' + msg, context);
 };
 
-inputCommands.lim = function inputCommandLim(event, command, line, context) {
+inputCommands.auto = function inputCommandAuto(event, command, line, context) {
     event.handled = true;
 
     const { network, buffer } = context;
-    const limnoria = limnoriaSettings(network);
-    const commandText = line.trim();
+    const isMessageBuffer = buffer &&
+        typeof buffer.isChannel === 'function' &&
+        (buffer.isChannel() || (
+            typeof buffer.isQuery === 'function' && buffer.isQuery()
+        ));
 
-    const addError = (message) => {
+    if (!isMessageBuffer || !canRequestAutocomplete(network)) {
         this.state.addMessage(buffer, {
             time: Date.now(),
             nick: '*',
-            message,
+            message: TextFormatting.t('autocomplete_unavailable'),
             type: 'error',
         });
-    };
-
-    if (!limnoria.suggestions) {
-        addError(TextFormatting.t('limnoria_disabled'));
-        return;
-    }
-    if (!limnoria.name) {
-        addError(TextFormatting.t('limnoria_name_required'));
-        return;
-    }
-    if (!commandText) {
-        addError(TextFormatting.t('limnoria_command_required'));
         return;
     }
 
-    const commandPath = limnoriaCommandPath(commandText);
-    const delivery = limnoriaCommandDelivery(commandPath);
-
-    if (delivery === 'prefix' && limnoria.prefix) {
-        if (!buffer.isChannel() || !buffer.hasNick(limnoria.name)) {
-            addError(TextFormatting.t('limnoria_prefix_unavailable'));
-            return;
-        }
-
-        handleMessage.call(
-            this,
-            'privmsg',
-            event,
-            command,
-            buffer.name + ' ' + limnoria.prefix + commandText,
-            context
-        );
+    if (!line || !line.trim()) {
+        this.state.$emit('autocomplete.toggle', { network, buffer });
         return;
     }
 
@@ -384,7 +373,7 @@ inputCommands.lim = function inputCommandLim(event, command, line, context) {
         'privmsg',
         event,
         command,
-        limnoria.name + ' ' + commandText,
+        buffer.name + ' ' + line,
         context
     );
 };

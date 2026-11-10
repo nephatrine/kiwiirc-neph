@@ -1,6 +1,6 @@
 import AutoComplete from '@/components/AutoComplete';
 
-describe('AutoComplete space selection', () => {
+describe('AutoComplete key handling', () => {
     function makeContext(selectedItem) {
         return {
             selectedItem,
@@ -10,8 +10,42 @@ describe('AutoComplete space selection', () => {
         };
     }
 
-    test('does not select a multi-word item on space', () => {
-        const context = makeContext({ text: 'geography timezone' });
+    test('selects the highlighted item on Tab', () => {
+        const context = makeContext({ text: 'time' });
+        const event = { key: 'Tab', preventDefault: jest.fn() };
+        const handled = AutoComplete.methods.handleOnKeyDown.call(context, event);
+
+        expect(handled).toBe(true);
+        expect(context.selectCurrentItem).toHaveBeenCalled();
+        expect(event.preventDefault).toHaveBeenCalled();
+    });
+
+    test('selects the highlighted item on Enter', () => {
+        const context = makeContext({ text: 'time' });
+        const event = { key: 'Enter', preventDefault: jest.fn() };
+        const handled = AutoComplete.methods.handleOnKeyDown.call(context, event);
+
+        expect(handled).toBe(true);
+        expect(context.selectCurrentItem).toHaveBeenCalled();
+        expect(event.preventDefault).toHaveBeenCalled();
+    });
+
+    test('leaves modified Enter for newline insertion', () => {
+        const context = makeContext({ text: 'time' });
+        const event = {
+            key: 'Enter',
+            shiftKey: true,
+            preventDefault: jest.fn(),
+        };
+        const handled = AutoComplete.methods.handleOnKeyDown.call(context, event);
+
+        expect(handled).toBe(false);
+        expect(context.selectCurrentItem).not.toHaveBeenCalled();
+        expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    test('does not select on space and lets the space be typed', () => {
+        const context = makeContext({ text: 'time' });
         const handled = AutoComplete.methods.handleOnKeyDown.call(
             context,
             { key: ' ' }
@@ -19,18 +53,32 @@ describe('AutoComplete space selection', () => {
 
         expect(handled).toBe(false);
         expect(context.selectCurrentItem).not.toHaveBeenCalled();
-        expect(context.cancel).not.toHaveBeenCalled();
+        expect(context.cancel).toHaveBeenCalled();
     });
 
-    test('selects a single-word item on space', () => {
+    test('does not select on punctuation and lets it be typed', () => {
         const context = makeContext({ text: 'time' });
         const handled = AutoComplete.methods.handleOnKeyDown.call(
             context,
-            { key: ' ' }
+            { key: ',' }
         );
 
+        expect(handled).toBe(false);
+        expect(context.selectCurrentItem).not.toHaveBeenCalled();
+        expect(context.cancel).toHaveBeenCalled();
+    });
+
+    test('keeps Shift+Tab as backward navigation', () => {
+        const context = makeContext({ text: 'time' });
+        context.selected_idx = 1;
+        context.filteredItems = [{ text: 'one' }, { text: 'two' }];
+        const event = { key: 'Tab', shiftKey: true, preventDefault: jest.fn() };
+        const handled = AutoComplete.methods.handleOnKeyDown.call(context, event);
+
         expect(handled).toBe(true);
-        expect(context.selectCurrentItem).toHaveBeenCalled();
+        expect(context.selected_idx).toBe(0);
+        expect(context.selectCurrentItem).not.toHaveBeenCalled();
+        expect(event.preventDefault).toHaveBeenCalled();
     });
 });
 

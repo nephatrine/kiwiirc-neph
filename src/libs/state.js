@@ -42,6 +42,7 @@ function createNewState() {
             current_input: '',
             input_history: [],
             input_history_pos: 0,
+            autocomplete_always_networks: [],
             lightbox_url: '',
             show_advanced_tab: false,
             emoji_picker: {
