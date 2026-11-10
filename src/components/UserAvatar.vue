@@ -21,11 +21,23 @@
                 class="kiwi-avatar-image"
                 @error="avatar[avatar.sizeKey[size]].setFailed()"
             />
+            <template v-else-if="avatar.useInitials">
+                <text
+                    x="50"
+                    y="50"
+                    dy="0.36em"
+                    text-anchor="middle"
+                    class="kiwi-avatar-initials"
+                    :style="avatar.fallbackFill ? { fill: avatar.fallbackFill } : null"
+                    :font-size="avatar.initials.length === 1 ? '64px' : '44px'"
+                >{{ avatar.initials }}</text>
+            </template>
             <template v-else>
                 <rect
                     v-for="(cell, index) in avatar.identicon"
                     :key="index"
                     v-bind="cell"
+                    :style="avatar.fallbackFill ? { fill: avatar.fallbackFill } : null"
                     class="kiwi-avatar-fallback-shape"
                 />
             </template>
@@ -56,7 +68,11 @@ import { computed } from 'vue';
 
 import getState from '@/libs/state';
 import * as TextFormatting from '@/helpers/TextFormatting';
-import { getLocalIdenticon } from '@/helpers/AvatarFallback';
+import {
+    LOCAL_INITIALS,
+    getLocalIdenticon,
+    getLocalInitials
+} from '@/helpers/AvatarFallback';
 import { getAvatarTransform } from './UserAvatarCommon';
 
 </script>
@@ -166,14 +182,19 @@ const avatar = computed(() => {
     const hasImage = !!overrideUrl ||
         !!(props.user && (props.user.avatar.small || props.user.avatar.large));
 
-    const showBackground = !hasImage || state.setting('avatars.show_image_background');
+    const showBackground = state.setting('avatars.show_image_background') !== false;
     const backgroundStyle = {};
+    const useInitials = state.setting('avatars.fallback_style') === LOCAL_INITIALS;
+    const initialsLength = state.setting('avatars.initials_length') || 1;
 
     const avatars = {
         hasImage,
-        identicon: getLocalIdenticon(nick),
+        useInitials,
+        initials: useInitials ? getLocalInitials(nick, initialsLength) : '',
+        identicon: useInitials ? [] : getLocalIdenticon(nick),
         showBackground,
         backgroundStyle,
+        fallbackFill: '',
         sizeKey: {},
     };
 
@@ -184,6 +205,8 @@ const avatar = computed(() => {
     } else {
         backgroundStyle.fill = TextFormatting.createNickColour(nick);
     }
+
+    avatars.fallbackFill = showBackground ? '' : backgroundStyle.fill;
 
     if (overrideUrl) {
         avatars.small = getOverrideObj();
@@ -243,5 +266,10 @@ const toggleAway = () => {
 .kiwi-avatar-fallback-shape {
     fill: var(--brand-default-bg);
     opacity: 0.92;
+}
+
+.kiwi-avatar-initials {
+    font-family: Arial, sans-serif;
+    font-weight: 900;
 }
 </style>

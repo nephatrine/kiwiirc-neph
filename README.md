@@ -43,10 +43,10 @@ files.
 
 ### Plugins & Extensibility
 
-- Plugin API for UI hooks, tabs, views, sidebars, startup screens, translations,
-  and media playback.
-- Bundled channels sidebar, radio, Bongo Companion, NephDeck, and NephWave
-  plugins.
+- Plugin API for UI hooks, tabs, settings blocks, input commands, autocomplete
+  providers, views, sidebars, startup screens, translations, and media playback.
+- Bundled channels sidebar, radio, Bongo Companion, NephDeck, NephWave, and
+  `suggest-limnoria` plugins.
 - See [PLUGINS.md](PLUGINS.md) for plugin authoring and API details.
 
 ## Requirements
@@ -189,7 +189,6 @@ npm run dev
 **Generated Assets:**
 
 - `npm run generate:emojis -- /path/to/emoji.json`
-- `npm run generate:limnoria`
 - `npm run generate:boxicons`
 - `npm run optimize:bongo`
 

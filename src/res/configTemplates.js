@@ -103,9 +103,9 @@ export const configTemplates = {
             show_topic_in_header: false,
             show_nick_changes: true,
             show_mode_changes: true,
-            show_presence_changes: true,
+            show_presence_changes: false,
             traffic_as_activity: false,
-            server_as_activity: true,
+            server_as_activity: false,
             coloured_nicklist: true,
             colour_nicknames_in_messages: true,
             block_pms: false,
@@ -121,7 +121,7 @@ export const configTemplates = {
             share_typing: true,
             // flash_title: message/highlight/off
             flash_title: 'message',
-            nicklist_avatars: false,
+            nicklist_avatars: true,
             warn_expected_command: true,
             show_link_previews: true,
             inline_link_auto_previews: true,
@@ -134,7 +134,7 @@ export const configTemplates = {
             prompt_leave: 'channels',
             // auto_request_history: all/channels/queries/none
             auto_request_history: 'all',
-            emoji_convert_as_typed: true,
+            emoji_convert_as_typed: false,
             emoji_convert_incoming: true,
             ignore_bots: false,
             show_redactions: 'placeholder',
@@ -146,6 +146,7 @@ export const configTemplates = {
             initials_length: 1,
             show_image_background: true,
             show_without_user: false,
+            fallback_style: 'local-identicon',
             fallback_avatar_url: '',
         },
         // Startup screen default
@@ -177,14 +178,14 @@ export const configTemplates = {
         defaultSaslMechanism: 'AUTO',
         allowRegisterProtocolHandler: false,
         noticeActiveBuffer: true,
-        nicklistGroupAway: false,
+        nicklistGroupAway: true,
         showChanlistModes: false,
         showAutocomplete: true,
         autocompleteTokens: ['/', '#', '@'],
         forceShowEmojiPicker: false,
         showEmojiPicker: true,
         emojiPickerMaxVersion: 0,
-        showColorPicker: false,
+        showColorPicker: true,
         showSendButton: false,
         showAwayStatusIndicators: true,
         sidebarDefault: 'nicklist',
@@ -193,7 +194,7 @@ export const configTemplates = {
         changeNickOnCollision: true,
         hideSettings: null,
         highlights: '',
-        teamHighlights: false,
+        teamHighlights: true,
         aliases: `
 # General aliases
 /p /part $1+

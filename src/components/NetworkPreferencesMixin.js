@@ -1,5 +1,4 @@
-import { effectiveService, filehostAvailable, listUploadServices } from '@/libs/fileupload';
-import { LIMNORIA_DEFAULT_PLUGINS } from '@/libs/Limnoria';
+import { filehostSupported as networkFilehostSupported } from '@/libs/fileupload';
 
 function bindNetworkSetting(settingName, fallback) {
     return {
@@ -57,9 +56,6 @@ export default {
         },
     },
     computed: {
-        networkPreferencesAvailable() {
-            return !!this.networkPreferencesTarget();
-        },
         persistencePreferenceAvailable() {
             const network = this.networkPreferencesTarget();
             return network && network.persistencePreferenceAvailable();
@@ -78,6 +74,12 @@ export default {
             const network = this.networkPreferencesTarget();
             return network && network.hasCap('message-tags');
         },
+        typingSupported() {
+            const network = this.networkPreferencesTarget();
+            return network &&
+                network.hasCap('message-tags') &&
+                network.supportsTag('+typing');
+        },
         redactionsSupported() {
             const network = this.networkPreferencesTarget();
             return network && network.hasCap('draft/message-redaction');
@@ -86,6 +88,10 @@ export default {
             const network = this.networkPreferencesTarget();
             return network && typeof network.supports('BOT') !== 'undefined';
         },
+        filehostSupported() {
+            return networkFilehostSupported(this.networkPreferencesTarget());
+        },
+        settingUseFilehost: bindNetworkSetting('useFilehost', true),
         settingPersistencePreference: bindNetworkSetting('persistencePreference', 'keep'),
         settingWebpushEnabled: bindNetworkSetting('webpushEnabled', false),
         settingBufferShowNotifications: bindNetworkSetting('show_notifications', true),
@@ -93,63 +99,5 @@ export default {
         settingBufferIgnoreBots: bindNetworkSetting('ignore_bots', false),
         settingBufferLenientRerouting: bindNetworkSetting('lenient_rerouting', true),
         settingBufferShowRedactions: bindNetworkSetting('show_redactions', 'placeholder'),
-        settingLimnoriaSuggestions: bindNetworkSetting('limnoriaSuggestions', false),
-        settingLimnoriaPrefix: bindNetworkSetting('limnoriaPrefix', '!'),
-        settingLimnoriaName: bindNetworkSetting('limnoriaName', 'SupyBot'),
-        settingLimnoriaPlugins: bindNetworkSetting(
-            'limnoriaPlugins',
-            LIMNORIA_DEFAULT_PLUGINS
-        ),
-        fileuploadServices() {
-            const network = this.networkPreferencesTarget();
-            const saved = this.fileuploadServiceChoice;
-            return listUploadServices().filter((service) => {
-                if (service.id !== 'filehost') {
-                    return true;
-                }
-                return saved === 'filehost' || filehostAvailable(network);
-            });
-        },
-        fileuploadServiceChoice: {
-            get() {
-                const network = this.networkPreferencesTarget();
-                const value = network ? network.setting('fileuploadService') : '';
-                return typeof value === 'undefined' ? '' : value;
-            },
-            set(newVal) {
-                const network = this.networkPreferencesTarget();
-                if (network) {
-                    network.setting('fileuploadService', newVal || '');
-                }
-            },
-        },
-        fileuploadRetentionOptions() {
-            const service = effectiveService(
-                this.$state,
-                this.networkPreferencesTarget()
-            );
-            return (service && service.retentions) || [];
-        },
-        fileuploadRetentionChoice: {
-            get() {
-                const network = this.networkPreferencesTarget();
-                const service = effectiveService(this.$state, network);
-                if (!service || !service.retentions || !service.retentions.length) {
-                    return '';
-                }
-                const value = network ? network.setting('fileuploadRetention') : '';
-                return service.retentions.includes(value) ? value : '';
-            },
-            set(newVal) {
-                const network = this.networkPreferencesTarget();
-                const service = effectiveService(this.$state, network);
-                if (!network || !service ||
-                    !service.retentions || !service.retentions.length
-                ) {
-                    return;
-                }
-                network.setting('fileuploadRetention', newVal || '');
-            },
-        },
     },
 };

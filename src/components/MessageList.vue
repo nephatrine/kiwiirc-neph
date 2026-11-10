@@ -170,8 +170,8 @@
 'kiwi public';
 
 import Vue from 'vue';
-import strftime from 'strftime';
 import * as Misc from '@/helpers/Misc';
+import { formatTimestamp } from '@/helpers/TimestampFormat';
 import { createNickColour } from '@/helpers/TextFormatting';
 import Logger from '@/libs/Logger';
 import * as bufferTools from '@/libs/bufferTools';
@@ -478,12 +478,15 @@ export default {
             return this.buffer.setting(key);
         },
         formatTime(time) {
-            return strftime(this.buffer.setting('timestamp_format') || '%T', new Date(time));
+            return formatTimestamp(
+                this.buffer.setting('timestamp_format') || '%T',
+                new Date(time)
+            );
         },
         formatTimeFull(time) {
             let format = this.buffer.setting('timestamp_full_format');
             return format ?
-                strftime(format, new Date(time)) :
+                formatTimestamp(format, new Date(time)) :
                 (new Date(time)).toLocaleString();
         },
         isEmojiOnlyMessage(message) {

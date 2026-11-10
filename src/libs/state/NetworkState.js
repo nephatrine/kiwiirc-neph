@@ -5,7 +5,6 @@ import * as Misc from '@/helpers/Misc';
 import { stripAccountSuffix } from '@/helpers/LoginFields';
 import { isTwitchHost, twitchUserModes } from '@/helpers/Twitch';
 import { parseAccountRegistrationCap } from '@/libs/accountRegistration';
-import { LIMNORIA_DEFAULT_PLUGINS } from '@/libs/Limnoria';
 import { def } from './common';
 import * as IrcClient from '../IrcClient';
 
@@ -56,11 +55,11 @@ export default class NetworkState {
                 fallback :
                 bufferDefaults[name]
         );
-        const limnoriaDefaults = config.limnoria || {};
-        const limnoriaDefault = (name, fallback) => (
-            typeof limnoriaDefaults[name] === 'undefined' ?
+        const fileuploadDefaults = config.fileupload || {};
+        const fileuploadDefault = (name, fallback) => (
+            typeof fileuploadDefaults[name] === 'undefined' ?
                 fallback :
-                limnoriaDefaults[name]
+                fileuploadDefaults[name]
         );
         this.settings = {
             show_raw_caps: false,
@@ -82,15 +81,8 @@ export default class NetworkState {
             lenient_rerouting: bufferDefault('lenient_rerouting', true),
             ignore_bots: bufferDefault('ignore_bots', false),
             show_redactions: bufferDefault('show_redactions', 'placeholder'),
-            limnoriaSuggestions: !!limnoriaDefault('suggestions', false),
-            limnoriaPrefix: String(limnoriaDefault('prefix', '!') || ''),
-            limnoriaName: String(limnoriaDefault('name', 'SupyBot') || ''),
-            limnoriaPlugins: String(
-                limnoriaDefault('plugins', LIMNORIA_DEFAULT_PLUGINS) || ''
-            ),
-            // Empty means use the admin/service default.
-            fileuploadService: '',
-            fileuploadRetention: '',
+            // Prefer FILEHOST over the global upload service when available.
+            useFilehost: fileuploadDefault('use_filehost', true) !== false,
             // channel -> emoji pack load policy entry
             emojiChannelPolicies: {},
             emojiChannelPoliciesMigrated: false,

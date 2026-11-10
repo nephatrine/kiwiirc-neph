@@ -184,23 +184,26 @@ reactive object keys need `kiwi.Vue.set()` or `kiwi.Vue.delete()`. Use
 
 ## Core API
 
-| Member                         | Description                                          |
-| ------------------------------ | ---------------------------------------------------- |
-| `kiwi.version`                 | Kiwi IRC version string.                             |
-| `kiwi.commithash`              | Build commit hash.                                   |
-| `kiwi.versionMatches(version)` | True when the running version is at least `version`. |
-| `kiwi.Vue`                     | Vue 2 constructor and helpers.                       |
-| `kiwi.JSON5`                   | JSON5 parser, loaded before plugin scripts run.      |
-| `kiwi.state`                   | Running application state singleton.                 |
-| `kiwi.themes`                  | Theme manager.                                       |
-| `kiwi.i18n`                    | i18next instance.                                    |
-| `kiwi.vueI18n`                 | Vue I18n instance.                                   |
-| `kiwi.media`                   | Reactive aggregate media state.                      |
-| `kiwi.log`                     | Shared logger.                                       |
-| `kiwi.logLevel(level)`         | Set the global log level.                            |
-| `kiwi.require(path)`           | Load an exported application module.                 |
-| `kiwi.plugin(name, callback)`  | Register a plugin.                                   |
-| `kiwi.on/off/once/emit`        | Event emitter methods.                               |
+| Member                                         | Description                                          |
+| ---------------------------------------------- | ---------------------------------------------------- |
+| `kiwi.version`                                 | Kiwi IRC version string.                             |
+| `kiwi.commithash`                              | Build commit hash.                                   |
+| `kiwi.versionMatches(version)`                 | True when the running version is at least `version`. |
+| `kiwi.Vue`                                     | Vue 2 constructor and helpers.                       |
+| `kiwi.JSON5`                                   | JSON5 parser, loaded before plugin scripts run.      |
+| `kiwi.state`                                   | Running application state singleton.                 |
+| `kiwi.themes`                                  | Theme manager.                                       |
+| `kiwi.i18n`                                    | i18next instance.                                    |
+| `kiwi.vueI18n`                                 | Vue I18n instance.                                   |
+| `kiwi.media`                                   | Reactive aggregate media state.                      |
+| `kiwi.log`                                     | Shared logger.                                       |
+| `kiwi.logLevel(level)`                         | Set the global log level.                            |
+| `kiwi.require(path)`                           | Load an exported application module.                 |
+| `kiwi.plugin(name, callback)`                  | Register a plugin.                                   |
+| `kiwi.registerCommand(name, handler)`          | Register an input command.                           |
+| `kiwi.addAutocompleteProvider(name, provider)` | Register local completion.                           |
+| `kiwi.addSettingsBlock(type, component, args)` | Add a settings block.                                |
+| `kiwi.on/off/once/emit`                        | Event emitter methods.                               |
 
 ### Importing Modules
 
@@ -224,6 +227,8 @@ Useful modules include:
   `deepClone`, `sortBy`.
 - `helpers/Async` — `debounce`, `throttle`.
 - `helpers/Misc` — URL, connection, and media helpers.
+- `helpers/CommandTree` — token suggestions, path resolution, syntax, and
+  delivery for `suggest-*` plugins.
 - `components/ChannelList` — channel-list component.
 - `components/AppSettings` — settings view component.
 - `libs/bufferTools` — buffer helpers.
@@ -261,6 +266,33 @@ method; internal fields and reactivity assumptions can change.
 
 The message array on a buffer is not reactive. Individual `Message` objects are
 reactive. Use the state and buffer helpers rather than replacing arrays.
+
+`network.setting(name)` and `network.setting(name, value)` read and write
+per-network settings. They behave like `state.setting()` but are scoped to one
+network.
+
+## Input Commands
+
+`kiwi.registerCommand(name, handler)` registers a client-side input command
+without the leading slash. Command names are matched case-insensitively.
+
+```js
+kiwi.registerCommand('hello', (event, command, params, context) => {
+    event.handled = true;
+    kiwi.state.$emit('input.raw', '/msg ' + context.buffer.name + ' Hello', context);
+});
+```
+
+The handler receives `(event, command, params, context)`. Set
+`event.handled = true` to stop the core command handler and raw IRC fallback.
+
+Plugin commands run after the `input.command.<name>` event and before built-in
+commands. Unhandled commands continue through the normal core handling. Handler
+errors are logged and do not abort input processing.
+
+Commands that need the normal message path can re-emit `input.raw` with the
+original context, as in the example. This preserves pending-message, local echo,
+and alias handling.
 
 ## UI Hooks
 
@@ -323,6 +355,65 @@ translated with the remainder as the translation key.
 
 Unknown tab types are ignored.
 
+### `addSettingsBlock(type, component, args)`
+
+Adds a plugin-owned block to the bottom of an existing settings tab without
+creating a new tab. Use this when a plugin only has a few settings.
+
+- `general` — bottom of the General settings tab. The component receives no
+  `network` prop, and `pluginProps` is an empty object.
+- `network` — bottom of the active-network settings tab. The component receives
+  the active `network` prop and `pluginProps.network`.
+
+`args.title` is optional and uses the same `t_` translation convention. An empty
+title omits the heading. `args.props` binds additional props. Blocks render in
+registration order after the built-in blocks.
+
+The host wraps the component in `.kiwi-appsettings-block`. Render the contents
+using `.kiwi-appsettings-section` so the block matches the built-in settings.
+
+```html
+<template id="my-plugin-settings">
+ <div class="kiwi-appsettings-section">
+  <label class="u-checkbox-wrapper">
+   <span>
+    My plugin setting
+   </span>
+   <input type="checkbox" v-model="enabled"/>
+  </label>
+ </div>
+</template>
+<script>
+ kiwi.plugin('my-plugin', (kiwi) => {
+    kiwi.addTranslations('my-plugin', {
+        'en-us': { settings: 'My Plugin' },
+    });
+
+    const Settings = kiwi.Vue.extend({
+        template: '#my-plugin-settings',
+        props: ['network'],
+        computed: {
+            enabled: {
+                get() {
+                    return !!this.network.setting('plugin-my-plugin.enabled');
+                },
+                set(value) {
+                    this.network.setting('plugin-my-plugin.enabled', value);
+                },
+            },
+        },
+    });
+
+    kiwi.addSettingsBlock('network', Settings, {
+        title: 't_my-plugin:settings',
+    });
+ });
+</script>
+```
+
+Register blocks during plugin startup, like other UI hooks. Unknown block types
+are ignored.
+
 ### `addView` and `showView`
 
 `kiwi.addView(name, component, props)` registers a full-workspace component.
@@ -372,6 +463,56 @@ does not exist.
 
 This is an advanced hook. Replacing a module can break internal assumptions and
 other plugins. Prefer UI hooks, services, or events when they are sufficient.
+
+## Autocomplete Providers
+
+`kiwi.addAutocompleteProvider(name, provider)` adds local input completion,
+without touching the remote `+draft/autocomplete-request` path.
+
+```js
+kiwi.addAutocompleteProvider('my-suggestions', {
+    suggest({
+        input,
+        token,
+        network,
+        buffer
+    }) {
+        return {
+            active: true,
+            items: [{
+                text: 'join',
+                description: 'admin join',
+                type: 'command'
+            }],
+            filter: token,
+            filtering: true,
+        };
+    },
+
+    hint({
+        input,
+        network,
+        buffer
+    }) {
+        return 'admin join <channel>';
+    },
+});
+```
+
+`active: true` means the provider owns the current input. The host opens the
+suggestion list when `items` is non-empty, and closes it when `items` is empty.
+Return `null` or `undefined` to let later providers and built-in completions
+run.
+
+`items` uses the same fields as the autocomplete component: `text`,
+`description`, `help`, `type`, `filterText`, `insertText`, and optional icon
+fields. `filter` defaults to the current token; `filtering` defaults to `true`.
+
+Providers run in registration order and the first active result wins. `hint()`
+is called separately while rendering; the first non-empty string is shown as the
+input syntax hint. Hints may return `''`.
+
+Register providers during plugin startup, like other UI hooks.
 
 ## Configuration
 

@@ -1,13 +1,13 @@
 import { hash32 } from '@/helpers/MurmurHash3';
 
 export const LOCAL_IDENTICON = 'local-identicon';
+export const LOCAL_INITIALS = 'local-initials';
 export const CUSTOM_AVATAR_STYLE = 'custom';
 
 const DICEBEAR_BASE = 'https://api.dicebear.com/10.x';
 
 export const DICEBEAR_FALLBACK_URLS = {
     'dicebear-identicon': `${DICEBEAR_BASE}/identicon/svg?seed={nickname}`,
-    'dicebear-rings': `${DICEBEAR_BASE}/rings/svg?seed={nickname}`,
     'dicebear-bottts': `${DICEBEAR_BASE}/bottts/svg?seed={nickname}`,
     'dicebear-cameo': `${DICEBEAR_BASE}/cameo/svg?seed={nickname}`,
     'dicebear-gaze': `${DICEBEAR_BASE}/gaze/svg?seed={nickname}&animationVariant=medium`,
@@ -15,16 +15,16 @@ export const DICEBEAR_FALLBACK_URLS = {
 
 export const AVATAR_FALLBACK_STYLES = [
     {
+        value: LOCAL_INITIALS,
+        labelKey: 'settings_avatar_style_local_initials',
+    },
+    {
         value: LOCAL_IDENTICON,
         labelKey: 'settings_avatar_style_local_identicon',
     },
     {
         value: 'dicebear-identicon',
         labelKey: 'settings_avatar_style_dicebear_identicon',
-    },
-    {
-        value: 'dicebear-rings',
-        labelKey: 'settings_avatar_style_dicebear_rings',
     },
     {
         value: 'dicebear-bottts',
@@ -65,6 +65,19 @@ export function isDiceBearFallbackStyle(style) {
 
 function hashBit(hash, index) {
     return Math.floor(hash / (2 ** index)) % 2;
+}
+
+export function getLocalInitials(nick, length = 1) {
+    let count = parseInt(length, 10);
+    if (!count || count < 1) {
+        count = 1;
+    }
+    if (count > 2) {
+        count = 2;
+    }
+
+    const value = String(nick || 'User').trim() || 'User';
+    return Array.from(value).slice(0, count).join('').toUpperCase();
 }
 
 export function getLocalIdenticon(nick) {

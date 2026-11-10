@@ -44,7 +44,7 @@ config, so a saved user setting overrides the same key.
   and the modern message layout.
 
 The default config template enables the bundled channels sidebar, NephDeck,
-NephWave, Bongo Companion, and radio plugins.
+NephWave, Bongo Companion, radio, and `suggest-limnoria` plugins.
 
 ## Value Replacements
 
@@ -165,10 +165,6 @@ Notes:
   `personal`.
 - `startupOptions.server`, `port`, `tls`, `channel`, and `nick` seed the
   built-in forms. `personal` uses saved state and URL fragments instead.
-- `startupOptions.bouncer: true` is the legacy bouncer switch used by `welcome`
-  and `personal`. It keeps the single bouncer login form and enables the bouncer
-  provider. `customServer` uses its own Bouncer tab instead.
-- `kiwiBnc` and `znc` are legacy aliases for `startupScreen: "bouncer"`.
 - `restricted: true` locks the client to one network. `personal` forces it to
   `false`.
 - `presetNetworks` supplies the `customServer` selector.
@@ -192,7 +188,6 @@ Notes:
 | `enableCustom`     | `true`       | Show the custom-server entry on `customServer`.                         |
 | `enableTabs`       | `true`       | Show the IRC and Bouncer tabs on `customServer`.                        |
 | `altComponent`     | unset        | Replace the `welcome` form with a registered custom component.          |
-| `bouncer`          | `false`      | Legacy bouncer switch for `welcome` and `personal`.                     |
 | `greetingText`     | unset        | Custom greeting text for startup screens.                               |
 | `buttonText`       | unset        | Custom connect-button text.                                             |
 | `footerText`       | unset        | Custom footer text.                                                     |
@@ -266,9 +261,9 @@ Object format:
 }
 ```
 
-`type` is `irc` or `bnc`; `znc` is accepted as a legacy alias for `bnc`.
-`channels` is used for the initial channel list. Without a gateway, gateway
-presets are switched to their direct WebSocket equivalent.
+`type` is `irc` or `bnc`. `channels` is used for the initial channel list.
+Without a gateway, gateway presets are switched to their direct WebSocket
+equivalent.
 
 String presets may include `?type=bnc` and `?nick=<nick>`. The `nick` parameter
 is used when a URL fragment supplies multiple connections.
@@ -291,25 +286,6 @@ is used when a URL fragment supplies multiple connections.
 | `hide_advanced`                | unset              | Hide the Advanced tab in app settings.                                      |
 | `allowRegisterProtocolHandler` | `false`            | Offer `irc://` and `ircs://` protocol registration when supported.          |
 | `ircFramework`                 | unset              | Advanced options passed to the `irc-framework` client.                      |
-
-### Legacy Bouncer
-
-The `bnc` object is the pre-`bouncer-networks` connection method:
-
-```json5
-"bnc": {
-    "active": false,
-    "server": "",
-    "port": 6667,
-    "tls": false,
-    "path": "",
-    "username": "",
-    "password": ""
-}
-```
-
-Prefer `startupScreen: "bouncer"` for modern bouncers. The `bnc.password` value
-is public if set in config; use the login form instead.
 
 ### Per-Network Defaults
 
@@ -338,13 +314,13 @@ and provides a VAPID key.
 | `windowTitle`              | `Kiwi IRC - The web IRC client`  | Browser tab title.                                                           |
 | `useMonospace`             | `false`                          | Use the monospace font for messages.                                         |
 | `language`                 | `""`                             | UI language. Empty follows the browser.                                      |
-| `theme`                    | `Kiwi Dark`                      | Active built-in theme name or theme object name.                             |
+| `theme`                    | `Kiwi Dark`                      | Active theme name, including an installed desktop theme.                     |
 | `themes`                   | Built-in list                    | Theme definitions. Setting this replaces the built-in list.                  |
 | `google_fonts`             | Source Sans Pro, Source Code Pro | Fallback Google Fonts loaded for the active theme.                           |
 | `showEmojiPicker`          | `true`                           | Show the emoji picker button.                                                |
 | `forceShowEmojiPicker`     | `false`                          | Show the emoji picker even on touch devices.                                 |
 | `emojiPickerMaxVersion`    | `0`                              | Maximum Unicode emoji version. `0` shows all versions.                       |
-| `showColorPicker`          | `false`                          | Show the colour picker button.                                               |
+| `showColorPicker`          | `true`                           | Show the colour picker button.                                               |
 | `showSendButton`           | `false`                          | Show a send button on touch devices.                                         |
 | `showAutocomplete`         | `true`                           | Enable command and nick autocomplete.                                        |
 | `autocompleteTokens`       | `["/", "#", "@"]`                | Tokens that trigger autocomplete.                                            |
@@ -352,17 +328,21 @@ and provides a VAPID key.
 | `sidebarDefault`           | `nicklist`                       | Sidebar shown at startup: `nicklist`, `settings`, `about`, `user`, or empty. |
 | `showRaw`                  | `false`                          | Show raw server buffers globally.                                            |
 | `showChanlistModes`        | `false`                          | Show channel modes in the channel list.                                      |
-| `nicklistGroupAway`        | `false`                          | Group away users in the nicklist.                                            |
+| `nicklistGroupAway`        | `true`                           | Group away users in the nicklist.                                            |
 | `noticeActiveBuffer`       | `true`                           | Route server notices to the active buffer when possible.                     |
 | `skipHiddenMessages`       | `false`                          | Skip hidden join/part/nick/mode events entirely.                             |
 | `useBufferHistory`         | `true`                           | Remember recently viewed buffers and reopen the last one.                    |
 | `changeNickOnCollision`    | `true`                           | Automatically try a new nick during registration if needed.                  |
 | `highlights`               | `""`                             | Space-separated extra highlight words.                                       |
-| `teamHighlights`           | `false`                          | Enable `@here`, `@channel`, and `@everyone` highlights.                      |
+| `teamHighlights`           | `true`                           | Enable `@here`, `@channel`, and `@everyone` highlights.                      |
 
 `themes` entries support `name`, `url`, `mode` (`light` or `dark`), and
-`google_fonts`. If `themes` is set, it replaces the built-in list rather than
-appending to it.
+`google_fonts`. A theme URL is a base path; Kiwi loads `<url>/theme.css`. If
+`themes` is set, it replaces the built-in list rather than appending to it.
+
+Desktop users can also install local ZIP theme packages from **Settings →
+General → Appearance → Installed Themes**. Installed themes are stored in the
+desktop user-data directory and are not part of profile exports.
 
 `showEmojiPicker` and `forceShowEmojiPicker` are also gated by the active
 network supporting UTF-8. `forceShowEmojiPicker` only overrides the touch-device
@@ -396,43 +376,43 @@ overrides them.
 
 ### Layout and Display
 
-| Key                            | Default       | Description                                           |
-| ------------------------------ | ------------- | ----------------------------------------------------- |
-| `messageLayout`                | `modern`      | `modern`, `compact`, or `inline`.                     |
-| `show_timestamps`              | `true`        | Show message timestamps.                              |
-| `timestamp_format`             | `%H:%M:%S`    | Timestamp format.                                     |
-| `timestamp_full_format`        | `""`          | Full timestamp format. Empty uses the browser locale. |
-| `show_hostnames`               | `false`       | Show `nick!user@host` in system messages.             |
-| `show_realnames`               | `false`       | Show realnames in the nicklist.                       |
-| `show_joinparts`               | `true`        | Show join and part messages.                          |
-| `show_topics`                  | `true`        | Show topic changes.                                   |
-| `show_topic_in_header`         | `false`       | Show the topic in the channel header.                 |
-| `show_nick_changes`            | `true`        | Show nick changes.                                    |
-| `show_mode_changes`            | `true`        | Show mode changes.                                    |
-| `show_presence_changes`        | `true`        | Show presence changes.                                |
-| `show_buffer_groups`           | `true`        | Group buffers by type in the sidebar.                 |
-| `coloured_nicklist`            | `true`        | Colour nicknames in the nicklist.                     |
-| `colour_nicknames_in_messages` | `true`        | Colour nicknames in messages.                         |
-| `nicklist_avatars`             | `false`       | Show avatars in the nicklist.                         |
-| `hide_message_counts`          | `false`       | Hide unread message counts.                           |
-| `show_message_info`            | `true`        | Show the message info action.                         |
-| `extra_formatting`             | `true`        | Enable Markdown-style and extra formatting.           |
-| `emoji_convert_as_typed`       | `true`        | Convert emoji shortcodes while typing.                |
-| `emoji_convert_incoming`       | `true`        | Convert emoji shortcodes in incoming messages.        |
-| `show_redactions`              | `placeholder` | `hidden`, `placeholder`, or `revealed`.               |
-| `favorite`                     | `false`       | Per-buffer favourite default.                         |
+| Key                            | Default       | Description                                                                                                              |
+| ------------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `messageLayout`                | `modern`      | `modern`, `compact`, or `inline`.                                                                                        |
+| `show_timestamps`              | `true`        | Show message timestamps.                                                                                                 |
+| `timestamp_format`             | `%H:%M:%S`    | Timestamp format: `%H:%M:%S`, `%l:%M:%S %p`, or `decimal` for decimal time. Other formats hide the Time System selector. |
+| `timestamp_full_format`        | `""`          | Full timestamp format. Empty uses the browser locale.                                                                    |
+| `show_hostnames`               | `false`       | Show `nick!user@host` in system messages.                                                                                |
+| `show_realnames`               | `false`       | Show realnames in the modern message layout.                                                                             |
+| `show_joinparts`               | `true`        | Show join and part messages.                                                                                             |
+| `show_topics`                  | `true`        | Show topic changes.                                                                                                      |
+| `show_topic_in_header`         | `false`       | Show topic in header. Desktop defaults to `true`.                                                                        |
+| `show_nick_changes`            | `true`        | Show nick changes.                                                                                                       |
+| `show_mode_changes`            | `true`        | Show mode changes.                                                                                                       |
+| `show_presence_changes`        | `true`        | Show presence changes.                                                                                                   |
+| `show_buffer_groups`           | `true`        | Group buffers by type in the sidebar.                                                                                    |
+| `coloured_nicklist`            | `true`        | Colour nicknames in the nicklist.                                                                                        |
+| `colour_nicknames_in_messages` | `true`        | Colour nicknames in messages.                                                                                            |
+| `nicklist_avatars`             | `true`        | Show avatars in the nicklist.                                                                                            |
+| `hide_message_counts`          | `false`       | Hide unread message counts.                                                                                              |
+| `show_message_info`            | `true`        | Show the message info action.                                                                                            |
+| `extra_formatting`             | `true`        | Enable Markdown-style and extra formatting.                                                                              |
+| `emoji_convert_as_typed`       | `false`       | Convert emoji shortcodes while typing.                                                                                   |
+| `emoji_convert_incoming`       | `true`        | Convert emoji shortcodes in incoming messages.                                                                           |
+| `show_redactions`              | `placeholder` | `hidden`, `placeholder`, or `revealed`.                                                                                  |
+| `favorite`                     | `false`       | Per-buffer favourite default.                                                                                            |
 
 ### History and Scrolling
 
-| Key                     | Default    | Description                                                    |
-| ----------------------- | ---------- | -------------------------------------------------------------- |
-| `scrollback_size`       | `250`      | Normal buffer scrollback. Raw server buffers default to 500.   |
-| `auto_request_history`  | `all`      | Request history for `all`, `channels`, `queries`, or `none`.   |
-| `prompt_leave`          | `channels` | Prompt before leaving `all`, `channels`, `queries`, or `none`. |
-| `who_loop`              | `true`     | Periodically refresh user information with WHO.                |
-| `shared_input`          | `false`    | Share input across buffers.                                    |
-| `block_pms`             | `false`    | Block private messages from unknown users.                     |
-| `warn_expected_command` | `true`     | Warn when a slash command is preceded by whitespace.           |
+| Key                     | Default    | Description                                                              |
+| ----------------------- | ---------- | ------------------------------------------------------------------------ |
+| `scrollback_size`       | `250`      | Normal buffer scrollback. Raw server buffers and desktop default to 500. |
+| `auto_request_history`  | `all`      | Request history for `all`, `channels`, `queries`, or `none`.             |
+| `prompt_leave`          | `channels` | Prompt before leaving `all`, `channels`, `queries`, or `none`.           |
+| `who_loop`              | `true`     | Periodically refresh user information with WHO.                          |
+| `shared_input`          | `false`    | Share input across buffers.                                              |
+| `block_pms`             | `false`    | Block private messages from unknown users.                               |
+| `warn_expected_command` | `true`     | Warn when a slash command is preceded by whitespace.                     |
 
 ### Notifications and Sounds
 
@@ -467,13 +447,14 @@ overrides them.
 
 ## Avatars
 
-| Key                             | Default | Description                                                                        |
-| ------------------------------- | ------- | ---------------------------------------------------------------------------------- |
-| `avatars.fallback_avatar_url`   | `""`    | Fallback avatar URL. `{nickname}` is replaced with the URL-encoded lowercase nick. |
-| `avatars.away_status_position`  | `1`     | Away-dot corner: `1` top-right, `2` bottom-right, `3` bottom-left, `4` top-left.   |
-| `avatars.initials_length`       | `1`     | Initials shown in fallback avatars: `1` or `2`.                                    |
-| `avatars.show_image_background` | `true`  | Show the colour background behind avatar images.                                   |
-| `avatars.show_without_user`     | `false` | Show avatars for messages without a known user.                                    |
+| Key                             | Default             | Description                                                                                                                    |
+| ------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `avatars.fallback_avatar_url`   | `""`                | Fallback avatar URL. `{nickname}` is replaced with the URL-encoded lowercase nick. An empty URL uses the selected local style. |
+| `avatars.fallback_style`        | `"local-identicon"` | `local-initials`, `local-identicon`, DiceBear, or `custom`.                                                                    |
+| `avatars.away_status_position`  | `1`                 | Away-dot corner: `1` top-right, `2` bottom-right, `3` bottom-left, `4` top-left.                                               |
+| `avatars.initials_length`       | `1`                 | Initials shown in local fallback avatars: `1` or `2`.                                                                          |
+| `avatars.show_image_background` | `true`              | Show the colour background behind avatars. When disabled, local initials and identicons use the nickname colour.               |
+| `avatars.show_without_user`     | `false`             | Show avatars for messages without a known user.                                                                                |
 
 ## Text Formats
 
@@ -536,7 +517,7 @@ Enable plugins with the top-level `plugins` array:
 ```
 
 - The config template enables the bundled channels sidebar, NephDeck, NephWave,
-  Bongo Companion, and radio plugins.
+  Bongo Companion, radio, and `suggest-limnoria` plugins.
 - An empty array loads no plugins.
 - HTML plugins are injected with `innerHTML`; use `<i></i>`, not `<i />`.
 - URLs resolve relative to the plugin HTML file.
@@ -550,16 +531,40 @@ media playback.
 ```json5
 "fileupload": {
     "service": "none",
+    "use_filehost": true,
     "litterbox": {
         "retention": "72h"
+    },
+    "catbox": {
+        "userhash": ""
+    },
+    "sharebin": {
+        "retention": "7d"
+    },
+    "webdav": {
+        "upload_url": "",
+        "access_url": "",
+        "username": ""
     }
 }
 ```
 
-- `service` is `none`, `litterbox`, or `filehost`.
+- `service` is the global preferred upload service: `none`, `litterbox`,
+  `catbox`, `filebin`, `sharebin`, `uguu`, or `webdav`. `filehost` is not a
+  global service choice.
+- Catbox, Filebin, ShareBin.eu, Uguu, and WebDAV are desktop-only because their
+  upload endpoints do not reliably support browser CORS.
+- `use_filehost` is the default for new networks. Networks prefer FILEHOST when
+  it is available unless this is set to `false`.
 - `litterbox.retention` is `1h`, `12h`, `24h`, or `72h`.
-- Users can override the service and retention in settings. `none` does not lock
-  out a user override.
+- `catbox.userhash` is optional and links uploads to a Catbox account.
+- `sharebin.retention` is `1d`, `7d`, `30d`, or `never` and defaults to `7d`.
+- Uguu files expire after 3 hours. Filebin files are deleted after 6 days.
+- `webdav.upload_url` is the PUT destination. `webdav.access_url` is the public
+  base URL and defaults to the upload URL. `webdav.username` is optional. The
+  WebDAV password is a user secret and must not be placed in public config.
+- WebDAV uploads use a unique timestamp-and-random filename with the original
+  extension preserved, so existing files are not overwritten.
 - `filehost` is not a URL. The upload URL comes from `draft/FILEHOST`, falling
   back to `soju.im/FILEHOST`.
 - `FILEHOST` requires a completed SASL login and the stored SASL password.
@@ -570,28 +575,68 @@ media playback.
 
 ## Limnoria
 
+The `/lim` command, command suggestions, syntax hints, and per-network settings
+come from the bundled `suggest-limnoria` plugin. Without that plugin, `/lim` is
+not a Kiwi input command and no Limnoria command data is loaded.
+
+The default `plugins` list includes the plugin. Defining your own `plugins`
+array replaces the defaults, so include this entry to keep Limnoria support:
+
+```json
+{
+  "name": "suggest-limnoria",
+  "url": "static/plugins/suggest-limnoria.html"
+}
+```
+
 ```json5
 "limnoria": {
     "suggestions": true,
-    "prefix": "!",
     "name": "SupyBot",
     "plugins": "Admin, Channel, Config, Misc, Owner, User"
 }
 ```
 
 - `suggestions` enables the `/lim` input command and its local suggestions. The
-  default is `false`. When disabled, `/lim` reports that it is turned off.
-- `prefix` is the channel command prefix. The default is `!`.
-- `name` is the bot nick used for private `/msg` delivery. The default is
-  `SupyBot`.
+  plugin default is `false`. When disabled, `/lim` reports that it is turned
+  off.
+- `name` is the bot nick used for private `/msg` delivery and channel `<name>:`
+  commands. The default is `SupyBot`.
 - `plugins` is a comma- or space-separated list used for local suggestions and
   help. It defaults to the six core plugins above. An empty value disables local
   suggestions, but typed `/lim` commands still use the full command table.
 - Per-network settings override these defaults.
 - Manually typed `/lim` commands still work when their plugin is not listed.
-- Channel-context commands use the prefix and need a channel with the bot
-  present; private-preferred commands use `/msg`. Remote autocomplete still
-  queries Limnoria on Tab.
+- Channel-context commands use `<name>: <command>` and need a channel with the
+  bot present. Private-preferred commands use `/msg`. In a PM with Limnoria
+  itself, commands are sent without any prefix.
+- All command names, syntax, and delivery rules live in
+  `static/plugins/suggest-limnoria/commands.json`.
+
+## Remote Autocomplete
+
+`/auto` explicitly opts a message into remote autocomplete requests:
+
+```text
+/auto SupyBot: foo<TAB>
+/auto !discord <TAB>
+```
+
+Pressing Tab sends `+draft/autocomplete-request` to the current channel or query
+with the text after `/auto ` and without the `/auto ` prefix. Any bot may answer
+with `+draft/autocomplete-response`; responses are shown with the responding
+bot's nick. When the message is sent, the `/auto ` prefix is stripped and the
+remainder is sent as a normal message.
+
+Run `/auto` by itself to toggle always-auto mode for the current network. The
+input bar is highlighted and shows a Tab hint while it is on. In this mode, Tab
+sends ordinary channel or query text as the request without requiring `/auto `.
+Run `/auto` again to return to manual mode. Always-auto is session-only and is
+not saved or restored across reloads.
+
+This requires `message-tags` and an allowed `+draft/autocomplete-request` client
+tag. It is independent of the Limnoria settings. `/lim`, `/msg <bot>`, and slash
+commands never send remote autocomplete requests, even in always-auto mode.
 
 ## Bouncer Networks
 
@@ -613,15 +658,12 @@ Use `startupScreen: "bouncer"` for modern bouncers.
   `sasl set-plain -network <name> <account> <password>` into the `BouncerServ`
   query. It is never sent automatically.
 
-The legacy `bnc` object remains for older deployments. Prefer the dedicated
-bouncer startup screen.
-
 ## Security and Privacy
 
 - The config file is public. Never store passwords, SASL secrets, or user hashes
   in it.
-- `bnc.password`, `network.password`, and `connection.password` are visible to
-  the browser if set in config. Prefer the login form.
+- `network.password` and `connection.password` are visible to the browser if set
+  in config. Prefer the login form.
 - User settings are stored in browser storage. Remember Me can purge saved
   state.
 - `startupOptions.state_key` changes the storage namespace. An empty value
@@ -637,12 +679,14 @@ bouncer startup screen.
   `true`, while the starter file sets `false`.
 - Setting `themes` or `plugins` and expecting arrays to append; arrays replace.
 - Expecting `config.local.json` in production; it is development-only.
-- Using the legacy `bnc` object instead of `startupScreen: "bouncer"`.
 - Forgetting that `probeServerCaps` adds one connection per probed endpoint, and
   that custom endpoints are not probed.
 - Setting `limnoria.suggestions` to `false` and expecting `/lim` to work.
+- Removing `suggest-limnoria` from a custom `plugins` list and expecting `/lim`
+  or Limnoria settings to remain.
 - Setting `limnoria.plugins` to empty and expecting local suggestions.
-- Setting `fileupload.service` to `filehost` without a FILEHOST token and SASL.
+- Setting `fileupload.service` to `filehost`; FILEHOST is a per-network
+  preference and is used automatically when available.
 - Setting `state_key` empty and expecting saved state.
 - Using global `showRaw` instead of the per-network raw-buffer setting.
 - Putting secrets in `static/config.json` or `static/config.local.json`.

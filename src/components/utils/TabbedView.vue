@@ -100,6 +100,9 @@ export default Vue.component('tabbed-view', {
                 }
             });
         },
+        refreshTabs: function refreshTabs() {
+            this.a++;
+        },
     },
 });
 </script>

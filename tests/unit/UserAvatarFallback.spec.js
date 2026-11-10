@@ -1,4 +1,5 @@
 import state from '@/libs/state';
+import { LOCAL_INITIALS } from '@/helpers/AvatarFallback';
 
 describe('user fallback avatars', () => {
     afterEach(() => {
@@ -38,6 +39,19 @@ describe('user fallback avatars', () => {
 
         first.small = '';
         first.large = '';
+
+        expect(user.avatar.small).toBe('');
+        expect(user.avatar.large).toBe('');
+
+        s.$destroy();
+    });
+
+    test('ignores remote fallback URLs for local initials', () => {
+        const s = state.create();
+        const network = s.addNetwork('TestNetwork', 'TestNick', {});
+        const user = s.addUser(network.id, { nick: 'Alice' });
+        s.setting('avatars.fallback_style', LOCAL_INITIALS);
+        s.setting('avatars.fallback_avatar_url', 'https://example.com/{nickname}.svg');
 
         expect(user.avatar.small).toBe('');
         expect(user.avatar.large).toBe('');

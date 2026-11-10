@@ -6,6 +6,7 @@ import ThemeManager from '@/libs/ThemeManager';
 import * as IrcdDiffs from '@/helpers/IrcdDiffs';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import { v4Source, v6Source } from '@/helpers/IpRegex';
+import { LOCAL_INITIALS } from '@/helpers/AvatarFallback';
 import { def } from './common';
 
 let nextId = 0;
@@ -86,7 +87,10 @@ export default class UserState {
             return this.avatarCache;
         }
 
-        let fallbackUrl = this.state.setting('avatars.fallback_avatar_url');
+        const fallbackStyle = this.state.setting('avatars.fallback_style');
+        let fallbackUrl = fallbackStyle === LOCAL_INITIALS ?
+            '' :
+            this.state.setting('avatars.fallback_avatar_url');
         if (fallbackUrl) {
             const source = `fallback:${fallbackUrl}`;
             if (!this.avatarCache || this.avatarCache.avatarSource !== source) {

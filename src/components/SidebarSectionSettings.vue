@@ -99,7 +99,7 @@
                             <span>{{ $t('side_colours') }}</span>
                             <input v-model="settingColouredNicklist" type="checkbox">
                         </label>
-                        <label v-if="messageTagsSupported" class="u-checkbox-wrapper">
+                        <label v-if="typingSupported" class="u-checkbox-wrapper">
                             <span>{{ $t('settings_share_typing') }}</span>
                             <input v-model="settingShareTyping" type="checkbox">
                         </label>
@@ -229,9 +229,11 @@ export default {
         settingExtraFormatting: generateComputedSetting('extra_formatting'),
         settingShareTyping: generateComputedSetting('share_typing'),
         settingFavorite: generateComputedSetting('favorite'),
-        messageTagsSupported() {
+        typingSupported() {
             let network = this.buffer.getNetwork();
-            return network && network.hasCap('message-tags');
+            return network &&
+                network.hasCap('message-tags') &&
+                network.supportsTag('+typing');
         },
         areWeAnOp() {
             return this.buffer.isUserAnOp(this.buffer.getNetwork().nick);

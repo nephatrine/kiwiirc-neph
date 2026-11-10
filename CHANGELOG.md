@@ -22,8 +22,40 @@ and this project adheres to
 - **Desktop Profile Transfer**: Added portable browser/desktop profile export
   and import, with optional password-included files and a desktop profile backup
   before import.
+- **Desktop Themes**: Added local theme installation from ZIP archives, with
+  installed theme listing and uninstall controls in Appearance. Themes are
+  stored in the desktop user-data directory and served through `kiwi-theme://`.
+- **Plugins**: Added `kiwi.addSettingsBlock()` so plugins can append a settings
+  block to General or the active-network App Settings tab without creating
+  another tab. Added `kiwi.registerCommand()` for client input commands,
+  `kiwi.addAutocompleteProvider()` for local completion and syntax hints, and
+  the data-free `helpers/CommandTree` module for `suggest-*` plugins.
+- **Limnoria**: Moved `/lim`, command suggestions, syntax hints, settings, and
+  all command data into the bundled `suggest-limnoria` plugin. Core no longer
+  contains Limnoria command names, syntax, or delivery rules. Without the
+  plugin, `/lim` is not a client command.
 - **Network List**: Added per-network move-up controls and the OFTC fallback
   network icon.
+- **App Settings**: Added a Channel Defaults section for global per-channel
+  defaults such as joins/parts, topic/nick/mode changes, formatting, nicklist
+  colors, notification level, sound, and unread counts. Added the remaining
+  global display, input, history, and notification controls that were previously
+  config-only.
+- **Chat Input**: Added a visible warning when a space-prefixed command is
+  cancelled, with actions to edit it or send it as a message. Added App Settings
+  controls for the emoji and color pickers.
+- **Remote Autocomplete**: Added the `/auto` input command. Tab requests are
+  opt-in per message, can target the current channel or query, and merge
+  responses from multiple bots with each suggestion attributed to its source.
+  The `/auto` prefix is stripped from the sent message. Running `/auto` by
+  itself toggles a session-only, per-network always-auto mode that highlights
+  the input bar and removes the need to prefix each request.
+- **Notifications**: Added a Team Highlights setting for `@here`, `@channel`,
+  and `@everyone`.
+- **Avatars**: Added an Avatars settings category with fallback style, custom
+  fallback URL, image background, and away status position controls. Fallbacks
+  include local initials, a local identicon, and remote DiceBear Identicon,
+  Rings, Bottts, Cameo, and animated Gaze styles.
 - **Desktop Window**: Remember the window size, position, and maximized state
   across launches.
 - **Link Previews**: Added provider-owned players and embeds for TED, Mixcloud,
@@ -66,6 +98,43 @@ and this project adheres to
 
 ### Changed
 
+- **App Settings**: Reordered Channel Defaults and shortened its labels.
+- **Chat Messages**: Reorganized message settings, renamed preview and nickname
+  labels, defaulted presence changes off, and defaulted desktop scrollback to
+  500 messages.
+- **App Settings**: Moved preview controls to Appearance and the direct-message
+  block control to General, with shorter labels.
+- **Chat Messages**: The Show Message Info on Touch setting now only appears on
+  devices that report touch input.
+- **Timestamps**: Added a Time System selector for 12-hour, 24-hour, and decimal
+  time. Custom `timestamp_format` values continue to render as configured and
+  hide the selector.
+- **Autocomplete**: Tab accepts the highlighted suggestion, while Enter accepts
+  it and sends the message. Space and punctuation type normally instead of
+  selecting it, while the arrow keys and Shift+Tab navigate the list.
+- **App Settings**: Added an Appearance category for theme and monospaced font
+  controls in the General tab, and a per-network tab named after the active
+  network for persistence, typing, bot, rerouting, redaction, and notification
+  controls. Renamed the network controls to Redacted Messages, Desktop
+  Notifications, and Register Web Push.
+- **File Uploads**: The preferred upload service and service-specific retention
+  settings are now global. Added desktop-only Catbox, Filebin, ShareBin.eu,
+  Uguu~, and WebDAV services alongside Litterbox, including Catbox user hashes,
+  ShareBin retention, chunked ShareBin uploads, and WebDAV access URLs, optional
+  Basic auth, and unique timestamp-and-random upload names. Networks default to
+  preferring FILEHOST when available, with a per-network Use FILEHOST setting.
+  Per-network service and retention overrides were removed.
+- **Notifications**: Server messages no longer count as activity by default, and
+  team highlights are enabled by default.
+- **Chat Input**: The color picker is shown by default. Emoji shortcode
+  conversion while typing is now off by default and its control moved to the
+  Chat Input section.
+- **Nicklist**: Away users are grouped and nicklist avatars are enabled by
+  default.
+- **Desktop**: Channel topics are shown in the header by default.
+- **Avatars**: Local identicons remain the default fallback, with local initials
+  available as another fallback style. Local initials and identicons use the
+  nickname colour when Show Avatar Background is disabled.
 - **Link Preview Cards**: Native link preview cards now follow the bridge card
   layout with a left accent border, content-first hierarchy, and thumbnails
   below the text. Thumbnails open in the media lightbox instead of navigating
@@ -87,11 +156,40 @@ and this project adheres to
 
 ### Removed
 
+- **Avatars**: Removed the DiceBear Rings fallback style and shortened the
+  DiceBear Gaze label to “DiceBear Gaze” so long option labels no longer widen
+  settings dropdowns.
+- **Network Settings**: Removed the Network Preferences block. Its persistence,
+  typing, rerouting, bot filtering, redaction, FILEHOST, notification, and Web
+  Push controls now live in the active network's App Settings tab. Limnoria
+  settings are provided by the `suggest-limnoria` plugin block.
 - **App Settings**: Removed the redundant Export State troubleshooting action.
   `kiwi.log.getLogBuffer()` remains available for raw log diagnostics.
+- **Legacy Bouncer Config**: Removed the unused top-level `bnc` object,
+  `startupOptions.bouncer`, the `kiwiBnc` and `znc` startup aliases, and the
+  `znc` preset-network type alias. Personal startup now restores a saved bouncer
+  control connection automatically.
+- **App Settings**: Removed the Show User Hostnames control. The
+  `buffers.show_hostnames` setting remains available through config.
+- **Themes**: Removed the special Custom Theme URL field. Theme URLs are always
+  loaded as `<url>/theme.css`, and a theme named `Custom` is treated like any
+  other theme.
+- **Limnoria**: Removed the Limnoria Prefix setting. Channel-delivered commands
+  now use `<LimnoriaName>: <command>`, and commands typed in a PM with Limnoria
+  are sent without a prefix.
+- **Autocomplete**: Removed the Limnoria-specific remote autocomplete path.
+  `/lim`, `/msg <bot>`, and channel commands now use only local suggestions;
+  remote requests use `/auto` or always-auto mode.
 
 ### Fixed
 
+- **Remote Autocomplete**: The first bot response now starts a clean suggestion
+  list, so stale local commands no longer hide remote completions.
+- **Channel Header**: Topic preview handles now open previews in the pinned
+  media area.
+- **Avatars**: Center the local identicon grid within circular avatars.
+- **Real Names**: Realnames shown in the modern message list now render IRC
+  formatting, links, and emoji, matching the user box.
 - **Link Preview Cards**: Description text now wraps up to four lines instead of
   truncating to one line. Long unbroken tokens wrap safely, and the existing
   600-character limit remains as the content cap.

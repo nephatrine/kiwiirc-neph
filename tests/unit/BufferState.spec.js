@@ -34,6 +34,23 @@ describe('raw buffer scrollback', () => {
     });
 });
 
+describe('channel defaults', () => {
+    it('uses the global show_joinparts default and a per-buffer override', () => {
+        const s = state.create();
+        const network = s.addNetwork('TestNetwork', 'TestNick', {});
+        const channel = s.addBuffer(network.id, '#chan');
+
+        expect(channel.setting('show_joinparts')).toBe(true);
+
+        s.setting('buffers.show_joinparts', false);
+        expect(channel.setting('show_joinparts')).toBe(false);
+
+        channel.setting('show_joinparts', true);
+        expect(channel.setting('show_joinparts')).toBe(true);
+        expect(s.setting('buffers.show_joinparts')).toBe(false);
+    });
+});
+
 describe('user prefixes', () => {
     it('shows fixed Twitch prefixes without marking the user as an op', () => {
         let s = state.create();

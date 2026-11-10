@@ -360,6 +360,46 @@ msgstr "{{count}} Seconds"
 msgid "settings_general"
 msgstr "General"
 
+#: Appearance
+msgid "settings_appearance"
+msgstr "Appearance"
+
+#: Installed Themes
+msgid "settings_installed_themes"
+msgstr "Installed Themes"
+
+#: Installed themes hint
+msgid "settings_installed_themes_hint"
+msgstr "Install theme archives from files on this computer. Each archive must contain theme.css at its root or in one top-level folder."
+
+#: Install Theme…
+msgid "settings_install_theme"
+msgstr "Install Theme…"
+
+#: Installing…
+msgid "settings_theme_installing"
+msgstr "Installing…"
+
+#: Uninstall
+msgid "settings_uninstall_theme"
+msgstr "Uninstall"
+
+#: No installed themes.
+msgid "settings_no_installed_themes"
+msgstr "No installed themes."
+
+#: Theme installation failed: {{reason}}
+msgid "settings_theme_install_failed"
+msgstr "Theme Installation Failed: {{reason}}"
+
+#: Theme uninstallation failed: {{reason}}
+msgid "settings_theme_uninstall_failed"
+msgstr "Theme Uninstallation Failed: {{reason}}"
+
+#: Uninstall theme "{{name}}"?
+msgid "settings_theme_uninstall_confirm"
+msgstr "Uninstall theme \"{{name}}\"?"
+
 #: Language
 msgid "settings_language"
 msgstr "Language"
@@ -372,37 +412,229 @@ msgstr "Theme"
 msgid "refresh_theme"
 msgstr "Refresh Theme"
 
-#: Theme URL
-msgid "settings_themeurl"
-msgstr "Theme URL"
-
 #: Message Layout
 msgid "settings_messagelayout"
 msgstr "Message Layout"
 
-#: Use monospace
+#: Monospaced font
 msgid "settings_use_monospace"
-msgstr "Use Monospace Font"
+msgstr "Monospaced Font"
 
 #: Use Kiwi as my default IRC client
 msgid "settings_default_handler"
 msgstr "Set as Default IRC Client"
 
-#: Show autocomplete list
+#: Show auto-suggestions
 msgid "settings_show_autocomplete"
-msgstr "Show Autocomplete List"
+msgstr "Show Auto-Suggestions"
 
 #: Chat Messages
 msgid "settings_messages_title"
 msgstr "Chat Messages"
 
+#: Channel defaults
+msgid "settings_channel_defaults"
+msgstr "Channel Defaults"
+
+#: Channel defaults hint
+msgid "settings_channel_defaults_hint"
+msgstr "These defaults apply to channels without their own override."
+
+#: Default notifications
+msgid "settings_alert_on"
+msgstr "Default Notifications"
+
+#: Show real names
+msgid "settings_show_realnames"
+msgstr "Show Real Names"
+
+#: Topic in channel header
+msgid "settings_show_topic_in_header"
+msgstr "Topic in Header"
+
+#: Show presence changes
+msgid "settings_show_presence_changes"
+msgstr "Show Presence Changes"
+
+#: Message info on touch devices
+msgid "settings_show_message_info"
+msgstr "Message Info on Touch"
+
+#: Show preview handles
+msgid "settings_show_link_previews"
+msgstr "Show Preview Handles"
+
+#: Request history
+msgid "settings_auto_request_history"
+msgstr "Request History"
+
+#: All buffers
+msgid "settings_scope_all"
+msgstr "All"
+
+#: Channels only
+msgid "settings_scope_channels"
+msgstr "Channels"
+
+#: Queries only
+msgid "settings_scope_queries"
+msgstr "Queries"
+
+#: Never
+msgid "settings_scope_never"
+msgstr "Never"
+
+#: Avatars
+msgid "settings_avatars"
+msgstr "Avatars"
+
+#: Show nicklist avatars
+msgid "settings_nicklist_avatars"
+msgstr "Show Nicklist Avatars"
+
+#: Fallback avatar style
+msgid "settings_avatar_fallback_style"
+msgstr "Fallback Avatar Style"
+
+#: Local initials fallback style
+msgid "settings_avatar_style_local_initials"
+msgstr "Local Initials"
+
+#: Local identicon fallback style
+msgid "settings_avatar_style_local_identicon"
+msgstr "Local Identicon"
+
+#: DiceBear identicon fallback style
+msgid "settings_avatar_style_dicebear_identicon"
+msgstr "DiceBear Identicon"
+
+#: DiceBear bottts fallback style
+msgid "settings_avatar_style_dicebear_bottts"
+msgstr "DiceBear Bottts"
+
+#: DiceBear cameo fallback style
+msgid "settings_avatar_style_dicebear_cameo"
+msgstr "DiceBear Cameo"
+
+#: DiceBear gaze fallback style
+msgid "settings_avatar_style_dicebear_gaze"
+msgstr "DiceBear Gaze"
+
+#: Custom avatar fallback style
+msgid "settings_avatar_style_custom"
+msgstr "Custom"
+
+#: Remote avatar fallback hint
+msgid "settings_avatar_remote_hint"
+msgstr "Remote styles load avatars from DiceBear and send the nickname as the seed."
+
+#: Fallback avatar URL
+msgid "settings_avatar_fallback_url"
+msgstr "Fallback Avatar URL"
+
+#: Fallback avatar URL hint
+msgid "settings_avatar_fallback_url_hint"
+msgstr "Use {nickname} for the URL-encoded nickname. An empty URL uses the selected local fallback."
+
+#: Show avatar background
+msgid "settings_avatar_show_image_background"
+msgstr "Show Avatar Background"
+
+#: Away status position
+msgid "settings_avatar_away_status_position"
+msgstr "Away Status Position"
+
+#: Top right avatar position
+msgid "settings_avatar_position_top_right"
+msgstr "Top Right"
+
+#: Bottom right avatar position
+msgid "settings_avatar_position_bottom_right"
+msgstr "Bottom Right"
+
+#: Bottom left avatar position
+msgid "settings_avatar_position_bottom_left"
+msgstr "Bottom Left"
+
+#: Top left avatar position
+msgid "settings_avatar_position_top_left"
+msgstr "Top Left"
+
+#: Chat input
+msgid "settings_chat_input"
+msgstr "Chat Input"
+
+#: Show emoji picker
+msgid "settings_show_emoji_picker"
+msgstr "Show Emoji Picker"
+
+#: Show color picker
+msgid "settings_show_color_picker"
+msgstr "Show Color Picker"
+
+#: Shared input history
+msgid "settings_shared_input"
+msgstr "Shared Input History"
+
+#: Command as message warning
+msgid "settings_warn_expected_command"
+msgstr "Command As Message Warning"
+
+#: Space-prefixed command warning title
+msgid "command_accidental_title"
+msgstr "Message Not Sent"
+
+#: Space-prefixed command warning explanation
+msgid "command_accidental_text"
+msgstr "This message starts with a space, so it will be sent as text instead of being run as a command."
+
+#: Send a space-prefixed message as text
+msgid "command_accidental_send"
+msgstr "Send as Message"
+
+#: Edit a space-prefixed message
+msgid "command_accidental_edit"
+msgstr "Edit"
+
+#: Flash window title
+msgid "settings_flash_title"
+msgstr "Flash Window Title"
+
+#: Flash title off
+msgid "settings_flash_title_off"
+msgstr "Off"
+
+#: Flash title on messages
+msgid "settings_flash_title_messages"
+msgstr "On Messages"
+
+#: Flash title on highlights
+msgid "settings_flash_title_highlights"
+msgstr "On Highlights"
+
+#: Count server messages
+msgid "settings_server_as_activity"
+msgstr "Count Server Messages"
+
 #: Show timestamps
 msgid "settings_timestamps"
 msgstr "Show Timestamps"
 
-#: Use 24-hour timestamps
-msgid "settings_24hour_timestamps"
-msgstr "Use 24HR Timestamps"
+#: Time system
+msgid "settings_time_system"
+msgstr "Time System"
+
+#: 12-hour time
+msgid "settings_time_system_12h"
+msgstr "12-Hour Time"
+
+#: 24-hour time
+msgid "settings_time_system_24h"
+msgstr "24-Hour Time"
+
+#: Decimal time
+msgid "settings_time_system_decimal"
+msgstr "Decimal Time"
 
 #: Maximum emoji Unicode version shown in the picker
 msgid "settings_emoji_picker_max_version"
@@ -412,37 +644,37 @@ msgstr "Emoji Picker Version"
 msgid "settings_emoji_version_all"
 msgstr "All"
 
-#: Block new Private messages
+#: Block direct messages
 msgid "settings_block_private"
-msgstr "Block New Direct Messages"
+msgstr "Block Direct Messages"
 
 #: Messages in scrollback
 msgid "settings_scrollback"
 msgstr "Scrollback Messages"
 
-#: Extra formatting
+#: Simple markdown
 msgid "settings_formatting"
-msgstr "Simple Markdown Formatting"
+msgstr "Simple Markdown"
 
-#: Colour nicknames in messages
+#: Color nicknames
 msgid "settings_nick_colouring"
-msgstr "Color Message Nicknames"
+msgstr "Color Nicknames"
 
 #: Share when I'm typing a message
 msgid "settings_share_typing"
 msgstr "Share Typing Status"
 
-#: Show inline media previews
+#: Automatically preview media
 msgid "settings_show_inline_previews"
-msgstr "Show Media Previews"
+msgstr "Automatically Preview Media"
 
 #: Hide bridged preview cards
 msgid "settings_hide_preview_cards"
 msgstr "Hide Bridged Previews"
 
-#: Automatically show metadata previews
+#: Automatically preview links
 msgid "settings_generic_link_previews"
-msgstr "Show Metadata Previews"
+msgstr "Automatically Preview Links"
 
 #: Limnoria
 msgid "settings_limnoria"
@@ -456,10 +688,6 @@ msgstr "Limnoria Suggestions"
 msgid "settings_limnoria_name"
 msgstr "Limnoria Name"
 
-#: Limnoria Prefix
-msgid "settings_limnoria_prefix"
-msgstr "Limnoria Prefix"
-
 #: Limnoria Plugins
 msgid "settings_limnoria_plugins"
 msgstr "Limnoria Plugins"
@@ -468,21 +696,29 @@ msgstr "Limnoria Plugins"
 msgid "settings_limnoria_plugins_hint"
 msgstr "Comma or space separated plugin names."
 
-#: Include join/part messages as activity
+#: Count JOIN/PART messages
 msgid "settings_show_joinpart"
-msgstr "Notify on Join/Part Activity"
+msgstr "Count JOIN/PART Messages"
 
-#: Mute sound notifications
+#: Mute notifications
 msgid "settings_mute_sound"
-msgstr "Mute Notification Sound"
+msgstr "Mute Notifications"
 
-#: Enable desktop notifications
+#: Desktop notifications
 msgid "settings_show_notifications"
-msgstr "Enable Desktop Notifications"
+msgstr "Desktop Notifications"
 
 #: Highlight on words (space separated)
 msgid "settings_highlight"
 msgstr "Word Highlights (Space-Delimited)"
+
+#: Receive group mentions
+msgid "settings_team_highlights"
+msgstr "Receive Group Mentions"
+
+#: Team highlights hint
+msgid "settings_team_highlights_hint"
+msgstr "Highlight @here, @channel, and @everyone."
 
 #: Aliases
 msgid "settings_aliases"
@@ -1061,29 +1297,29 @@ msgstr "Your Settings"
 msgid "favorite_channel"
 msgstr "Favorite Channel"
 
-#: Show when people join
+#: User JOIN/PART messages
 msgid "side_joins"
-msgstr "Show User Joins/Parts"
+msgstr "User JOIN/PART Messages"
 
-#: Show when channel topic changes
+#: Channel topic changes
 msgid "side_topics"
-msgstr "Show Topic Changes"
+msgstr "Channel Topic Changes"
 
-#: Show when users change their nicks
+#: User nickname changes
 msgid "side_nick_changes"
-msgstr "Show Nickname Changes"
+msgstr "User Nickname Changes"
 
-#: Show when users change channel modes
+#: Channel mode changes
 msgid "side_mode_changes"
-msgstr "Show Channel Mode Changes"
+msgstr "Channel Mode Changes"
 
 #: Extra message formatting
 msgid "side_formatting"
 msgstr "Simple Markdown Formatting"
 
-#: Nick colours in the list"
+#: Color nicklist
 msgid "side_colours"
-msgstr "Color Userlist Nicknames"
+msgstr "Color Nicklist"
 
 #: No buffer set
 msgid "side_buffer"
@@ -1674,9 +1910,9 @@ msgstr "Timed out waiting for server confirmation."
 msgid "notification_mentioned"
 msgstr "You were mentioned in {{channel}}."
 
-#: Show Redactions
+#: Redacted messages
 msgid "settings_show_redactions"
-msgstr "Show Redactions"
+msgstr "Redacted Messages"
 
 #: Hidden
 msgid "settings_show_redactions_hidden"
@@ -1842,6 +2078,10 @@ msgstr "Hide Bot Messages"
 msgid "settings_lenient_rerouting"
 msgstr "Lax Message Rerouting"
 
+#: Lenient message rerouting hint
+msgid "settings_lenient_rerouting_hint"
+msgstr "Allow messages with a channel-context tag to appear in that channel even when the sender cannot be verified as a member."
+
 #: Message Actions
 msgid "message_actions_title"
 msgstr "Message Actions"
@@ -1874,13 +2114,13 @@ msgstr "Nobody is invited!"
 msgid "settings_sasl_mechanism"
 msgstr "SASL Mechanism"
 
-#: Convert emoji shortcodes in messages
+#: Convert emoji codes
 msgid "settings_emoji_convert_incoming"
-msgstr "Display Shortcodes As Emoji"
+msgstr "Convert Emoji Codes"
 
-#: Convert emoji shortcodes as you type
+#: Convert emoji shortcodes
 msgid "settings_emoji_convert_as_typed"
-msgstr "Convert Shortcodes To Emoji"
+msgstr "Convert Emoji Shortcodes"
 
 #: Load network and server emoji packs automatically
 msgid "settings_remote_emoji_packs"
@@ -2130,6 +2370,10 @@ msgstr "Upload File"
 msgid "fileupload_failed"
 msgstr "Could not upload {{name}}."
 
+#: {{name}} is too large for {{service}}
+msgid "fileupload_too_large"
+msgstr "{{name}} is too large for {{service}}."
+
 #: Upload an avatar image
 msgid "fileupload_avatar"
 msgstr "Upload Avatar"
@@ -2138,17 +2382,13 @@ msgstr "Upload Avatar"
 msgid "fileupload_not_image"
 msgstr "Only image files can be used as an avatar."
 
-#: File uploads
+#: File upload
 msgid "settings_fileupload"
-msgstr "File Uploads"
+msgstr "File Upload"
 
 #: Upload service
 msgid "settings_fileupload_service"
 msgstr "Upload Service"
-
-#: Default
-msgid "settings_fileupload_default"
-msgstr "Default"
 
 #: None
 msgid "settings_fileupload_none"
@@ -2157,6 +2397,50 @@ msgstr "None"
 #: Retention
 msgid "settings_fileupload_retention"
 msgstr "Retention"
+
+#: Catbox user hash
+msgid "settings_fileupload_catbox_userhash"
+msgstr "Catbox User Hash"
+
+#: Catbox hint
+msgid "settings_fileupload_catbox_hint"
+msgstr "Optional user hash links uploads to your Catbox account. Files up to 200 MB."
+
+#: Filebin hint
+msgid "settings_fileupload_filebin_hint"
+msgstr "Files are deleted after 6 days."
+
+#: ShareBin hint
+msgid "settings_fileupload_sharebin_hint"
+msgstr "Files up to 500 MB. Choose how long they are kept."
+
+#: Uguu hint
+msgid "settings_fileupload_uguu_hint"
+msgstr "Files up to 128 MB and expire after 3 hours."
+
+#: WebDAV upload URL
+msgid "settings_fileupload_webdav_upload_url"
+msgstr "Upload URL"
+
+#: WebDAV access URL
+msgid "settings_fileupload_webdav_access_url"
+msgstr "Access URL"
+
+#: WebDAV username
+msgid "settings_fileupload_webdav_username"
+msgstr "Username"
+
+#: WebDAV password
+msgid "settings_fileupload_webdav_password"
+msgstr "Password"
+
+#: WebDAV hint
+msgid "settings_fileupload_webdav_hint"
+msgstr "Files are uploaded with HTTP PUT. The access URL is used for the resulting link and defaults to the upload URL."
+
+#: Use FILEHOST
+msgid "settings_use_filehost"
+msgstr "Use FILEHOST"
 
 #: Preferred Persistence
 msgid "settings_persistence"
@@ -2178,9 +2462,9 @@ msgstr "Enabled"
 msgid "settings_persistence_disabled"
 msgstr "Disabled"
 
-#: Enable Push Notifications
+#: Register Web Push
 msgid "settings_webpush"
-msgstr "Enable Push Notifications"
+msgstr "Register Web Push"
 
 #: Push Notifications Permission Denied
 msgid "webpush_permission_denied"
@@ -2439,21 +2723,33 @@ msgstr "Roll Dice"
 msgid "command_lim"
 msgstr "Limnoria Command"
 
+#: Autocomplete request command
+msgid "command_auto"
+msgstr "Remote Autocomplete"
+
+#: Autocomplete requests are unavailable
+msgid "autocomplete_unavailable"
+msgstr "Autocomplete requests are not available here."
+
+#: Use <TAB> to request command suggestions.
+msgid "autocomplete_always_hint"
+msgstr "Use <TAB> to request command suggestions."
+
 #: Limnoria suggestions are disabled for this network.
 msgid "limnoria_disabled"
 msgstr "Limnoria suggestions are disabled for this network."
 
-#: Set a Limnoria Name in Network Settings first.
+#: Set a Limnoria Name in the network settings first.
 msgid "limnoria_name_required"
-msgstr "Set a Limnoria Name in Network Settings first."
+msgstr "Set a Limnoria Name in the network settings first."
 
 #: Enter a Limnoria command after /lim.
 msgid "limnoria_command_required"
 msgstr "Enter a Limnoria command after /lim."
 
-#: Limnoria prefix commands require a channel with the bot present.
-msgid "limnoria_prefix_unavailable"
-msgstr "Limnoria prefix commands require a channel with the bot present."
+#: Limnoria channel commands require a channel with the bot present.
+msgid "limnoria_channel_unavailable"
+msgstr "Limnoria channel commands require a channel with the bot present."
 
 #: Custom emoji category
 msgid "custom_emojis"

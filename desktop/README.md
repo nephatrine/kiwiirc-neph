@@ -61,8 +61,10 @@ Windows: %APPDATA%\KiwiIRC\config.json5
 Use **File → Open Desktop Configuration Folder** to create the file and open its
 folder, and **File → Reload Desktop Configuration** after editing it.
 
-Desktop defaults `buffers.hide_preview_cards` to `true`. Set it to `false` in
-`config.json5` to show bridged preview cards by default.
+Desktop defaults `buffers.hide_preview_cards` and `buffers.show_topic_in_header`
+to `true`. It also defaults `buffers.scrollback_size` to `500` instead of the
+web default of `250`. Set any of these in `config.json5` to override the desktop
+defaults.
 
 The file is JSON5, so comments are allowed. For example, to use a webirc
 gateway:
@@ -89,16 +91,60 @@ Native desktop HTTP is controlled separately:
         "maxDownloadBytes": 104857600,
         "maxMediaBytes": 104857600,
         "maxRequestBytes": 104857600,
+        "maxUploadBytes": 268435456,
         "maxRedirects": 5
     }
 }
 ```
+
+`maxUploadBytes` limits native upload requests separately from normal HTTP
+requests. Raise it for WebDAV or other uploads larger than 256 MB.
 
 Direct image, audio, and video previews use the `kiwi-media://` protocol in
 desktop builds. It follows the same private-network policy as native HTTP and
 does not proxy iframe embeds. YouTube and Twitch embeds receive a scoped HTTPS
 `Referer` from the Electron session so the players accept the `app://` desktop
 origin; Twitch uses `parent=localhost` in desktop builds.
+
+## Installed Themes
+
+Desktop users can install local theme archives from **Settings → General →
+Appearance → Installed Themes**.
+
+Choose a `.zip` containing either `theme.css` at the archive root or one
+top-level folder containing it:
+
+```text
+my-theme.zip
+└── my-theme/
+    ├── theme.css
+    └── theme.json
+```
+
+`theme.json` is optional:
+
+```json
+{
+  "name": "My Theme",
+  "mode": "dark",
+  "google_fonts": [
+    "Inter:wght@400;700"
+  ]
+}
+```
+
+Theme packages are self-contained. If a theme uses Kiwi’s common base styles,
+include a copy of `static/themes/common/base.css` in the package and import it
+relative to `theme.css`.
+
+Installed themes are copied into the desktop user-data directory and served
+through the dedicated `kiwi-theme://` protocol. They are not available in the
+web client and are not included in profile exports. Uninstalling the active
+theme switches back to the default theme.
+
+The installer rejects path traversal, symlinks, encrypted entries, ZIP64,
+unsupported compression, excessive expansion, invalid `theme.json` files, and
+archives without a supported `theme.css` layout.
 
 ## Profile Data
 

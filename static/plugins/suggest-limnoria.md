@@ -32,17 +32,17 @@ Defaults are registered by the plugin, so there is no `configTemplates.js`
 entry. Administrators can set defaults under `limnoria` in configuration, and
 users override them per network in **App Settings → Active Network**.
 
-| Key                    | Default                                                | Notes |
-| ---------------------- | ------------------------------------------------------ | ----- |
-| `limnoria.suggestions` | `false`                                                | Enables `/lim` and local suggestions. |
-| `limnoria.name`        | `SupyBot`                                              | Limnoria bot nick. |
-| `limnoria.plugins`     | `Admin, Channel, Config, Misc, Owner, User`            | Comma- or space-separated filters for local suggestions. Execution still uses the full command table. |
+| Key                    | Default                                     | Notes                                                                                                 |
+| ---------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `limnoria.suggestions` | `false`                                     | Enables `/lim` and local suggestions.                                                                 |
+| `limnoria.name`        | `SupyBot`                                   | Limnoria bot nick.                                                                                    |
+| `limnoria.plugins`     | `Admin, Channel, Config, Misc, Owner, User` | Comma- or space-separated filters for local suggestions. Execution still uses the full command table. |
 
 ## Commands
 
 - `/lim <command>` resolves the Limnoria command path and sends it to the bot.
-- Channel-delivered commands require the current buffer to be a channel with
-  the bot present and use `<bot>: <command>`.
+- Channel-delivered commands require the current buffer to be a channel with the
+  bot present and use `<bot>: <command>`.
 - Private-delivered commands and commands in a PM with the bot use
   `/msg <bot> <command>`.
 - Unknown commands are sent privately to the bot.

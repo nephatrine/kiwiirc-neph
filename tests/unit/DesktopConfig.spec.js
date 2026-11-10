@@ -27,6 +27,7 @@ describe('Desktop configuration', () => {
         expect(DEFAULT_CONFIG.startupOptions.server).toBe('');
         expect(DEFAULT_CONFIG.buffers.hide_preview_cards).toBe(true);
         expect(DEFAULT_CONFIG.buffers.show_topic_in_header).toBe(true);
+        expect(DEFAULT_CONFIG.buffers.scrollback_size).toBe(500);
         expect(DEFAULT_CONFIG.desktopHttp.maxUploadBytes).toBe(268435456);
     });
 
@@ -46,6 +47,15 @@ describe('Desktop configuration', () => {
 
         expect(merged.buffers.show_topic_in_header).toBe(false);
         expect(DEFAULT_CONFIG.buffers.show_topic_in_header).toBe(true);
+    });
+
+    it('allows the desktop scrollback default to be overridden', () => {
+        const merged = mergeConfig(DEFAULT_CONFIG, {
+            buffers: { scrollback_size: 250 },
+        });
+
+        expect(merged.buffers.scrollback_size).toBe(250);
+        expect(DEFAULT_CONFIG.buffers.scrollback_size).toBe(500);
     });
 
     it('allows the desktop upload limit to be overridden', () => {

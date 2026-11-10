@@ -12,8 +12,7 @@ describe('per-network settings', () => {
         expect(network.setting('lenient_rerouting')).toBe(true);
         expect(network.setting('ignore_bots')).toBe(false);
         expect(network.setting('show_redactions')).toBe('placeholder');
-        expect(network.setting('fileuploadService')).toBe('');
-        expect(network.setting('fileuploadRetention')).toBe('');
+        expect(network.setting('useFilehost')).toBe(true);
     });
 
     it('keeps settings independent between networks', () => {
@@ -28,8 +27,7 @@ describe('per-network settings', () => {
         first.setting('lenient_rerouting', false);
         first.setting('ignore_bots', true);
         first.setting('show_redactions', 'hidden');
-        first.setting('fileuploadService', 'litterbox');
-        first.setting('fileuploadRetention', '1h');
+        first.setting('useFilehost', false);
 
         expect(second.setting('show_notifications')).toBe(true);
         expect(second.setting('rememberPassword')).toBe(true);
@@ -38,8 +36,7 @@ describe('per-network settings', () => {
         expect(second.setting('lenient_rerouting')).toBe(true);
         expect(second.setting('ignore_bots')).toBe(false);
         expect(second.setting('show_redactions')).toBe('placeholder');
-        expect(second.setting('fileuploadService')).toBe('');
-        expect(second.setting('fileuploadRetention')).toBe('');
+        expect(second.setting('useFilehost')).toBe(true);
     });
 
     it('falls back to the network value from a buffer', () => {
@@ -117,10 +114,12 @@ describe('per-network settings', () => {
         const exported = JSON.parse(s.exportState(true));
         delete exported.networks[0].settings.show_notifications;
         delete exported.networks[0].settings.persistencePreference;
+        delete exported.networks[0].settings.useFilehost;
 
         const restored = state.create();
         restored.importState(JSON.stringify(exported));
         expect(restored.networks[0].setting('show_notifications')).toBe(true);
         expect(restored.networks[0].setting('persistencePreference')).toBe('keep');
+        expect(restored.networks[0].setting('useFilehost')).toBe(true);
     });
 });

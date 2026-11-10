@@ -22,6 +22,7 @@ const DEFAULT_CONFIG = {
     buffers: {
         hide_preview_cards: true,
         show_topic_in_header: true,
+        scrollback_size: 500,
     },
     fileupload: {
         service: 'none',

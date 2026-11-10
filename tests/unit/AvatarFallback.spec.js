@@ -3,18 +3,20 @@ import {
     CUSTOM_AVATAR_STYLE,
     DICEBEAR_FALLBACK_URLS,
     LOCAL_IDENTICON,
+    LOCAL_INITIALS,
     avatarFallbackStyleFromUrl,
     getAvatarFallbackUrl,
     getLocalIdenticon,
+    getLocalInitials,
     isDiceBearFallbackStyle
 } from '@/helpers/AvatarFallback';
 
 describe('avatar fallback styles', () => {
-    test('offers the local identicon and DiceBear presets', () => {
+    test('offers local fallbacks and DiceBear presets', () => {
         expect(AVATAR_FALLBACK_STYLES.map((style) => style.value)).toEqual([
+            LOCAL_INITIALS,
             LOCAL_IDENTICON,
             'dicebear-identicon',
-            'dicebear-rings',
             'dicebear-bottts',
             'dicebear-cameo',
             'dicebear-gaze',
@@ -43,8 +45,23 @@ describe('avatar fallback styles', () => {
         expect(avatarFallbackStyleFromUrl('')).toBe(LOCAL_IDENTICON);
         expect(avatarFallbackStyleFromUrl('https://example.com/avatar.png'))
             .toBe(CUSTOM_AVATAR_STYLE);
+        expect(avatarFallbackStyleFromUrl(
+            'https://api.dicebear.com/10.x/rings/svg?seed=Alice'
+        )).toBe(CUSTOM_AVATAR_STYLE);
+        expect(DICEBEAR_FALLBACK_URLS['dicebear-rings']).toBeUndefined();
         expect(getAvatarFallbackUrl(LOCAL_IDENTICON)).toBe('');
+        expect(getAvatarFallbackUrl(LOCAL_INITIALS)).toBe('');
+        expect(isDiceBearFallbackStyle(LOCAL_INITIALS)).toBe(false);
         expect(isDiceBearFallbackStyle(CUSTOM_AVATAR_STYLE)).toBe(false);
+    });
+
+    test('generates local initials from the nickname', () => {
+        expect(getLocalInitials('alice')).toBe('A');
+        expect(getLocalInitials('alice', 2)).toBe('AL');
+        expect(getLocalInitials('alice', 0)).toBe('A');
+        expect(getLocalInitials('alice', 3)).toBe('AL');
+        expect(getLocalInitials('  Alice  ')).toBe('A');
+        expect(getLocalInitials('')).toBe('U');
     });
 
     test('generates deterministic identicon cells', () => {
