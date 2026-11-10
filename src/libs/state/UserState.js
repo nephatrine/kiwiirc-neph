@@ -74,14 +74,37 @@ export default class UserState {
 
     get avatar() {
         if (this.metadata.avatar) {
-            let url = this.metadata.avatar.replace('{size}', '256');
-            return { small: url, large: url };
+            const source = `metadata:${this.metadata.avatar}`;
+            if (!this.avatarCache || this.avatarCache.avatarSource !== source) {
+                let url = this.metadata.avatar.replace('{size}', '256');
+                this.avatar = {
+                    small: url,
+                    large: url,
+                    avatarSource: source,
+                };
+            }
+            return this.avatarCache;
         }
 
         let fallbackUrl = this.state.setting('avatars.fallback_avatar_url');
         if (fallbackUrl) {
-            let url = fallbackUrl.replace('{nickname}', encodeURIComponent(this.nick.toLowerCase()));
-            return { small: url, large: url };
+            const source = `fallback:${fallbackUrl}`;
+            if (!this.avatarCache || this.avatarCache.avatarSource !== source) {
+                let url = fallbackUrl.replace(
+                    '{nickname}',
+                    encodeURIComponent(this.nick.toLowerCase())
+                );
+                this.avatar = {
+                    small: url,
+                    large: url,
+                    avatarSource: source,
+                };
+            }
+            return this.avatarCache;
+        }
+
+        if (this.avatarCache && this.avatarCache.avatarSource) {
+            this.avatar = null;
         }
 
         if (!this.avatarCache) {

@@ -578,8 +578,7 @@
 import * as TextFormatting from '@/helpers/TextFormatting';
 import * as Misc from '@/helpers/Misc';
 import GlobalApi from '@/libs/GlobalApi';
-import toHtml from '@/libs/renderers/Html';
-import parseMessage from '@/libs/MessageParser';
+import { ircToHtml } from '@/helpers/IrcToHtml';
 import { passwordScore } from '@/helpers/PasswordStrength';
 import { effectiveRetention, effectiveService } from '@/libs/fileupload';
 import { NICKSERV_SETTINGS } from '@/libs/ErgoServices';
@@ -670,9 +669,7 @@ export default {
             return label || this.$t('bot_user');
         },
         formattedRealname() {
-            let blocks = parseMessage(this.realname, { extras: false });
-            let content = toHtml(blocks, false);
-            return content;
+            return ircToHtml(this.realname);
         },
         isUserOnBuffer() {
             if (!this.buffer) {
@@ -1108,9 +1105,16 @@ export default {
             let uploadId = this.avatarUploadId;
             this.avatarUploading = true;
             try {
+                if (service.maxBytes && file.size > service.maxBytes) {
+                    this.showAvatarUploadError(file, 'fileupload_too_large', {
+                        service: service.label,
+                    });
+                    return;
+                }
                 let url = await service.upload(file, {
                     network: this.network,
-                    retention: effectiveRetention(this.$state, service, this.network),
+                    retention: effectiveRetention(this.$state, service),
+                    state: this.$state,
                 });
                 if (this.avatarUploadId === uploadId && this.isEditingProfile) {
                     this.editProfile.avatar = url;
@@ -1119,20 +1123,20 @@ export default {
                 if (this.avatarUploadId === uploadId) {
                     this.showAvatarUploadError(file, 'fileupload_failed');
                 }
-            }
-            if (this.avatarUploadId === uploadId) {
-                this.avatarUploading = false;
+            } finally {
+                if (this.avatarUploadId === uploadId) {
+                    this.avatarUploading = false;
+                }
             }
         },
-        showAvatarUploadError(file, key) {
+        showAvatarUploadError(file, key, params = {}) {
             if (!this.buffer) {
                 return;
             }
-            let message = key === 'fileupload_failed'
-                ? this.$t('fileupload_failed', {
-                    name: file && file.name ? file.name : '',
-                })
-                : this.$t(key);
+            let message = this.$t(key, {
+                name: file && file.name ? file.name : '',
+                ...params,
+            });
             this.$state.addMessage(this.buffer, {
                 time: Date.now(),
                 nick: '*',

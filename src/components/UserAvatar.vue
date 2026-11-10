@@ -21,15 +21,14 @@
                 class="kiwi-avatar-image"
                 @error="avatar[avatar.sizeKey[size]].setFailed()"
             />
-            <text
-                v-else
-                :font-size="avatar.initials.length === 1 ? '64px' : '44px'"
-                x="50"
-                y="50"
-                dy="0.36em"
-                text-anchor="middle"
-                class="kiwi-avatar-initials"
-            >{{ avatar.initials }}</text>
+            <template v-else>
+                <rect
+                    v-for="(cell, index) in avatar.identicon"
+                    :key="index"
+                    v-bind="cell"
+                    class="kiwi-avatar-fallback-shape"
+                />
+            </template>
         </g>
         <circle
             v-if="awayStatus.show"
@@ -57,6 +56,7 @@ import { computed } from 'vue';
 
 import getState from '@/libs/state';
 import * as TextFormatting from '@/helpers/TextFormatting';
+import { getLocalIdenticon } from '@/helpers/AvatarFallback';
 import { getAvatarTransform } from './UserAvatarCommon';
 
 </script>
@@ -100,6 +100,10 @@ const getSizeObj = (size) => ({
         const avatar = props.user.avatar;
         const failedAvatar = avatar[size];
         avatar[size] = '';
+        if (avatar.avatarSource) {
+            avatar.small = '';
+            avatar.large = '';
+        }
         if (!avatar.small && !avatar.large) {
             state.$emit('user.avatar.failed', {
                 user: props.user,
@@ -156,17 +160,8 @@ const awayStatus = computed(() => {
 });
 
 const avatar = computed(() => {
-    let initialsLength = state.setting('avatars.initials_length');
-    if (!initialsLength || initialsLength < 1) {
-        initialsLength = 1;
-    }
-    if (initialsLength > 2) {
-        initialsLength = 2;
-    }
-
     const bridgedNick = props.message?.bridged_nick || '';
     const nick = bridgedNick || props.message?.nick || props.user?.nick || 'User';
-    const initials = nick.substring(0, initialsLength).toUpperCase();
     const overrideUrl = props.message?.bridged_avatar || '';
     const hasImage = !!overrideUrl ||
         !!(props.user && (props.user.avatar.small || props.user.avatar.large));
@@ -176,7 +171,7 @@ const avatar = computed(() => {
 
     const avatars = {
         hasImage,
-        initials,
+        identicon: getLocalIdenticon(nick),
         showBackground,
         backgroundStyle,
         sizeKey: {},
@@ -187,7 +182,7 @@ const avatar = computed(() => {
     } else if (props.user) {
         backgroundStyle.fill = props.user.getColour();
     } else {
-        return avatars;
+        backgroundStyle.fill = TextFormatting.createNickColour(nick);
     }
 
     if (overrideUrl) {
@@ -231,16 +226,6 @@ const toggleAway = () => {
 </script>
 
 <style lang="less">
-@font-face {
-    font-family: Roboto;
-    font-style: normal;
-    font-weight: 900;
-    src: url('../res/fonts/Roboto-Black.woff2') format('woff2'),
-         url('../res/fonts/Roboto-Black.woff') format('woff')
-         url('../res/fonts/Roboto-Black.ttf') format('truetype');
-    font-display: auto;
-}
-
 .kiwi-avatar {
     font-size: 0;
     line-height: 0;
@@ -255,8 +240,8 @@ const toggleAway = () => {
     cursor: pointer;
 }
 
-.kiwi-avatar-initials {
-    font-family: Roboto, Arial, sans-serif;
-    font-weight: 900;
+.kiwi-avatar-fallback-shape {
+    fill: var(--brand-default-bg);
+    opacity: 0.92;
 }
 </style>

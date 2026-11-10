@@ -113,11 +113,11 @@
                 <div
                     v-if="props.m().showRealName()"
                     class="kiwi-messagelist-realname"
-                    @click="props.ml.openUserBox(props.message.nick)"
+                    @click="props.m().onRealnameClick($event)"
                     @mouseover="props.ml.hover_nick = props.message.nick.toLowerCase();"
                     @mouseout="props.ml.hover_nick = '';"
                 >
-                    <emoji-text :text="props.message.user.realname" />
+                    <span v-html="props.m().realnameHtml()" />
                 </div>
                 <div
                     v-if="props.m().isMessage(props.message)
@@ -190,6 +190,7 @@
 'kiwi public';
 
 import { urlRegex } from '@/helpers/TextFormatting';
+import { ircToHtml } from '@/helpers/IrcToHtml';
 import * as Misc from '@/helpers/Misc';
 import MessageInfo from './MessageInfo';
 import AwayStatusIndicator from './AwayStatusIndicator';
@@ -231,6 +232,21 @@ const methods = {
         }
 
         return true;
+    },
+    realnameHtml() {
+        let props = this.props;
+        return ircToHtml(props.message.user && props.message.user.realname);
+    },
+    onRealnameClick(event) {
+        let props = this.props;
+        let target = event.target;
+
+        // Let links inside the formatted realname keep their own click action.
+        if (target && typeof target.closest === 'function' && target.closest('a')) {
+            return;
+        }
+
+        props.ml.openUserBox(props.message.nick);
     },
     getNetwork() {
         let props = this.props;

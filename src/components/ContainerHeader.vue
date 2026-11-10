@@ -304,7 +304,26 @@ export default {
             network.ircClient.join(this.buffer.name);
         },
         onHeaderClick(event) {
-            let channelName = event.target.getAttribute('data-channel-name');
+            let target = event.target;
+            let hasClosest = target && typeof target.closest === 'function';
+
+            let previewHandle = hasClosest ? target.closest('a[data-url]') : null;
+            if (previewHandle) {
+                let url = previewHandle.getAttribute('data-url');
+                if (url && Misc.canPreviewUrl(url)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this.$state.$emit('mediaviewer.show', url);
+                    return;
+                }
+            }
+
+            let channelElement = hasClosest ?
+                target.closest('[data-channel-name]') :
+                null;
+            let channelName = channelElement ?
+                channelElement.getAttribute('data-channel-name') :
+                null;
             if (channelName) {
                 let network = this.buffer.getNetwork();
                 this.$state.addBuffer(this.buffer.networkid, channelName);
