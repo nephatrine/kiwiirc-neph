@@ -102,6 +102,43 @@ describe('Desktop password persistence', () => {
         expect(restored.networks[0].password).toBe('sasl-secret');
     });
 
+    it('stores and restores the WebDAV password separately', async() => {
+        const { appState, persistence, secretStore, storage } = makePersistence();
+        appState.setting('fileupload.webdav.password', 'webdav-secret');
+
+        await persistence.saveStateNow();
+
+        expect(secretStore.save).toHaveBeenCalledWith('test-key', {
+            1: {
+                connection: 'server-secret',
+                sasl: 'sasl-secret',
+            },
+            fileupload: {
+                webdavPassword: 'webdav-secret',
+            },
+        });
+
+        const saved = JSON.parse(storage.set.mock.calls[0][1]);
+        expect(saved.user_settings.fileupload.webdav.password).toBeUndefined();
+
+        const restored = state.create();
+        restored.settings.startupOptions = {};
+        const restoredSecrets = makeSecretStore();
+        restoredSecrets.load.mockResolvedValue(secretStore.save.mock.calls[0][1]);
+        const restoredPersistence = new StatePersistence(
+            'test-key',
+            restored,
+            { get: jest.fn(), set: jest.fn(async() => {}) },
+            null,
+            restoredSecrets
+        );
+
+        await restoredPersistence.loadStateIfExists();
+
+        expect(restored.setting('fileupload.webdav.password'))
+            .toBe('webdav-secret');
+    });
+
     it('omits passwords for a network with rememberPassword disabled', async() => {
         const { network, persistence, secretStore, storage } = makePersistence();
         network.setting('rememberPassword', false);

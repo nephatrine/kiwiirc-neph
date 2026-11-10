@@ -17,6 +17,12 @@ function assertStateKey(stateKey) {
     }
 }
 
+function validSecret(value) {
+    return typeof value === 'string' &&
+        value &&
+        Buffer.byteLength(value, 'utf8') <= MAX_SECRET_BYTES;
+}
+
 function sanitizeSecrets(value) {
     const result = {};
 
@@ -24,31 +30,35 @@ function sanitizeSecrets(value) {
         return result;
     }
 
-    Object.keys(value).slice(0, MAX_NETWORKS).forEach((networkId) => {
-        if (!/^\d{1,12}$/.test(networkId)) {
-            return;
-        }
+    const fileupload = value.fileupload;
+    if (fileupload && typeof fileupload === 'object' && !Array.isArray(fileupload) &&
+        validSecret(fileupload.webdavPassword)
+    ) {
+        result.fileupload = {
+            webdavPassword: fileupload.webdavPassword,
+        };
+    }
 
-        const source = value[networkId];
-        if (!source || typeof source !== 'object' || Array.isArray(source)) {
-            return;
-        }
+    Object.keys(value)
+        .filter((networkId) => /^\d{1,12}$/.test(networkId))
+        .slice(0, MAX_NETWORKS)
+        .forEach((networkId) => {
+            const source = value[networkId];
+            if (!source || typeof source !== 'object' || Array.isArray(source)) {
+                return;
+            }
 
-        const entry = {};
-        ['connection', 'sasl'].forEach((field) => {
-            const secret = source[field];
-            if (typeof secret === 'string' &&
-                secret &&
-                Buffer.byteLength(secret, 'utf8') <= MAX_SECRET_BYTES
-            ) {
-                entry[field] = secret;
+            const entry = {};
+            ['connection', 'sasl'].forEach((field) => {
+                if (validSecret(source[field])) {
+                    entry[field] = source[field];
+                }
+            });
+
+            if (Object.keys(entry).length) {
+                result[networkId] = entry;
             }
         });
-
-        if (Object.keys(entry).length) {
-            result[networkId] = entry;
-        }
-    });
 
     return result;
 }

@@ -83,6 +83,20 @@ describe('Desktop secret store', () => {
         });
     });
 
+    it('persists the WebDAV password alongside network secrets', async() => {
+        await store.save('kiwi-state', {
+            1: { connection: 'server-secret' },
+            fileupload: { webdavPassword: 'webdav-secret' },
+        });
+
+        const file = fs.readFileSync(store.filePath(), 'utf8');
+        expect(file).not.toContain('webdav-secret');
+        expect(await store.load('kiwi-state')).toEqual({
+            1: { connection: 'server-secret' },
+            fileupload: { webdavPassword: 'webdav-secret' },
+        });
+    });
+
     it('uses plaintext when encryption is unavailable', async() => {
         store = createSecretStore({
             userDataDir,
@@ -156,6 +170,36 @@ describe('Desktop secret store', () => {
         });
 
         expect(secrets).toEqual({ 1: { connection: 'ok' } });
+    });
+
+    it('preserves only a valid WebDAV password', () => {
+        expect(sanitizeSecrets({
+            fileupload: { webdavPassword: 'webdav-secret' },
+        })).toEqual({
+            fileupload: { webdavPassword: 'webdav-secret' },
+        });
+
+        expect(sanitizeSecrets({
+            fileupload: { webdavPassword: '' },
+        })).toEqual({});
+        expect(sanitizeSecrets({
+            fileupload: { webdavPassword: 'x'.repeat(64 * 1024 + 1) },
+        })).toEqual({});
+    });
+
+    it('keeps the WebDAV password when the network limit is reached', () => {
+        const value = {
+            fileupload: { webdavPassword: 'webdav-secret' },
+        };
+        for (let id = 1; id <= 200; id += 1) {
+            value[id] = { connection: 'network-secret' };
+        }
+
+        const secrets = sanitizeSecrets(value);
+        expect(secrets.fileupload).toEqual({
+            webdavPassword: 'webdav-secret',
+        });
+        expect(Object.keys(secrets)).toHaveLength(201);
     });
 
     it('ignores a secret file belonging to another state key', async() => {
