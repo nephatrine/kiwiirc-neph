@@ -165,6 +165,7 @@ export default class NetworkState {
         def(this, 'reroute_map', new Map(), false);
         // Twitch user-id -> nick, used to map Twitch state tags to users.
         def(this, 'twitch_user_ids', Object.create(null), false);
+        def(this, 'connect_timeout_timer', null, true);
         def(this, 'channel_list_connect_timer', null, true);
         def(this, 'channel_list_connect_force', false, true);
         def(this, 'channel_list_connect_pending', false, true);

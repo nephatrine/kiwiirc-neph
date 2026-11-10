@@ -36,6 +36,7 @@ import { BRIDGE_CARD_TAG, parseBridgeCard } from '@/helpers/BridgeCard';
 import { IRC_WEBSOCKET_PROTOCOL } from './WebSocketProtocol';
 import { addAdvertisedCaps, dropCap, foldPreferredCap, preferredCap } from './CapNegotiation';
 
+const CONNECT_TIMEOUT = 90000;
 const CTCP_CLIENTINFO = 'ACTION CLIENTINFO FINGER PING SOURCE TIME USERINFO VERSION';
 const CTCP_SOURCE_URL = 'https://code.nephatrine.net/nephatrine/kiwiirc';
 
@@ -217,6 +218,8 @@ export function create(state, network) {
 
             originalIrcClientConnect.apply(ircClient, args);
         } catch (err) {
+            clearTimeout(network.connect_timeout_timer);
+            network.connect_timeout_timer = null;
             network.state = 'disconnected';
             throw err;
         }
@@ -226,6 +229,9 @@ export function create(state, network) {
     // connecting state. The direct websocket transport only closes its socket
     // while connected, so a handshake in progress needs an explicit close.
     ircClient.cancelConnect = function cancelConnect() {
+        clearTimeout(network.connect_timeout_timer);
+        network.connect_timeout_timer = null;
+
         const connection = ircClient.connection;
         if (!connection) {
             return;
@@ -614,9 +620,20 @@ function clientMiddleware(state, network) {
             pendingSaslAccount = '';
             scrubIsupportGate(client);
             network.clearChannelListConnectTimer();
+            clearTimeout(network.connect_timeout_timer);
+            network.connect_timeout_timer = setTimeout(() => {
+                network.connect_timeout_timer = null;
+                if (network.state !== 'connecting') {
+                    return;
+                }
+                network.state_error = 'err_timeout';
+                client.cancelConnect();
+            }, CONNECT_TIMEOUT);
         });
 
         client.on('connected', () => {
+            clearTimeout(network.connect_timeout_timer);
+            network.connect_timeout_timer = null;
             network.state_error = '';
             network.state = 'connected';
             network.connected_at = Date.now();
@@ -861,6 +878,8 @@ function clientMiddleware(state, network) {
         });
 
         function markDisconnected(err) {
+            clearTimeout(network.connect_timeout_timer);
+            network.connect_timeout_timer = null;
             clearMetadataTimeout();
             isRegistered = false;
             network.state = 'disconnected';
@@ -912,6 +931,8 @@ function clientMiddleware(state, network) {
         });
 
         client.on('close', () => {
+            clearTimeout(network.connect_timeout_timer);
+            network.connect_timeout_timer = null;
             clearMetadataTimeout();
             // The framework emits close only after it has stopped reconnecting.
             // If the final attempt failed while still connecting, socket close

@@ -730,6 +730,9 @@ function createWindow() {
             sandbox: true,
             nodeIntegration: false,
             webSecurity: true,
+            // IRC needs keepalives and reconnect timers to keep running while
+            // the window is minimized or behind another application.
+            backgroundThrottling: false,
         },
     });
 

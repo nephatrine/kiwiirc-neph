@@ -53,4 +53,23 @@ describe('IrcClient connect guard', () => {
         expect(() => client.connect()).toThrow('connect failed');
         expect(network.state).toBe('disconnected');
     });
+
+    test('aborts a connection attempt that never completes', () => {
+        jest.useFakeTimers();
+        try {
+            const { network, client } = makeNetwork();
+            client.emit('connecting');
+
+            expect(network.state).toBe('connecting');
+            expect(network.connect_timeout_timer).toBeTruthy();
+
+            jest.advanceTimersByTime(90000);
+
+            expect(network.state).toBe('disconnected');
+            expect(network.state_error).toBe('err_timeout');
+            expect(network.connect_timeout_timer).toBeNull();
+        } finally {
+            jest.useRealTimers();
+        }
+    });
 });

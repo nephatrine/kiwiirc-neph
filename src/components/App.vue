@@ -96,6 +96,7 @@ import HexColorPicker from '@/components/HexColorPicker';
 import MediaLightbox from '@/components/MediaLightbox';
 import { State as SidebarState } from '@/components/Sidebar';
 import GlobalApi from '@/libs/GlobalApi';
+import desktop from '@/libs/desktop';
 import ThemeManager from '@/libs/ThemeManager';
 import * as Notifications from '@/libs/Notifications';
 import * as bufferTools from '@/libs/bufferTools';
@@ -339,22 +340,31 @@ export default {
             // Parts of the UI adjust themselves if we're known to be using a touchscreen
             this.$state.ui.is_touch = true;
         },
+        applyVisibility(visible) {
+            const buffer = this.$state.getActiveBuffer();
+            if (buffer) {
+                buffer.isVisible = visible;
+            }
+
+            this.$state.ui.app_is_visible = visible;
+        },
         onBlur(event) {
             this.$state.ui.app_has_focus = false;
+            if (desktop.isDesktop()) {
+                // backgroundThrottling is disabled in the desktop shell, so
+                // document.visibilityState stays visible even when minimized.
+                this.applyVisibility(false);
+            }
         },
         onFocus(event) {
             this.$state.ui.app_has_focus = true;
             this.$state.ui.favicon_counter = 0;
+            if (desktop.isDesktop()) {
+                this.applyVisibility(true);
+            }
         },
         onVisibilityChange(event) {
-            const newState = (document.visibilityState === 'visible');
-
-            const buffer = this.$state.getActiveBuffer();
-            if (buffer) {
-                buffer.isVisible = newState;
-            }
-
-            this.$state.ui.app_is_visible = newState;
+            this.applyVisibility(document.visibilityState === 'visible');
         },
         onKeyDown(event) {
             this.$state.$emit('document.keydown', event);

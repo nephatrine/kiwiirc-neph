@@ -188,6 +188,10 @@ and this project adheres to
 
 ### Fixed
 
+- **Desktop Connection**: Disabled renderer background throttling so IRC
+  keepalives and reconnect timers keep running while the window is minimized or
+  behind another application. Stalled connection attempts now time out instead
+  of leaving the UI on **Connecting…** indefinitely.
 - **Remote Autocomplete**: The first bot response now starts a clean suggestion
   list, so stale local commands no longer hide remote completions.
 - **Channel Header**: Topic preview handles now open previews in the pinned
