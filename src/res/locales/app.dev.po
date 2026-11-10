@@ -1821,6 +1821,9 @@ msgstr "Forever"
 msgid "chatlogs_stats"
 msgstr "{{count}} messages · {{size}}"
 
+msgid "chatlogs_open_channel"
+msgstr "Open Channel Logs"
+
 msgid "chatlogs_search_button"
 msgstr "Search Logs"
 

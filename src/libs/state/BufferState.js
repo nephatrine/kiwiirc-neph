@@ -8,14 +8,16 @@ import * as TextFormatting from '@/helpers/TextFormatting';
 import * as Reactions from '@/helpers/Reactions';
 import * as Misc from '@/helpers/Misc';
 import { TWITCH_PREFIXES, twitchChannelUrl, twitchUserModes } from '@/helpers/Twitch';
-import { each, find } from '@/helpers/Utils';
+import { each, find, toTimestamp } from '@/helpers/Utils';
 
 let nextBufferId = 0;
 
 const HISTORY_MAX_RETRIES = 3;
 const HISTORY_RETRY_BASE_MS = 3000;
 const HISTORY_RETRY_MAX_MS = 12000;
+const HISTORY_HIDDEN_BATCH_LIMIT = 10;
 const READ_MARKER_THROTTLE_MS = 1000;
+const TRIM_GRACE_MS = 30000;
 const READ_MARKER_CONFIRM_TIMEOUT_MS = 15000;
 const CHAT_MESSAGE_TYPES = ['privmsg', 'notice', 'action', 'message'];
 
@@ -129,10 +131,13 @@ export default class BufferState {
         def(this, 'historyJumpTarget', null, true);
         def(this, 'historyContextLoading', false, true);
         def(this, 'contextRowIds', Object.create(null), false);
+        def(this, 'relayNicks', Object.create(null), false);
         def(this, 'addMessageBatch', createMessageBatch(this), false);
         def(this, 'addUserBatch', createUserBatch(this), false);
         def(this, 'chathistory_retry_timeout', null, true);
         def(this, 'chathistory_pending_requests', 0, true);
+        def(this, 'trim_timeout', null, true);
+        def(this, 'chathistory_cursor', null, true);
         def(this, 'read_marker_timeout', null, true);
         def(this, 'read_marker_pending', null, true);
         def(this, 'read_marker_pending_timer', null, true);
@@ -197,6 +202,7 @@ export default class BufferState {
         this.clearReadMarkerTimeout();
         this.clearReadMarkerPending();
         this.chathistory_request_count = 0;
+        this.chathistory_cursor = null;
         this.flags.is_requesting_chathistory = false;
         this.flags.chathistory_available = true;
         this.flags.names_received = false;
@@ -1127,6 +1133,14 @@ export default class BufferState {
 
         let targetMessage = this.getHistoryReference(direction);
 
+        if (direction === 'backward') {
+            const cursorRef = historyRefFromCursor(this);
+            if (cursorRef) {
+                getBufferHistory(this, chathistoryFuncName, cursorRef);
+                return;
+            }
+        }
+
         let ref = null;
         if (targetMessage) {
             if (supportedTypes.includes('msgid') && targetMessage.irc_id) {
@@ -1476,6 +1490,88 @@ export default class BufferState {
         this.addMessageBatch(message);
     }
 
+    noteRelayNick(nick) {
+        if (!nick) {
+            return;
+        }
+        const network = this.getNetwork();
+        const key = network ? network.caseUpper(nick) : String(nick).toUpperCase();
+        this.relayNicks[key] = nick;
+    }
+
+    shouldTrimImmediately() {
+        return this.isRaw() || this.isSpecial() || this.isServer();
+    }
+
+    scheduleTrim() {
+        if (this.shouldTrimImmediately()) {
+            this.cancelScheduledTrim();
+            this.trimMessages(true);
+            return;
+        }
+
+        if (this.trim_timeout || !this.isMessageTrimming ||
+            this.historyJumpTarget || this.historyContextLoading
+        ) {
+            return;
+        }
+
+        this.trim_timeout = setTimeout(() => {
+            this.trim_timeout = null;
+            this.trimMessages();
+        }, TRIM_GRACE_MS);
+    }
+
+    cancelScheduledTrim() {
+        clearTimeout(this.trim_timeout);
+        this.trim_timeout = null;
+    }
+
+    trimMessages(force = false) {
+        if (!force && (!this.isMessageTrimming || this.historyJumpTarget ||
+            this.historyContextLoading)
+        ) {
+            return false;
+        }
+
+        const scrollbackSize = this.setting('scrollback_size');
+        const length = this.messagesObj.messages.length;
+        if (length <= scrollbackSize) {
+            return false;
+        }
+
+        // After a trim the oldest remaining message is the correct backward
+        // anchor, not any cursor from previously consumed hidden events.
+        this.chathistory_cursor = null;
+
+        const removed = this.messagesObj.messages.splice(0, length - scrollbackSize);
+        removed.forEach((msg) => {
+            delete this.messagesObj.messageIds[msg.id];
+            if (msg.irc_id) {
+                delete this.messagesObj.messageIds[msg.irc_id];
+                this.getNetwork().reroute_map.delete(msg.irc_id);
+            }
+            if (msg.tags && msg.tags.label) {
+                delete this.messagesObj.messageLabels[msg.tags.label];
+            }
+        });
+        this.syncHistorySegments();
+
+        if (removed.length) {
+            const network = this.getNetwork();
+            const history = network && network.ircClient && network.ircClient.chathistory;
+            if (history && history.isSupported() && !this.flags.chathistory_available) {
+                this.flag('chathistory_available', true);
+            }
+        }
+
+        // The messages array is deliberately non-reactive, so signal the
+        // change explicitly after trimming or the rendered list stays stale.
+        this.message_count++;
+
+        return removed.length > 0;
+    }
+
     updateLatestMessages(message) {
         if (!['privmsg', 'notice'].includes(message.type)) {
             return;
@@ -1809,9 +1905,7 @@ function createMessageBatch(bufferState) {
             bufferState.messagesObj.messageLabels[newMessage.tags.label] = newMessage;
         }
         bufferState.noteLiveMessage(newMessage);
-        if (bufferState.isMessageTrimming) {
-            trimMessages();
-        }
+        bufferState.scheduleTrim();
         bufferTools.orderedMessages(bufferState, { inPlace: true, noFilter: true });
         bufferState.message_count++;
     };
@@ -1834,38 +1928,13 @@ function createMessageBatch(bufferState) {
                 }
                 bufferState.noteLiveMessage(msg);
             });
-            if (bufferState.isMessageTrimming) {
-                trimMessages();
-            }
+            bufferState.scheduleTrim();
             bufferTools.orderedMessages(bufferState, { inPlace: true, noFilter: true });
         }
         // Trigger Vue's reactivity on the buffer whether messages were added or not, just in case
         // anything was depending on the batch queue which has now been emptied.
         bufferState.message_count++;
     };
-    let trimMessages = () => {
-        if (bufferState.historyJumpTarget || bufferState.historyContextLoading) {
-            return;
-        }
-
-        let scrollbackSize = bufferState.setting('scrollback_size');
-        let length = bufferState.messagesObj.messages.length;
-        if (length > scrollbackSize) {
-            let removed = bufferState.messagesObj.messages.splice(0, length - scrollbackSize);
-            removed.forEach((msg) => {
-                delete bufferState.messagesObj.messageIds[msg.id];
-                if (msg.irc_id) {
-                    delete bufferState.messagesObj.messageIds[msg.irc_id];
-                    bufferState.getNetwork().reroute_map.delete(msg.irc_id);
-                }
-                if (msg.tags && msg.tags.label) {
-                    delete bufferState.messagesObj.messageLabels[msg.tags.label];
-                }
-            });
-            bufferState.syncHistorySegments();
-        }
-    };
-
     return batchedAdd(addSingleMessage, addMultipleMessages, 4);
 }
 
@@ -1920,7 +1989,93 @@ function maybeStartWhoLoop(bufferState) {
     }
 }
 
-function getBufferHistory(buffer, chathistoryFuncName, time, depth = 0, attempt = 0) {
+function commandTimestamp(command) {
+    if (!command) {
+        return 0;
+    }
+
+    const tags = command.tags || {};
+    return toTimestamp(command.time) || toTimestamp(tags.time);
+}
+
+function historyCommandRef(command) {
+    if (!command) {
+        return null;
+    }
+
+    const tags = command.tags || {};
+    return {
+        irc_id: tags.msgid || tags['draft/msgid'] || '',
+        server_time: commandTimestamp(command),
+    };
+}
+
+function historyCursorKey(cursor) {
+    if (!cursor) {
+        return '';
+    }
+    return (cursor.irc_id || '') + '\n' + (cursor.server_time || 0);
+}
+
+function updateHistoryCursor(buffer, commands) {
+    let earliest = null;
+
+    (commands || []).forEach((command) => {
+        const ref = historyCommandRef(command);
+        if (!ref || (!ref.irc_id && !ref.server_time)) {
+            return;
+        }
+        if (!earliest ||
+            (ref.server_time && (!earliest.server_time || ref.server_time < earliest.server_time))
+        ) {
+            earliest = ref;
+        }
+    });
+
+    if (earliest) {
+        buffer.chathistory_cursor = earliest;
+    }
+
+    return earliest;
+}
+
+function historyRefFromCursor(buffer) {
+    const cursor = buffer.chathistory_cursor;
+    const network = buffer.getNetwork();
+    const history = network && network.ircClient && network.ircClient.chathistory;
+    if (!cursor || !history) {
+        return null;
+    }
+
+    const supported = history.supportedRefTypes();
+    if (cursor.irc_id && supported.includes('msgid')) {
+        return cursor.irc_id;
+    }
+    if (cursor.server_time && supported.includes('timestamp')) {
+        return new Date(cursor.server_time);
+    }
+    return null;
+}
+
+function hasDisplayableHistory(buffer, existingMessageIds) {
+    const allMessages = buffer.allMessages();
+    const visibleIds = new Set(
+        bufferTools.orderedMessages(buffer, { messages: allMessages })
+            .map((message) => message.id)
+    );
+    return allMessages.some((message) => (
+        !existingMessageIds[message.id] && visibleIds.has(message.id)
+    ));
+}
+
+function getBufferHistory(
+    buffer,
+    chathistoryFuncName,
+    time,
+    depth = 0,
+    attempt = 0,
+    hiddenDepth = 0
+) {
     const network = buffer.getNetwork();
     if (!network || !network.ircClient) {
         return Promise.resolve();
@@ -1942,6 +2097,7 @@ function getBufferHistory(buffer, chathistoryFuncName, time, depth = 0, attempt 
     buffer.updateHistoryLoadingState();
     buffer.chathistory_request_count += 1;
     let existingMessageIds = Object.assign({}, buffer.messagesObj.messageIds);
+    const cursorBefore = historyCursorKey(buffer.chathistory_cursor);
 
     return ircClient.chathistory[chathistoryFuncName](buffer.name, time).then((event) => {
         if (!isCurrentConnection()) {
@@ -1997,9 +2153,14 @@ function getBufferHistory(buffer, chathistoryFuncName, time, depth = 0, attempt 
             return undefined;
         }
 
+        if (chathistoryFuncName !== 'after') {
+            updateHistoryCursor(buffer, event.commands);
+        }
+        const cursorAdvanced = historyCursorKey(buffer.chathistory_cursor) !== cursorBefore;
+
         const historyTimes = event.commands
-            .map((command) => Number(command.time))
-            .filter((stamp) => Number.isFinite(stamp));
+            .map((command) => commandTimestamp(command))
+            .filter((stamp) => stamp > 0);
         if (historyTimes.length) {
             buffer.noteHistoryWindow(
                 Math.min(...historyTimes),
@@ -2022,11 +2183,36 @@ function getBufferHistory(buffer, chathistoryFuncName, time, depth = 0, attempt 
             (msg) => msg.tags.msgid && !existingMessageIds[msg.tags.msgid]
         );
 
-        // If there are new messages, then there could be more in the backlog.
-        // If there are no new messages, then the chat history is empty.
-        buffer.flag('chathistory_available', hasNewMessages);
+        const displayable = hasDisplayableHistory(buffer, existingMessageIds);
 
-        if (!hasNewMessages) {
+        if (displayable) {
+            buffer.flag('chathistory_available', true);
+        } else if (!hasNewMessages && !cursorAdvanced) {
+            buffer.flag('chathistory_available', false);
+            return undefined;
+        } else {
+            // Hidden-only batches still move the cursor. Keep manual loading
+            // available and fetch the next older batch automatically.
+            buffer.flag('chathistory_available', true);
+
+            if (chathistoryFuncName === 'before' &&
+                hiddenDepth < HISTORY_HIDDEN_BATCH_LIMIT
+            ) {
+                const cursorRef = historyRefFromCursor(buffer);
+                if (cursorRef) {
+                    return getBufferHistory(
+                        buffer,
+                        'before',
+                        cursorRef,
+                        depth,
+                        attempt,
+                        hiddenDepth + 1
+                    );
+                }
+            }
+        }
+
+        if (!hasNewMessages && !displayable) {
             return undefined;
         }
 
@@ -2035,12 +2221,14 @@ function getBufferHistory(buffer, chathistoryFuncName, time, depth = 0, attempt 
         // We fetch until we have covered all unread messages plus at least one chunk of context.
         const earliest = buffer.getHistoryReference('backward');
         if (earliest && buffer.last_read && earliest.time > buffer.last_read && depth < 10) {
-            const supportedTypes = ircClient.chathistory.supportedRefTypes();
-            let ref = null;
-            if (supportedTypes.includes('msgid') && earliest.irc_id) {
-                ref = earliest.irc_id;
-            } else if (supportedTypes.includes('timestamp') && earliest.server_time) {
-                ref = new Date(earliest.server_time);
+            let ref = historyRefFromCursor(buffer);
+            if (!ref) {
+                const supportedTypes = ircClient.chathistory.supportedRefTypes();
+                if (supportedTypes.includes('msgid') && earliest.irc_id) {
+                    ref = earliest.irc_id;
+                } else if (supportedTypes.includes('timestamp') && earliest.server_time) {
+                    ref = new Date(earliest.server_time);
+                }
             }
 
             if (ref) {

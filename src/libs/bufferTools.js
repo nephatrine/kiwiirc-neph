@@ -55,7 +55,7 @@ export function orderedMessages(buffer, opts = {}) {
     let state = getState();
     let network = buffer.getNetwork();
     let currentNick = network.nick;
-    let bufferMessages = buffer.getMessages();
+    let bufferMessages = opts.messages || buffer.getMessages();
 
     // Hack; We need to make vue aware that we depend on buffer.message_count in order to
     // get the messagelist to update its DOM, as the change of message_count alerts

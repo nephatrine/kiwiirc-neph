@@ -1875,24 +1875,58 @@ export default {
             }
             return '';
         },
+        userAutocompleteItem(user) {
+            const nick = user.nick;
+            const display = user.metadata && user.metadata['display-name'];
+            const displayName = display && !this.network.caseCompare(display, nick) ?
+                display :
+                '';
+
+            return {
+                text: nick,
+                type: 'user',
+                displayName,
+                alias: displayName ? [displayName] : [],
+            };
+        },
         buildAutoCompleteItems(_opts) {
             let opts = _opts || {};
             let list = [];
 
             if (opts.users) {
-                let userList = Object.values(this.buffer.users).map((user) => {
-                    let item = {
-                        text: user.nick,
-                        type: 'user',
-                    };
-                    return item;
+                const users = new Map();
+                const addUser = (user) => {
+                    if (!user || !user.nick) {
+                        return;
+                    }
+                    const key = this.network.caseUpper(user.nick);
+                    if (!users.has(key)) {
+                        users.set(key, user);
+                    }
+                };
+
+                Object.values(this.buffer.users).forEach(addUser);
+                Object.values(this.buffer.relayNicks || {}).forEach((nick) => {
+                    addUser(this.network.users[this.network.caseUpper(nick)]);
                 });
 
+                const userList = Array.from(users.values()).map((user) => (
+                    this.userAutocompleteItem(user)
+                ));
+
                 if (this.buffer.isQuery()) {
-                    userList.push({
-                        text: this.buffer.name,
-                        type: 'user',
-                    });
+                    const queryNick = this.buffer.name;
+                    const queryUser = this.network.users[this.network.caseUpper(queryNick)];
+                    if (queryUser) {
+                        userList.push(this.userAutocompleteItem(queryUser));
+                    } else {
+                        userList.push({
+                            text: queryNick,
+                            type: 'user',
+                            displayName: '',
+                            alias: [],
+                        });
+                    }
                 }
 
                 list = list.concat(userList);

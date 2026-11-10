@@ -11,6 +11,9 @@
             props.ml.isMessageHighlight(props.message)
                 ? 'kiwi-messagelist-message--highlight'
                 : '',
+            props.ml.isTemporaryHighlighted(props.message)
+                ? 'kiwi-messagelist-message--temporary-highlight'
+                : '',
             props.ml.isHoveringOverMessage(props.message)
                 ? 'kiwi-messagelist-message--hover'
                 : '',

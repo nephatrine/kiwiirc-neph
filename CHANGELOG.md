@@ -10,6 +10,12 @@ and this project adheres to
 
 ### Added
 
+- **Chat Logs**: Added an Open Channel Logs action when server chathistory is
+  unavailable or exhausted, with the desktop log search filtered to the current
+  network and buffer.
+- **Autocomplete**: Nick completion now includes known relayed users from the
+  current buffer, including their display names as searchable labels. Display
+  names are never inserted into the message.
 - **IRC Links**: Personal startup now handles `irc://` and `ircs://` links by
   focusing an existing network or opening a prefilled Add Network page. Initial
   channel lists can be captured in network settings, and existing networks
@@ -107,8 +113,16 @@ and this project adheres to
 
 ### Changed
 
-- **File Uploads**: Upload results are appended to the originating buffer's
-  chat input instead of being sent immediately, preserving any existing draft.
+- **Chat Logs**: Jumping to a searched or linked message now briefly highlights
+  the target message so it is easy to find in the buffer.
+- **History**: Hidden-only chathistory batches now advance a separate cursor and
+  continue loading older batches automatically. Trimming clears that cursor so
+  the next request starts from the oldest remaining message.
+- **History**: Trimming now restores Load Previous Messages and requests older
+  history from the oldest remaining message. Trimming is delayed briefly after
+  returning to the bottom and cancelled if the user scrolls back up.
+- **File Uploads**: Upload results are appended to the originating buffer's chat
+  input instead of being sent immediately, preserving any existing draft.
 - **Desktop**: `allowRegisterProtocolHandler` now defaults to `true` for desktop
   installations. The default IRC client action still requires Personal startup
   and a configured gateway.
@@ -197,6 +211,15 @@ and this project adheres to
 
 ### Fixed
 
+- **Raw Log**: Internal buffers such as `*raw`, the server buffer, and special
+  buffers now trim immediately instead of waiting for the history grace period.
+  Their rendered rows are capped to the configured scrollback, and the message
+  list refreshes after trimming, so opening `*raw` no longer stalls the UI.
+- **Chat History**: Parse IRCv3 server-time tags when building chathistory
+  cursors and history windows, include queued messages when checking whether a
+  batch is displayable, and paginate from the oldest event in a batch. Loading
+  previous history no longer re-fetches the same window or hides the control on
+  busy channels.
 - **File Uploads**: Uploaded links are now tracked as pending messages and
   confirmed by the server echo, so the sender no longer sees a duplicate copy.
 - **Desktop Settings**: The default IRC handler action is only offered on

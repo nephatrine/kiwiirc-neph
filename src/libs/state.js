@@ -857,6 +857,13 @@ function createNewState() {
 
                 let network = buffer.getNetwork();
 
+                if (message.tags &&
+                    typeof message.tags['draft/relaymsg'] !== 'undefined' &&
+                    message.nick
+                ) {
+                    buffer.noteRelayNick(message.nick);
+                }
+
                 // If this is an echo of our own message, try to find the local version
                 // and update it with the authoritative tags/msgid from the server
                 let isEcho = network.caseCompare(message.nick, network.nick);

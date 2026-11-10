@@ -133,3 +133,24 @@ describe('AutoComplete emoji sources', () => {
         })).toBe('nickname');
     });
 });
+
+describe('AutoComplete user display names', () => {
+    test('filters users by display-name without changing completion text', () => {
+        const items = [{
+            text: 'ankle',
+            type: 'user',
+            displayName: 'Jeremy',
+            alias: ['Jeremy'],
+        }];
+
+        const filtered = AutoComplete.computed.filteredItems.call({
+            items,
+            filter: 'jer',
+        });
+
+        expect(filtered).toHaveLength(1);
+        expect(filtered[0].text).toBe('ankle');
+        expect(filtered[0].displayName).toBe('Jeremy');
+        expect(AutoComplete.methods.itemValue(filtered[0])).toBe('ankle');
+    });
+});

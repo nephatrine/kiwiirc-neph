@@ -3,7 +3,7 @@
 import strftime from 'strftime';
 import Irc from 'irc-framework';
 import * as TextFormatting from '@/helpers/TextFormatting';
-import { each, find } from '@/helpers/Utils';
+import { each, find, toTimestamp } from '@/helpers/Utils';
 import { extractBuffers } from '@/helpers/Misc';
 import { byteLength } from '@/helpers/LoginFields';
 import { buildOutgoingMessage, serializeOutgoingMessage } from '@/helpers/IrcSerialization';
@@ -40,6 +40,14 @@ import { addAdvertisedCaps, dropCap, foldPreferredCap, preferredCap } from './Ca
 const CONNECT_TIMEOUT = 90000;
 const CTCP_CLIENTINFO = 'ACTION CLIENTINFO FINGER PING SOURCE TIME USERINFO VERSION';
 const CTCP_SOURCE_URL = 'https://code.nephatrine.net/nephatrine/kiwiirc';
+
+function batchCommandTime(message) {
+    if (!message) {
+        return 0;
+    }
+
+    return toTimestamp(message.time) || toTimestamp(message.tags && message.tags.time);
+}
 
 const DESIRED_CAPS = [
     'echo-message',
@@ -825,12 +833,13 @@ function clientMiddleware(state, network) {
             let startTime = 0;
             let endTime = 0;
             event.commands.forEach((message) => {
-                if (message.time && message.time > endTime) {
-                    endTime = message.time;
+                const time = batchCommandTime(message);
+                if (time > endTime) {
+                    endTime = time;
                 }
 
-                if (message.time && message.time < startTime) {
-                    startTime = message.time;
+                if (time && (!startTime || time < startTime)) {
+                    startTime = time;
                 }
             });
 
@@ -1239,12 +1248,13 @@ function clientMiddleware(state, network) {
             let startTime = 0;
             let endTime = 0;
             event.commands.forEach((message) => {
-                if (message.time && message.time > endTime) {
-                    endTime = message.time;
+                const time = batchCommandTime(message);
+                if (time > endTime) {
+                    endTime = time;
                 }
 
-                if (message.time && message.time < startTime) {
-                    startTime = message.time;
+                if (time && (!startTime || time < startTime)) {
+                    startTime = time;
                 }
             });
 

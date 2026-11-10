@@ -196,6 +196,24 @@ describe('Utils.deepClone', () => {
     });
 });
 
+describe('Utils.toTimestamp', () => {
+    test('converts numbers, dates, and IRC time strings', () => {
+        expect(Utils.toTimestamp(1234)).toBe(1234);
+        expect(Utils.toTimestamp('5678')).toBe(5678);
+        expect(Utils.toTimestamp(new Date(91011))).toBe(91011);
+        expect(Utils.toTimestamp('2026-11-10T20:06:05.166Z'))
+            .toBe(Date.parse('2026-11-10T20:06:05.166Z'));
+    });
+
+    test('returns zero for missing or invalid values', () => {
+        expect(Utils.toTimestamp()).toBe(0);
+        expect(Utils.toTimestamp(null)).toBe(0);
+        expect(Utils.toTimestamp('')).toBe(0);
+        expect(Utils.toTimestamp('not a date')).toBe(0);
+        expect(Utils.toTimestamp(new Date('invalid'))).toBe(0);
+    });
+});
+
 describe('Utils.isPlainObject', () => {
     test('identifies plain objects', () => {
         expect(Utils.isPlainObject({})).toBe(true);

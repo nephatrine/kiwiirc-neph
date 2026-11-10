@@ -22,6 +22,32 @@ const RE_REGEXP_CHARS = /[\\^$.*+?()[\]{}|]/g;
 const RE_NUMERIC_KEY = /^\d+$/;
 
 /**
+ * Convert an IRCv3 server-time value, Date, or millisecond number to
+ * milliseconds since the Unix epoch.
+ * @param {*} value The value to convert
+ * @returns {Number} Milliseconds, or 0 when the value is invalid
+ */
+export function toTimestamp(value) {
+    if (value instanceof Date) {
+        return value.getTime() || 0;
+    }
+    if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : 0;
+    }
+    if (typeof value !== 'string' || !value) {
+        return 0;
+    }
+
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+        return numeric;
+    }
+
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/**
  * Read a nested value using a dotted string or an array path.
  * @param {Object} obj The object to read from
  * @param {String|Array} path The path to read

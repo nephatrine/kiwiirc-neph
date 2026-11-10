@@ -22,7 +22,7 @@
                         :placeholder="$t('chatlogs_search_placeholder')"
                         type="search"
                     >
-                    <select v-model.number="networkId" class="u-input" @change="search(true)">
+                    <select v-model.number="networkId" class="u-input" @change="onNetworkChange">
                         <option :value="0">{{ $t('chatlogs_all_networks') }}</option>
                         <option
                             v-for="network in networks"
@@ -32,6 +32,16 @@
                             {{ network.name || network.connection.server }}
                         </option>
                     </select>
+                    <span v-if="bufferName" class="kiwi-logsearch-buffer">
+                        <span>{{ bufferName }}</span>
+                        <button
+                            type="button"
+                            :title="$t('close')"
+                            @click="clearBufferFilter"
+                        >
+                            <i class="bx bx-x" aria-hidden="true" />
+                        </button>
+                    </span>
                     <button type="submit" class="u-button u-button-primary" :disabled="loading">
                         {{ $t('chatlogs_search_action') }}
                     </button>
@@ -110,6 +120,7 @@ export default {
             visible: false,
             query: '',
             networkId: 0,
+            bufferName: '',
             results: [],
             loading: false,
             hasMore: false,
@@ -124,7 +135,7 @@ export default {
         },
     },
     created() {
-        this.listen(this.$state, 'chatlogs.open', () => this.open());
+        this.listen(this.$state, 'chatlogs.open', (options) => this.open(options));
         this.removeOpenListener = ChatLogs.onOpenSearch(() => this.open());
     },
     beforeDestroy() {
@@ -133,9 +144,13 @@ export default {
         }
     },
     methods: {
-        open() {
+        open(options = {}) {
             this.visible = true;
             this.error = '';
+            this.networkId = Number(options.networkId) || 0;
+            this.bufferName = typeof options.bufferName === 'string' ?
+                options.bufferName :
+                '';
             this.$nextTick(() => {
                 if (this.$refs.queryInput) {
                     this.$refs.queryInput.focus();
@@ -145,6 +160,14 @@ export default {
         },
         close() {
             this.visible = false;
+        },
+        clearBufferFilter() {
+            this.bufferName = '';
+            this.search(true);
+        },
+        onNetworkChange() {
+            this.bufferName = '';
+            this.search(true);
         },
         formatTime(time) {
             return new Date(time).toLocaleString();
@@ -165,6 +188,7 @@ export default {
                 const result = await ChatLogs.search({
                     query: this.query,
                     networkId: this.networkId,
+                    bufferName: this.bufferName,
                     limit: PAGE_SIZE,
                     offset: this.offset,
                 });
@@ -281,7 +305,29 @@ export default {
 .kiwi-logsearch-form {
     display: flex;
     gap: 0.5em;
+    align-items: center;
     margin-top: 0.8em;
+}
+
+.kiwi-logsearch-buffer {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    padding: 0.35em 0.5em;
+    border: 1px solid rgb(127 127 127 / 35%);
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.kiwi-logsearch-buffer button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    background: transparent;
+    cursor: pointer;
 }
 
 .kiwi-logsearch-form input {

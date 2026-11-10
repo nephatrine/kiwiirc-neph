@@ -34,6 +34,9 @@
                 >{{ emojiSource(item) }}</span>
             </span>
             <span v-else class="kiwi-autocomplete-item-value"><emoji-text :text="item.text" /><span
+                v-if="item.type === 'user' && item.displayName"
+                class="kiwi-autocomplete-user-displayname"
+            ><emoji-text :text="item.displayName" /></span><span
                 v-if="item.badge"
                 :class="['kiwi-autocomplete-badge', `kiwi-autocomplete-badge--${item.badge.toLowerCase()}`]"
             >{{ item.badge }}</span></span>
@@ -326,6 +329,18 @@ export default {
 
 .kiwi-autocomplete-item-value {
     font-weight: 700;
+}
+
+.kiwi-autocomplete-user-displayname {
+    display: inline-block;
+    max-width: 18em;
+    margin-left: 8px;
+    overflow: hidden;
+    font-weight: 400;
+    opacity: 0.7;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+    white-space: nowrap;
 }
 
 .kiwi-autocomplete-item-value--emoji {

@@ -810,3 +810,105 @@ describe('ControlInput accidental command warning', () => {
         expect(context.$state.$emit).toHaveBeenCalledWith('input.raw', ' /join #chan');
     });
 });
+
+describe('ControlInput user autocomplete', () => {
+    function makeContext() {
+        const regular = {
+            nick: 'ankle',
+            metadata: { 'display-name': 'Jeremy' },
+        };
+        const relayed = {
+            nick: 'nephatrine/bridged',
+            relayed_by: 'DiscordBot',
+            metadata: { 'display-name': 'Nephatrine (Discord)' },
+        };
+        const network = {
+            id: 1,
+            users: {
+                'ANKLE': regular,
+                'NEPHATRINE/BRIDGED': relayed,
+            },
+            caseUpper: (value) => String(value).toUpperCase(),
+            caseCompare: (left, right) => (
+                String(left).toLowerCase() === String(right).toLowerCase()
+            ),
+        };
+        const buffer = {
+            users: {
+                ANKLE: regular,
+            },
+            relayNicks: {
+                'NEPHATRINE/BRIDGED': 'nephatrine/bridged',
+            },
+            isQuery: () => false,
+        };
+        const context = {
+            network,
+            buffer,
+            userAutocompleteItem: ControlInput.methods.userAutocompleteItem,
+        };
+        return { context, regular, relayed };
+    }
+
+    test('includes relayed users and uses display names as aliases', () => {
+        const { context } = makeContext();
+
+        const items = ControlInput.methods.buildAutoCompleteItems.call(
+            context,
+            { users: true }
+        );
+
+        expect(items).toEqual([
+            {
+                text: 'ankle',
+                type: 'user',
+                displayName: 'Jeremy',
+                alias: ['Jeremy'],
+            },
+            {
+                text: 'nephatrine/bridged',
+                type: 'user',
+                displayName: 'Nephatrine (Discord)',
+                alias: ['Nephatrine (Discord)'],
+            },
+        ]);
+    });
+
+    test('does not complete the display name', () => {
+        const { context } = makeContext();
+        const items = ControlInput.methods.buildAutoCompleteItems.call(
+            context,
+            { users: true }
+        );
+
+        expect(items[0].text).toBe('ankle');
+        expect(items[0].displayName).toBe('Jeremy');
+    });
+
+    test('omits relayed users not seen in this buffer', () => {
+        const { context } = makeContext();
+        context.buffer.relayNicks = {};
+
+        const items = ControlInput.methods.buildAutoCompleteItems.call(
+            context,
+            { users: true }
+        );
+
+        expect(items.map((item) => item.text)).toEqual(['ankle']);
+    });
+
+    test('deduplicates normal and relayed entries by nick', () => {
+        const { context, regular } = makeContext();
+        context.buffer.relayNicks = {
+            ANKLE: 'ankle',
+        };
+        context.network.users.ANKLE = regular;
+
+        const items = ControlInput.methods.buildAutoCompleteItems.call(
+            context,
+            { users: true }
+        );
+
+        expect(items.filter((item) => item.text === 'ankle')).toHaveLength(1);
+    });
+});

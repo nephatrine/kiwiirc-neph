@@ -42,17 +42,26 @@
             </div>
 
             <div
-                v-if="shouldShowChathistoryTools"
+                v-if="shouldShowChathistoryTools || shouldShowLocalLogsTools"
                 class="kiwi-messagelist-scrollback"
             >
+                <template v-if="shouldShowChathistoryTools">
+                    <a
+                        v-if="!buffer.flag('is_requesting_chathistory')"
+                        class="u-link"
+                        @click="buffer.requestScrollback()"
+                    >
+                        {{ $t('messages_load') }}
+                    </a>
+                    <a v-else>{{ $t('messages_loading') }}</a>
+                </template>
                 <a
-                    v-if="!buffer.flag('is_requesting_chathistory')"
+                    v-else
                     class="u-link"
-                    @click="buffer.requestScrollback()"
+                    @click="openChannelLogs"
                 >
-                    {{ $t('messages_load') }}
+                    {{ $t('chatlogs_open_channel') }}
                 </a>
-                <a v-else>{{ $t('messages_loading') }}</a>
             </div>
 
             <remove-before-update>
@@ -192,6 +201,7 @@ let log = Logger.namespace('MessageList.vue');
 // If we're scrolled up more than this many pixels, don't auto scroll down to the bottom
 // of the message list
 const BOTTOM_SCROLL_MARGIN = 60;
+const TEMPORARY_HIGHLIGHT_MS = 4000;
 
 export default {
     components: {
@@ -212,6 +222,7 @@ export default {
             chathistoryAvailable: true,
             hover_nick: '',
             message_info_open: null,
+            highlighted_message_id: null,
             timeToClose: false,
             startClosing: false,
             selectedMessages: Object.create(null),
@@ -250,6 +261,25 @@ export default {
             let isSupported = !!this.buffer.getNetwork().ircClient.chathistory.isSupported();
             return isCorrectBufferType && isSupported && this.buffer.flags.chathistory_available;
         },
+        shouldShowLocalLogsTools() {
+            if (!this.localLogsAvailable) {
+                return false;
+            }
+
+            const network = this.buffer.getNetwork();
+            if (!network) {
+                return false;
+            }
+
+            const isCorrectBufferType = this.buffer.isChannel() || this.buffer.isQuery();
+            if (!isCorrectBufferType) {
+                return false;
+            }
+
+            const history = network.ircClient && network.ircClient.chathistory;
+            const isSupported = !!(history && history.isSupported());
+            return !isSupported || !this.buffer.flags.chathistory_available;
+        },
         shouldRequestChannelKey() {
             return this.buffer.getNetwork().state === 'connected' &&
                 this.buffer.isChannel() &&
@@ -278,6 +308,17 @@ export default {
         },
         filteredMessages() {
             let messages = bufferTools.orderedMessages(this.buffer);
+
+            // Internal buffers receive raw protocol/service data and have no
+            // virtual scroller. Never render more than their configured
+            // scrollback while a trim is pending.
+            if (this.buffer.shouldTrimImmediately()) {
+                const scrollbackSize = Number(this.buffer.setting('scrollback_size')) || 0;
+                if (scrollbackSize > 0 && messages.length > scrollbackSize) {
+                    messages = messages.slice(-scrollbackSize);
+                }
+            }
+
             if (this.buffer.setting('hide_preview_cards')) {
                 messages = messages.filter((message) => !isPreviewCard(message));
             }
@@ -336,13 +377,19 @@ export default {
         buffer(newBuffer, oldBuffer) {
             if (oldBuffer) {
                 oldBuffer.isMessageTrimming = true;
+                oldBuffer.scheduleTrim();
             }
 
             if (!newBuffer) {
                 return;
             }
 
+            if (newBuffer.shouldTrimImmediately()) {
+                newBuffer.trimMessages(true);
+            }
+
             this.message_info_open = null;
+            this.clearTemporaryHighlight();
 
             if (this.buffer.getNetwork().state === 'connected') {
                 newBuffer.flags.has_opened = true;
@@ -354,6 +401,16 @@ export default {
                 this.scrollToBottom();
             });
         },
+    },
+    created() {
+        this.highlight_timeout = null;
+
+        if (this.buffer && this.buffer.shouldTrimImmediately()) {
+            this.buffer.trimMessages(true);
+        }
+    },
+    beforeDestroy() {
+        this.clearTemporaryHighlight();
     },
     mounted() {
         this.addCopyListeners();
@@ -403,6 +460,28 @@ export default {
             const network = this.buffer.getNetwork();
             return message.nick && this.hover_nick &&
                 network && network.caseCompare(message.nick, this.hover_nick);
+        },
+        isTemporaryHighlighted(message) {
+            return !!(message && this.highlighted_message_id === message.id);
+        },
+        clearTemporaryHighlight() {
+            clearTimeout(this.highlight_timeout);
+            this.highlight_timeout = null;
+            this.highlighted_message_id = null;
+        },
+        highlightMessage(id) {
+            if (!id) {
+                return;
+            }
+
+            clearTimeout(this.highlight_timeout);
+            this.highlighted_message_id = id;
+            this.highlight_timeout = setTimeout(() => {
+                if (this.highlighted_message_id === id) {
+                    this.highlighted_message_id = null;
+                }
+                this.highlight_timeout = null;
+            }, TEMPORARY_HIGHLIGHT_MS);
         },
         isSelfNick(nick) {
             const network = this.buffer.getNetwork();
@@ -695,6 +774,12 @@ export default {
         loadHistoryGap({ gap, direction }) {
             this.buffer.requestHistoryGap(gap, direction);
         },
+        openChannelLogs() {
+            this.$state.$emit('chatlogs.open', {
+                networkId: this.buffer.networkid,
+                bufferName: this.buffer.name,
+            });
+        },
         loadContext(direction) {
             ChatLogContext.loadMoreContext(this.$state, this.buffer, direction);
         },
@@ -722,9 +807,11 @@ export default {
             if (scrolledUpByPx > BOTTOM_SCROLL_MARGIN) {
                 this.auto_scroll = false;
                 this.buffer.isMessageTrimming = false;
+                this.buffer.cancelScheduledTrim();
             } else {
                 this.auto_scroll = true;
                 this.buffer.isMessageTrimming = true;
+                this.buffer.scheduleTrim();
             }
 
             if (this.force_smooth_scroll !== null) {
@@ -767,6 +854,8 @@ export default {
                 }
                 return;
             }
+
+            this.highlightMessage(id);
 
             let newTop = 0;
             if (position === 'top') {
@@ -1292,6 +1381,23 @@ div.kiwi-messagelist-item.kiwi-messagelist-item--selected .kiwi-messagelist-mess
 .kiwi-messagelist-message.kiwi-messagelist-message--highlight,
 .kiwi-messagelist-message.kiwi-messagelist-message-traffic--hover {
     position: relative;
+}
+
+.kiwi-messagelist-message.kiwi-messagelist-message--temporary-highlight {
+    animation: kiwi-messagelist-temporary-highlight 4s ease-out;
+    outline: 2px solid var(--brand-primary);
+    outline-offset: -2px;
+}
+
+@keyframes kiwi-messagelist-temporary-highlight {
+    0%,
+    45% {
+        outline-color: var(--brand-primary);
+    }
+
+    100% {
+        outline-color: transparent;
+    }
 }
 
 /* Links */
