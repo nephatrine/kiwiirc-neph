@@ -344,6 +344,13 @@ Desktop users can also install local ZIP theme packages from **Settings →
 General → Appearance → Installed Themes**. Installed themes are stored in the
 desktop user-data directory and are not part of profile exports.
 
+Desktop users can install local ZIP emoji pack packages from **Settings →
+General → Emoji Packs → Installed Emoji Packs**. Installed packs are stored in
+the desktop user-data directory and are not part of profile exports. Each
+archive must contain an `emoji.json` emoji pack document at its root or in one
+top-level folder. Image URLs in the document may be absolute `http`/`https` URLs
+or paths relative to the package, which are served through `kiwi-emoji://`.
+
 `showEmojiPicker` and `forceShowEmojiPicker` are also gated by the active
 network supporting UTF-8. `forceShowEmojiPicker` only overrides the touch-device
 check.
@@ -358,8 +365,14 @@ Self-involved events are still processed.
 
 - `customEmojis`: optional map of shortcode names to absolute `http`/`https`
   image URLs or root-relative paths beginning with `/`. Used for `:name:` custom
-  emoji and custom-token reactions. Configured tokens take precedence over the
-  Unicode shortcode table.
+  emoji and custom-token reactions. Configured tokens take precedence over
+  installed local packs, remote packs, and the Unicode shortcode table when
+  `emojiPackPreference` is `local`. They are the final fallback when it is
+  `remote`.
+- `emojiPackPreference`: `local` (default) or `remote`. `local` prefers
+  `customEmojis` and installed desktop packs over network/server/channel packs.
+  `remote` reverses that order for unqualified `:name:` tokens. Local and remote
+  packs both take precedence over the Unicode shortcode table.
 - `remoteEmojiPacks`: load network/server emoji packs automatically. Defaults to
   `true`. Channel packs use a per-channel Prompt/Always/Never policy. Prompt
   asks before loading a channel's packs, Always loads all of them and fetches

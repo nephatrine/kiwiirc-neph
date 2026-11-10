@@ -314,13 +314,6 @@
                                 <span>{{ $t('settings_hide_preview_cards') }} </span>
                                 <input v-model="settingBufferHidePreviewCards" type="checkbox">
                             </label>
-                            <label
-                                class="u-checkbox-wrapper"
-                                :title="$t('settings_remote_emoji_packs_hint')"
-                            >
-                                <span>{{ $t('settings_remote_emoji_packs') }} </span>
-                                <input v-model="settingRemoteEmojiPacks" type="checkbox">
-                            </label>
                             <label v-if="touchSupported" class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_show_message_info') }} </span>
                                 <input v-model="settingBufferShowMessageInfo" type="checkbox">
@@ -350,6 +343,82 @@
                                 >
                                 <span>{{ $t('settings_scrollback') }} </span>
                             </label>
+                        </div>
+                    </div>
+
+                    <div class="kiwi-appsettings-block">
+                        <h3>{{ $t('settings_emoji_packs') }}</h3>
+                        <div class="kiwi-appsettings-section">
+                            <label
+                                v-if="emojiPackPreferenceVisible"
+                                class="kiwi-appsettings-messagelistDisplay"
+                            >
+                                <span>{{ $t('settings_emoji_pack_preference') }} </span>
+                                <select v-model="settingEmojiPackPreference">
+                                    <option value="local">
+                                        {{ $t('settings_emoji_pack_preference_local') }}
+                                    </option>
+                                    <option value="remote">
+                                        {{ $t('settings_emoji_pack_preference_remote') }}
+                                    </option>
+                                </select>
+                            </label>
+                            <label
+                                class="u-checkbox-wrapper"
+                                :title="$t('settings_remote_emoji_packs_hint')"
+                            >
+                                <span>{{ $t('settings_remote_emoji_packs') }} </span>
+                                <input v-model="settingRemoteEmojiPacks" type="checkbox">
+                            </label>
+                            <div
+                                v-if="desktopEmojiPacksAvailable"
+                                class="kiwi-appsettings-installed-emoji-packs"
+                            >
+                                <h4>{{ $t('settings_installed_emoji_packs') }}</h4>
+                                <p class="kiwi-appsettings-hint">
+                                    {{ $t('settings_installed_emoji_packs_hint') }}
+                                </p>
+                                <button
+                                    type="button"
+                                    class="u-button u-button-primary"
+                                    :disabled="emojiPackInstallBusy"
+                                    @click="installEmojiPack"
+                                >
+                                    {{
+                                        emojiPackInstallBusy
+                                            ? $t('settings_emoji_pack_installing')
+                                            : $t('settings_install_emoji_pack')
+                                    }}
+                                </button>
+                                <p
+                                    v-if="emojiPackError"
+                                    class="kiwi-appsettings-theme-error"
+                                    role="alert"
+                                >
+                                    {{ emojiPackError }}
+                                </p>
+                                <ul
+                                    v-if="installedEmojiPacks.length"
+                                    class="kiwi-appsettings-theme-list"
+                                >
+                                    <li
+                                        v-for="installedPack in installedEmojiPacks"
+                                        :key="installedPack.id"
+                                    >
+                                        <span>{{ installedPack.name }}</span>
+                                        <button
+                                            type="button"
+                                            class="u-button u-button-secondary"
+                                            @click="uninstallEmojiPack(installedPack)"
+                                        >
+                                            {{ $t('settings_uninstall_emoji_pack') }}
+                                        </button>
+                                    </li>
+                                </ul>
+                                <p v-else class="kiwi-appsettings-hint">
+                                    {{ $t('settings_no_installed_emoji_packs') }}
+                                </p>
+                            </div>
                         </div>
                     </div>
 
@@ -657,6 +726,11 @@
                         </div>
                     </div>
 
+                    <emoji-packs
+                        v-if="hasEmojiPacks && settingRemoteEmojiPacks !== false"
+                        :network="activeNetwork"
+                    />
+
                     <div class="kiwi-appsettings-block">
                         <h3>{{ $t('notifications') }}</h3>
                         <div class="kiwi-appsettings-section">
@@ -750,6 +824,8 @@ import {
     serviceFromId
 } from '@/libs/fileupload';
 import desktop from '@/libs/desktop';
+import { getInstalledEmojiPackages, refreshLocalEmojiPacks } from '@/libs/LocalEmojiPacks';
+import { loadEmojiPacksSettings } from '@/libs/LazyLoad';
 import GlobalApi from '@/libs/GlobalApi';
 import localesList from '@/res/localesList';
 import { emojiVersions as emojiVersionList } from '@/res/emojiLookup';
@@ -771,6 +847,10 @@ import ChatLogSettings from './ChatLogSettings';
 import ProfileSettings from './ProfileSettings';
 import PluginSettingsBlock from './utils/PluginSettingsBlock';
 import NetworkPreferencesMixin from './NetworkPreferencesMixin';
+
+const EmojiPacks = (resolve, reject) => {
+    loadEmojiPacksSettings().then(resolve).catch(reject);
+};
 
 /**
  * Returns an object for a vuejs computated property on a state settings value
@@ -794,6 +874,7 @@ export default {
         ChatLogSettings,
         ProfileSettings,
         PluginSettingsBlock,
+        EmojiPacks,
     },
     mixins: [NetworkPreferencesMixin],
     data() {
@@ -801,6 +882,8 @@ export default {
             theme: '',
             themeInstallBusy: false,
             themeError: '',
+            emojiPackInstallBusy: false,
+            emojiPackError: '',
             pluginUiElements: GlobalApi.singleton().appSettingsPlugins,
             generalSettingsBlocks: GlobalApi.singleton().generalSettingsBlocks,
             networkSettingsBlocks: GlobalApi.singleton().networkSettingsBlocks,
@@ -908,6 +991,42 @@ export default {
         installedThemes() {
             return (this.settings.themes || []).filter((theme) => theme.installed);
         },
+        emojiPackPreferenceVisible() {
+            const customEmojis = this.$state.setting('customEmojis');
+            return desktop.isDesktop() || (
+                customEmojis &&
+                typeof customEmojis === 'object' &&
+                Object.keys(customEmojis).length > 0
+            );
+        },
+        desktopEmojiPacksAvailable() {
+            return desktop.isDesktop() && desktop.emojiPacks.isAvailable();
+        },
+        installedEmojiPacks() {
+            return getInstalledEmojiPackages();
+        },
+        hasEmojiPacks() {
+            const network = this.activeNetwork;
+            if (!network) {
+                return false;
+            }
+
+            const policies = network.setting('emojiChannelPolicies') || {};
+            if (Object.keys(policies).length > 0) {
+                return true;
+            }
+
+            const selections = network.setting('emojiPackSelections') || {};
+            if (Object.keys(selections).length > 0) {
+                return true;
+            }
+
+            return network.buffers.some((buffer) => (
+                buffer.isChannel() &&
+                buffer.metadata &&
+                buffer.metadata['draft/emoji']
+            ));
+        },
         settingShowAutoComplete: bindSetting('showAutocomplete'),
         settingEmojiPickerMaxVersion: bindSetting('emojiPickerMaxVersion'),
         settingAutoReconnect: bindSetting('autoReconnect'),
@@ -921,6 +1040,7 @@ export default {
         settingBufferEmojiConvertIncoming: bindSetting('buffers.emoji_convert_incoming'),
         settingBufferEmojiConvertAsTyped: bindSetting('buffers.emoji_convert_as_typed'),
         settingRemoteEmojiPacks: bindSetting('remoteEmojiPacks'),
+        settingEmojiPackPreference: bindSetting('emojiPackPreference'),
         settingCatboxUserhash: bindSetting('fileupload.catbox.userhash'),
         settingWebdavUploadUrl: bindSetting('fileupload.webdav.upload_url'),
         settingWebdavAccessUrl: bindSetting('fileupload.webdav.access_url'),
@@ -1062,6 +1182,43 @@ export default {
         async refreshInstalledThemes() {
             const installed = await desktop.themes.list();
             mergeInstalledThemes(this.$state, installed);
+        },
+        async installEmojiPack() {
+            this.emojiPackError = '';
+            this.emojiPackInstallBusy = true;
+
+            try {
+                const result = await desktop.emojiPacks.install();
+                if (!result || result.canceled) {
+                    return;
+                }
+                await refreshLocalEmojiPacks();
+            } catch (err) {
+                this.emojiPackError = this.$t('settings_emoji_pack_install_failed', {
+                    reason: err.message || err,
+                });
+            } finally {
+                this.emojiPackInstallBusy = false;
+            }
+        },
+        async uninstallEmojiPack(pack) {
+            if (typeof window.confirm === 'function' &&
+                !window.confirm(this.$t('settings_emoji_pack_uninstall_confirm', {
+                    name: pack.name,
+                }))
+            ) {
+                return;
+            }
+
+            this.emojiPackError = '';
+            try {
+                await desktop.emojiPacks.uninstall(pack.id);
+                await refreshLocalEmojiPacks();
+            } catch (err) {
+                this.emojiPackError = this.$t('settings_emoji_pack_uninstall_failed', {
+                    reason: err.message || err,
+                });
+            }
         },
         async installTheme() {
             this.themeError = '';

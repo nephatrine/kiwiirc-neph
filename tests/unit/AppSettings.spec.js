@@ -9,6 +9,7 @@ import {
     TIME_SYSTEM_DECIMAL
 } from '@/helpers/TimestampFormat';
 import state from '@/libs/state';
+import { setLocalEmojiPacks } from '@/libs/LocalEmojiPacks';
 import {
     CUSTOM_AVATAR_STYLE,
     DICEBEAR_FALLBACK_URLS,
@@ -29,6 +30,8 @@ describe('AppSettings channel defaults', () => {
     });
 
     afterEach(() => {
+        setLocalEmojiPacks([]);
+        delete window.kiwiDesktop;
         s.$destroy();
     });
 
@@ -72,6 +75,92 @@ describe('AppSettings channel defaults', () => {
         expect(s.setting('buffers.emoji_convert_as_typed')).toBe(false);
         expect(s.setting('buffers.show_topic_in_header')).toBe(false);
         expect(s.setting('buffers.show_presence_changes')).toBe(false);
+        expect(s.setting('emojiPackPreference')).toBe('local');
+    });
+
+    it('only shows pack preference with custom emoji or a desktop client', () => {
+        delete window.kiwiDesktop;
+        s.setting('customEmojis', {});
+        expect(AppSettings.computed.emojiPackPreferenceVisible.call({ $state: s }))
+            .toBe(false);
+
+        s.setting('customEmojis', { kiwi: 'https://example.com/kiwi.png' });
+        expect(AppSettings.computed.emojiPackPreferenceVisible.call({ $state: s }))
+            .toBe(true);
+
+        s.setting('customEmojis', {});
+        window.kiwiDesktop = {};
+        expect(AppSettings.computed.emojiPackPreferenceVisible.call({ $state: s }))
+            .toBe(true);
+    });
+
+    it('lists installed emoji packs and detects the desktop bridge', () => {
+        expect(AppSettings.computed.desktopEmojiPacksAvailable.call({})).toBe(false);
+
+        window.kiwiDesktop = {
+            emojiPacks: {
+                list: jest.fn(),
+                install: jest.fn(),
+                uninstall: jest.fn(),
+            },
+        };
+        expect(AppSettings.computed.desktopEmojiPacksAvailable.call({})).toBe(true);
+
+        setLocalEmojiPacks([{
+            id: 'kiwi-pack-abcd1234',
+            name: 'Kiwi Pack',
+            installedAt: 1,
+            packs: [{
+                id: 'kiwi',
+                name: 'Kiwi Pack',
+                emoji: {
+                    kiwi: {
+                        url: 'kiwi-emoji://kiwi-pack-abcd1234/images/kiwi.png',
+                    },
+                },
+            }],
+        }]);
+
+        expect(AppSettings.computed.installedEmojiPacks.call({})).toMatchObject([{
+            id: 'kiwi-pack-abcd1234',
+            name: 'Kiwi Pack',
+        }]);
+    });
+
+    it('shows channel emoji pack controls when a network has packs', () => {
+        expect(AppSettings.computed.hasEmojiPacks.call({ activeNetwork: null }))
+            .toBe(false);
+
+        const network = s.addNetwork('TestNet', 'nick', {
+            server: 'irc.example.net',
+        });
+        const buffer = s.addBuffer(network.id, '#test');
+        const context = { activeNetwork: network };
+
+        expect(AppSettings.computed.hasEmojiPacks.call(context)).toBe(false);
+
+        buffer.metadata['draft/emoji'] = 'https://example.com/emoji.json';
+        expect(AppSettings.computed.hasEmojiPacks.call(context)).toBe(true);
+
+        delete buffer.metadata['draft/emoji'];
+        network.setting('emojiChannelPolicies', {
+            '#other': {
+                name: '#other',
+                policy: 'always',
+            },
+        });
+        expect(AppSettings.computed.hasEmojiPacks.call(context)).toBe(true);
+    });
+
+    it('binds the global emoji pack preference', () => {
+        expect(AppSettings.computed.settingEmojiPackPreference.get.call({ $state: s }))
+            .toBe('local');
+
+        AppSettings.computed.settingEmojiPackPreference.set.call(
+            { $state: s },
+            'remote'
+        );
+        expect(s.setting('emojiPackPreference')).toBe('remote');
     });
 
     it('lists upload services by platform', () => {

@@ -10,6 +10,11 @@ and this project adheres to
 
 ### Added
 
+- **Emoji Packs**: Added a global Emoji Packs settings block with a Local
+  Packs/Remote Packs preference, moved Load Remote Emoji out of Chat Messages,
+  moved the per-channel pack controls into the network App Settings tab, and
+  added desktop emoji pack installation from ZIP archives with installed pack
+  management and the `kiwi-emoji://` image protocol.
 - **Desktop**: Added an optional Electron shell with a secure `app://` bridge, a
   desktop-only JSON5 configuration overlay, the Personal startup screen, native
   HTTP for emoji packs, downloads, and uploads, a direct-media proxy with Range

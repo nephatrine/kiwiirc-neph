@@ -146,6 +146,60 @@ The installer rejects path traversal, symlinks, encrypted entries, ZIP64,
 unsupported compression, excessive expansion, invalid `theme.json` files, and
 archives without a supported `theme.css` layout.
 
+## Installed Emoji Packs
+
+Desktop users can install local emoji pack archives from **Settings → General →
+Emoji Packs → Installed Emoji Packs**.
+
+Choose a `.zip` containing either `emoji.json` at the archive root or one
+top-level folder containing it:
+
+```text
+my-pack.zip
+└── my-pack/
+    ├── emoji.json
+    └── images/
+        ├── kiwi.png
+        └── party.svg
+```
+
+`emoji.json` uses the IRC custom emoji pack document format: a JSON array of
+packs with `id`, `name`, optional `description`, `authors`, and `homepage`, and
+an `emoji` object mapping shortcodes to image objects. Image `url` values may be
+absolute `http`/`https` URLs or paths relative to the installed package:
+
+```json
+[
+  {
+    "id": "my-pack",
+    "name": "My Pack",
+    "emoji": {
+      "kiwi": {
+        "url": "images/kiwi.png",
+        "alt": "kiwi bird"
+      },
+      "party": {
+        "url": "images/party.svg",
+        "alt": "party kiwi"
+      }
+    }
+  }
+]
+```
+
+Relative images are served through the dedicated `kiwi-emoji://` protocol.
+Supported formats are PNG, JPEG, GIF, WebP, AVIF, and SVG. Non-empty `required`
+extension lists are rejected because no pack extensions are implemented.
+
+Installed packs are copied into the desktop user-data directory and are not
+available in the web client or included in profile exports. All installed packs
+are active, and newer packages win when two packages use the same pack ID.
+
+The installer rejects path traversal, symlinks, encrypted entries, ZIP64,
+unsupported compression, excessive expansion, invalid `emoji.json` files, unsafe
+or missing image paths, unsupported image formats, duplicate pack IDs within one
+document, and archives without a supported `emoji.json` layout.
+
 ## Profile Data
 
 Desktop state is stored in one default profile:

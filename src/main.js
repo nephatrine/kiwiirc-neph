@@ -17,6 +17,7 @@ import Logger from '@/libs/Logger';
 import ConfigLoader, { parseConfigText } from '@/libs/ConfigLoader';
 import { loadJson5 } from '@/libs/Json5Loader';
 import { initEmojiPacks as initEmojiPackStore } from '@/libs/EmojiPackStore';
+import { refreshLocalEmojiPacks } from '@/libs/LocalEmojiPacks';
 import getState from '@/libs/state';
 import { installGlobalErrorHandlers } from '@/libs/GlobalErrorHandler';
 import ThemeManager from '@/libs/ThemeManager';
@@ -619,8 +620,13 @@ async function initThemes() {
     api.setThemeManager(themeMgr);
 }
 
-function initEmojiPacks() {
+async function initEmojiPacks() {
     initEmojiPackStore(getState());
+    try {
+        await refreshLocalEmojiPacks();
+    } catch (err) {
+        log.error('Unable to load installed emoji packs: ' + (err.stack || err));
+    }
 }
 
 function initJson5() {

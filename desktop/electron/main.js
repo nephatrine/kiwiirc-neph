@@ -22,6 +22,13 @@ const {
     resolveThemeFile,
     uninstallTheme,
 } = require('./themes');
+const {
+    EMOJI_PACK_SCHEME,
+    installEmojiPack,
+    listEmojiPacks,
+    resolveEmojiPackFile,
+    uninstallEmojiPack,
+} = require('./emoji-packs');
 const httpService = require('./http');
 const { handleMediaRequest } = require('./media');
 const { MEDIA_SCHEME } = require('./media-url');
@@ -78,6 +85,16 @@ protocol.registerSchemesAsPrivileged([
             stream: true,
         },
     },
+    {
+        scheme: EMOJI_PACK_SCHEME,
+        privileges: {
+            standard: true,
+            secure: true,
+            supportFetchAPI: true,
+            corsEnabled: true,
+            stream: true,
+        },
+    },
 ]);
 
 let mainWindow = null;
@@ -119,9 +136,11 @@ if (!app.requestSingleInstanceLock()) {
         }
         registerDesktopConfigIpc();
         registerThemeIpc();
+        registerEmojiPackIpc();
         buildApplicationMenu();
         await registerAppProtocol();
         registerThemeProtocol();
+        registerEmojiPackProtocol();
         registerMediaProtocol();
         registerEmbedRequestHeaders();
         registerTwitchFramePolicy();
@@ -345,6 +364,32 @@ function registerThemeIpc() {
     ));
 }
 
+function registerEmojiPackIpc() {
+    ipcMain.handle('kiwi:emoji-packs-list', () => (
+        listEmojiPacks(app.getPath('userData'))
+    ));
+
+    ipcMain.handle('kiwi:emoji-packs-install', async() => {
+        const result = await dialog.showOpenDialog(mainWindow, {
+            properties: ['openFile'],
+            filters: [{ name: 'Emoji Pack Archive', extensions: ['zip'] }],
+        });
+        if (result.canceled || !result.filePaths.length) {
+            return { canceled: true };
+        }
+
+        const emojiPack = await installEmojiPack(
+            app.getPath('userData'),
+            result.filePaths[0]
+        );
+        return { canceled: false, emojiPack };
+    });
+
+    ipcMain.handle('kiwi:emoji-packs-uninstall', (event, id) => (
+        uninstallEmojiPack(app.getPath('userData'), id)
+    ));
+}
+
 function requireChatLogStore() {
     if (!chatLogStore) {
         throw new Error('chat logging is unavailable');
@@ -544,6 +589,32 @@ function registerThemeProtocol() {
     protocol.handle(THEME_SCHEME, async(request) => {
         try {
             const resolved = await resolveThemeFile(
+                app.getPath('userData'),
+                request.url
+            );
+            if (!resolved) {
+                return new Response('Not found', { status: 404 });
+            }
+
+            const response = await net.fetch(
+                pathToFileURL(resolved.filePath).toString()
+            );
+            const headers = new Headers(response.headers);
+            headers.set('Content-Type', resolved.mimeType);
+            return new Response(response.body, {
+                status: response.status,
+                headers,
+            });
+        } catch (err) {
+            return new Response('Not found', { status: 404 });
+        }
+    });
+}
+
+function registerEmojiPackProtocol() {
+    protocol.handle(EMOJI_PACK_SCHEME, async(request) => {
+        try {
+            const resolved = await resolveEmojiPackFile(
                 app.getPath('userData'),
                 request.url
             );

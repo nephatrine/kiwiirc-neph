@@ -1,5 +1,6 @@
 import { getEmojiAutocompleteItems } from '@/helpers/Emoji';
 import getState from '@/libs/state';
+import { setLocalEmojiPacks } from '@/libs/LocalEmojiPacks';
 import {
     answerEmojiPackPrompt,
     channelPackState,
@@ -38,7 +39,9 @@ describe('Emoji pack store', () => {
         state = getState();
         state.resetState();
         state.setting('remoteEmojiPacks', true);
+        state.setting('emojiPackPreference', 'local');
         state.setting('customEmojis', {});
+        setLocalEmojiPacks([]);
         Object.keys(emojiPackState.server).forEach((key) => {
             delete emojiPackState.server[key];
         });
@@ -53,6 +56,7 @@ describe('Emoji pack store', () => {
     });
 
     afterEach(() => {
+        setLocalEmojiPacks([]);
         state.resetState();
         jest.restoreAllMocks();
         delete global.fetch;
@@ -94,6 +98,25 @@ describe('Emoji pack store', () => {
         noteChannelPack(network, target);
         mockPackDocument(packs);
         return ensureChannelPack(network, target, true);
+    }
+
+    function installLocalPack(token, url, packId = 'local-pack') {
+        setLocalEmojiPacks([{
+            id: 'local-package',
+            name: 'Local Package',
+            installedAt: 1,
+            packs: [{
+                id: packId,
+                name: 'Local Pack',
+                supported: true,
+                emoji: {
+                    [token]: {
+                        url,
+                        alt: 'local emoji',
+                    },
+                },
+            }],
+        }]);
     }
 
     function mockMetadataMethods() {
@@ -150,6 +173,130 @@ describe('Emoji pack store', () => {
             url: 'https://local.example/wave.png',
             source: 'local',
         });
+    });
+
+    test('local preference uses custom emoji then installed packs then remote packs', async() => {
+        await loadServerPack();
+        installLocalPack(
+            'wave',
+            'kiwi-emoji://local-package/images/local-wave.png'
+        );
+        state.setting('customEmojis', {
+            wave: 'https://local.example/wave.png',
+        });
+
+        expect(resolveCustomEmoji('wave', buffer)).toMatchObject({
+            url: 'https://local.example/wave.png',
+            source: 'local',
+        });
+
+        state.setting('customEmojis', {});
+        expect(resolveCustomEmoji('wave', buffer)).toMatchObject({
+            url: 'kiwi-emoji://local-package/images/local-wave.png',
+            source: 'local',
+            packId: 'local-pack',
+        });
+    });
+
+    test('remote preference uses remote packs then installed packs then custom emoji', async() => {
+        await loadServerPack();
+        installLocalPack(
+            'wave',
+            'kiwi-emoji://local-package/images/local-wave.png'
+        );
+        state.setting('customEmojis', {
+            wave: 'https://local.example/wave.png',
+        });
+        state.setting('emojiPackPreference', 'remote');
+
+        expect(resolveCustomEmoji('wave', buffer)).toMatchObject({
+            url: 'https://emoji.example/wave.png',
+            source: 'server',
+        });
+
+        state.setting('remoteEmojiPacks', false);
+        expect(resolveCustomEmoji('wave', buffer)).toMatchObject({
+            url: 'kiwi-emoji://local-package/images/local-wave.png',
+            source: 'local',
+        });
+
+        setLocalEmojiPacks([]);
+        expect(resolveCustomEmoji('wave', buffer)).toMatchObject({
+            url: 'https://local.example/wave.png',
+            source: 'local',
+        });
+    });
+
+    test('resolves installed packs with an explicit pack id', async() => {
+        installLocalPack(
+            'wave',
+            'kiwi-emoji://local-package/images/local-wave.png'
+        );
+
+        expect(resolveCustomEmoji('wave', buffer, 'local-pack')).toMatchObject({
+            url: 'kiwi-emoji://local-package/images/local-wave.png',
+            packId: 'local-pack',
+            source: 'local',
+        });
+        expect(resolveCustomEmoji('wave', buffer, 'missing')).toBeNull();
+    });
+
+    test('uses the newest installed package when pack ids collide', () => {
+        setLocalEmojiPacks([
+            {
+                id: 'older-package',
+                name: 'Older Package',
+                installedAt: 1,
+                packs: [{
+                    id: 'local-pack',
+                    name: 'Older Pack',
+                    supported: true,
+                    emoji: {
+                        wave: { url: 'kiwi-emoji://older-package/wave.png' },
+                    },
+                }],
+            },
+            {
+                id: 'newer-package',
+                name: 'Newer Package',
+                installedAt: 2,
+                packs: [{
+                    id: 'local-pack',
+                    name: 'Newer Pack',
+                    supported: true,
+                    emoji: {
+                        wave: { url: 'kiwi-emoji://newer-package/wave.png' },
+                    },
+                }],
+            },
+        ]);
+
+        expect(resolveCustomEmoji('wave', buffer)).toMatchObject({
+            url: 'kiwi-emoji://newer-package/wave.png',
+            packId: 'local-pack',
+            packName: 'Newer Pack',
+        });
+    });
+
+    test('picker insert text follows the pack preference', async() => {
+        await loadServerPack();
+        installLocalPack(
+            'wave',
+            'kiwi-emoji://local-package/images/local-wave.png'
+        );
+
+        const local = getCustomEmojiPickerItems(buffer)
+            .find((item) => item.packId === 'local-pack');
+        expect(local.insertText).toBe(':wave:');
+
+        state.setting('emojiPackPreference', 'remote');
+        const remote = getCustomEmojiPickerItems(buffer)
+            .find((item) => item.sourceType === 'server');
+        const explicitLocal = getCustomEmojiPickerItems(buffer)
+            .find((item) => item.packId === 'local-pack');
+
+        expect(remote.insertText).toBe(':wave:');
+        expect(explicitLocal.insertText).toBe(':wave/local-pack:');
     });
 
     test('does not load or use packs when remote packs are disabled', async() => {

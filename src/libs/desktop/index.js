@@ -33,6 +33,12 @@ import {
     list as listThemes,
     uninstall as uninstallTheme
 } from './Themes';
+import {
+    install as installEmojiPack,
+    isAvailable as isEmojiPackInstallAvailable,
+    list as listEmojiPacks,
+    uninstall as uninstallEmojiPack
+} from './EmojiPacks';
 
 const desktop = {
     isDesktop,
@@ -69,6 +75,12 @@ const desktop = {
         install: installTheme,
         uninstall: uninstallTheme,
         isAvailable: isThemeInstallAvailable,
+    },
+    emojiPacks: {
+        list: listEmojiPacks,
+        install: installEmojiPack,
+        uninstall: uninstallEmojiPack,
+        isAvailable: isEmojiPackInstallAvailable,
     },
 };
 

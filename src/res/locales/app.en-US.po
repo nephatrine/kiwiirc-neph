@@ -382,6 +382,42 @@ msgstr "Installed Themes"
 msgid "settings_installed_themes_hint"
 msgstr "Install theme archives from files on this computer. Each archive must contain theme.css at its root or in one top-level folder."
 
+#: Installed Emoji Packs
+msgid "settings_installed_emoji_packs"
+msgstr "Installed Emoji Packs"
+
+#: Installed emoji packs hint
+msgid "settings_installed_emoji_packs_hint"
+msgstr "Install emoji pack archives from files on this computer. Each archive must contain emoji.json at its root or in one top-level folder, with images referenced by relative paths or absolute URLs."
+
+#: Install emoji pack archive
+msgid "settings_install_emoji_pack"
+msgstr "Install Emoji Pack…"
+
+#: Emoji pack installation in progress
+msgid "settings_emoji_pack_installing"
+msgstr "Installing…"
+
+#: Uninstall an emoji pack
+msgid "settings_uninstall_emoji_pack"
+msgstr "Uninstall"
+
+#: No installed emoji packs
+msgid "settings_no_installed_emoji_packs"
+msgstr "No installed emoji packs."
+
+#: Emoji pack installation failed: {{reason}}
+msgid "settings_emoji_pack_install_failed"
+msgstr "Emoji Pack Installation Failed: {{reason}}"
+
+#: Emoji pack uninstallation failed: {{reason}}
+msgid "settings_emoji_pack_uninstall_failed"
+msgstr "Emoji Pack Uninstallation Failed: {{reason}}"
+
+#: Uninstall emoji pack "{{name}}"?
+msgid "settings_emoji_pack_uninstall_confirm"
+msgstr "Uninstall Emoji Pack \"{{name}}\"?"
+
 #: Install Theme…
 msgid "settings_install_theme"
 msgstr "Install Theme…"
@@ -2131,6 +2167,18 @@ msgstr "Convert Emoji Codes"
 #: Convert emoji shortcodes
 msgid "settings_emoji_convert_as_typed"
 msgstr "Convert Emoji Shortcodes"
+
+#: Emoji pack preference
+msgid "settings_emoji_pack_preference"
+msgstr "Pack Preference"
+
+#: Prefer local emoji packs
+msgid "settings_emoji_pack_preference_local"
+msgstr "Local Packs"
+
+#: Prefer remote emoji packs
+msgid "settings_emoji_pack_preference_remote"
+msgstr "Remote Packs"
 
 #: Load network and server emoji packs automatically
 msgid "settings_remote_emoji_packs"

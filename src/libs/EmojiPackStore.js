@@ -4,6 +4,7 @@ import Vue from 'vue';
 import getState from '@/libs/state';
 import { desktopFetch } from '@/libs/desktop/Http';
 import { customEmojiTokens, customEmojiUrl } from '@/libs/CustomEmoji';
+import { getLocalEmojiPacks } from '@/libs/LocalEmojiPacks';
 
 const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024;
 const FETCH_TIMEOUT = 10000;
@@ -28,6 +29,12 @@ let initialized = false;
 function remoteEnabled() {
     const value = getState().setting('remoteEmojiPacks');
     return typeof value === 'undefined' ? true : !!value;
+}
+
+function packPreference() {
+    return getState().setting('emojiPackPreference') === 'remote' ?
+        'remote' :
+        'local';
 }
 
 function sameChannel(network, left, right) {
@@ -536,6 +543,13 @@ function invalidateMessages(networkId, bufferName) {
     });
 }
 
+export function invalidateEmojiPackRenders() {
+    const state = getState();
+    state.networks.forEach((network) => {
+        invalidateMessages(network.id, null);
+    });
+}
+
 function promptKey(network, channelName) {
     return network.id + '\n' + channelKey(network, channelName);
 }
@@ -1004,28 +1018,55 @@ function maybeHandleUnknownPack(network, buffer, packId, token) {
     queuePackPrompt(network, channelName, packId, token);
 }
 
-export function resolveCustomEmoji(token, buffer, packId) {
-    if (!token) {
-        return null;
-    }
+function localCustomResult(token) {
+    return {
+        url: customEmojiUrl(token),
+        alt: '',
+        token,
+        packId: '',
+        packKey: '',
+        packName: '',
+        sourceType: 'local',
+        channelName: '',
+        source: 'local',
+    };
+}
 
-    if (!packId) {
-        const local = customEmojiUrl(token);
-        if (local) {
-            return {
-                url: local,
-                alt: '',
-                token,
-                packId: '',
-                packKey: '',
-                packName: '',
-                sourceType: 'local',
-                channelName: '',
-                source: 'local',
-            };
+function localPackResult(token, found) {
+    return {
+        url: found.entry.url,
+        alt: found.entry.alt,
+        token,
+        packId: found.pack.id,
+        packKey: packKey(found.pack),
+        packName: found.pack.name,
+        sourceType: 'local',
+        channelName: '',
+        source: 'local',
+    };
+}
+
+function findLocalPackEntry(token, packId) {
+    let found = null;
+
+    getLocalEmojiPacks().forEach((pack) => {
+        if (!pack.supported) {
+            return;
         }
-    }
+        if (packId && pack.id !== packId) {
+            return;
+        }
 
+        const entry = pack.emoji[token];
+        if (entry) {
+            found = { pack, entry };
+        }
+    });
+
+    return found;
+}
+
+function resolveRemoteCustomEmoji(token, buffer, packId) {
     if (!remoteEnabled() || !buffer) {
         return null;
     }
@@ -1078,6 +1119,64 @@ export function resolveCustomEmoji(token, buffer, packId) {
 
     if (other) {
         return packResult(token, other, other.sourceType, other.channelName);
+    }
+
+    return null;
+}
+
+export function resolveCustomEmoji(token, buffer, packId) {
+    if (!token) {
+        return null;
+    }
+
+    const preference = packPreference();
+    const canUseRemote = remoteEnabled() && !!buffer;
+    const localCustom = !packId ? customEmojiUrl(token) : '';
+    const localPack = findLocalPackEntry(token, packId);
+
+    if (packId) {
+        if (preference === 'remote' && canUseRemote) {
+            const remote = resolveRemoteCustomEmoji(token, buffer, packId);
+            if (remote) {
+                return remote;
+            }
+        }
+
+        if (localPack) {
+            return localPackResult(token, localPack);
+        }
+
+        if (preference === 'local' && canUseRemote) {
+            return resolveRemoteCustomEmoji(token, buffer, packId);
+        }
+
+        return null;
+    }
+
+    if (preference === 'remote') {
+        if (canUseRemote) {
+            const remote = resolveRemoteCustomEmoji(token, buffer, '');
+            if (remote) {
+                return remote;
+            }
+        }
+        if (localPack) {
+            return localPackResult(token, localPack);
+        }
+        if (localCustom) {
+            return localCustomResult(token);
+        }
+        return null;
+    }
+
+    if (localCustom) {
+        return localCustomResult(token);
+    }
+    if (localPack) {
+        return localPackResult(token, localPack);
+    }
+    if (canUseRemote) {
+        return resolveRemoteCustomEmoji(token, buffer, '');
     }
 
     return null;
@@ -1143,7 +1242,11 @@ export function initEmojiPacks(state) {
     state.$on('network.removed', ({ network }) => {
         clearNetworkPrompts(network);
     });
+    state.$on('emoji.local-packs', () => {
+        invalidateEmojiPackRenders();
+    });
     state.$watch('user_settings.remoteEmojiPacks', () => {
+        invalidateEmojiPackRenders();
         if (!remoteEnabled()) {
             emojiPackState.prompt = null;
             promptQueue.length = 0;
@@ -1151,6 +1254,9 @@ export function initEmojiPacks(state) {
             return;
         }
         refreshAll();
+    });
+    state.$watch('user_settings.emojiPackPreference', () => {
+        invalidateEmojiPackRenders();
     });
     state.$watch(
         () => state.networks.map((network) => network.id + ':' + network.state).join('|'),
@@ -1164,155 +1270,245 @@ export function initEmojiPacks(state) {
 
 export function getCustomEmojiPickerItems(buffer) {
     const items = [];
+    const preference = packPreference();
+    const canUseRemote = !!buffer && remoteEnabled();
+    const localPacks = getLocalEmojiPacks().filter((pack) => pack.supported);
+    const customTokens = customEmojiTokens().filter((token) => customEmojiUrl(token));
 
-    customEmojiTokens().forEach((token) => {
-        const url = customEmojiUrl(token);
-        if (!url) {
-            return;
+    const customItems = customTokens.map((token) => ({
+        kind: 'custom',
+        shortcode: token,
+        token,
+        url: customEmojiUrl(token),
+        alt: '',
+        packId: '',
+        packKey: '',
+        packName: '',
+        sourceType: 'local',
+        channelName: '',
+    }));
+
+    const localItems = [];
+    localPacks.forEach((pack) => {
+        Object.keys(pack.emoji).forEach((token) => {
+            const entry = pack.emoji[token];
+            localItems.push({
+                kind: 'local-pack',
+                shortcode: token,
+                token,
+                url: entry.url,
+                alt: entry.alt,
+                packId: pack.id,
+                packKey: packKey(pack),
+                packName: pack.name,
+                sourceType: 'local',
+                channelName: '',
+            });
+        });
+    });
+
+    const remoteItems = [];
+    const network = canUseRemote ? buffer.getNetwork() : null;
+    if (network) {
+        const groups = new Map();
+        const groupFor = (packId) => {
+            if (!groups.has(packId)) {
+                groups.set(packId, {
+                    current: [],
+                    server: [],
+                    other: [],
+                });
+            }
+            return groups.get(packId);
+        };
+        const addToGroup = (match, group) => {
+            if (!match.pack.supported) {
+                return;
+            }
+            groupFor(match.pack.id)[group].push(match);
+        };
+
+        selectedChannelPacks(network, buffer).forEach((match) => {
+            addToGroup(match, 'other');
+        });
+
+        const server = serverEntry(network);
+        if (server && server.status === 'loaded') {
+            server.packs.forEach((pack) => {
+                addToGroup({
+                    pack,
+                    channelName: '',
+                    sourceType: 'server',
+                }, 'server');
+            });
         }
 
+        if (buffer.isChannel && buffer.isChannel()) {
+            const current = channelEntry(network, buffer);
+            if (current && current.status === 'loaded') {
+                const selected = selectedPackIds(network, buffer);
+                current.packs.forEach((pack) => {
+                    if (selected.indexOf(pack.id) !== -1) {
+                        addToGroup({
+                            pack,
+                            channelName: buffer.name,
+                            sourceType: 'channel',
+                        }, 'current');
+                    }
+                });
+            }
+        }
+
+        groups.forEach((group, packId) => {
+            const entries = new Map();
+            const otherKeys = new Set(group.other.map((match) => packKey(match.pack)));
+
+            group.other.forEach((match) => {
+                addPackEntries(entries, match, 'other');
+            });
+            group.server.forEach((match) => {
+                addPackEntries(entries, match, 'server');
+            });
+            group.current.forEach((match) => {
+                addPackEntries(entries, match, 'current');
+            });
+
+            entries.forEach(({
+                pack,
+                entry,
+                token,
+                channelName,
+                sourceType,
+                group: sourceGroup,
+            }) => {
+                if (sourceGroup === 'other' && otherKeys.size > 1) {
+                    return;
+                }
+
+                remoteItems.push({
+                    kind: 'remote',
+                    shortcode: token,
+                    token,
+                    url: entry.url,
+                    alt: entry.alt,
+                    packId,
+                    packKey: packKey(pack),
+                    packName: pack.name,
+                    sourceType,
+                    channelName,
+                });
+            });
+        });
+    }
+
+    const defaultKeys = new Map();
+    const remoteDefaults = new Map();
+
+    remoteItems.forEach((item) => {
+        const isCurrent = item.sourceType === 'channel' &&
+            buffer.isChannel && buffer.isChannel() &&
+            sameChannel(network, item.channelName, buffer.name);
+        let rank = 0;
+        if (item.sourceType === 'server') {
+            rank = 1;
+        } else if (isCurrent) {
+            rank = 2;
+        }
+        const previous = remoteDefaults.get(item.token);
+        if (!previous || rank >= previous.rank) {
+            remoteDefaults.set(item.token, {
+                rank,
+                key: item.packKey,
+            });
+        }
+    });
+
+    if (preference === 'remote') {
+        customTokens.forEach((token) => defaultKeys.set(token, 'custom'));
+        localPacks.forEach((pack) => {
+            Object.keys(pack.emoji).forEach((token) => {
+                defaultKeys.set(token, packKey(pack));
+            });
+        });
+        remoteDefaults.forEach((value, token) => defaultKeys.set(token, value.key));
+    } else {
+        remoteDefaults.forEach((value, token) => defaultKeys.set(token, value.key));
+        localPacks.forEach((pack) => {
+            Object.keys(pack.emoji).forEach((token) => {
+                defaultKeys.set(token, packKey(pack));
+            });
+        });
+        customTokens.forEach((token) => defaultKeys.set(token, 'custom'));
+    }
+
+    customItems.forEach((item) => {
+        if (defaultKeys.get(item.token) !== 'custom') {
+            return;
+        }
         items.push({
-            shortcode: token,
-            name: token,
+            shortcode: item.shortcode,
+            name: item.shortcode,
             aliases: [],
             char: '',
-            url,
-            alt: '',
+            url: item.url,
+            alt: item.alt,
             packId: '',
             packKey: '',
             packName: '',
             sourceType: 'local',
             channelName: '',
             source: 'local',
-            label: ':' + token + ':',
-            insertText: ':' + token + ':',
+            label: ':' + item.shortcode + ':',
+            insertText: ':' + item.shortcode + ':',
         });
     });
 
-    if (buffer && remoteEnabled()) {
-        const network = buffer.getNetwork();
-        if (network) {
-            const groups = new Map();
-            const defaultPackKeys = new Map();
-            const groupFor = (packId) => {
-                if (!groups.has(packId)) {
-                    groups.set(packId, {
-                        current: [],
-                        server: [],
-                        other: [],
-                    });
-                }
-                return groups.get(packId);
-            };
-            const addToGroup = (match, group) => {
-                if (!match.pack.supported) {
-                    return;
-                }
+    localItems.forEach((item) => {
+        const isDefault = defaultKeys.get(item.token) === item.packKey;
+        const label = ':' + item.token + '/' + item.packId + ':';
+        items.push({
+            shortcode: item.shortcode,
+            name: item.shortcode,
+            aliases: [item.packId],
+            char: '',
+            url: item.url,
+            alt: item.alt,
+            packId: item.packId,
+            packKey: item.packKey,
+            packName: item.packName,
+            sourceType: 'local',
+            channelName: '',
+            source: 'local',
+            label,
+            insertText: isDefault ? ':' + item.token + ':' : label,
+        });
+    });
 
-                groupFor(match.pack.id)[group].push(match);
-
-                if (group === 'server' || group === 'current') {
-                    Object.keys(match.pack.emoji).forEach((token) => {
-                        defaultPackKeys.set(token, packKey(match.pack));
-                    });
-                }
-            };
-
-            selectedChannelPacks(network, buffer).forEach((match) => {
-                addToGroup(match, 'other');
-            });
-
-            const server = serverEntry(network);
-            if (server && server.status === 'loaded') {
-                server.packs.forEach((pack) => {
-                    addToGroup({
-                        pack,
-                        channelName: '',
-                        sourceType: 'server',
-                    }, 'server');
-                });
-            }
-
-            if (buffer.isChannel && buffer.isChannel()) {
-                const current = channelEntry(network, buffer);
-                if (current && current.status === 'loaded') {
-                    const selected = selectedPackIds(network, buffer);
-                    current.packs.forEach((pack) => {
-                        if (selected.indexOf(pack.id) !== -1) {
-                            addToGroup({
-                                pack,
-                                channelName: buffer.name,
-                                sourceType: 'channel',
-                            }, 'current');
-                        }
-                    });
-                }
-            }
-
-            customEmojiTokens().forEach((token) => {
-                if (customEmojiUrl(token)) {
-                    defaultPackKeys.set(token, '');
-                }
-            });
-
-            groups.forEach((group, packId) => {
-                const entries = new Map();
-                const otherKeys = new Set(group.other.map((match) => packKey(match.pack)));
-
-                group.other.forEach((match) => {
-                    addPackEntries(entries, match, 'other');
-                });
-                group.server.forEach((match) => {
-                    addPackEntries(entries, match, 'server');
-                });
-                group.current.forEach((match) => {
-                    addPackEntries(entries, match, 'current');
-                });
-
-                entries.forEach(({
-                    pack,
-                    entry,
-                    token,
-                    channelName,
-                    sourceType,
-                    group: sourceGroup,
-                }) => {
-                    if (sourceGroup === 'other' && otherKeys.size > 1) {
-                        return;
-                    }
-
-                    const itemPackKey = packKey(pack);
-                    const isCurrentChannel = sourceType === 'channel' &&
-                        buffer.isChannel && buffer.isChannel() &&
-                        sameChannel(network, channelName, buffer.name);
-                    const otherChannel = sourceType === 'channel' && !isCurrentChannel;
-                    const requiresPackId = otherChannel ||
-                        defaultPackKeys.get(token) !== itemPackKey;
-                    const label = ':' + token + '/' + packId + ':';
-                    const insertText = requiresPackId ?
-                        label :
-                        ':' + token + ':';
-
-                    items.push({
-                        shortcode: token,
-                        name: token,
-                        aliases: [packId],
-                        char: '',
-                        url: entry.url,
-                        alt: entry.alt,
-                        packId,
-                        packKey: itemPackKey,
-                        packName: pack.name,
-                        sourceType,
-                        channelName,
-                        source: sourceType,
-                        label,
-                        insertText,
-                    });
-                });
-            });
-        }
-    }
+    remoteItems.forEach((item) => {
+        const isCurrentChannel = item.sourceType === 'channel' &&
+            buffer.isChannel && buffer.isChannel() &&
+            sameChannel(network, item.channelName, buffer.name);
+        const otherChannel = item.sourceType === 'channel' && !isCurrentChannel;
+        const requiresPackId = otherChannel ||
+            defaultKeys.get(item.token) !== item.packKey;
+        const label = ':' + item.token + '/' + item.packId + ':';
+        items.push({
+            shortcode: item.shortcode,
+            name: item.shortcode,
+            aliases: [item.packId],
+            char: '',
+            url: item.url,
+            alt: item.alt,
+            packId: item.packId,
+            packKey: item.packKey,
+            packName: item.packName,
+            sourceType: item.sourceType,
+            channelName: item.channelName,
+            source: item.sourceType,
+            label,
+            insertText: requiresPackId ? label : ':' + item.token + ':',
+        });
+    });
 
     return items.sort((left, right) => (
         left.shortcode.localeCompare(right.shortcode) ||

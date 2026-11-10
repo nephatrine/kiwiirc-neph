@@ -72,6 +72,9 @@ export const configTemplates = {
         ],
         // token -> absolute http(s) image URL
         customEmojis: {},
+        // local: customEmojis and installed packs before remote packs.
+        // remote: network/server/channel packs before local packs.
+        emojiPackPreference: 'local',
         // Load network/server emoji packs automatically. Channel packs still
         // require explicit per-network selection.
         remoteEmojiPacks: true,
