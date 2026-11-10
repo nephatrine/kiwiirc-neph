@@ -110,6 +110,33 @@ describe('Profile transfer', () => {
         expect(imported.networks[0].password).toBe('');
     });
 
+    it('protects the WebDAV password in profile exports', () => {
+        const { s } = makeState();
+        s.setting('fileupload.webdav.password', 'webdav-secret');
+
+        const plain = buildProfileBundle(s);
+        expect(plain.state.user_settings.fileupload.webdav.password).toBeUndefined();
+        expect(plain.secrets).toBeUndefined();
+
+        const withPasswords = buildProfileBundle(s, {
+            includePasswords: true,
+            secrets: collectProfileSecrets(s),
+        });
+        expect(withPasswords.state.user_settings.fileupload.webdav.password)
+            .toBeUndefined();
+        expect(withPasswords.secrets.fileupload).toEqual({
+            webdavPassword: 'webdav-secret',
+        });
+
+        const imported = state.create();
+        imported.settings.startupOptions = {};
+        applyProfileBundle(imported, withPasswords);
+        expect(imported.setting('fileupload.webdav.password'))
+            .toBe('webdav-secret');
+        expect(JSON.parse(imported.exportState(true)).user_settings
+            .fileupload.webdav.password).toBeUndefined();
+    });
+
     it('rejects invalid profile data', () => {
         expect(() => parseProfileBundleText('not json')).toThrow('invalid profile JSON');
         expect(() => validateProfileBundle({

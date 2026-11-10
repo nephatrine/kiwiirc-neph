@@ -1,11 +1,17 @@
 import { filehostAvailable, uploadFilehost } from './filehost';
+import { uploadCatbox } from './catbox';
+import { uploadFilebin } from './filebin';
 import { uploadLitterbox } from './litterbox';
+import { uploadSharebin } from './sharebin';
+import { uploadUguu } from './uguu';
+import { uploadWebdav } from './webdav';
 import { acceptUploadUrl } from './url';
 
 export { acceptUploadUrl } from './url';
 export {
     basicAuthorization,
     filehostAvailable,
+    filehostSupported,
     filehostUploadUrl,
     resolveUploadLocation
 } from './filehost';
@@ -28,6 +34,71 @@ export const services = {
             });
         },
     },
+    catbox: {
+        id: 'catbox',
+        label: 'Catbox',
+        desktopOnly: true,
+        maxBytes: 200 * 1024 * 1024,
+        upload(file, options) {
+            const state = options && options.state;
+            const userhash = state ?
+                state.setting('fileupload.catbox.userhash') :
+                '';
+            return uploadCatbox(file, userhash);
+        },
+    },
+    filebin: {
+        id: 'filebin',
+        label: 'Filebin',
+        desktopOnly: true,
+        upload(file) {
+            return uploadFilebin(file);
+        },
+    },
+    sharebin: {
+        id: 'sharebin',
+        label: 'ShareBin.eu',
+        desktopOnly: true,
+        maxBytes: 500 * 1024 * 1024,
+        retentions: ['1d', '7d', '30d', 'never'],
+        defaultRetention: '7d',
+        retentionSetting: 'fileupload.sharebin.retention',
+        upload(file, options) {
+            const retention = retentionFor(this, options && options.retention);
+            return uploadSharebin(file, retention);
+        },
+    },
+    uguu: {
+        id: 'uguu',
+        label: 'Uguu~',
+        desktopOnly: true,
+        maxBytes: 128 * 1024 * 1024,
+        upload(file) {
+            return uploadUguu(file);
+        },
+    },
+    webdav: {
+        id: 'webdav',
+        label: 'WebDAV',
+        desktopOnly: true,
+        upload(file, options) {
+            const state = options && options.state;
+            return uploadWebdav(file, {
+                uploadUrl: state ?
+                    state.setting('fileupload.webdav.upload_url') :
+                    '',
+                accessUrl: state ?
+                    state.setting('fileupload.webdav.access_url') :
+                    '',
+                username: state ?
+                    state.setting('fileupload.webdav.username') :
+                    '',
+                password: state ?
+                    state.setting('fileupload.webdav.password') :
+                    '',
+            });
+        },
+    },
     filehost: {
         id: 'filehost',
         label: 'Filehost',
@@ -37,6 +108,16 @@ export const services = {
         },
     },
 };
+
+export function serviceAvailableOnPlatform(service) {
+    if (!service) {
+        return false;
+    }
+    if (!service.desktopOnly) {
+        return true;
+    }
+    return typeof window !== 'undefined' && !!window.kiwiDesktop;
+}
 
 export function listUploadServices() {
     return Object.keys(services).map((id) => services[id]);
@@ -53,18 +134,19 @@ export function effectiveService(state, network) {
     if (!state || typeof state.setting !== 'function') {
         return null;
     }
-    let id = network && typeof network.setting === 'function' ?
-        network.setting('fileuploadService') :
-        '';
-    if (!id) {
-        id = typeof state.getSetting === 'function' ?
-            state.getSetting('settings.fileupload.service') :
-            state.setting('fileupload.service');
+
+    const useFilehost = !network || typeof network.setting !== 'function' ||
+        network.setting('useFilehost') !== false;
+    if (useFilehost && filehostAvailable(network)) {
+        return services.filehost;
     }
-    if (id === 'filehost' && !filehostAvailable(network)) {
+
+    const id = state.setting('fileupload.service');
+    if (id === 'filehost') {
         return null;
     }
-    return serviceFromId(id);
+    const service = serviceFromId(id);
+    return serviceAvailableOnPlatform(service) ? service : null;
 }
 
 export function retentionFor(service, value) {
@@ -77,19 +159,15 @@ export function retentionFor(service, value) {
     return service.defaultRetention || service.retentions[0];
 }
 
-export function effectiveRetention(state, service, network) {
+export function effectiveRetention(state, service) {
     if (!service) {
         return '';
     }
-    let value = network && typeof network.setting === 'function' ?
-        network.setting('fileuploadRetention') :
-        '';
-    if (!value && service.retentionSetting && state &&
+    let value = '';
+    if (service.retentionSetting && state &&
         typeof state.setting === 'function'
     ) {
-        value = typeof state.getSetting === 'function' ?
-            state.getSetting('settings.' + service.retentionSetting) :
-            state.setting(service.retentionSetting);
+        value = state.setting(service.retentionSetting);
     }
     return retentionFor(service, value);
 }

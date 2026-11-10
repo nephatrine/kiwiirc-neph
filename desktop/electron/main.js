@@ -288,6 +288,7 @@ function registerDesktopConfigIpc() {
         const policy = desktopHttpPolicy();
         return httpService.upload(Object.assign({}, options, {
             maxResponseBytes: policy.maxResponseBytes,
+            maxUploadBytes: policy.maxUploadBytes,
             timeoutMs: policy.timeoutMs,
         }), policy);
     });
@@ -365,6 +366,7 @@ function desktopHttpPolicy() {
         maxDownloadBytes: positiveInteger(settings.maxDownloadBytes, 100 * 1024 * 1024),
         maxMediaBytes: positiveInteger(settings.maxMediaBytes, 100 * 1024 * 1024),
         maxRequestBytes: positiveInteger(settings.maxRequestBytes, 100 * 1024 * 1024),
+        maxUploadBytes: positiveInteger(settings.maxUploadBytes, 256 * 1024 * 1024),
         maxRedirects: positiveInteger(settings.maxRedirects, 5),
     };
 }

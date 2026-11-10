@@ -97,4 +97,18 @@ describe('Desktop HTTP policy', () => {
         expect(result.body.toString()).toContain('filename="test.txt"');
         expect(result.body.toString()).toContain('hello');
     });
+
+    it('supports a custom multipart file field name', () => {
+        const result = buildMultipart(
+            {},
+            {
+                name: 'test.txt',
+                type: 'text/plain',
+                fieldName: 'files[]',
+                data: Buffer.from('hello'),
+            }
+        );
+
+        expect(result.body.toString()).toContain('name="files[]"');
+    });
 });

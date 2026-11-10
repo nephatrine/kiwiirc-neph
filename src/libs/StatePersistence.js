@@ -54,7 +54,20 @@ export default class StatePersistence {
         try {
             const secrets = await this.secretStore.load(this.storageKey);
             if (secrets) {
+                if (secrets.fileupload &&
+                    typeof secrets.fileupload.webdavPassword === 'string'
+                ) {
+                    this.state.setting(
+                        'fileupload.webdav.password',
+                        secrets.fileupload.webdavPassword
+                    );
+                }
+
                 Object.keys(secrets).forEach((networkId) => {
+                    if (networkId === 'fileupload') {
+                        return;
+                    }
+
                     const network = this.state.getNetwork(Number(networkId));
                     if (!network || !this.networkAllowsPassword(network)) {
                         return;
@@ -100,6 +113,13 @@ export default class StatePersistence {
                 secrets[String(network.id)] = entry;
             }
         });
+
+        const webdavPassword = this.state.getSetting(
+            'user_settings.fileupload.webdav.password'
+        );
+        if (typeof webdavPassword === 'string' && webdavPassword) {
+            secrets.fileupload = { webdavPassword };
+        }
 
         return secrets;
     }

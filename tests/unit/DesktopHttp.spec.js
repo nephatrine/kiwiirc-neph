@@ -138,9 +138,33 @@ describe('Desktop HTTP adapter', () => {
             file: {
                 name: 'test.txt',
                 type: 'text/plain',
+                fieldName: 'fileToUpload',
                 data: new Uint8Array([4, 5]),
             },
         });
+    });
+
+    it('passes a custom multipart file field name', async() => {
+        const upload = jest.fn().mockResolvedValue(nativeResult());
+        window.kiwiDesktop = { http: { upload } };
+        const file = {
+            name: 'test.txt',
+            type: 'text/plain',
+            arrayBuffer: jest.fn().mockResolvedValue(new Uint8Array([4, 5])),
+        };
+
+        await desktopUploadMultipart(
+            'https://example.com/upload',
+            {},
+            file,
+            { fileField: 'files[]' }
+        );
+
+        expect(upload).toHaveBeenCalledWith(expect.objectContaining({
+            file: expect.objectContaining({
+                fieldName: 'files[]',
+            }),
+        }));
     });
 
     it('returns null for downloads when the native bridge is absent', () => {

@@ -180,7 +180,11 @@ function createNewState() {
                     });
                 }
 
-                toExport.user_settings = state.user_settings;
+                const userSettings = deepClone(state.user_settings);
+                if (userSettings.fileupload && userSettings.fileupload.webdav) {
+                    delete userSettings.fileupload.webdav.password;
+                }
+                toExport.user_settings = userSettings;
 
                 return JSON.stringify(toExport);
             },

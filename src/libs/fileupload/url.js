@@ -20,3 +20,12 @@ export function acceptUploadUrl(raw) {
 
     return parsed.href;
 }
+
+export function safeUploadFilename(name) {
+    let clean = String(name || 'file')
+        .split(/[\\/]/)
+        .pop()
+        .replace(/[\x00-\x1F\x7F"\\]/g, '')
+        .trim();
+    return clean || 'file';
+}

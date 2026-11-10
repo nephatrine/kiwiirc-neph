@@ -41,6 +41,12 @@ export function filehostUploadUrl(network) {
     return token ? token.url : '';
 }
 
+// Whether the network advertises a FILEHOST upload URL. Credentials are
+// checked separately by filehostAvailable().
+export function filehostSupported(network) {
+    return !!filehostUploadUrl(network);
+}
+
 // FILEHOST uses the current connection's SASL credentials. Strip any
 // network/client suffix from the account so USER/NETWORK@CLIENT becomes USER.
 export function filehostCredentials(network) {

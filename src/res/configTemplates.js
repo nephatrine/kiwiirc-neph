@@ -312,12 +312,23 @@ export const configTemplates = {
             message_nick: '%prefix%nick',
             general_error: '⚠ %text',
         },
-        // Defaults for new networks; each network stores its own service and
-        // retention choice.
+        // Global upload preference and new-network FILEHOST default.
         fileupload: {
             service: 'none',
+            use_filehost: true,
             litterbox: {
                 retention: '72h',
+            },
+            catbox: {
+                userhash: '',
+            },
+            sharebin: {
+                retention: '7d',
+            },
+            webdav: {
+                upload_url: '',
+                access_url: '',
+                username: '',
             },
         },
         presetNetworks: [],

@@ -21,6 +21,7 @@ const DEFAULT_CONFIG = {
     },
     buffers: {
         hide_preview_cards: true,
+        show_topic_in_header: true,
     },
     fileupload: {
         service: 'none',
@@ -39,6 +40,7 @@ const DEFAULT_CONFIG = {
         maxDownloadBytes: 104857600,
         maxMediaBytes: 104857600,
         maxRequestBytes: 104857600,
+        maxUploadBytes: 268435456,
         maxRedirects: 5,
     },
 };

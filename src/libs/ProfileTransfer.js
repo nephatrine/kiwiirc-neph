@@ -38,6 +38,12 @@ function sanitizeState(rawState) {
     if (typeof state.user_settings !== 'undefined' && !isObject(state.user_settings)) {
         throw new Error('invalid profile settings');
     }
+    if (state.user_settings &&
+        state.user_settings.fileupload &&
+        state.user_settings.fileupload.webdav
+    ) {
+        delete state.user_settings.fileupload.webdav.password;
+    }
 
     return state;
 }
@@ -52,6 +58,16 @@ export function sanitizeProfileSecrets(value, state = null) {
     const result = {};
     if (!isObject(value)) {
         return result;
+    }
+
+    if (isObject(value.fileupload) &&
+        typeof value.fileupload.webdavPassword === 'string' &&
+        value.fileupload.webdavPassword &&
+        byteLength(value.fileupload.webdavPassword) <= MAX_SECRET_BYTES
+    ) {
+        result.fileupload = {
+            webdavPassword: value.fileupload.webdavPassword,
+        };
     }
 
     const allowedIds = state && Array.isArray(state.networks) ?
@@ -109,6 +125,13 @@ export function collectProfileSecrets(state) {
             secrets[String(network.id)] = entry;
         }
     });
+
+    const webdavPassword = typeof state.getSetting === 'function' ?
+        state.getSetting('user_settings.fileupload.webdav.password') :
+        undefined;
+    if (typeof webdavPassword === 'string' && webdavPassword) {
+        secrets.fileupload = { webdavPassword };
+    }
 
     return secrets;
 }
@@ -186,7 +209,17 @@ export function applyProfileBundle(state, bundle) {
     state.importState(JSON.stringify(profile.state));
 
     let appliedSecrets = 0;
+    const uploadSecret = profile.secrets && profile.secrets.fileupload;
+    if (uploadSecret && typeof uploadSecret.webdavPassword === 'string') {
+        state.setting('fileupload.webdav.password', uploadSecret.webdavPassword);
+        appliedSecrets += 1;
+    }
+
     Object.keys(profile.secrets || {}).forEach((networkId) => {
+        if (networkId === 'fileupload') {
+            return;
+        }
+
         const network = state.getNetwork(Number(networkId));
         if (!network || !networkAllowsPassword(network)) {
             return;

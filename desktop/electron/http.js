@@ -74,9 +74,10 @@ function buildMultipart(fields, file) {
     if (file) {
         const name = escapeMultipart(file.name || 'file');
         const type = escapeMultipart(file.type || 'application/octet-stream');
+        const fieldName = escapeMultipart(file.fieldName || 'fileToUpload');
         chunks.push(Buffer.from(
             `--${boundary}\r\n` +
-            `Content-Disposition: form-data; name="fileToUpload"; filename="${name}"\r\n` +
+            `Content-Disposition: form-data; name="${fieldName}"; filename="${name}"\r\n` +
             `Content-Type: ${type}\r\n\r\n`,
             'utf8'
         ));
@@ -256,6 +257,14 @@ async function upload(options, policy) {
         headers['Content-Type'] = multipart.contentType;
     }
 
+    const uploadPolicy = {
+        ...policy,
+        maxRequestBytes: toInteger(
+            options.maxUploadBytes,
+            policy.maxUploadBytes || policy.maxRequestBytes
+        ),
+    };
+
     return request({
         url: options.url,
         method: options.method || 'POST',
@@ -263,7 +272,7 @@ async function upload(options, policy) {
         body,
         timeoutMs: options.timeoutMs,
         maxResponseBytes: options.maxResponseBytes,
-    }, policy);
+    }, uploadPolicy);
 }
 
 module.exports = {

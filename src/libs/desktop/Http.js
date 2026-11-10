@@ -99,6 +99,7 @@ export async function desktopUploadMultipart(url, fields, file, options = {}) {
         file: {
             name: file.name || 'file',
             type: file.type || 'application/octet-stream',
+            fieldName: options.fileField || 'fileToUpload',
             data,
         },
     });

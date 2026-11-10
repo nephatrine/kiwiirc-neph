@@ -4,6 +4,7 @@ import {
     effectiveRetention,
     effectiveService,
     filehostAvailable,
+    filehostSupported,
     filehostUploadUrl,
     resolveUploadLocation,
     retentionFor,
@@ -115,16 +116,32 @@ describe('fileupload', () => {
         });
     });
 
-    test('requires a SASL account before filehost is usable', () => {
+    test('prefers FILEHOST when enabled and available', () => {
         let network = filehostNetwork({
             'DRAFT/FILEHOST': 'https://draft.example/upload',
         });
         let state = {
-            getSetting(name) {
-                return name === 'settings.fileupload.service' ? 'filehost' : undefined;
+            setting(name) {
+                return name === 'fileupload.service' ? 'litterbox' : undefined;
             },
+        };
+
+        expect(filehostSupported(network)).toBe(true);
+        expect(effectiveService(state, network)).toBe(services.filehost);
+
+        network.setting = (name) => (
+            name === 'useFilehost' ? false : undefined
+        );
+        expect(effectiveService(state, network)).toBe(services.litterbox);
+    });
+
+    test('requires SASL credentials before FILEHOST is used', () => {
+        let network = filehostNetwork({
+            'DRAFT/FILEHOST': 'https://draft.example/upload',
+        });
+        let state = {
             setting() {
-                return undefined;
+                return 'none';
             },
         };
         expect(filehostAvailable(network)).toBe(true);
@@ -140,54 +157,54 @@ describe('fileupload', () => {
         expect(effectiveService(state, network)).toBe(null);
     });
 
-    test('resolves the upload service and retention per network', () => {
+    test('uses the global service and retention when FILEHOST is disabled', () => {
         let network = filehostNetwork({
             'DRAFT/FILEHOST': 'https://draft.example/upload',
         });
-        network.setting = (name) => {
-            if (name === 'fileuploadService') {
-                return 'litterbox';
-            }
-            if (name === 'fileuploadRetention') {
-                return '1h';
-            }
-            return undefined;
-        };
+        network.setting = (name) => (
+            name === 'useFilehost' ? false : undefined
+        );
         let state = {
-            getSetting() {
-                return undefined;
-            },
-            setting() {
-                return undefined;
-            },
-        };
-
-        expect(effectiveService(state, network)).toBe(services.litterbox);
-        expect(effectiveRetention(state, services.litterbox, network)).toBe('1h');
-    });
-
-    test('uses the admin defaults when the network has no override', () => {
-        let network = filehostNetwork({
-            'DRAFT/FILEHOST': 'https://draft.example/upload',
-        });
-        network.setting = () => '';
-        let state = {
-            getSetting(name) {
-                if (name === 'settings.fileupload.service') {
+            setting(name) {
+                if (name === 'fileupload.service') {
                     return 'litterbox';
                 }
-                if (name === 'settings.fileupload.litterbox.retention') {
+                if (name === 'fileupload.litterbox.retention') {
                     return '24h';
                 }
                 return undefined;
             },
-            setting() {
-                return undefined;
-            },
         };
 
         expect(effectiveService(state, network)).toBe(services.litterbox);
-        expect(effectiveRetention(state, services.litterbox, network)).toBe('24h');
+        expect(effectiveRetention(state, services.litterbox)).toBe('24h');
+    });
+
+    test('ignores a legacy global FILEHOST preference', () => {
+        let network = filehostNetwork({
+            'DRAFT/FILEHOST': 'https://draft.example/upload',
+        });
+        network.setting = (name) => (
+            name === 'useFilehost' ? false : undefined
+        );
+        let state = {
+            setting(name) {
+                return name === 'fileupload.service' ? 'filehost' : undefined;
+            },
+        };
+
+        expect(effectiveService(state, network)).toBe(null);
+    });
+
+    test('detects FILEHOST support without credentials', () => {
+        let network = filehostNetwork({
+            'DRAFT/FILEHOST': 'https://draft.example/upload',
+        });
+        network.sasl_account = '';
+        network.password = '';
+
+        expect(filehostSupported(network)).toBe(true);
+        expect(filehostAvailable(network)).toBe(false);
     });
 
     test('encodes FILEHOST basic auth', () => {
