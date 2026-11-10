@@ -23,6 +23,7 @@ export const configTemplates = {
             { name: 'nephwave-desktop', url: 'static/plugins/nephwave-desktop.html' },
             { name: 'bongo-cat', url: 'static/plugins/bongo-cat.html' },
             { name: 'radio', url: 'static/plugins/radio.html' },
+            { name: 'suggest-limnoria', url: 'static/plugins/suggest-limnoria.html' },
         ],
         windowTitle: 'Kiwi IRC - The web IRC client',
         useMonospace: false,

@@ -8,6 +8,7 @@ const extracted = [
     { name: 'radio', css: true },
     { name: 'nephwave-desktop', css: false },
     { name: 'nephnet-cyberdeck', css: false },
+    { name: 'suggest-limnoria', css: false },
 ];
 
 describe('Extracted plugin assets', () => {

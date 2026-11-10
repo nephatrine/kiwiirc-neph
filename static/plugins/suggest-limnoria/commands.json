@@ -1,0 +1,3617 @@
+{
+    "commands": [
+        {
+            "name": "join",
+            "group": "Admin",
+            "syntax": "join <channel> [<key>]",
+            "help": "Tells the bot to join the given channel, optionally using a key."
+        },
+        {
+            "name": "channels",
+            "group": "Admin",
+            "syntax": "channels",
+            "help": "Returns the channels the bot is on."
+        },
+        {
+            "name": "nick",
+            "group": "Admin",
+            "syntax": "nick [<nick>] [<network>]",
+            "help": "Changes the bot nick, or returns the current nick when none is given."
+        },
+        {
+            "name": "capability",
+            "group": "Admin",
+            "syntax": "capability <add|remove> <name|hostmask> <capability>",
+            "help": "Adds or removes a capability from a user.",
+            "subcommands": [
+                {
+                    "name": "add",
+                    "syntax": "capability add <name|hostmask> <capability>",
+                    "help": "Gives the specified user the specified capability."
+                },
+                {
+                    "name": "remove",
+                    "syntax": "capability remove <name|hostmask> <capability>",
+                    "help": "Takes the specified capability from the specified user."
+                }
+            ]
+        },
+        {
+            "name": "ignore",
+            "group": "Admin",
+            "syntax": "ignore <add|remove|list> ...",
+            "help": "Manages the persistent global ignore list.",
+            "subcommands": [
+                {
+                    "name": "add",
+                    "syntax": "ignore add <hostmask|nick> [<expires>]",
+                    "help": "Adds a persistent ignore, optionally expiring after a number of seconds."
+                },
+                {
+                    "name": "remove",
+                    "syntax": "ignore remove <hostmask|nick>",
+                    "help": "Removes the persistent ignore for a hostmask or nick."
+                },
+                {
+                    "name": "list",
+                    "syntax": "ignore list",
+                    "help": "Lists the hostmasks that the bot is ignoring."
+                }
+            ]
+        },
+        {
+            "name": "clearq",
+            "group": "Admin",
+            "syntax": "clearq",
+            "help": "Clears the current send queue for this network."
+        },
+        {
+            "name": "acmd",
+            "group": "Admin",
+            "syntax": "acmd <command> [<arg> ...]",
+            "help": "Runs a command with its arguments on every channel on the current network."
+        },
+        {
+            "name": "list",
+            "group": "Config",
+            "syntax": "list <group>",
+            "help": "Returns the configuration variables available under the given group."
+        },
+        {
+            "name": "search",
+            "group": "Config",
+            "syntax": "search <word>",
+            "help": "Searches the current configuration variable names for a word."
+        },
+        {
+            "name": "searchhelp",
+            "group": "Config",
+            "syntax": "searchhelp <phrase>",
+            "help": "Searches the help of configuration variables for a phrase."
+        },
+        {
+            "name": "searchvalues",
+            "group": "Config",
+            "syntax": "searchvalues <word>",
+            "help": "Searches the values of configuration variables for a word."
+        },
+        {
+            "name": "channel",
+            "group": "Config",
+            "syntax": "channel [<network>] [<channel>] <name> [<value>]",
+            "help": "Gets or sets a channel-specific configuration value."
+        },
+        {
+            "name": "network",
+            "group": "Config",
+            "syntax": "network [<network>] <name> [<value>]",
+            "help": "Gets or sets a network-specific configuration value."
+        },
+        {
+            "name": "config",
+            "group": "Config",
+            "syntax": "config <name> [<value>]",
+            "help": "Gets or sets a configuration value, with the leading supybot. optional."
+        },
+        {
+            "name": "help",
+            "group": "Config",
+            "syntax": "help <name>",
+            "help": "Returns the description of the configuration variable <name>."
+        },
+        {
+            "name": "default",
+            "group": "Config",
+            "syntax": "default <name>",
+            "help": "Returns the default value of a configuration variable."
+        },
+        {
+            "name": "reload",
+            "group": "Config",
+            "syntax": "reload",
+            "help": "Reloads configuration files, the user database, the channel database, and the registry."
+        },
+        {
+            "name": "export",
+            "group": "Config",
+            "syntax": "export <filename>",
+            "help": "Exports the public configuration values to a sanitized file."
+        },
+        {
+            "name": "setdefault",
+            "group": "Config",
+            "syntax": "setdefault <name>",
+            "help": "Resets a configuration variable to its default value."
+        },
+        {
+            "name": "reset",
+            "group": "Config",
+            "syntax": "reset <channel|network> ...",
+            "help": "Resets channel- or network-specific configuration values.",
+            "subcommands": [
+                {
+                    "name": "channel",
+                    "syntax": "reset channel [<network>] [<channel>] <name>",
+                    "help": "Resets a channel-specific value so it inherits the network or global value."
+                },
+                {
+                    "name": "network",
+                    "syntax": "reset network [<network>] <name>",
+                    "help": "Resets a network-specific value so it inherits the global value."
+                }
+            ]
+        },
+        {
+            "name": "list",
+            "group": "Misc",
+            "syntax": "list [--private] [--unloaded] [<plugin>]",
+            "help": "Lists available plugins, or the commands in a given plugin."
+        },
+        {
+            "name": "apropos",
+            "group": "Misc",
+            "syntax": "apropos <string>",
+            "help": "Searches the commands currently offered by the bot for a string."
+        },
+        {
+            "name": "help",
+            "group": "Misc",
+            "syntax": "help [<plugin>] [<command>]",
+            "help": "Shows help for a command, or general help when no command is given."
+        },
+        {
+            "name": "version",
+            "group": "Misc",
+            "syntax": "version",
+            "help": "Returns the version of the running bot."
+        },
+        {
+            "name": "source",
+            "group": "Misc",
+            "syntax": "source",
+            "help": "Returns a URL for the bot source code."
+        },
+        {
+            "name": "more",
+            "group": "Misc",
+            "syntax": "more [<nick>]",
+            "help": "Returns the next chunk of a truncated command response."
+        },
+        {
+            "name": "last",
+            "group": "Misc",
+            "syntax": "last [--{from,in,on,with,without,regexp} <value>] [--nolimit]",
+            "help": "Returns the last message matching the given criteria."
+        },
+        {
+            "name": "tell",
+            "group": "Misc",
+            "syntax": "tell <nick> <text>",
+            "help": "Tells the given nick a message the next time they speak."
+        },
+        {
+            "name": "noticetell",
+            "group": "Misc",
+            "syntax": "noticetell <nick> <text>",
+            "help": "Like tell, but delivers the message as a notice."
+        },
+        {
+            "name": "ping",
+            "group": "Misc",
+            "syntax": "ping",
+            "help": "Checks whether the bot is alive."
+        },
+        {
+            "name": "completenick",
+            "group": "Misc",
+            "syntax": "completenick [<channel>] <beginning> [--match-case]",
+            "help": "Returns a nick on the channel that begins with the given text."
+        },
+        {
+            "name": "clearmores",
+            "group": "Misc",
+            "syntax": "clearmores",
+            "help": "Clears all stored command continuations for the current network."
+        },
+        {
+            "name": "logmark",
+            "group": "Owner",
+            "syntax": "logmark <text>",
+            "help": "Writes a critical-priority marker to the bot log."
+        },
+        {
+            "name": "announce",
+            "group": "Owner",
+            "syntax": "announce <text>",
+            "help": "Sends a message to every non-lobotomized channel the bot is on."
+        },
+        {
+            "name": "defaultplugin",
+            "group": "Owner",
+            "syntax": "defaultplugin [--remove] <command> [<plugin>]",
+            "help": "Gets or sets the default plugin for a command."
+        },
+        {
+            "name": "ircquote",
+            "group": "Owner",
+            "syntax": "ircquote <string to be sent to the server>",
+            "help": "Sends a raw IRC line to the server."
+        },
+        {
+            "name": "quit",
+            "group": "Owner",
+            "syntax": "quit [<text>]",
+            "help": "Exits the bot with the given quit message."
+        },
+        {
+            "name": "flush",
+            "group": "Owner",
+            "syntax": "flush",
+            "help": "Runs all periodic flushers, including logs and configuration changes."
+        },
+        {
+            "name": "upkeep",
+            "group": "Owner",
+            "syntax": "upkeep [<level>]",
+            "help": "Runs standard upkeep, optionally at the high level."
+        },
+        {
+            "name": "load",
+            "group": "Owner",
+            "syntax": "load [--deprecated] <plugin>",
+            "help": "Loads a plugin and remembers it for future restarts."
+        },
+        {
+            "name": "reload",
+            "group": "Owner",
+            "syntax": "reload <plugin>",
+            "help": "Unloads and reloads the named plugin."
+        },
+        {
+            "name": "unload",
+            "group": "Owner",
+            "syntax": "unload <plugin>",
+            "help": "Unloads the named plugin and remembers not to load it again."
+        },
+        {
+            "name": "defaultcapability",
+            "group": "Owner",
+            "syntax": "defaultcapability {add|remove} <capability>",
+            "help": "Adds or removes a capability from the default user capabilities."
+        },
+        {
+            "name": "disable",
+            "group": "Owner",
+            "syntax": "disable [<plugin>] <command>",
+            "help": "Disables a command for all users."
+        },
+        {
+            "name": "enable",
+            "group": "Owner",
+            "syntax": "enable [<plugin>] <command>",
+            "help": "Enables a previously disabled command for all users."
+        },
+        {
+            "name": "rename",
+            "group": "Owner",
+            "syntax": "rename <plugin> <command> <new name>",
+            "help": "Renames a command in a plugin."
+        },
+        {
+            "name": "unrename",
+            "group": "Owner",
+            "syntax": "unrename <plugin>",
+            "help": "Removes all command renames in a plugin and reloads it."
+        },
+        {
+            "name": "reloadlocale",
+            "group": "Owner",
+            "syntax": "reloadlocale",
+            "help": "Reloads the bot locale."
+        },
+        {
+            "name": "mode",
+            "group": "Channel",
+            "syntax": "mode [<channel>] <mode> [<arg> ...]",
+            "help": "Sets a channel mode and its arguments."
+        },
+        {
+            "name": "limit",
+            "group": "Channel",
+            "syntax": "limit [<channel>] [<limit>]",
+            "help": "Sets or removes the channel user limit."
+        },
+        {
+            "name": "moderate",
+            "group": "Channel",
+            "syntax": "moderate [<channel>]",
+            "help": "Sets +m so only ops and voiced users can speak."
+        },
+        {
+            "name": "unmoderate",
+            "group": "Channel",
+            "syntax": "unmoderate [<channel>]",
+            "help": "Removes +m from the channel."
+        },
+        {
+            "name": "key",
+            "group": "Channel",
+            "syntax": "key [<channel>] [<key>]",
+            "help": "Sets or removes the channel keyword."
+        },
+        {
+            "name": "op",
+            "group": "Channel",
+            "syntax": "op [<channel>] [<nick> ...]",
+            "help": "Gives operator status to the given nicks, or to you."
+        },
+        {
+            "name": "halfop",
+            "group": "Channel",
+            "syntax": "halfop [<channel>] [<nick> ...]",
+            "help": "Gives half-operator status to the given nicks, or to you."
+        },
+        {
+            "name": "voice",
+            "group": "Channel",
+            "syntax": "voice [<channel>] [<nick> ...]",
+            "help": "Gives voice to the given nicks, or to you."
+        },
+        {
+            "name": "deop",
+            "group": "Channel",
+            "syntax": "deop [<channel>] [<nick> ...]",
+            "help": "Removes operator status from the given nicks, or from you."
+        },
+        {
+            "name": "dehalfop",
+            "group": "Channel",
+            "syntax": "dehalfop [<channel>] [<nick> ...]",
+            "help": "Removes half-operator status from the given nicks, or from you."
+        },
+        {
+            "name": "devoice",
+            "group": "Channel",
+            "syntax": "devoice [<channel>] [<nick> ...]",
+            "help": "Removes voice from the given nicks, or from you."
+        },
+        {
+            "name": "cycle",
+            "group": "Channel",
+            "syntax": "cycle [<channel>] [<reason>]",
+            "help": "Parts and rejoins the channel."
+        },
+        {
+            "name": "kick",
+            "group": "Channel",
+            "syntax": "kick [<channel>] <nick>[, <nick>, ...] [<reason>]",
+            "help": "Kicks one or more nicks from the channel."
+        },
+        {
+            "name": "kban",
+            "group": "Channel",
+            "syntax": "kban [<channel>] [--{exact,nick,user,host,account}] <nick> [<seconds>] [<reason>]",
+            "help": "Kicks and bans a nick for an optional duration."
+        },
+        {
+            "name": "iban",
+            "group": "Channel",
+            "syntax": "iban [<channel>] [--{exact,nick,user,host}] <nick> [<seconds>]",
+            "help": "Bans a nick for an optional duration without kicking."
+        },
+        {
+            "name": "unban",
+            "group": "Channel",
+            "syntax": "unban [<channel>] [<hostmask|--all>]",
+            "help": "Removes a channel ban."
+        },
+        {
+            "name": "listbans",
+            "group": "Channel",
+            "syntax": "listbans [<channel>]",
+            "help": "Lists channel bans."
+        },
+        {
+            "name": "invite",
+            "group": "Channel",
+            "syntax": "invite [<channel>] <nick>",
+            "help": "Invites a nick to the channel."
+        },
+        {
+            "name": "disable",
+            "group": "Channel",
+            "syntax": "disable [<channel>] [<plugin>] [<command>]",
+            "help": "Disables a command in the channel."
+        },
+        {
+            "name": "enable",
+            "group": "Channel",
+            "syntax": "enable [<channel>] [<plugin>] [<command>]",
+            "help": "Enables a previously disabled command in the channel."
+        },
+        {
+            "name": "nicks",
+            "group": "Channel",
+            "syntax": "nicks [<channel>] [--count]",
+            "help": "Lists the nicks in the channel."
+        },
+        {
+            "name": "alert",
+            "group": "Channel",
+            "syntax": "alert [<channel>] <text>",
+            "help": "Sends text to channel operators."
+        },
+        {
+            "name": "part",
+            "group": "Channel",
+            "syntax": "part [<channel>] [<reason>]",
+            "help": "Parts the channel."
+        },
+        {
+            "name": "lobotomy",
+            "group": "Channel",
+            "syntax": "lobotomy <add|remove|list> ...",
+            "help": "Makes the bot silent and unanswering in the channel.",
+            "subcommands": [
+                {
+                    "name": "add",
+                    "syntax": "lobotomy add [<channel>]",
+                    "help": "Makes the bot silent and unanswering in the channel."
+                },
+                {
+                    "name": "remove",
+                    "syntax": "lobotomy remove [<channel>]",
+                    "help": "Makes the bot respond in the channel again."
+                },
+                {
+                    "name": "list",
+                    "syntax": "lobotomy list",
+                    "help": "Lists the channels where the bot is lobotomized."
+                }
+            ]
+        },
+        {
+            "name": "ban",
+            "group": "Channel",
+            "syntax": "ban <hostmask|add|remove|list> ...",
+            "help": "Manages persistent channel bans.",
+            "subcommands": [
+                {
+                    "name": "hostmask",
+                    "syntax": "ban hostmask [<channel>] <banmask>",
+                    "help": "Bans a hostmask from the channel."
+                },
+                {
+                    "name": "add",
+                    "syntax": "ban add [<channel>] <nick|hostmask> [<expires>]",
+                    "help": "Adds a persistent channel ban."
+                },
+                {
+                    "name": "remove",
+                    "syntax": "ban remove [<channel>] <hostmask>",
+                    "help": "Removes a persistent channel ban."
+                },
+                {
+                    "name": "list",
+                    "syntax": "ban list [<channel>] [<mask>]",
+                    "help": "Lists persistent channel bans."
+                }
+            ]
+        },
+        {
+            "name": "ignore",
+            "group": "Channel",
+            "syntax": "ignore <add|remove|list> ...",
+            "help": "Manages persistent channel ignores.",
+            "subcommands": [
+                {
+                    "name": "add",
+                    "syntax": "ignore add [<channel>] <nick|hostmask> [<expires>]",
+                    "help": "Adds a persistent channel ignore."
+                },
+                {
+                    "name": "remove",
+                    "syntax": "ignore remove [<channel>] <nick|hostmask>",
+                    "help": "Removes a persistent channel ignore."
+                },
+                {
+                    "name": "list",
+                    "syntax": "ignore list [<channel>]",
+                    "help": "Lists persistent channel ignores."
+                }
+            ]
+        },
+        {
+            "name": "capability",
+            "group": "Channel",
+            "syntax": "capability <add|remove|setdefault|set|unset|list> ...",
+            "help": "Manages channel capabilities.",
+            "subcommands": [
+                {
+                    "name": "add",
+                    "syntax": "capability add [<channel>] <nick|username> <capability> [<capability> ...]",
+                    "help": "Gives a user one or more channel capabilities."
+                },
+                {
+                    "name": "remove",
+                    "syntax": "capability remove [<channel>] <name|hostmask> <capability> [<capability> ...]",
+                    "help": "Removes one or more channel capabilities from a user."
+                },
+                {
+                    "name": "setdefault",
+                    "syntax": "capability setdefault [<channel>] {True|False}",
+                    "help": "Sets the default non-power channel capability response."
+                },
+                {
+                    "name": "set",
+                    "syntax": "capability set [<channel>] <capability> [<capability> ...]",
+                    "help": "Adds channel capabilities for all users."
+                },
+                {
+                    "name": "unset",
+                    "syntax": "capability unset [<channel>] <capability> [<capability> ...]",
+                    "help": "Removes channel capabilities for all users."
+                },
+                {
+                    "name": "list",
+                    "syntax": "capability list [<channel>]",
+                    "help": "Lists capabilities present on the channel."
+                }
+            ]
+        },
+        {
+            "name": "connect",
+            "group": "Network",
+            "syntax": "connect [--nossl] <network> [<host[:port]>] [<password>]",
+            "help": "Connects the bot to another network."
+        },
+        {
+            "name": "disconnect",
+            "group": "Network",
+            "syntax": "disconnect <network> [<quit message>]",
+            "help": "Disconnects from a network."
+        },
+        {
+            "name": "reconnect",
+            "group": "Network",
+            "syntax": "reconnect [<network>] [<quit message>]",
+            "help": "Reconnects to a network."
+        },
+        {
+            "name": "command",
+            "group": "Network",
+            "syntax": "command <network> <command> [<arg> ...]",
+            "help": "Runs a command on another network."
+        },
+        {
+            "name": "cmdall",
+            "group": "Network",
+            "syntax": "cmdall <command> [<arg> ...]",
+            "help": "Runs a command on all networks."
+        },
+        {
+            "name": "whois",
+            "group": "Network",
+            "syntax": "whois [<network>] <nick>",
+            "help": "Returns WHOIS output from a network."
+        },
+        {
+            "name": "whowas",
+            "group": "Network",
+            "syntax": "whowas [<network>] <nick>",
+            "help": "Returns WHOWAS output from a network."
+        },
+        {
+            "name": "networks",
+            "group": "Network",
+            "syntax": "networks [--all]",
+            "help": "Lists connected or known networks."
+        },
+        {
+            "name": "latency",
+            "group": "Network",
+            "syntax": "latency [<network>]",
+            "help": "Returns the current latency to a network."
+        },
+        {
+            "name": "driver",
+            "group": "Network",
+            "syntax": "driver [<network>]",
+            "help": "Returns the network driver."
+        },
+        {
+            "name": "uptime",
+            "group": "Network",
+            "syntax": "uptime [<network>]",
+            "help": "Returns how long the bot has been connected."
+        },
+        {
+            "name": "capabilities",
+            "group": "Network",
+            "syntax": "capabilities [<network>]",
+            "help": "Lists IRCv3 capabilities available on a network."
+        },
+        {
+            "name": "authenticate",
+            "group": "Network",
+            "syntax": "authenticate",
+            "help": "Manually starts SASL authentication."
+        },
+        {
+            "name": "nick",
+            "group": "NickAuth",
+            "syntax": "nick <add|remove|list> ...",
+            "help": "Manages network services accounts linked to a bot user.",
+            "subcommands": [
+                {
+                    "name": "add",
+                    "syntax": "nick add [<network>] [<bot username>] <account>",
+                    "help": "Links a network services account to a bot user."
+                },
+                {
+                    "name": "remove",
+                    "syntax": "nick remove [<network>] [<bot username>] <account>",
+                    "help": "Unlinks a network services account from a bot user."
+                },
+                {
+                    "name": "list",
+                    "syntax": "nick list [<network>] [<bot username>]",
+                    "help": "Lists linked network services accounts."
+                }
+            ]
+        },
+        {
+            "name": "auth",
+            "group": "NickAuth",
+            "syntax": "auth",
+            "help": "Authenticates using network services."
+        },
+        {
+            "name": "list",
+            "group": "User",
+            "syntax": "list [--capability=<capability>] [<glob>]",
+            "help": "Lists registered usernames."
+        },
+        {
+            "name": "register",
+            "group": "User",
+            "syntax": "register <name> <password>",
+            "help": "Registers a bot user."
+        },
+        {
+            "name": "unregister",
+            "group": "User",
+            "syntax": "unregister <name> [<password>]",
+            "help": "Unregisters a bot user."
+        },
+        {
+            "name": "changename",
+            "group": "User",
+            "syntax": "changename <name> <new name> [<password>]",
+            "help": "Changes a bot username."
+        },
+        {
+            "name": "username",
+            "group": "User",
+            "syntax": "username <hostmask|nick>",
+            "help": "Returns the bot username for a hostmask or nick."
+        },
+        {
+            "name": "set",
+            "group": "User",
+            "syntax": "set <password|secure> ...",
+            "help": "Changes user password or secure settings.",
+            "subcommands": [
+                {
+                    "name": "password",
+                    "syntax": "set password [<name>] <old password> <new password>",
+                    "help": "Sets a user password."
+                },
+                {
+                    "name": "secure",
+                    "syntax": "set secure <password> [<True|False>]",
+                    "help": "Sets the secure flag for a user."
+                }
+            ]
+        },
+        {
+            "name": "hostmask",
+            "group": "User",
+            "syntax": "hostmask <hostmask|list|add|remove> ...",
+            "help": "Manages hostmasks for a bot user.",
+            "subcommands": [
+                {
+                    "name": "hostmask",
+                    "syntax": "hostmask hostmask [<nick>]",
+                    "help": "Returns the hostmask for a nick."
+                },
+                {
+                    "name": "list",
+                    "syntax": "hostmask list [<name>]",
+                    "help": "Lists hostmasks for a user."
+                },
+                {
+                    "name": "add",
+                    "syntax": "hostmask add [<name>] [<hostmask>] [<password>]",
+                    "help": "Adds a hostmask to a user."
+                },
+                {
+                    "name": "remove",
+                    "syntax": "hostmask remove [<name>] [<hostmask>] [<password>]",
+                    "help": "Removes a hostmask from a user."
+                }
+            ]
+        },
+        {
+            "name": "capabilities",
+            "group": "User",
+            "syntax": "capabilities [<name>]",
+            "help": "Lists a user capabilities."
+        },
+        {
+            "name": "identify",
+            "group": "User",
+            "syntax": "identify <name> <password>",
+            "help": "Identifies as a bot user."
+        },
+        {
+            "name": "unidentify",
+            "group": "User",
+            "syntax": "unidentify",
+            "help": "Clears the current authentication."
+        },
+        {
+            "name": "whoami",
+            "group": "User",
+            "syntax": "whoami",
+            "help": "Returns the current bot username."
+        },
+        {
+            "name": "stats",
+            "group": "User",
+            "syntax": "stats",
+            "help": "Returns user database statistics."
+        },
+        {
+            "name": "search",
+            "group": "DDG",
+            "syntax": "search <text>",
+            "help": "Searches DuckDuckGo for the given text."
+        },
+        {
+            "name": "coin",
+            "group": "Games",
+            "syntax": "coin",
+            "help": "Flips a coin and returns the result."
+        },
+        {
+            "name": "dice",
+            "group": "Games",
+            "syntax": "dice <dice>d<sides>",
+            "help": "Rolls the requested number of dice with the given number of sides."
+        },
+        {
+            "name": "eightball",
+            "group": "Games",
+            "syntax": "eightball [<question>]",
+            "help": "Answers a question like a Magic Eight Ball."
+        },
+        {
+            "name": "roulette",
+            "group": "Games",
+            "syntax": "roulette [spin]",
+            "help": "Fires the revolver, optionally spinning the chambers first."
+        },
+        {
+            "name": "monologue",
+            "group": "Games",
+            "syntax": "monologue [<channel>]",
+            "help": "Counts your current uninterrupted line streak in the channel."
+        },
+        {
+            "name": "localtime",
+            "group": "Geography",
+            "syntax": "localtime <location name to search>",
+            "help": "Returns the current local time for a location."
+        },
+        {
+            "name": "timezone",
+            "group": "Geography",
+            "syntax": "timezone <location name to search>",
+            "help": "Returns the timezone used in a location."
+        },
+        {
+            "name": "md5",
+            "group": "Hashes",
+            "syntax": "md5 <text>",
+            "help": "Returns the MD5 hash of the given text."
+        },
+        {
+            "name": "sha",
+            "group": "Hashes",
+            "syntax": "sha <text>",
+            "help": "Returns the SHA1 hash of the given text."
+        },
+        {
+            "name": "sha256",
+            "group": "Hashes",
+            "syntax": "sha256 <text>",
+            "help": "Returns the SHA256 hash of the given text."
+        },
+        {
+            "name": "sha512",
+            "group": "Hashes",
+            "syntax": "sha512 <text>",
+            "help": "Returns the SHA512 hash of the given text."
+        },
+        {
+            "name": "algorithms",
+            "group": "Hashes",
+            "syntax": "algorithms",
+            "help": "Lists the hash algorithms available on the bot."
+        },
+        {
+            "name": "mkhash",
+            "group": "Hashes",
+            "syntax": "mkhash <algorithm> <text>",
+            "help": "Hashes text with the selected algorithm."
+        },
+        {
+            "name": "base",
+            "group": "Math",
+            "syntax": "base <fromBase> [<toBase>] <number>",
+            "help": "Converts a number between bases 2 and 36."
+        },
+        {
+            "name": "calc",
+            "group": "Math",
+            "syntax": "calc <math expression>",
+            "help": "Evaluates a floating-point math expression."
+        },
+        {
+            "name": "icalc",
+            "group": "Math",
+            "syntax": "icalc <math expression>",
+            "help": "Evaluates an integer math expression for trusted users."
+        },
+        {
+            "name": "rpn",
+            "group": "Math",
+            "syntax": "rpn <rpn math expression>",
+            "help": "Evaluates a reverse Polish notation expression."
+        },
+        {
+            "name": "convert",
+            "group": "Math",
+            "syntax": "convert <number> <unit1> <unit2>",
+            "help": "Converts a number between units."
+        },
+        {
+            "name": "units",
+            "group": "Math",
+            "syntax": "units <type>",
+            "help": "Lists units available for conversion."
+        },
+        {
+            "name": "seconds",
+            "group": "Time",
+            "syntax": "seconds [<years>y] [<weeks>w] [<days>d] [<hours>h] [<minutes>m] [<seconds>s]",
+            "help": "Converts a duration into seconds."
+        },
+        {
+            "name": "at",
+            "group": "Time",
+            "syntax": "at [<time string>]",
+            "help": "Returns the epoch time for a time string."
+        },
+        {
+            "name": "until",
+            "group": "Time",
+            "syntax": "until <time string>",
+            "help": "Returns the number of seconds until a time string."
+        },
+        {
+            "name": "ctime",
+            "group": "Time",
+            "syntax": "ctime [<seconds since epoch>]",
+            "help": "Returns the ctime for an epoch timestamp."
+        },
+        {
+            "name": "time",
+            "group": "Time",
+            "syntax": "time [<channel>] [<format>] [<seconds since epoch>]",
+            "help": "Returns the current time in the requested format."
+        },
+        {
+            "name": "elapsed",
+            "group": "Time",
+            "syntax": "elapsed <seconds>",
+            "help": "Formats a duration in seconds as a readable string."
+        },
+        {
+            "name": "tztime",
+            "group": "Time",
+            "syntax": "tztime <region>/<city>",
+            "help": "Returns the local time for an IANA timezone."
+        },
+        {
+            "name": "ddate",
+            "group": "Time",
+            "syntax": "ddate [<year> <month> <day>]",
+            "help": "Returns the Discordian date for today or a given date."
+        },
+        {
+            "name": "send",
+            "group": "Note",
+            "syntax": "send <recipient>[, <recipient>, ...] <text>",
+            "help": "Sends a note to one or more bot users."
+        },
+        {
+            "name": "reply",
+            "group": "Note",
+            "syntax": "reply <id> <text>",
+            "help": "Replies to a note by id."
+        },
+        {
+            "name": "unsend",
+            "group": "Note",
+            "syntax": "unsend <id>",
+            "help": "Unsends an unread note you authored."
+        },
+        {
+            "name": "note",
+            "group": "Note",
+            "syntax": "note <id>",
+            "help": "Retrieves a single note by id."
+        },
+        {
+            "name": "search",
+            "group": "Note",
+            "syntax": "search [--regexp <value>] [--sent] [<glob>]",
+            "help": "Searches your notes."
+        },
+        {
+            "name": "list",
+            "group": "Note",
+            "syntax": "list [--old] [--sent] [--from <user>] [--to <user>]",
+            "help": "Lists your notes."
+        },
+        {
+            "name": "next",
+            "group": "Note",
+            "syntax": "next",
+            "help": "Retrieves your next unread note."
+        },
+        {
+            "name": "help",
+            "group": "Plugin",
+            "syntax": "help <plugin>",
+            "help": "Returns the description of a plugin."
+        },
+        {
+            "name": "plugin",
+            "group": "Plugin",
+            "syntax": "plugin <command>",
+            "help": "Returns the plugin that provides a command."
+        },
+        {
+            "name": "plugins",
+            "group": "Plugin",
+            "syntax": "plugins <command>",
+            "help": "Returns all plugins that provide a command."
+        },
+        {
+            "name": "path",
+            "group": "Plugin",
+            "syntax": "path <name>",
+            "help": "Returns the path a plugin was loaded from."
+        },
+        {
+            "name": "author",
+            "group": "Plugin",
+            "syntax": "author <plugin>",
+            "help": "Returns the author of a plugin."
+        },
+        {
+            "name": "contributors",
+            "group": "Plugin",
+            "syntax": "contributors <plugin> [<name>]",
+            "help": "Lists contributors to a plugin."
+        },
+        {
+            "name": "seen",
+            "group": "Seen",
+            "syntax": "seen [<channel>] <nick>",
+            "help": "Returns the last time a nick was seen speaking."
+        },
+        {
+            "name": "any",
+            "group": "Seen",
+            "syntax": "any [<channel>] [--user <name>] [<nick>]",
+            "help": "Returns the last activity seen for a nick or channel."
+        },
+        {
+            "name": "last",
+            "group": "Seen",
+            "syntax": "last [<channel>]",
+            "help": "Returns the last thing said in a channel."
+        },
+        {
+            "name": "user",
+            "group": "Seen",
+            "syntax": "user [<channel>] <name>",
+            "help": "Returns the last time a bot user was seen."
+        },
+        {
+            "name": "since",
+            "group": "Seen",
+            "syntax": "since [<channel>] [<nick>]",
+            "help": "Returns messages since a nick last left the channel."
+        },
+        {
+            "name": "ord",
+            "group": "String",
+            "syntax": "ord <string>",
+            "help": "Returns the Unicode codepoints of a string."
+        },
+        {
+            "name": "chr",
+            "group": "String",
+            "syntax": "chr <number>",
+            "help": "Returns the Unicode character for a codepoint."
+        },
+        {
+            "name": "unicodename",
+            "group": "String",
+            "syntax": "unicodename <string>",
+            "help": "Returns Unicode character names."
+        },
+        {
+            "name": "unicodesearch",
+            "group": "String",
+            "syntax": "unicodesearch <name>",
+            "help": "Looks up a Unicode character by name."
+        },
+        {
+            "name": "encode",
+            "group": "String",
+            "syntax": "encode <encoding> <text>",
+            "help": "Encodes text with a Python codec."
+        },
+        {
+            "name": "decode",
+            "group": "String",
+            "syntax": "decode <encoding> <text>",
+            "help": "Decodes text with a Python codec."
+        },
+        {
+            "name": "levenshtein",
+            "group": "String",
+            "syntax": "levenshtein <string1> <string2>",
+            "help": "Returns the edit distance between two strings."
+        },
+        {
+            "name": "soundex",
+            "group": "String",
+            "syntax": "soundex <string> [<length>]",
+            "help": "Returns the Soundex hash of a string."
+        },
+        {
+            "name": "len",
+            "group": "String",
+            "syntax": "len <text>",
+            "help": "Returns the length of text."
+        },
+        {
+            "name": "re",
+            "group": "String",
+            "syntax": "re <regexp> <text>",
+            "help": "Matches or replaces text with a regular expression."
+        },
+        {
+            "name": "xor",
+            "group": "String",
+            "syntax": "xor <password> <text>",
+            "help": "XOR-encrypts text with a password."
+        },
+        {
+            "name": "md5",
+            "group": "String",
+            "syntax": "md5 <text>",
+            "help": "Returns the MD5 hash of text."
+        },
+        {
+            "name": "sha",
+            "group": "String",
+            "syntax": "sha <text>",
+            "help": "Returns the SHA1 hash of text."
+        },
+        {
+            "name": "add",
+            "group": "Aka",
+            "syntax": "add [--channel <#channel>] <name> <command>",
+            "help": "Defines an Aka alias."
+        },
+        {
+            "name": "set",
+            "group": "Aka",
+            "syntax": "set [--channel <#channel>] <name> <command>",
+            "help": "Overwrites an existing Aka alias."
+        },
+        {
+            "name": "remove",
+            "group": "Aka",
+            "syntax": "remove [--channel <#channel>] <name>",
+            "help": "Removes an unlocked Aka alias."
+        },
+        {
+            "name": "lock",
+            "group": "Aka",
+            "syntax": "lock [--channel <#channel>] <alias>",
+            "help": "Locks an Aka alias."
+        },
+        {
+            "name": "unlock",
+            "group": "Aka",
+            "syntax": "unlock [--channel <#channel>] <alias>",
+            "help": "Unlocks an Aka alias."
+        },
+        {
+            "name": "show",
+            "group": "Aka",
+            "syntax": "show [--channel <#channel>] <alias>",
+            "help": "Shows an Aka alias definition."
+        },
+        {
+            "name": "importaliasdatabase",
+            "group": "Aka",
+            "syntax": "importaliasdatabase",
+            "help": "Imports Alias plugin aliases into Aka."
+        },
+        {
+            "name": "list",
+            "group": "Aka",
+            "syntax": "list [--channel <#channel>] [--keys] [--unlocked|--locked]",
+            "help": "Lists Aka aliases."
+        },
+        {
+            "name": "search",
+            "group": "Aka",
+            "syntax": "search [--channel <#channel>] <query>",
+            "help": "Searches Aka aliases."
+        },
+        {
+            "name": "lock",
+            "group": "Alias",
+            "syntax": "lock <alias>",
+            "help": "Locks an alias."
+        },
+        {
+            "name": "unlock",
+            "group": "Alias",
+            "syntax": "unlock <alias>",
+            "help": "Unlocks an alias."
+        },
+        {
+            "name": "add",
+            "group": "Alias",
+            "syntax": "add <name> <command>",
+            "help": "Defines an alias."
+        },
+        {
+            "name": "remove",
+            "group": "Alias",
+            "syntax": "remove <name>",
+            "help": "Removes an unlocked alias."
+        },
+        {
+            "name": "list",
+            "group": "Alias",
+            "syntax": "list [--locked|--unlocked]",
+            "help": "Lists aliases."
+        },
+        {
+            "name": "say",
+            "group": "Anonymous",
+            "syntax": "say <channel> <text>",
+            "help": "Sends text to a channel anonymously."
+        },
+        {
+            "name": "tell",
+            "group": "Anonymous",
+            "syntax": "tell <nick> <text>",
+            "help": "Sends text to a nick anonymously."
+        },
+        {
+            "name": "do",
+            "group": "Anonymous",
+            "syntax": "do <channel> <action>",
+            "help": "Performs an action in a channel anonymously."
+        },
+        {
+            "name": "react",
+            "group": "Anonymous",
+            "syntax": "react <channel> <reaction> <nick>",
+            "help": "Reacts to a nick last message anonymously."
+        },
+        {
+            "name": "list",
+            "group": "BadWords",
+            "syntax": "list",
+            "help": "Lists censored words."
+        },
+        {
+            "name": "add",
+            "group": "BadWords",
+            "syntax": "add <word> [<word> ...]",
+            "help": "Adds censored words."
+        },
+        {
+            "name": "remove",
+            "group": "BadWords",
+            "syntax": "remove <word> [<word> ...]",
+            "help": "Removes censored words."
+        },
+        {
+            "name": "stats",
+            "group": "ChannelStats",
+            "syntax": "stats [<channel>] [<name>]",
+            "help": "Returns channel statistics for a user."
+        },
+        {
+            "name": "rank",
+            "group": "ChannelStats",
+            "syntax": "rank [<channel>] <stat expression>",
+            "help": "Ranks users by a statistics expression."
+        },
+        {
+            "name": "channelstats",
+            "group": "ChannelStats",
+            "syntax": "channelstats [<channel>]",
+            "help": "Returns statistics for a channel."
+        },
+        {
+            "name": "cif",
+            "group": "Conditional",
+            "syntax": "cif <condition> <ifcommand> <elsecommand>",
+            "help": "Runs one command based on a condition."
+        },
+        {
+            "name": "cand",
+            "group": "Conditional",
+            "syntax": "cand <cond1> [<cond2> ... <condN>]",
+            "help": "Returns true if all conditions are true."
+        },
+        {
+            "name": "cor",
+            "group": "Conditional",
+            "syntax": "cor <cond1> [<cond2> ... <condN>]",
+            "help": "Returns true if any condition is true."
+        },
+        {
+            "name": "cxor",
+            "group": "Conditional",
+            "syntax": "cxor <cond1> [<cond2> ... <condN>]",
+            "help": "Returns true if exactly one condition is true."
+        },
+        {
+            "name": "ceq",
+            "group": "Conditional",
+            "syntax": "ceq <item1> <item2>",
+            "help": "Returns true if two strings are equal."
+        },
+        {
+            "name": "ne",
+            "group": "Conditional",
+            "syntax": "ne <item1> <item2>",
+            "help": "Returns true if two strings are not equal."
+        },
+        {
+            "name": "gt",
+            "group": "Conditional",
+            "syntax": "gt <item1> <item2>",
+            "help": "Returns true if the first string is greater."
+        },
+        {
+            "name": "ge",
+            "group": "Conditional",
+            "syntax": "ge <item1> <item2>",
+            "help": "Returns true if the first string is greater or equal."
+        },
+        {
+            "name": "lt",
+            "group": "Conditional",
+            "syntax": "lt <item1> <item2>",
+            "help": "Returns true if the first string is less."
+        },
+        {
+            "name": "le",
+            "group": "Conditional",
+            "syntax": "le <item1> <item2>",
+            "help": "Returns true if the first string is less or equal."
+        },
+        {
+            "name": "match",
+            "group": "Conditional",
+            "syntax": "match [--case-insensitive] <item1> <item2>",
+            "help": "Returns true if the first item is a substring of the second."
+        },
+        {
+            "name": "nceq",
+            "group": "Conditional",
+            "syntax": "nceq <item1> <item2>",
+            "help": "Returns true if two numbers are equal."
+        },
+        {
+            "name": "nne",
+            "group": "Conditional",
+            "syntax": "nne <item1> <item2>",
+            "help": "Returns true if two numbers are not equal."
+        },
+        {
+            "name": "ngt",
+            "group": "Conditional",
+            "syntax": "ngt <item1> <item2>",
+            "help": "Returns true if the first number is greater."
+        },
+        {
+            "name": "nge",
+            "group": "Conditional",
+            "syntax": "nge <item1> <item2>",
+            "help": "Returns true if the first number is greater or equal."
+        },
+        {
+            "name": "nlt",
+            "group": "Conditional",
+            "syntax": "nlt <item1> <item2>",
+            "help": "Returns true if the first number is less."
+        },
+        {
+            "name": "nle",
+            "group": "Conditional",
+            "syntax": "nle <item1> <item2>",
+            "help": "Returns true if the first number is less or equal."
+        },
+        {
+            "name": "cerror",
+            "group": "Conditional",
+            "syntax": "cerror <testcommand>",
+            "help": "Returns true if the test command raises an error."
+        },
+        {
+            "name": "version",
+            "group": "Ctcp",
+            "syntax": "version [<channel>] [--nicks]",
+            "help": "Sends CTCP VERSION and returns the replies."
+        },
+        {
+            "name": "eval",
+            "group": "Debug",
+            "syntax": "eval <expression>",
+            "help": "Evaluates a Python expression."
+        },
+        {
+            "name": "exec",
+            "group": "Debug",
+            "syntax": "exec <statement>",
+            "help": "Executes Python code."
+        },
+        {
+            "name": "simpleeval",
+            "group": "Debug",
+            "syntax": "simpleeval <expression>",
+            "help": "Evaluates an expression."
+        },
+        {
+            "name": "exn",
+            "group": "Debug",
+            "syntax": "exn <exception name>",
+            "help": "Raises the named exception."
+        },
+        {
+            "name": "sendquote",
+            "group": "Debug",
+            "syntax": "sendquote <raw IRC message>",
+            "help": "Sends a raw IRC message immediately."
+        },
+        {
+            "name": "settrace",
+            "group": "Debug",
+            "syntax": "settrace [<filename>]",
+            "help": "Starts tracing function calls."
+        },
+        {
+            "name": "unsettrace",
+            "group": "Debug",
+            "syntax": "unsettrace",
+            "help": "Stops tracing function calls."
+        },
+        {
+            "name": "channeldb",
+            "group": "Debug",
+            "syntax": "channeldb [<channel>]",
+            "help": "Returns the channel database converter result."
+        },
+        {
+            "name": "collect",
+            "group": "Debug",
+            "syntax": "collect [<times>]",
+            "help": "Runs garbage collection."
+        },
+        {
+            "name": "environ",
+            "group": "Debug",
+            "syntax": "environ",
+            "help": "Returns the bot process environment."
+        },
+        {
+            "name": "dictionaries",
+            "group": "Dict",
+            "syntax": "dictionaries",
+            "help": "Lists available dictionaries."
+        },
+        {
+            "name": "random",
+            "group": "Dict",
+            "syntax": "random",
+            "help": "Returns a random dictionary entry."
+        },
+        {
+            "name": "dict",
+            "group": "Dict",
+            "syntax": "dict <words>",
+            "help": "Looks up words in a dictionary."
+        },
+        {
+            "name": "synonym",
+            "group": "Dict",
+            "syntax": "synonym <words>",
+            "help": "Looks up synonyms for words."
+        },
+        {
+            "name": "learn",
+            "group": "Factoids",
+            "syntax": "learn [<channel>] <key> is <value>",
+            "help": "Associates a factoid key with a value."
+        },
+        {
+            "name": "whatis",
+            "group": "Factoids",
+            "syntax": "whatis [<channel>] [--raw] <key> [<number>]",
+            "help": "Looks up a factoid by key."
+        },
+        {
+            "name": "alias",
+            "group": "Factoids",
+            "syntax": "alias [<channel>] <oldkey> <newkey> [<number>]",
+            "help": "Adds a new factoid key for an existing factoid."
+        },
+        {
+            "name": "rank",
+            "group": "Factoids",
+            "syntax": "rank [<channel>] [--plain] [--alpha] [<number>]",
+            "help": "Lists top-ranked factoid keys."
+        },
+        {
+            "name": "lock",
+            "group": "Factoids",
+            "syntax": "lock [<channel>] <key>",
+            "help": "Locks factoids associated with a key."
+        },
+        {
+            "name": "unlock",
+            "group": "Factoids",
+            "syntax": "unlock [<channel>] <key>",
+            "help": "Unlocks factoids associated with a key."
+        },
+        {
+            "name": "forget",
+            "group": "Factoids",
+            "syntax": "forget [<channel>] <key> [<number>|*]",
+            "help": "Removes a factoid key relationship."
+        },
+        {
+            "name": "random",
+            "group": "Factoids",
+            "syntax": "random [<channel>]",
+            "help": "Returns random factoids from the channel."
+        },
+        {
+            "name": "info",
+            "group": "Factoids",
+            "syntax": "info [<channel>] <key>",
+            "help": "Shows information about a factoid key."
+        },
+        {
+            "name": "change",
+            "group": "Factoids",
+            "syntax": "change [<channel>] <key> <number> <regexp>",
+            "help": "Changes a factoid value with a regular expression."
+        },
+        {
+            "name": "search",
+            "group": "Factoids",
+            "syntax": "search [<channel>] [--values] [--regexp <value>] [--author <username>] [<glob> ...]",
+            "help": "Searches factoid keys or values."
+        },
+        {
+            "name": "profile",
+            "group": "Fediverse",
+            "syntax": "profile <username>",
+            "help": "Looks up a Fediverse profile."
+        },
+        {
+            "name": "featured",
+            "group": "Fediverse",
+            "syntax": "featured <username>",
+            "help": "Shows a Fediverse profile featured posts."
+        },
+        {
+            "name": "statuses",
+            "group": "Fediverse",
+            "syntax": "statuses <username>",
+            "help": "Shows recent Fediverse statuses."
+        },
+        {
+            "name": "status",
+            "group": "Fediverse",
+            "syntax": "status <url>",
+            "help": "Looks up a Fediverse status by URL."
+        },
+        {
+            "name": "outfilter",
+            "group": "Filter",
+            "syntax": "outfilter [<channel>] <command>",
+            "help": "Runs an outbound filter command."
+        },
+        {
+            "name": "hebrew",
+            "group": "Filter",
+            "syntax": "hebrew <text>",
+            "help": "Reverses text for right-to-left display."
+        },
+        {
+            "name": "squish",
+            "group": "Filter",
+            "syntax": "squish <text>",
+            "help": "Collapses whitespace in text."
+        },
+        {
+            "name": "undup",
+            "group": "Filter",
+            "syntax": "undup <text>",
+            "help": "Removes duplicate consecutive characters."
+        },
+        {
+            "name": "binary",
+            "group": "Filter",
+            "syntax": "binary <text>",
+            "help": "Returns the binary representation of text."
+        },
+        {
+            "name": "unbinary",
+            "group": "Filter",
+            "syntax": "unbinary <text>",
+            "help": "Converts an ASCII binary string back to text."
+        },
+        {
+            "name": "hexlify",
+            "group": "Filter",
+            "syntax": "hexlify <text>",
+            "help": "Returns the hexadecimal representation of text."
+        },
+        {
+            "name": "unhexlify",
+            "group": "Filter",
+            "syntax": "unhexlify <hexstring>",
+            "help": "Converts a hexadecimal string back to text."
+        },
+        {
+            "name": "rot13",
+            "group": "Filter",
+            "syntax": "rot13 <text>",
+            "help": "Applies ROT13 to text."
+        },
+        {
+            "name": "leet",
+            "group": "Filter",
+            "syntax": "leet <text>",
+            "help": "Converts text to leetspeak."
+        },
+        {
+            "name": "supa1337",
+            "group": "Filter",
+            "syntax": "supa1337 <text>",
+            "help": "Converts text to stronger leetspeak."
+        },
+        {
+            "name": "scramble",
+            "group": "Filter",
+            "syntax": "scramble <text>",
+            "help": "Scrambles the characters in text."
+        },
+        {
+            "name": "unmorse",
+            "group": "Filter",
+            "syntax": "unmorse <text>",
+            "help": "Decodes Morse code."
+        },
+        {
+            "name": "morse",
+            "group": "Filter",
+            "syntax": "morse <text>",
+            "help": "Encodes text as Morse code."
+        },
+        {
+            "name": "reverse",
+            "group": "Filter",
+            "syntax": "reverse <text>",
+            "help": "Reverses text."
+        },
+        {
+            "name": "colorize",
+            "group": "Filter",
+            "syntax": "colorize <text>",
+            "help": "Colorizes text."
+        },
+        {
+            "name": "rainbow",
+            "group": "Filter",
+            "syntax": "rainbow <text>",
+            "help": "Applies rainbow colors to text."
+        },
+        {
+            "name": "stripformatting",
+            "group": "Filter",
+            "syntax": "stripformatting <text>",
+            "help": "Removes IRC formatting from text."
+        },
+        {
+            "name": "stripcolor",
+            "group": "Filter",
+            "syntax": "stripcolor <text>",
+            "help": "Removes IRC colors from text."
+        },
+        {
+            "name": "aol",
+            "group": "Filter",
+            "syntax": "aol <text>",
+            "help": "Converts text to AOL-style casing."
+        },
+        {
+            "name": "jeffk",
+            "group": "Filter",
+            "syntax": "jeffk <text>",
+            "help": "Converts text to Jeff K style."
+        },
+        {
+            "name": "spellit",
+            "group": "Filter",
+            "syntax": "spellit <text>",
+            "help": "Spells out text."
+        },
+        {
+            "name": "gnu",
+            "group": "Filter",
+            "syntax": "gnu <text>",
+            "help": "Converts text to GNU style."
+        },
+        {
+            "name": "shrink",
+            "group": "Filter",
+            "syntax": "shrink <text>",
+            "help": "Shrinks text."
+        },
+        {
+            "name": "uniud",
+            "group": "Filter",
+            "syntax": "uniud <text>",
+            "help": "Rotates text 180 degrees."
+        },
+        {
+            "name": "capwords",
+            "group": "Filter",
+            "syntax": "capwords <text>",
+            "help": "Capitalizes the first letter of each word."
+        },
+        {
+            "name": "caps",
+            "group": "Filter",
+            "syntax": "caps <text>",
+            "help": "Uppercases all text."
+        },
+        {
+            "name": "vowelrot",
+            "group": "Filter",
+            "syntax": "vowelrot <text>",
+            "help": "Rotates the vowels in text."
+        },
+        {
+            "name": "uwu",
+            "group": "Filter",
+            "syntax": "uwu <text>",
+            "help": "Converts text to uwu-speak."
+        },
+        {
+            "name": "bold",
+            "group": "Format",
+            "syntax": "bold <text>",
+            "help": "Returns text in bold."
+        },
+        {
+            "name": "reverse",
+            "group": "Format",
+            "syntax": "reverse <text>",
+            "help": "Returns text in reverse video."
+        },
+        {
+            "name": "underline",
+            "group": "Format",
+            "syntax": "underline <text>",
+            "help": "Returns underlined text."
+        },
+        {
+            "name": "color",
+            "group": "Format",
+            "syntax": "color <foreground> [<background>] <text>",
+            "help": "Returns colored text."
+        },
+        {
+            "name": "join",
+            "group": "Format",
+            "syntax": "join <separator> <string 1> [<string> ...]",
+            "help": "Joins arguments with a separator."
+        },
+        {
+            "name": "translate",
+            "group": "Format",
+            "syntax": "translate <chars to translate> <chars to replace those with> <text>",
+            "help": "Replaces characters in text."
+        },
+        {
+            "name": "replace",
+            "group": "Format",
+            "syntax": "replace <substring to translate> <substring to replace it with> <text>",
+            "help": "Replaces substrings in text."
+        },
+        {
+            "name": "upper",
+            "group": "Format",
+            "syntax": "upper <text>",
+            "help": "Returns uppercased text."
+        },
+        {
+            "name": "lower",
+            "group": "Format",
+            "syntax": "lower <text>",
+            "help": "Returns lowercased text."
+        },
+        {
+            "name": "capitalize",
+            "group": "Format",
+            "syntax": "capitalize <text>",
+            "help": "Capitalizes text."
+        },
+        {
+            "name": "title",
+            "group": "Format",
+            "syntax": "title <text>",
+            "help": "Titlecases text."
+        },
+        {
+            "name": "repr",
+            "group": "Format",
+            "syntax": "repr <text>",
+            "help": "Surrounds text with double quotes."
+        },
+        {
+            "name": "concat",
+            "group": "Format",
+            "syntax": "concat <string 1> <string 2>",
+            "help": "Concatenates two strings."
+        },
+        {
+            "name": "cut",
+            "group": "Format",
+            "syntax": "cut <size> <text>",
+            "help": "Cuts text to a maximum size."
+        },
+        {
+            "name": "field",
+            "group": "Format",
+            "syntax": "field <number> <text>",
+            "help": "Returns a space-separated field from text."
+        },
+        {
+            "name": "format",
+            "group": "Format",
+            "syntax": "format <format string> [<arg> ...]",
+            "help": "Expands a Python-style format string."
+        },
+        {
+            "name": "key",
+            "group": "GPG",
+            "syntax": "key <add|remove|list> ...",
+            "help": "Manages GPG keys linked to a bot user.",
+            "subcommands": [
+                {
+                    "name": "add",
+                    "syntax": "key add <key id> <key server>",
+                    "help": "Adds a GPG key to your account."
+                },
+                {
+                    "name": "remove",
+                    "syntax": "key remove <fingerprint>",
+                    "help": "Removes a GPG key from your account."
+                },
+                {
+                    "name": "list",
+                    "syntax": "key list",
+                    "help": "Lists your GPG keys."
+                }
+            ]
+        },
+        {
+            "name": "signing",
+            "group": "GPG",
+            "syntax": "signing <gettoken|auth> ...",
+            "help": "Signs and verifies GPG authentication tokens.",
+            "subcommands": [
+                {
+                    "name": "gettoken",
+                    "syntax": "signing gettoken",
+                    "help": "Sends a token to sign with your GPG key."
+                },
+                {
+                    "name": "auth",
+                    "syntax": "signing auth <url>",
+                    "help": "Verifies a signed token URL and authenticates you."
+                }
+            ]
+        },
+        {
+            "name": "translate",
+            "group": "Google",
+            "syntax": "translate <source language> [to] <target language> <text>",
+            "help": "Translates text between languages."
+        },
+        {
+            "name": "default",
+            "group": "Herald",
+            "syntax": "default [<channel>] [--remove] <text>",
+            "help": "Sets or removes the default channel herald."
+        },
+        {
+            "name": "get",
+            "group": "Herald",
+            "syntax": "get [<channel>] [<user>]",
+            "help": "Returns the herald for a user."
+        },
+        {
+            "name": "add",
+            "group": "Herald",
+            "syntax": "add [<channel>] <user> <herald>",
+            "help": "Adds a herald for a user."
+        },
+        {
+            "name": "remove",
+            "group": "Herald",
+            "syntax": "remove [<channel>] <user>",
+            "help": "Removes a user herald."
+        },
+        {
+            "name": "change",
+            "group": "Herald",
+            "syntax": "change [<channel>] <user> <changer>",
+            "help": "Changes a user herald with a replacement expression."
+        },
+        {
+            "name": "dns",
+            "group": "Internet",
+            "syntax": "dns <host>",
+            "help": "Looks up DNS records for a host."
+        },
+        {
+            "name": "whois",
+            "group": "Internet",
+            "syntax": "whois <domain>",
+            "help": "Looks up WHOIS information for a domain."
+        },
+        {
+            "name": "hexip",
+            "group": "Internet",
+            "syntax": "hexip <ip>",
+            "help": "Returns the hexadecimal form of an IP address."
+        },
+        {
+            "name": "karma",
+            "group": "Karma",
+            "syntax": "karma [<channel>] <thing> [<thing> ...]",
+            "help": "Returns karma for one or more things."
+        },
+        {
+            "name": "most",
+            "group": "Karma",
+            "syntax": "most [<channel>] <kind>",
+            "help": "Lists the highest or lowest karma things."
+        },
+        {
+            "name": "clear",
+            "group": "Karma",
+            "syntax": "clear [<channel>] <name>",
+            "help": "Clears karma for a thing."
+        },
+        {
+            "name": "dump",
+            "group": "Karma",
+            "syntax": "dump [<channel>] <filename>",
+            "help": "Dumps channel karma to a file."
+        },
+        {
+            "name": "load",
+            "group": "Karma",
+            "syntax": "load [<channel>] <filename>",
+            "help": "Loads channel karma from a file."
+        },
+        {
+            "name": "lart",
+            "group": "Lart",
+            "syntax": "lart [<channel>] <id> [<text>]",
+            "help": "Applies a Lart to a user."
+        },
+        {
+            "name": "tell",
+            "group": "Later",
+            "syntax": "tell <nick>[, <nick>, ...] <text>",
+            "help": "Stores a note for one or more nicks."
+        },
+        {
+            "name": "notes",
+            "group": "Later",
+            "syntax": "notes <nick>",
+            "help": "Shows notes stored for a nick."
+        },
+        {
+            "name": "remove",
+            "group": "Later",
+            "syntax": "remove <nick>",
+            "help": "Removes stored notes for a nick."
+        },
+        {
+            "name": "undo",
+            "group": "Later",
+            "syntax": "undo <nick>",
+            "help": "Undoes the last note removal for a nick."
+        },
+        {
+            "name": "add",
+            "group": "MessageParser",
+            "syntax": "add [<channel>] <regexp> <action>",
+            "help": "Adds a message parser rule."
+        },
+        {
+            "name": "remove",
+            "group": "MessageParser",
+            "syntax": "remove [<channel>] [--regexp <value>] <regexp>",
+            "help": "Removes a message parser rule."
+        },
+        {
+            "name": "lock",
+            "group": "MessageParser",
+            "syntax": "lock [<channel>] <regexp>",
+            "help": "Locks a message parser rule."
+        },
+        {
+            "name": "unlock",
+            "group": "MessageParser",
+            "syntax": "unlock [<channel>] <regexp>",
+            "help": "Unlocks a message parser rule."
+        },
+        {
+            "name": "show",
+            "group": "MessageParser",
+            "syntax": "show [<channel>] [--regexp <value>] <regexp>",
+            "help": "Shows a message parser rule."
+        },
+        {
+            "name": "info",
+            "group": "MessageParser",
+            "syntax": "info [<channel>] [--regexp <value>] <regexp>",
+            "help": "Shows message parser rule information."
+        },
+        {
+            "name": "list",
+            "group": "MessageParser",
+            "syntax": "list [<channel>]",
+            "help": "Lists message parser rules."
+        },
+        {
+            "name": "rank",
+            "group": "MessageParser",
+            "syntax": "rank [<channel>]",
+            "help": "Ranks message parser rules by use."
+        },
+        {
+            "name": "vacuum",
+            "group": "MessageParser",
+            "syntax": "vacuum [<channel>]",
+            "help": "Compacts the message parser database."
+        },
+        {
+            "name": "literal",
+            "group": "MoobotFactoids",
+            "syntax": "literal [<channel>] <key>",
+            "help": "Returns a factoid without variable substitution."
+        },
+        {
+            "name": "factinfo",
+            "group": "MoobotFactoids",
+            "syntax": "factinfo [<channel>] <key>",
+            "help": "Shows factoid information."
+        },
+        {
+            "name": "lock",
+            "group": "MoobotFactoids",
+            "syntax": "lock [<channel>] <key>",
+            "help": "Locks a factoid."
+        },
+        {
+            "name": "unlock",
+            "group": "MoobotFactoids",
+            "syntax": "unlock [<channel>] <key>",
+            "help": "Unlocks a factoid."
+        },
+        {
+            "name": "most",
+            "group": "MoobotFactoids",
+            "syntax": "most [<channel>] <method>",
+            "help": "Lists the most authored, recent, or popular factoids."
+        },
+        {
+            "name": "listauth",
+            "group": "MoobotFactoids",
+            "syntax": "listauth [<channel>] <author>",
+            "help": "Lists factoids by author."
+        },
+        {
+            "name": "listkeys",
+            "group": "MoobotFactoids",
+            "syntax": "listkeys [<channel>] <search>",
+            "help": "Lists factoid keys matching a search."
+        },
+        {
+            "name": "listvalues",
+            "group": "MoobotFactoids",
+            "syntax": "listvalues [<channel>] <search>",
+            "help": "Lists factoid values matching a search."
+        },
+        {
+            "name": "remove",
+            "group": "MoobotFactoids",
+            "syntax": "remove [<channel>] <key>",
+            "help": "Removes a factoid."
+        },
+        {
+            "name": "random",
+            "group": "MoobotFactoids",
+            "syntax": "random [<channel>]",
+            "help": "Returns a random factoid."
+        },
+        {
+            "name": "add",
+            "group": "News",
+            "syntax": "add [<channel>] [<at>] [<expires>] <news>",
+            "help": "Adds a news item."
+        },
+        {
+            "name": "news",
+            "group": "News",
+            "syntax": "news [<channel>] [<id>]",
+            "help": "Shows a news item."
+        },
+        {
+            "name": "remove",
+            "group": "News",
+            "syntax": "remove [<channel>] <id>",
+            "help": "Removes a news item."
+        },
+        {
+            "name": "change",
+            "group": "News",
+            "syntax": "change [<channel>] <id> <replacer>",
+            "help": "Changes a news item with a replacement expression."
+        },
+        {
+            "name": "old",
+            "group": "News",
+            "syntax": "old [<channel>] <id>",
+            "help": "Shows an old news item."
+        },
+        {
+            "name": "nickometer",
+            "group": "Nickometer",
+            "syntax": "nickometer [<nick>]",
+            "help": "Rates how lame a nick is."
+        },
+        {
+            "name": "add",
+            "group": "Poll",
+            "syntax": "add [<channel>] <question> <answer1> [<answer2> ...]",
+            "help": "Creates a poll in the channel."
+        },
+        {
+            "name": "close",
+            "group": "Poll",
+            "syntax": "close [<channel>] <poll id>",
+            "help": "Closes a poll."
+        },
+        {
+            "name": "vote",
+            "group": "Poll",
+            "syntax": "vote [<channel>] <poll id> <answer id>",
+            "help": "Votes in a poll."
+        },
+        {
+            "name": "results",
+            "group": "Poll",
+            "syntax": "results [<channel>] <poll id>",
+            "help": "Shows poll results."
+        },
+        {
+            "name": "list",
+            "group": "Poll",
+            "syntax": "list [<channel>]",
+            "help": "Lists polls in the channel."
+        },
+        {
+            "name": "praise",
+            "group": "Praise",
+            "syntax": "praise [<channel>] [<id>] <who|what> [for <reason>]",
+            "help": "Praises a user."
+        },
+        {
+            "name": "random",
+            "group": "Quote",
+            "syntax": "random [<channel>]",
+            "help": "Returns a random quote."
+        },
+        {
+            "name": "replace",
+            "group": "Quote",
+            "syntax": "replace [<channel>] <id> <text>",
+            "help": "Replaces a quote."
+        },
+        {
+            "name": "grab",
+            "group": "QuoteGrabs",
+            "syntax": "grab [<channel>] <nick>",
+            "help": "Grabs a quote from a nick for the quotegrabs table."
+        },
+        {
+            "name": "ungrab",
+            "group": "QuoteGrabs",
+            "syntax": "ungrab [<channel>] [<number>]",
+            "help": "Removes a quote grab, the last one by default."
+        },
+        {
+            "name": "quote",
+            "group": "QuoteGrabs",
+            "syntax": "quote [<channel>] <nick>",
+            "help": "Returns a nick's latest quote grab."
+        },
+        {
+            "name": "list",
+            "group": "QuoteGrabs",
+            "syntax": "list [<channel>] <nick>",
+            "help": "Lists quote grabs for a nick."
+        },
+        {
+            "name": "random",
+            "group": "QuoteGrabs",
+            "syntax": "random [<channel>] [<nick>]",
+            "help": "Returns a random quote grab."
+        },
+        {
+            "name": "say",
+            "group": "QuoteGrabs",
+            "syntax": "say [<channel>] <id>",
+            "help": "Returns a quote grab by id."
+        },
+        {
+            "name": "get",
+            "group": "QuoteGrabs",
+            "syntax": "get [<channel>] <id>",
+            "help": "Returns a quote grab by id."
+        },
+        {
+            "name": "search",
+            "group": "QuoteGrabs",
+            "syntax": "search [<channel>] <text>",
+            "help": "Searches quote grabs for text."
+        },
+        {
+            "name": "add",
+            "group": "RSS",
+            "syntax": "add <name> <url>",
+            "help": "Adds a named RSS feed command."
+        },
+        {
+            "name": "remove",
+            "group": "RSS",
+            "syntax": "remove <name>",
+            "help": "Removes a named RSS feed command."
+        },
+        {
+            "name": "announce",
+            "group": "RSS",
+            "syntax": "announce <list|add|remove|channels> ...",
+            "help": "Manages announced feeds.",
+            "subcommands": [
+                {
+                    "name": "list",
+                    "syntax": "announce list [<channel>]",
+                    "help": "Lists feeds announced in a channel."
+                },
+                {
+                    "name": "add",
+                    "syntax": "announce add [<channel>] <name|url> [<name|url> ...]",
+                    "help": "Adds feeds to a channel's announcements."
+                },
+                {
+                    "name": "remove",
+                    "syntax": "announce remove [<channel>] <name|url> [<name|url> ...]",
+                    "help": "Removes feeds from a channel's announcements."
+                },
+                {
+                    "name": "channels",
+                    "syntax": "announce channels <name|url>",
+                    "help": "Lists channels where a feed is announced."
+                }
+            ]
+        },
+        {
+            "name": "rss",
+            "group": "RSS",
+            "syntax": "rss [--random] <name|url> [<number of headlines>]",
+            "help": "Returns headlines from an RSS feed."
+        },
+        {
+            "name": "info",
+            "group": "RSS",
+            "syntax": "info <url|feed>",
+            "help": "Shows information about an RSS feed."
+        },
+        {
+            "name": "join",
+            "group": "Relay",
+            "syntax": "join [<channel>]",
+            "help": "Starts relaying a channel across networks."
+        },
+        {
+            "name": "part",
+            "group": "Relay",
+            "syntax": "part <channel>",
+            "help": "Stops relaying a channel across networks."
+        },
+        {
+            "name": "nicks",
+            "group": "Relay",
+            "syntax": "nicks [<channel>]",
+            "help": "Lists nicks in a relayed channel across networks."
+        },
+        {
+            "name": "private",
+            "group": "Reply",
+            "syntax": "private <text>",
+            "help": "Replies privately with text."
+        },
+        {
+            "name": "action",
+            "group": "Reply",
+            "syntax": "action <text>",
+            "help": "Replies with text as an action."
+        },
+        {
+            "name": "notice",
+            "group": "Reply",
+            "syntax": "notice <text>",
+            "help": "Replies with text as a notice."
+        },
+        {
+            "name": "reply",
+            "group": "Reply",
+            "syntax": "reply <text>",
+            "help": "Replies with text, prefixing the caller's nick."
+        },
+        {
+            "name": "replies",
+            "group": "Reply",
+            "syntax": "replies <str> [<str> ...]",
+            "help": "Replies with each string separately."
+        },
+        {
+            "name": "add",
+            "group": "Scheduler",
+            "syntax": "add <seconds> <command>",
+            "help": "Schedules a command to run after a delay."
+        },
+        {
+            "name": "remind",
+            "group": "Scheduler",
+            "syntax": "remind <seconds> <text>",
+            "help": "Schedules a reminder after a delay."
+        },
+        {
+            "name": "remove",
+            "group": "Scheduler",
+            "syntax": "remove <id>",
+            "help": "Removes a scheduled event."
+        },
+        {
+            "name": "repeat",
+            "group": "Scheduler",
+            "syntax": "repeat [--delay <delay>] <name> <seconds> <command>",
+            "help": "Schedules a command to repeat at an interval."
+        },
+        {
+            "name": "list",
+            "group": "Scheduler",
+            "syntax": "list",
+            "help": "Lists scheduled events."
+        },
+        {
+            "name": "op",
+            "group": "Services",
+            "syntax": "op [<channel>]",
+            "help": "Asks ChanServ to op the bot in a channel."
+        },
+        {
+            "name": "voice",
+            "group": "Services",
+            "syntax": "voice [<channel>]",
+            "help": "Asks ChanServ to voice the bot in a channel."
+        },
+        {
+            "name": "unban",
+            "group": "Services",
+            "syntax": "unban [<channel>]",
+            "help": "Asks ChanServ to unban the bot from a channel."
+        },
+        {
+            "name": "invite",
+            "group": "Services",
+            "syntax": "invite [<channel>]",
+            "help": "Asks ChanServ to invite the bot to a channel."
+        },
+        {
+            "name": "identify",
+            "group": "Services",
+            "syntax": "identify",
+            "help": "Identifies with NickServ using the configured nick."
+        },
+        {
+            "name": "ghost",
+            "group": "Services",
+            "syntax": "ghost [<nick>]",
+            "help": "Ghosts a nick and takes it."
+        },
+        {
+            "name": "nickserv",
+            "group": "Services",
+            "syntax": "nickserv <text>",
+            "help": "Sends text to NickServ."
+        },
+        {
+            "name": "chanserv",
+            "group": "Services",
+            "syntax": "chanserv <text>",
+            "help": "Sends text to ChanServ."
+        },
+        {
+            "name": "password",
+            "group": "Services",
+            "syntax": "password <nick> [<password>]",
+            "help": "Sets or removes the NickServ password for a nick."
+        },
+        {
+            "name": "nicks",
+            "group": "Services",
+            "syntax": "nicks",
+            "help": "Lists configured NickServ nicks."
+        },
+        {
+            "name": "register",
+            "group": "Services",
+            "syntax": "register [<network>] <password> [<email>]",
+            "help": "Registers an account on a network."
+        },
+        {
+            "name": "verify",
+            "group": "Services",
+            "syntax": "verify [<network>] <account> <code>",
+            "help": "Verifies an account registration code."
+        },
+        {
+            "name": "tiny",
+            "group": "ShrinkUrl",
+            "syntax": "tiny <url>",
+            "help": "Returns a TinyURL version of a URL."
+        },
+        {
+            "name": "ur1",
+            "group": "ShrinkUrl",
+            "syntax": "ur1 <url>",
+            "help": "Returns an ur1 version of a URL."
+        },
+        {
+            "name": "x0",
+            "group": "ShrinkUrl",
+            "syntax": "x0 <url>",
+            "help": "Returns an x0.no version of a URL."
+        },
+        {
+            "name": "status",
+            "group": "Status",
+            "syntax": "status",
+            "help": "Shows the bot status."
+        },
+        {
+            "name": "threads",
+            "group": "Status",
+            "syntax": "threads",
+            "help": "Lists active threads."
+        },
+        {
+            "name": "processes",
+            "group": "Status",
+            "syntax": "processes",
+            "help": "Lists active processes."
+        },
+        {
+            "name": "net",
+            "group": "Status",
+            "syntax": "net",
+            "help": "Shows network statistics."
+        },
+        {
+            "name": "cpu",
+            "group": "Status",
+            "syntax": "cpu",
+            "help": "Shows CPU statistics."
+        },
+        {
+            "name": "cmd",
+            "group": "Status",
+            "syntax": "cmd",
+            "help": "Shows command statistics."
+        },
+        {
+            "name": "commands",
+            "group": "Status",
+            "syntax": "commands",
+            "help": "Lists commands offered by the bot."
+        },
+        {
+            "name": "uptime",
+            "group": "Status",
+            "syntax": "uptime",
+            "help": "Shows how long the bot has been running."
+        },
+        {
+            "name": "server",
+            "group": "Status",
+            "syntax": "server",
+            "help": "Shows the server the bot is on."
+        },
+        {
+            "name": "network",
+            "group": "Status",
+            "syntax": "network",
+            "help": "Shows the network the bot is on."
+        },
+        {
+            "name": "add",
+            "group": "Success",
+            "syntax": "add [<channel>] <text>",
+            "help": "Adds a success response for a channel."
+        },
+        {
+            "name": "remove",
+            "group": "Success",
+            "syntax": "remove [<channel>] <id>",
+            "help": "Removes a success response."
+        },
+        {
+            "name": "search",
+            "group": "Success",
+            "syntax": "search [<channel>] [--{regexp,by} <value>] [<glob>]",
+            "help": "Searches success responses."
+        },
+        {
+            "name": "get",
+            "group": "Success",
+            "syntax": "get [<channel>] <id>",
+            "help": "Returns a success response by id."
+        },
+        {
+            "name": "change",
+            "group": "Success",
+            "syntax": "change [<channel>] <id> <regexp>",
+            "help": "Changes a success response with a replacement expression."
+        },
+        {
+            "name": "stats",
+            "group": "Success",
+            "syntax": "stats [<channel>]",
+            "help": "Shows how many success responses are stored."
+        },
+        {
+            "name": "todo",
+            "group": "Todo",
+            "syntax": "todo [<username>] [<task id>]",
+            "help": "Shows a task or lists tasks for a user."
+        },
+        {
+            "name": "add",
+            "group": "Todo",
+            "syntax": "add [--priority=<num>] <text>",
+            "help": "Adds a task to your todo list."
+        },
+        {
+            "name": "remove",
+            "group": "Todo",
+            "syntax": "remove <task id> [<task id> ...]",
+            "help": "Removes tasks from your todo list."
+        },
+        {
+            "name": "search",
+            "group": "Todo",
+            "syntax": "search [--{regexp} <value>] [<glob> <glob> ...]",
+            "help": "Searches your todo list."
+        },
+        {
+            "name": "setpriority",
+            "group": "Todo",
+            "syntax": "setpriority <id> <priority>",
+            "help": "Sets the priority of a todo task."
+        },
+        {
+            "name": "change",
+            "group": "Todo",
+            "syntax": "change <task id> <regexp>",
+            "help": "Changes a todo task with a replacement expression."
+        },
+        {
+            "name": "topic",
+            "group": "Topic",
+            "syntax": "topic [<channel>]",
+            "help": "Returns the channel topic."
+        },
+        {
+            "name": "add",
+            "group": "Topic",
+            "syntax": "add [<channel>] <topic>",
+            "help": "Adds a topic to the channel topic."
+        },
+        {
+            "name": "fit",
+            "group": "Topic",
+            "syntax": "fit [<channel>] <topic>",
+            "help": "Adds a topic, removing older topics to fit the server limit."
+        },
+        {
+            "name": "replace",
+            "group": "Topic",
+            "syntax": "replace [<channel>] <number> <topic>",
+            "help": "Replaces a numbered topic."
+        },
+        {
+            "name": "insert",
+            "group": "Topic",
+            "syntax": "insert [<channel>] <topic>",
+            "help": "Inserts a topic at the beginning."
+        },
+        {
+            "name": "shuffle",
+            "group": "Topic",
+            "syntax": "shuffle [<channel>]",
+            "help": "Shuffles the channel topics."
+        },
+        {
+            "name": "reorder",
+            "group": "Topic",
+            "syntax": "reorder [<channel>] <number> [<number> ...]",
+            "help": "Reorders the channel topics."
+        },
+        {
+            "name": "list",
+            "group": "Topic",
+            "syntax": "list [<channel>]",
+            "help": "Lists the channel topics with their indexes."
+        },
+        {
+            "name": "get",
+            "group": "Topic",
+            "syntax": "get [<channel>] <number>",
+            "help": "Returns a numbered topic."
+        },
+        {
+            "name": "change",
+            "group": "Topic",
+            "syntax": "change [<channel>] <number> <regexp>",
+            "help": "Changes a numbered topic with a replacement expression."
+        },
+        {
+            "name": "set",
+            "group": "Topic",
+            "syntax": "set [<channel>] [<number>] <topic>",
+            "help": "Sets a numbered topic or the entire channel topic."
+        },
+        {
+            "name": "remove",
+            "group": "Topic",
+            "syntax": "remove [<channel>] <number1> [<number2> <number3>...]",
+            "help": "Removes numbered topics."
+        },
+        {
+            "name": "lock",
+            "group": "Topic",
+            "syntax": "lock [<channel>]",
+            "help": "Locks the channel topic by setting mode +t."
+        },
+        {
+            "name": "unlock",
+            "group": "Topic",
+            "syntax": "unlock [<channel>]",
+            "help": "Unlocks the channel topic by setting mode -t."
+        },
+        {
+            "name": "restore",
+            "group": "Topic",
+            "syntax": "restore [<channel>]",
+            "help": "Restores the last topic set by the bot."
+        },
+        {
+            "name": "refresh",
+            "group": "Topic",
+            "syntax": "refresh [<channel>]",
+            "help": "Refreshes the current topic or restores the last topic."
+        },
+        {
+            "name": "undo",
+            "group": "Topic",
+            "syntax": "undo [<channel>]",
+            "help": "Restores the previous channel topic."
+        },
+        {
+            "name": "redo",
+            "group": "Topic",
+            "syntax": "redo [<channel>]",
+            "help": "Undoes the last topic undo."
+        },
+        {
+            "name": "swap",
+            "group": "Topic",
+            "syntax": "swap [<channel>] <first topic number> <second topic number>",
+            "help": "Swaps two numbered topics."
+        },
+        {
+            "name": "save",
+            "group": "Topic",
+            "syntax": "save [<channel>]",
+            "help": "Saves the current topic as the channel default."
+        },
+        {
+            "name": "default",
+            "group": "Topic",
+            "syntax": "default [<channel>]",
+            "help": "Sets the channel topic to its saved default."
+        },
+        {
+            "name": "separator",
+            "group": "Topic",
+            "syntax": "separator [<channel>] <separator>",
+            "help": "Sets the topic separator for a channel."
+        },
+        {
+            "name": "stats",
+            "group": "URL",
+            "syntax": "stats [<channel>]",
+            "help": "Shows how many URLs are stored for a channel."
+        },
+        {
+            "name": "last",
+            "group": "URL",
+            "syntax": "last [<channel>] [--{from,with,without,near,proto} <value>] [--nolimit]",
+            "help": "Returns the last URL matching the given criteria."
+        },
+        {
+            "name": "errno",
+            "group": "Unix",
+            "syntax": "errno <error number or code>",
+            "help": "Returns an errno code or number and its description."
+        },
+        {
+            "name": "progstats",
+            "group": "Unix",
+            "syntax": "progstats",
+            "help": "Shows Unix process information for the bot."
+        },
+        {
+            "name": "pid",
+            "group": "Unix",
+            "syntax": "pid",
+            "help": "Returns the bot process ID."
+        },
+        {
+            "name": "crypt",
+            "group": "Unix",
+            "syntax": "crypt <password> [<salt>]",
+            "help": "Returns the crypt() hash of a password."
+        },
+        {
+            "name": "spell",
+            "group": "Unix",
+            "syntax": "spell <word>",
+            "help": "Returns spelling suggestions for a word."
+        },
+        {
+            "name": "fortune",
+            "group": "Unix",
+            "syntax": "fortune",
+            "help": "Returns a fortune from the Unix fortune program."
+        },
+        {
+            "name": "wtf",
+            "group": "Unix",
+            "syntax": "wtf [is] <something>",
+            "help": "Explains what something is using the Unix wtf command."
+        },
+        {
+            "name": "ping",
+            "group": "Unix",
+            "syntax": "ping [--c <count>] [--i <interval>] [--t <ttl>] [--W <timeout>] [--4|--6] <host or ip>",
+            "help": "Sends ICMP echo requests to a host."
+        },
+        {
+            "name": "ping6",
+            "group": "Unix",
+            "syntax": "ping6 [--c <count>] [--i <interval>] [--t <ttl>] [--W <timeout>] [--4|--6] <host or ip>",
+            "help": "Sends ICMP echo requests to a host using IPv6."
+        },
+        {
+            "name": "sysuptime",
+            "group": "Unix",
+            "syntax": "sysuptime",
+            "help": "Returns the uptime of the bot host."
+        },
+        {
+            "name": "sysuname",
+            "group": "Unix",
+            "syntax": "sysuname",
+            "help": "Returns the uname output of the bot host."
+        },
+        {
+            "name": "call",
+            "group": "Unix",
+            "syntax": "call <command to call with any arguments>",
+            "help": "Runs a system command without a shell and returns its output."
+        },
+        {
+            "name": "shell",
+            "group": "Unix",
+            "syntax": "shell <command to call with any arguments>",
+            "help": "Runs a system command through the shell and returns its output."
+        },
+        {
+            "name": "ignore",
+            "group": "Utilities",
+            "syntax": "ignore",
+            "help": "Does nothing."
+        },
+        {
+            "name": "success",
+            "group": "Utilities",
+            "syntax": "success [<text>]",
+            "help": "Replies with a success message."
+        },
+        {
+            "name": "last",
+            "group": "Utilities",
+            "syntax": "last <text> [<text> ...]",
+            "help": "Returns the last argument."
+        },
+        {
+            "name": "echo",
+            "group": "Utilities",
+            "syntax": "echo <text>",
+            "help": "Returns the arguments after substitution."
+        },
+        {
+            "name": "shuffle",
+            "group": "Utilities",
+            "syntax": "shuffle <arg> [<arg> ...]",
+            "help": "Shuffles the arguments."
+        },
+        {
+            "name": "sort",
+            "group": "Utilities",
+            "syntax": "sort <arg> [<arg> ...]",
+            "help": "Sorts the arguments."
+        },
+        {
+            "name": "sample",
+            "group": "Utilities",
+            "syntax": "sample <num> <arg> [<arg> ...]",
+            "help": "Randomly chooses arguments."
+        },
+        {
+            "name": "countargs",
+            "group": "Utilities",
+            "syntax": "countargs <arg> [<arg> ...]",
+            "help": "Counts the arguments."
+        },
+        {
+            "name": "apply",
+            "group": "Utilities",
+            "syntax": "apply <command> <text>",
+            "help": "Tokenizes text and calls a command with the result."
+        },
+        {
+            "name": "let",
+            "group": "Utilities",
+            "syntax": "let <variable> = <value> in <command>",
+            "help": "Sets a variable and runs a command."
+        },
+        {
+            "name": "headers",
+            "group": "Web",
+            "syntax": "headers <url>",
+            "help": "Returns the HTTP headers of a URL."
+        },
+        {
+            "name": "location",
+            "group": "Web",
+            "syntax": "location <url>",
+            "help": "Returns the redirect target of a URL."
+        },
+        {
+            "name": "doctype",
+            "group": "Web",
+            "syntax": "doctype <url>",
+            "help": "Returns the DOCTYPE of a URL."
+        },
+        {
+            "name": "size",
+            "group": "Web",
+            "syntax": "size <url>",
+            "help": "Returns the size of a URL."
+        },
+        {
+            "name": "title",
+            "group": "Web",
+            "syntax": "title [--no-filter] <url>",
+            "help": "Returns the HTML title of a URL."
+        },
+        {
+            "name": "urlquote",
+            "group": "Web",
+            "syntax": "urlquote <text>",
+            "help": "Returns the URL-quoted form of text."
+        },
+        {
+            "name": "urlunquote",
+            "group": "Web",
+            "syntax": "urlunquote <text>",
+            "help": "Returns the unquoted form of URL text."
+        },
+        {
+            "name": "fetch",
+            "group": "Web",
+            "syntax": "fetch <url>",
+            "help": "Returns the contents of a URL."
+        },
+        {
+            "name": "repolist",
+            "group": "PluginDownloader",
+            "syntax": "repolist [<repository>]",
+            "help": "Lists known repositories or plugins in a repository."
+        },
+        {
+            "name": "install",
+            "group": "PluginDownloader",
+            "syntax": "install <repository> <plugin>",
+            "help": "Downloads and installs a plugin from a repository."
+        },
+        {
+            "name": "info",
+            "group": "PluginDownloader",
+            "syntax": "info <repository> <plugin>",
+            "help": "Shows information about a plugin in a repository."
+        },
+        {
+            "name": "add",
+            "group": "Dunno",
+            "syntax": "add [<channel>] <text>",
+            "help": "Adds a dunno response for a channel."
+        },
+        {
+            "name": "remove",
+            "group": "Dunno",
+            "syntax": "remove [<channel>] <id>",
+            "help": "Removes a dunno response."
+        },
+        {
+            "name": "search",
+            "group": "Dunno",
+            "syntax": "search [<channel>] [--{regexp,by} <value>] [<glob>]",
+            "help": "Searches dunno responses."
+        },
+        {
+            "name": "get",
+            "group": "Dunno",
+            "syntax": "get [<channel>] <id>",
+            "help": "Returns a dunno response by id."
+        },
+        {
+            "name": "change",
+            "group": "Dunno",
+            "syntax": "change [<channel>] <id> <regexp>",
+            "help": "Changes a dunno response with a replacement expression."
+        },
+        {
+            "name": "stats",
+            "group": "Dunno",
+            "syntax": "stats [<channel>]",
+            "help": "Shows how many dunno responses are stored."
+        },
+        {
+            "name": "add",
+            "group": "Lart",
+            "syntax": "add [<channel>] <text>",
+            "help": "Adds a lart to a channel."
+        },
+        {
+            "name": "remove",
+            "group": "Lart",
+            "syntax": "remove [<channel>] <id>",
+            "help": "Removes a lart."
+        },
+        {
+            "name": "search",
+            "group": "Lart",
+            "syntax": "search [<channel>] [--{regexp,by} <value>] [<glob>]",
+            "help": "Searches larts."
+        },
+        {
+            "name": "get",
+            "group": "Lart",
+            "syntax": "get [<channel>] <id>",
+            "help": "Returns a lart by id."
+        },
+        {
+            "name": "change",
+            "group": "Lart",
+            "syntax": "change [<channel>] <id> <regexp>",
+            "help": "Changes a lart with a replacement expression."
+        },
+        {
+            "name": "stats",
+            "group": "Lart",
+            "syntax": "stats [<channel>]",
+            "help": "Shows how many larts are stored."
+        },
+        {
+            "name": "add",
+            "group": "Praise",
+            "syntax": "add [<channel>] <text>",
+            "help": "Adds a praise to a channel."
+        },
+        {
+            "name": "remove",
+            "group": "Praise",
+            "syntax": "remove [<channel>] <id>",
+            "help": "Removes a praise."
+        },
+        {
+            "name": "search",
+            "group": "Praise",
+            "syntax": "search [<channel>] [--{regexp,by} <value>] [<glob>]",
+            "help": "Searches praises."
+        },
+        {
+            "name": "get",
+            "group": "Praise",
+            "syntax": "get [<channel>] <id>",
+            "help": "Returns a praise by id."
+        },
+        {
+            "name": "change",
+            "group": "Praise",
+            "syntax": "change [<channel>] <id> <regexp>",
+            "help": "Changes a praise with a replacement expression."
+        },
+        {
+            "name": "stats",
+            "group": "Praise",
+            "syntax": "stats [<channel>]",
+            "help": "Shows how many praises are stored."
+        },
+        {
+            "name": "add",
+            "group": "Quote",
+            "syntax": "add [<channel>] <text>",
+            "help": "Adds a quote to a channel."
+        },
+        {
+            "name": "remove",
+            "group": "Quote",
+            "syntax": "remove [<channel>] <id>",
+            "help": "Removes a quote."
+        },
+        {
+            "name": "search",
+            "group": "Quote",
+            "syntax": "search [<channel>] [--{regexp,by} <value>] [<glob>]",
+            "help": "Searches quotes."
+        },
+        {
+            "name": "get",
+            "group": "Quote",
+            "syntax": "get [<channel>] <id>",
+            "help": "Returns a quote by id."
+        },
+        {
+            "name": "change",
+            "group": "Quote",
+            "syntax": "change [<channel>] <id> <regexp>",
+            "help": "Changes a quote with a replacement expression."
+        },
+        {
+            "name": "stats",
+            "group": "Quote",
+            "syntax": "stats [<channel>]",
+            "help": "Shows how many quotes are stored."
+        }
+    ],
+    "delivery": {
+        "admin join": "private",
+        "admin channels": "private",
+        "admin nick": "private",
+        "admin capability": "private",
+        "admin capability add": "private",
+        "admin capability remove": "private",
+        "admin ignore": "private",
+        "admin ignore add": "private",
+        "admin ignore remove": "private",
+        "admin ignore list": "private",
+        "admin clearq": "private",
+        "admin acmd": "private",
+        "config list": "private",
+        "config search": "private",
+        "config searchhelp": "private",
+        "config searchvalues": "private",
+        "config channel": "channel",
+        "config network": "private",
+        "config config": "channel",
+        "config help": "private",
+        "config default": "private",
+        "config reload": "private",
+        "config export": "private",
+        "config setdefault": "private",
+        "config reset": "private",
+        "config reset channel": "channel",
+        "config reset network": "private",
+        "misc list": "private",
+        "misc apropos": "private",
+        "misc help": "private",
+        "misc version": "private",
+        "misc source": "private",
+        "misc more": "channel",
+        "misc last": "channel",
+        "misc tell": "private",
+        "misc noticetell": "private",
+        "misc ping": "private",
+        "misc completenick": "channel",
+        "misc clearmores": "private",
+        "owner logmark": "private",
+        "owner announce": "private",
+        "owner defaultplugin": "private",
+        "owner ircquote": "private",
+        "owner quit": "private",
+        "owner flush": "private",
+        "owner upkeep": "private",
+        "owner load": "private",
+        "owner reload": "private",
+        "owner unload": "private",
+        "owner defaultcapability": "private",
+        "owner disable": "private",
+        "owner enable": "private",
+        "owner rename": "private",
+        "owner unrename": "private",
+        "owner reloadlocale": "private",
+        "channel mode": "channel",
+        "channel limit": "channel",
+        "channel moderate": "channel",
+        "channel unmoderate": "channel",
+        "channel key": "channel",
+        "channel op": "channel",
+        "channel halfop": "channel",
+        "channel voice": "channel",
+        "channel deop": "channel",
+        "channel dehalfop": "channel",
+        "channel devoice": "channel",
+        "channel cycle": "channel",
+        "channel kick": "channel",
+        "channel kban": "channel",
+        "channel iban": "channel",
+        "channel unban": "channel",
+        "channel listbans": "channel",
+        "channel invite": "channel",
+        "channel disable": "channel",
+        "channel enable": "channel",
+        "channel nicks": "channel",
+        "channel alert": "channel",
+        "channel part": "channel",
+        "channel lobotomy": "private",
+        "channel lobotomy add": "private",
+        "channel lobotomy remove": "private",
+        "channel lobotomy list": "private",
+        "channel ban": "channel",
+        "channel ban hostmask": "channel",
+        "channel ban add": "channel",
+        "channel ban remove": "channel",
+        "channel ban list": "channel",
+        "channel ignore": "channel",
+        "channel ignore add": "channel",
+        "channel ignore remove": "channel",
+        "channel ignore list": "channel",
+        "channel capability": "channel",
+        "channel capability add": "channel",
+        "channel capability remove": "channel",
+        "channel capability setdefault": "channel",
+        "channel capability set": "channel",
+        "channel capability unset": "channel",
+        "channel capability list": "channel",
+        "network connect": "private",
+        "network disconnect": "private",
+        "network reconnect": "private",
+        "network command": "private",
+        "network cmdall": "private",
+        "network whois": "private",
+        "network whowas": "private",
+        "network networks": "private",
+        "network latency": "private",
+        "network driver": "private",
+        "network uptime": "private",
+        "network capabilities": "private",
+        "network authenticate": "private",
+        "nickauth nick": "private",
+        "nickauth nick add": "private",
+        "nickauth nick remove": "private",
+        "nickauth nick list": "private",
+        "nickauth auth": "private",
+        "user list": "private",
+        "user register": "private",
+        "user unregister": "private",
+        "user changename": "private",
+        "user username": "private",
+        "user set": "private",
+        "user set password": "private",
+        "user set secure": "private",
+        "user hostmask": "private",
+        "user hostmask hostmask": "private",
+        "user hostmask list": "private",
+        "user hostmask add": "private",
+        "user hostmask remove": "private",
+        "user capabilities": "private",
+        "user identify": "private",
+        "user unidentify": "private",
+        "user whoami": "private",
+        "user stats": "private",
+        "ddg search": "private",
+        "games coin": "channel",
+        "games dice": "channel",
+        "games eightball": "channel",
+        "games roulette": "channel",
+        "games monologue": "channel",
+        "geography localtime": "private",
+        "geography timezone": "private",
+        "hashes md5": "private",
+        "hashes sha": "private",
+        "hashes sha256": "private",
+        "hashes sha512": "private",
+        "hashes algorithms": "private",
+        "hashes mkhash": "private",
+        "math base": "private",
+        "math calc": "private",
+        "math icalc": "private",
+        "math rpn": "private",
+        "math convert": "private",
+        "math units": "private",
+        "time seconds": "private",
+        "time at": "private",
+        "time until": "private",
+        "time ctime": "private",
+        "time time": "private",
+        "time elapsed": "private",
+        "time tztime": "private",
+        "time ddate": "private",
+        "note send": "private",
+        "note reply": "private",
+        "note unsend": "private",
+        "note note": "private",
+        "note search": "private",
+        "note list": "private",
+        "note next": "private",
+        "plugin help": "private",
+        "plugin plugin": "private",
+        "plugin plugins": "private",
+        "plugin path": "private",
+        "plugin author": "private",
+        "plugin contributors": "private",
+        "seen seen": "channel",
+        "seen any": "channel",
+        "seen last": "channel",
+        "seen user": "channel",
+        "seen since": "channel",
+        "string ord": "private",
+        "string chr": "private",
+        "string unicodename": "private",
+        "string unicodesearch": "private",
+        "string encode": "private",
+        "string decode": "private",
+        "string levenshtein": "private",
+        "string soundex": "private",
+        "string len": "private",
+        "string re": "private",
+        "string xor": "private",
+        "string md5": "private",
+        "string sha": "private",
+        "aka add": "private",
+        "aka set": "private",
+        "aka remove": "private",
+        "aka lock": "private",
+        "aka unlock": "private",
+        "aka show": "private",
+        "aka importaliasdatabase": "private",
+        "aka list": "private",
+        "aka search": "private",
+        "alias lock": "private",
+        "alias unlock": "private",
+        "alias add": "private",
+        "alias remove": "private",
+        "alias list": "private",
+        "anonymous say": "private",
+        "anonymous tell": "private",
+        "anonymous do": "private",
+        "anonymous react": "private",
+        "badwords list": "private",
+        "badwords add": "private",
+        "badwords remove": "private",
+        "channelstats stats": "channel",
+        "channelstats rank": "channel",
+        "channelstats channelstats": "channel",
+        "conditional cif": "private",
+        "conditional cand": "private",
+        "conditional cor": "private",
+        "conditional cxor": "private",
+        "conditional ceq": "private",
+        "conditional ne": "private",
+        "conditional gt": "private",
+        "conditional ge": "private",
+        "conditional lt": "private",
+        "conditional le": "private",
+        "conditional match": "private",
+        "conditional nceq": "private",
+        "conditional nne": "private",
+        "conditional ngt": "private",
+        "conditional nge": "private",
+        "conditional nlt": "private",
+        "conditional nle": "private",
+        "conditional cerror": "private",
+        "ctcp version": "channel",
+        "debug eval": "private",
+        "debug exec": "private",
+        "debug simpleeval": "private",
+        "debug exn": "private",
+        "debug sendquote": "private",
+        "debug settrace": "private",
+        "debug unsettrace": "private",
+        "debug channeldb": "channel",
+        "debug collect": "private",
+        "debug environ": "private",
+        "dict dictionaries": "private",
+        "dict random": "private",
+        "dict dict": "private",
+        "dict synonym": "private",
+        "factoids learn": "channel",
+        "factoids whatis": "channel",
+        "factoids alias": "channel",
+        "factoids rank": "channel",
+        "factoids lock": "channel",
+        "factoids unlock": "channel",
+        "factoids forget": "channel",
+        "factoids random": "channel",
+        "factoids info": "channel",
+        "factoids change": "channel",
+        "factoids search": "channel",
+        "fediverse profile": "private",
+        "fediverse featured": "private",
+        "fediverse statuses": "private",
+        "fediverse status": "private",
+        "filter outfilter": "private",
+        "filter hebrew": "private",
+        "filter squish": "private",
+        "filter undup": "private",
+        "filter binary": "private",
+        "filter unbinary": "private",
+        "filter hexlify": "private",
+        "filter unhexlify": "private",
+        "filter rot13": "private",
+        "filter leet": "private",
+        "filter supa1337": "private",
+        "filter scramble": "private",
+        "filter unmorse": "private",
+        "filter morse": "private",
+        "filter reverse": "private",
+        "filter colorize": "private",
+        "filter rainbow": "private",
+        "filter stripformatting": "private",
+        "filter stripcolor": "private",
+        "filter aol": "private",
+        "filter jeffk": "private",
+        "filter spellit": "private",
+        "filter gnu": "private",
+        "filter shrink": "private",
+        "filter uniud": "private",
+        "filter capwords": "private",
+        "filter caps": "private",
+        "filter vowelrot": "private",
+        "filter uwu": "private",
+        "format bold": "private",
+        "format reverse": "private",
+        "format underline": "private",
+        "format color": "private",
+        "format join": "private",
+        "format translate": "private",
+        "format replace": "private",
+        "format upper": "private",
+        "format lower": "private",
+        "format capitalize": "private",
+        "format title": "private",
+        "format repr": "private",
+        "format concat": "private",
+        "format cut": "private",
+        "format field": "private",
+        "format format": "private",
+        "gpg key": "private",
+        "gpg key add": "private",
+        "gpg key remove": "private",
+        "gpg key list": "private",
+        "gpg signing": "private",
+        "gpg signing gettoken": "private",
+        "gpg signing auth": "private",
+        "google translate": "private",
+        "herald default": "channel",
+        "herald get": "channel",
+        "herald add": "channel",
+        "herald remove": "channel",
+        "herald change": "channel",
+        "internet dns": "private",
+        "internet whois": "private",
+        "internet hexip": "private",
+        "karma karma": "channel",
+        "karma most": "channel",
+        "karma clear": "channel",
+        "karma dump": "channel",
+        "karma load": "channel",
+        "lart lart": "channel",
+        "later tell": "private",
+        "later notes": "private",
+        "later remove": "private",
+        "later undo": "private",
+        "messageparser add": "channel",
+        "messageparser remove": "channel",
+        "messageparser lock": "channel",
+        "messageparser unlock": "channel",
+        "messageparser show": "channel",
+        "messageparser info": "channel",
+        "messageparser list": "channel",
+        "messageparser rank": "channel",
+        "messageparser vacuum": "channel",
+        "moobotfactoids literal": "channel",
+        "moobotfactoids factinfo": "channel",
+        "moobotfactoids lock": "channel",
+        "moobotfactoids unlock": "channel",
+        "moobotfactoids most": "channel",
+        "moobotfactoids listauth": "channel",
+        "moobotfactoids listkeys": "channel",
+        "moobotfactoids listvalues": "channel",
+        "moobotfactoids remove": "channel",
+        "moobotfactoids random": "channel",
+        "news add": "channel",
+        "news news": "channel",
+        "news remove": "channel",
+        "news change": "channel",
+        "news old": "channel",
+        "nickometer nickometer": "private",
+        "poll add": "channel",
+        "poll close": "channel",
+        "poll vote": "channel",
+        "poll results": "channel",
+        "poll list": "channel",
+        "praise praise": "channel",
+        "quote random": "channel",
+        "quote replace": "channel",
+        "quotegrabs grab": "channel",
+        "quotegrabs ungrab": "channel",
+        "quotegrabs quote": "channel",
+        "quotegrabs list": "channel",
+        "quotegrabs random": "channel",
+        "quotegrabs say": "channel",
+        "quotegrabs get": "channel",
+        "quotegrabs search": "channel",
+        "rss add": "private",
+        "rss remove": "private",
+        "rss announce": "private",
+        "rss announce list": "channel",
+        "rss announce add": "channel",
+        "rss announce remove": "channel",
+        "rss announce channels": "private",
+        "rss rss": "private",
+        "rss info": "private",
+        "relay join": "channel",
+        "relay part": "channel",
+        "relay nicks": "channel",
+        "reply private": "private",
+        "reply action": "private",
+        "reply notice": "private",
+        "reply reply": "private",
+        "reply replies": "private",
+        "scheduler add": "channel",
+        "scheduler remind": "channel",
+        "scheduler remove": "channel",
+        "scheduler repeat": "channel",
+        "scheduler list": "channel",
+        "services op": "channel",
+        "services voice": "channel",
+        "services unban": "channel",
+        "services invite": "channel",
+        "services identify": "private",
+        "services ghost": "private",
+        "services nickserv": "private",
+        "services chanserv": "private",
+        "services password": "private",
+        "services nicks": "private",
+        "services register": "private",
+        "services verify": "private",
+        "shrinkurl tiny": "private",
+        "shrinkurl ur1": "private",
+        "shrinkurl x0": "private",
+        "status status": "private",
+        "status threads": "private",
+        "status processes": "private",
+        "status net": "private",
+        "status cpu": "private",
+        "status cmd": "private",
+        "status commands": "private",
+        "status uptime": "private",
+        "status server": "private",
+        "status network": "private",
+        "success add": "channel",
+        "success remove": "channel",
+        "success search": "channel",
+        "success get": "channel",
+        "success change": "channel",
+        "success stats": "channel",
+        "todo todo": "private",
+        "todo add": "private",
+        "todo remove": "private",
+        "todo search": "private",
+        "todo setpriority": "private",
+        "todo change": "private",
+        "topic topic": "channel",
+        "topic add": "channel",
+        "topic fit": "channel",
+        "topic replace": "channel",
+        "topic insert": "channel",
+        "topic shuffle": "channel",
+        "topic reorder": "channel",
+        "topic list": "channel",
+        "topic get": "channel",
+        "topic change": "channel",
+        "topic set": "channel",
+        "topic remove": "channel",
+        "topic lock": "channel",
+        "topic unlock": "channel",
+        "topic restore": "channel",
+        "topic refresh": "channel",
+        "topic undo": "channel",
+        "topic redo": "channel",
+        "topic swap": "channel",
+        "topic save": "channel",
+        "topic default": "channel",
+        "topic separator": "channel",
+        "url stats": "channel",
+        "url last": "channel",
+        "unix errno": "private",
+        "unix progstats": "private",
+        "unix pid": "private",
+        "unix crypt": "private",
+        "unix spell": "private",
+        "unix fortune": "private",
+        "unix wtf": "private",
+        "unix ping": "private",
+        "unix ping6": "private",
+        "unix sysuptime": "private",
+        "unix sysuname": "private",
+        "unix call": "private",
+        "unix shell": "private",
+        "utilities ignore": "private",
+        "utilities success": "private",
+        "utilities last": "private",
+        "utilities echo": "private",
+        "utilities shuffle": "private",
+        "utilities sort": "private",
+        "utilities sample": "private",
+        "utilities countargs": "private",
+        "utilities apply": "private",
+        "utilities let": "private",
+        "web headers": "private",
+        "web location": "private",
+        "web doctype": "private",
+        "web size": "private",
+        "web title": "private",
+        "web urlquote": "private",
+        "web urlunquote": "private",
+        "web fetch": "private",
+        "plugindownloader repolist": "private",
+        "plugindownloader install": "private",
+        "plugindownloader info": "private",
+        "dunno add": "channel",
+        "dunno remove": "channel",
+        "dunno search": "channel",
+        "dunno get": "channel",
+        "dunno change": "channel",
+        "dunno stats": "channel",
+        "lart add": "channel",
+        "lart remove": "channel",
+        "lart search": "channel",
+        "lart get": "channel",
+        "lart change": "channel",
+        "lart stats": "channel",
+        "praise add": "channel",
+        "praise remove": "channel",
+        "praise search": "channel",
+        "praise get": "channel",
+        "praise change": "channel",
+        "praise stats": "channel",
+        "quote add": "channel",
+        "quote remove": "channel",
+        "quote search": "channel",
+        "quote get": "channel",
+        "quote change": "channel",
+        "quote stats": "channel"
+    }
+}
