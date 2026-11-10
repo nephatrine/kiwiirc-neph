@@ -156,6 +156,12 @@ describe('ThemeManager theme loading', () => {
         expect(ThemeManager.themeUrl({ url: 'static/themes/dark?cb=1' })).toBe('static/themes/dark/theme.css?cb=1');
     });
 
+    it('treats a theme named Custom like any other theme', () => {
+        makeLoaded({ name: 'Custom', url: 'static/themes/custom' });
+
+        expect(lastLink().getAttribute('href')).toBe('static/themes/custom/theme.css');
+    });
+
     it('finds themes by name case-insensitively', () => {
         const theme = makeTheme('Neutral');
         const { manager } = makeLoaded(theme);
@@ -203,17 +209,6 @@ describe('ThemeManager theme loading', () => {
             expect.objectContaining({ name: 'Broken' }),
             expect.objectContaining({ name: 'Neutral' })
         );
-    });
-
-    it('retries custom themes by appending /theme.css', () => {
-        const custom = { name: 'custom', url: 'static/themes/mine' };
-        const { manager } = makeLoaded(custom);
-        lastLink().onload();
-
-        manager.setTheme({ name: 'custom', url: 'static/themes/mine2' });
-        lastLink().onerror();
-
-        expect(manager.findTheme('custom').url).toBe('static/themes/mine2/theme.css');
     });
 
     it('keeps and caches the css vars element', () => {
@@ -322,14 +317,5 @@ describe('ThemeManager theme loading', () => {
         manager.reload();
 
         expect(manager.setTheme).not.toHaveBeenCalled();
-    });
-
-    it('setCustomThemeUrl bails when no custom theme exists', () => {
-        const { manager } = makeLoaded({ name: 'Neutral', url: 'static/themes/first' });
-        const before = document.head.querySelectorAll('link').length;
-
-        manager.setCustomThemeUrl('static/themes/other/theme.css');
-
-        expect(document.head.querySelectorAll('link').length).toBe(before);
     });
 });

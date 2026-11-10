@@ -98,7 +98,6 @@ export default class ThemeManager {
         // Guess mode immediately to provide early signal for embeds/scrollbars
         this.guessMode(nextTheme);
 
-        const nextNameLower = nextTheme.name.toLowerCase();
         const themeElement = document.createElement('link');
 
         // Handle Google Fonts if the theme specifies them
@@ -152,32 +151,14 @@ export default class ThemeManager {
                 this.loadingElement = null;
             }
 
-            if (nextNameLower === 'custom' && !/\/theme\.css(\?|$)/.test(nextTheme.url)) {
-                // For custom themes try appending /theme.css
-                this.setCustomThemeUrl(ThemeManager.themeUrl(nextTheme));
-                return;
-            }
-
             this.state.$emit('theme.failed', nextTheme, this.activeTheme);
         };
 
         this.loadingElement = themeElement;
         themeElement.rel = 'stylesheet';
         themeElement.type = 'text/css';
-        themeElement.href = (nextNameLower !== 'custom')
-            ? ThemeManager.themeUrl(nextTheme)
-            : nextTheme.url;
+        themeElement.href = ThemeManager.themeUrl(nextTheme);
         document.head.appendChild(themeElement);
-    }
-
-    setCustomThemeUrl(url) {
-        const theme = this.findTheme('custom');
-        if (!theme) {
-            return;
-        }
-
-        theme.url = url;
-        this.setTheme(theme);
     }
 
     reload() {

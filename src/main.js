@@ -20,6 +20,7 @@ import { initEmojiPacks as initEmojiPackStore } from '@/libs/EmojiPackStore';
 import getState from '@/libs/state';
 import { installGlobalErrorHandlers } from '@/libs/GlobalErrorHandler';
 import ThemeManager from '@/libs/ThemeManager';
+import { mergeInstalledThemes } from '@/libs/InstalledThemes';
 import InputHandler from '@/libs/InputHandler';
 import IPC from '@/libs/IPC';
 import desktop from '@/libs/desktop';
@@ -601,7 +602,16 @@ async function initState() {
     initChatLogs(getState());
 }
 
-function initThemes() {
+async function initThemes() {
+    if (desktop.isDesktop() && desktop.themes.isAvailable()) {
+        try {
+            const installed = await desktop.themes.list();
+            mergeInstalledThemes(getState(), installed);
+        } catch (err) {
+            log.error('Unable to load installed themes: ' + (err.stack || err));
+        }
+    }
+
     let argTheme = getQueryVariable('theme');
     let themeMgr = ThemeManager.instance(getState(), argTheme);
     api.setThemeManager(themeMgr);

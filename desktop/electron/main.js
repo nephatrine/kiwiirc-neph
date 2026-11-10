@@ -15,6 +15,13 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { ensureUserConfig, loadDesktopConfig } = require('./desktop-config');
+const {
+    THEME_SCHEME,
+    installTheme,
+    listThemes,
+    resolveThemeFile,
+    uninstallTheme,
+} = require('./themes');
 const httpService = require('./http');
 const { handleMediaRequest } = require('./media');
 const { MEDIA_SCHEME } = require('./media-url');
@@ -53,6 +60,16 @@ protocol.registerSchemesAsPrivileged([
     },
     {
         scheme: MEDIA_SCHEME,
+        privileges: {
+            standard: true,
+            secure: true,
+            supportFetchAPI: true,
+            corsEnabled: true,
+            stream: true,
+        },
+    },
+    {
+        scheme: THEME_SCHEME,
         privileges: {
             standard: true,
             secure: true,
@@ -101,8 +118,10 @@ if (!app.requestSingleInstanceLock()) {
             console.error('Failed to initialize chat log store:', err);
         }
         registerDesktopConfigIpc();
+        registerThemeIpc();
         buildApplicationMenu();
         await registerAppProtocol();
+        registerThemeProtocol();
         registerMediaProtocol();
         registerEmbedRequestHeaders();
         registerTwitchFramePolicy();
@@ -299,6 +318,32 @@ function registerDesktopConfigIpc() {
     });
 }
 
+function registerThemeIpc() {
+    ipcMain.handle('kiwi:themes-list', () => (
+        listThemes(app.getPath('userData'))
+    ));
+
+    ipcMain.handle('kiwi:themes-install', async() => {
+        const result = await dialog.showOpenDialog(mainWindow, {
+            properties: ['openFile'],
+            filters: [{ name: 'Theme Archive', extensions: ['zip'] }],
+        });
+        if (result.canceled || !result.filePaths.length) {
+            return { canceled: true };
+        }
+
+        const theme = await installTheme(
+            app.getPath('userData'),
+            result.filePaths[0]
+        );
+        return { canceled: false, theme };
+    });
+
+    ipcMain.handle('kiwi:themes-uninstall', (event, id) => (
+        uninstallTheme(app.getPath('userData'), id)
+    ));
+}
+
 function requireChatLogStore() {
     if (!chatLogStore) {
         throw new Error('chat logging is unavailable');
@@ -488,6 +533,32 @@ async function registerAppProtocol() {
             if (!path.extname(filePath)) {
                 return net.fetch(pathToFileURL(path.join(root, 'index.html')).toString());
             }
+            return new Response('Not found', { status: 404 });
+        }
+    });
+}
+
+function registerThemeProtocol() {
+    protocol.handle(THEME_SCHEME, async(request) => {
+        try {
+            const resolved = await resolveThemeFile(
+                app.getPath('userData'),
+                request.url
+            );
+            if (!resolved) {
+                return new Response('Not found', { status: 404 });
+            }
+
+            const response = await net.fetch(
+                pathToFileURL(resolved.filePath).toString()
+            );
+            const headers = new Headers(response.headers);
+            headers.set('Content-Type', resolved.mimeType);
+            return new Response(response.body, {
+                status: response.status,
+                headers,
+            });
+        } catch (err) {
             return new Response('Not found', { status: 404 });
         }
     });

@@ -27,6 +27,12 @@ import {
     isAvailable as isProfileTransferAvailable,
     openFolder as openProfileFolder
 } from './Profile';
+import {
+    install as installTheme,
+    isAvailable as isThemeInstallAvailable,
+    list as listThemes,
+    uninstall as uninstallTheme
+} from './Themes';
 
 const desktop = {
     isDesktop,
@@ -57,6 +63,12 @@ const desktop = {
         backup: backupProfile,
         openFolder: openProfileFolder,
         isAvailable: isProfileTransferAvailable,
+    },
+    themes: {
+        list: listThemes,
+        install: installTheme,
+        uninstall: uninstallTheme,
+        isAvailable: isThemeInstallAvailable,
     },
 };
 

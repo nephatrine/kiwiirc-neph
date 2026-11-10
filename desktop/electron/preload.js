@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
         passwordStorage: true,
         profileTransfer: true,
         chatLogs: true,
+        themes: true,
         dcc: false,
     },
     http: {
@@ -51,6 +52,11 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
         import: () => ipcRenderer.invoke('kiwi:profile-import'),
         backup: () => ipcRenderer.invoke('kiwi:profile-backup'),
         openFolder: () => ipcRenderer.invoke('kiwi:profile-open-folder'),
+    },
+    themes: {
+        list: () => ipcRenderer.invoke('kiwi:themes-list'),
+        install: () => ipcRenderer.invoke('kiwi:themes-install'),
+        uninstall: (id) => ipcRenderer.invoke('kiwi:themes-uninstall', id),
     },
     logs: {
         append: (entries) => ipcRenderer.invoke('kiwi:logs-append', entries),
