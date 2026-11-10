@@ -82,17 +82,6 @@ export const configTemplates = {
         startupScreen: 'customServer',
         // Where to find the kiwi server
         kiwiServer: '/webirc/kiwiirc/',
-        // If active, all connections will be routed via this BNC server. Network settings
-        // will be read and updated to the BNC as they are changed.
-        bnc: {
-            active: false,
-            server: '',
-            port: 6667,
-            tls: false,
-            path: '',
-            username: '',
-            password: '',
-        },
         warnOnExit: true,
         quitMessage: 'Page closed',
         // Default buffer settings. Capability-dependent values (desktop

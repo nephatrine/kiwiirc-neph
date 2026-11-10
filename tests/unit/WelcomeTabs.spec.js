@@ -497,14 +497,6 @@ describe('Welcome account tabs', () => {
         });
     });
 
-    it('keeps the single-form bouncer mode untouched', async() => {
-        s.settings.startupOptions = { bouncer: true };
-        await comp.$nextTick();
-        expect(comp.useTabs).toBe(false);
-        expect(comp.$el.querySelector('.kiwi-welcome-advanced-toggle')).toBe(null);
-        expect(inputByLabel('channel')).not.toBeUndefined();
-    });
-
     it('shows the register nick only with custom names under Advanced', async() => {
         comp.serverInfo = CUSTOM_REG_INFO;
         comp.activeTab = 'register';

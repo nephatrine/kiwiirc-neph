@@ -350,7 +350,6 @@ import {
     withinLimit
 } from '@/helpers/LoginFields';
 import Logger from '@/libs/Logger';
-import BouncerProvider from '@/libs/BouncerProvider';
 import { probeServerCaps, createProbeTransport } from '@/libs/ServerProbe';
 import { parseAccountRegistrationCap } from '@/libs/accountRegistration';
 import { passwordScore } from '@/helpers/PasswordStrength';
@@ -422,11 +421,9 @@ export default {
         startupOptions() {
             return this.$state.settings.startupOptions;
         },
-        // Bouncer mode (a network added through a bouncer) keeps the
-        // single login form; the tabbed Anonymous / Account / Register flow
-        // is for direct connections only.
+        // Anonymous / Account / Register are always independent login paths.
         useTabs() {
-            return !this.$state.settings.startupOptions.bouncer;
+            return true;
         },
         // The fields belonging to the active tab (tabbed mode only). The
         // object itself is reactive, so v-model writes straight into it.
@@ -535,7 +532,7 @@ export default {
             return !parseAccountRegistrationCap(value).customAccountName;
         },
         showRegisterTab() {
-            return !!this.probeRegInfo && !this.$state.settings.startupOptions.bouncer;
+            return !!this.probeRegInfo;
         },
         registerPasswordHint() {
             const info = this.probeRegInfo;
@@ -915,22 +912,6 @@ export default {
             window.sessionStorage.removeItem('kiwi-logout');
         }
 
-        if (options.bouncer) {
-            this.toggablePass = false;
-            this.showPass = true;
-            this.showChannel = false;
-            this.connectWithoutChannel = true;
-
-            let bouncer = new BouncerProvider(this.$state);
-            bouncer.enable(
-                connectOptions.hostname,
-                connectOptions.port,
-                connectOptions.tls,
-                connectOptions.direct,
-                connectOptions.direct_path
-            );
-        }
-
         const autoReady = this.useTabs ? this.formReady : this.readyToStart;
         if (!wasLogout && options.autoConnect && autoReady) {
             this.startUp(this.useTabs ? this.activeTab : 'login');
@@ -1024,7 +1005,7 @@ export default {
         // the form can match reality (hide SASL fields, require accounts).
         // Strictly additive: any failure leaves the configured defaults.
         maybeProbeServer(connectOptions, options) {
-            if (options.probeServerCaps !== true || options.bouncer) {
+            if (options.probeServerCaps !== true) {
                 return;
             }
             if (!connectOptions.hostname) {
@@ -1198,16 +1179,10 @@ export default {
             // the user has just put in place
             net.connection.nick = modeNick;
             net.connection.account = loginAccount;
-            if (options.bouncer) {
-                // Bouncer mode uses server PASS
-                net.connection.password = `${modeNick}:${fields.password}`;
-                net.password = '';
-            } else {
-                // The server password (PASS) is a separate secret from the
-                // SASL login password.
-                net.connection.password = fields.serverPassword || '';
-                net.password = password;
-            }
+            // The server password (PASS) is a separate secret from the
+            // SASL login password.
+            net.connection.password = fields.serverPassword || '';
+            net.password = password;
 
             if (fields.username) {
                 net.username = fields.username;
@@ -1240,7 +1215,7 @@ export default {
             });
 
             // switch to server buffer if no channels are joined
-            if (!options.bouncer && !hasSwitchedActiveBuffer) {
+            if (!hasSwitchedActiveBuffer) {
                 this.$state.setActiveBuffer(net.id, net.serverBuffer().name);
             }
 

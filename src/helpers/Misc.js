@@ -807,10 +807,6 @@ export function parsePresetServer(input) {
 
     if (conn.params?.has('type')) {
         let type = conn.params.get('type');
-        if (type === 'znc') {
-            type = 'bnc';
-        }
-
         if (['irc', 'bnc'].includes(type)) {
             conn.type = type;
         }

@@ -258,18 +258,16 @@ export default {
 
             this.$state.persistence.watchStateForChanges();
 
-            if (this.$state.settings.startupOptions.bouncer) {
-                let controllerNet = this.$state.networks.find((n) => n.is_bnc);
-                if (controllerNet) {
-                    let bouncer = new BouncerProvider(this.$state);
-                    bouncer.enable(
-                        controllerNet.connection.server,
-                        controllerNet.connection.port,
-                        controllerNet.connection.tls,
-                        controllerNet.connection.direct,
-                        controllerNet.connection.path,
-                    );
-                }
+            let controllerNet = this.$state.networks.find((n) => n.is_bnc);
+            if (controllerNet) {
+                let bouncer = new BouncerProvider(this.$state);
+                bouncer.enable(
+                    controllerNet.connection.server,
+                    controllerNet.connection.port,
+                    controllerNet.connection.tls,
+                    controllerNet.connection.direct,
+                    controllerNet.connection.path,
+                );
             }
             // force restricted: false as users need access
             // to network settings to add a network

@@ -155,18 +155,6 @@ describe('Remember Password', () => {
             expect(comp.layoutRememberPasswords).toBe(false);
         });
 
-        it('keeps the flat single-form rule outside tabbed mode', async() => {
-            // Replacing the object: adding a bouncer key to the mounted
-            // object would not be reactive under Vue 2.
-            s.settings.startupOptions = { bouncer: true };
-            await comp.$nextTick();
-            expect(comp.useTabs).toBe(false);
-            comp.showPass = true;
-            comp.toggablePass = false;
-            await comp.$nextTick();
-            expect(comp.rememberPasswordDisabled).toBe(false);
-        });
-
         it('writes the preference when the login starts', () => {
             comp.tabs.account.account = 'TestAccount';
             comp.tabs.account.password = 'secret';

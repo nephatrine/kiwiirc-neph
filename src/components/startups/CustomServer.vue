@@ -707,10 +707,6 @@ export default {
             this.connectWithoutChannel = true;
         }
 
-        if (options.bouncer) {
-            this.connection.type = 'bnc';
-        }
-
         let wasLogout = window.sessionStorage.getItem('kiwi-logout');
         if (wasLogout) {
             window.sessionStorage.removeItem('kiwi-logout');
@@ -1172,7 +1168,7 @@ export default {
                 tls: endpoint.tls,
                 direct: endpoint.direct,
                 path: endpoint.direct_path,
-                type: options.bouncer ? 'bnc' : 'irc',
+                type: 'irc',
                 channels: options.channel || '',
             });
         },

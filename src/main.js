@@ -661,8 +661,6 @@ function startApp() {
         welcome: startupWelcome,
         customServer: startupCustomServer,
         bouncer: startupBouncer,
-        kiwiBnc: startupBouncer,
-        znc: startupBouncer,
         personal: startupPersonal,
     };
     let extraStartupScreens = state.getStartups();
