@@ -107,6 +107,8 @@ and this project adheres to
 
 ### Changed
 
+- **File Uploads**: Upload results are appended to the originating buffer's
+  chat input instead of being sent immediately, preserving any existing draft.
 - **Desktop**: `allowRegisterProtocolHandler` now defaults to `true` for desktop
   installations. The default IRC client action still requires Personal startup
   and a configured gateway.

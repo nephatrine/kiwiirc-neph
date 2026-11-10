@@ -245,6 +245,7 @@
 'kiwi public';
 
 import * as Misc from '@/helpers/Misc';
+import { escapeHtml } from '@/helpers/Utils';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import * as EmojiProvider from '@/libs/EmojiProvider';
 import * as Emoji from '@/helpers/Emoji';
@@ -708,7 +709,13 @@ export default {
             if (!files.length || !this.shouldShowFileUpload) {
                 return;
             }
-            this.uploadQueue = this.uploadQueue.concat(files);
+
+            // Keep the upload in the buffer where it was started, even if the
+            // user switches buffers before a queued file finishes uploading.
+            const buffer = this.buffer;
+            const network = this.fileUploadNetwork;
+            const queued = files.map((file) => ({ file, buffer, network }));
+            this.uploadQueue = this.uploadQueue.concat(queued);
             if (this.uploading) {
                 return;
             }
@@ -721,15 +728,15 @@ export default {
                     this.uploading = false;
                     return undefined;
                 }
-                let file = this.uploadQueue.shift();
-                return this.uploadOne(file).then(next);
+                let item = this.uploadQueue.shift();
+                return this.uploadOne(item.file, item.buffer, item.network).then(next);
             };
             return next();
         },
-        async uploadOne(file) {
-            let network = this.fileUploadNetwork;
+        async uploadOne(file, uploadBuffer = this.buffer, uploadNetwork = this.fileUploadNetwork) {
+            let network = uploadNetwork;
             let service = effectiveService(this.$state, network);
-            let buffer = this.buffer;
+            let buffer = uploadBuffer;
             let canSend = service && buffer && network && network.state === 'connected'
                 && network.ircClient
                 && (buffer.isChannel() || buffer.isQuery());
@@ -749,10 +756,33 @@ export default {
                     network,
                     state: this.$state,
                 });
-                buffer.say(url);
+                this.appendUploadUrl(buffer, url);
             } catch (err) {
                 this.showUploadError(file);
             }
+        },
+        appendUploadUrl(buffer, url) {
+            if (!buffer || !url) {
+                return;
+            }
+
+            const sharedInput = this.$state.setting('buffers.shared_input');
+            const isActiveBuffer = this.buffer === buffer;
+            const input = this.$refs.input;
+
+            if ((sharedInput || isActiveBuffer) && input) {
+                const raw = input.getRawText();
+                const prefix = raw && !/\s$/.test(raw) ? ' ' : '';
+                input.appendText(prefix + url);
+                return;
+            }
+
+            const current = buffer.current_input || '';
+            const container = document.createElement('div');
+            container.innerHTML = current;
+            const text = container.textContent || '';
+            const prefix = text && !/\s$/.test(text) ? ' ' : '';
+            buffer.current_input = current + (prefix ? ' ' : '') + escapeHtml(url);
         },
         showUploadError(file, key = 'fileupload_failed', params = {}) {
             if (!this.buffer) {

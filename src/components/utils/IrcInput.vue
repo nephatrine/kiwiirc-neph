@@ -542,6 +542,28 @@ export default Vue.component('irc-input', {
             this.focus();
         },
 
+        // Append text at the end without replacing the current draft
+        appendText(text) {
+            const editor = this.$refs.editor;
+            if (!editor) {
+                return;
+            }
+
+            editor.focus();
+            const range = document.createRange();
+            range.selectNodeContents(editor);
+            range.collapse(false);
+
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+
+            document.execCommand('insertText', false, text);
+            this.updateValueProps();
+            this.selectionToEnd();
+            this.maybeEmitInput();
+        },
+
         // Replace the word at the current position with another
         setCurrentWord(text, keepPosition, toPosition) {
             let el = this.current_focus_node;
