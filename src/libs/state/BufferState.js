@@ -1521,12 +1521,23 @@ export default class BufferState {
             }
         }
 
+        let type = opts.type || 'privmsg';
+        let hasEcho = network.hasCap('echo-message');
+        let hasLabel = network.hasCap('labeled-response');
+        let canConfirm = ['privmsg', 'action', 'notice'].includes(type) &&
+            (hasEcho || hasLabel);
+        if (canConfirm && hasLabel && !tags.label) {
+            tags.label = Misc.generateLabel();
+        }
+
         let newMessage = {
             time: Date.now(),
             nick: network.nick,
             message: message,
+            raw_text: message,
             tags: tags,
-            type: opts.type || 'privmsg',
+            type,
+            is_pending: canConfirm,
             is_rerouted: !!tags['+channel-context'],
         };
 
@@ -1538,7 +1549,7 @@ export default class BufferState {
             notice: 'notice',
             tagmsg: 'tagmsg',
         };
-        let fnName = fnNames[opts.type] || 'say';
+        let fnName = fnNames[type] || 'say';
         network.ircClient[fnName](outgoingTarget, message, tags);
 
         this.replying_to = null;
