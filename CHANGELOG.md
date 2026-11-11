@@ -117,10 +117,14 @@ and this project adheres to
 
 ### Changed
 
-- **Raw Buffer**: Raw protocol lines now bypass message formatting, URL, channel,
-  user, emoji, and preview processing, and use a compact monospace row instead
-  of the normal message layouts. Timestamps, `[S]`/`[C]` prefixes, and visible
-  control glyphs are preserved.
+- **Raw Buffer**: Raw protocol lines now bypass message formatting, URL,
+  channel, user, emoji, and preview processing, and use a compact monospace row
+  instead of the normal message layouts. Timestamps, `[S]`/`[C]` prefixes, and
+  visible control glyphs are preserved.
+- **WHO Polling**: The away-status fallback now runs every three minutes instead
+  of every 30 seconds and skips channels with more than 100 users. A stale loop
+  also stops when its buffer has been removed and replaced by another buffer
+  with the same name.
 - **Chat Logs**: Jumping to a searched or linked message now briefly highlights
   the target message so it is easy to find in the buffer.
 - **History**: Hidden-only chathistory batches now advance a separate cursor and

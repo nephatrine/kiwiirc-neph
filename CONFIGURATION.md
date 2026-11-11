@@ -417,15 +417,15 @@ overrides them.
 
 ### History and Scrolling
 
-| Key                     | Default    | Description                                                              |
-| ----------------------- | ---------- | ------------------------------------------------------------------------ |
-| `scrollback_size`       | `250`      | Normal buffer scrollback. Raw server buffers and desktop default to 500. |
-| `auto_request_history`  | `all`      | Request history for `all`, `channels`, `queries`, or `none`.             |
-| `prompt_leave`          | `channels` | Prompt before leaving `all`, `channels`, `queries`, or `none`.           |
-| `who_loop`              | `true`     | Periodically refresh user information with WHO.                          |
-| `shared_input`          | `false`    | Share input across buffers.                                              |
-| `block_pms`             | `false`    | Block private messages from unknown users.                               |
-| `warn_expected_command` | `true`     | Warn when a slash command is preceded by whitespace.                     |
+| Key                     | Default    | Description                                                                                                                        |
+| ----------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `scrollback_size`       | `250`      | Normal buffer scrollback. Raw server buffers and desktop default to 500.                                                           |
+| `auto_request_history`  | `all`      | Request history for `all`, `channels`, `queries`, or `none`.                                                                       |
+| `prompt_leave`          | `channels` | Prompt before leaving `all`, `channels`, `queries`, or `none`.                                                                     |
+| `who_loop`              | `true`     | Refresh away status with WHO every three minutes when `away-notify` is unavailable. Channels with more than 100 users are skipped. |
+| `shared_input`          | `false`    | Share input across buffers.                                                                                                        |
+| `block_pms`             | `false`    | Block private messages from unknown users.                                                                                         |
+| `warn_expected_command` | `true`     | Warn when a slash command is preceded by whitespace.                                                                               |
 
 ### Notifications and Sounds
 

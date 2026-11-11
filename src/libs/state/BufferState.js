@@ -17,6 +17,8 @@ const HISTORY_RETRY_BASE_MS = 3000;
 const HISTORY_RETRY_MAX_MS = 12000;
 const HISTORY_HIDDEN_BATCH_LIMIT = 20;
 const SCROLL_TARGET_TIMEOUT_MS = 5000;
+const WHO_LOOP_INTERVAL_MS = 180000;
+const WHO_LOOP_MAX_USERS = 100;
 const READ_MARKER_THROTTLE_MS = 1000;
 const TRIM_GRACE_MS = 30000;
 const READ_MARKER_CONFIRM_TIMEOUT_MS = 15000;
@@ -2052,7 +2054,7 @@ function createMessageBatch(bufferState) {
     return batchedAdd(addSingleMessage, addMultipleMessages, 4);
 }
 
-// Update our user list status every 30seconds to get each users current away status
+// Update our user list status every 3 minutes to get each users current away status
 function maybeStartWhoLoop(bufferState) {
     let network = bufferState.state.getNetwork(bufferState.networkid);
 
@@ -2075,7 +2077,7 @@ function maybeStartWhoLoop(bufferState) {
     }
 
     function nextLoop() {
-        setTimeout(updateWhoStatusLoop, 30000);
+        setTimeout(updateWhoStatusLoop, WHO_LOOP_INTERVAL_MS);
     }
 
     function updateWhoStatusLoop() {
@@ -2086,8 +2088,9 @@ function maybeStartWhoLoop(bufferState) {
             return;
         }
 
-        // Make sure the buffer still exists
-        if (!network.bufferByName(bufferState.name)) {
+        // Make sure this exact buffer still exists. A recreated buffer with the same
+        // name must not be polled by the old buffer's loop.
+        if (network.bufferByName(bufferState.name) !== bufferState) {
             return;
         }
 
@@ -2095,8 +2098,10 @@ function maybeStartWhoLoop(bufferState) {
         let canWho = bufferState.isQuery() || bufferState.joined;
         let hasAwayNotify = network.hasCap('away-notify');
         let networkConnected = network.state === 'connected';
+        let tooManyUsers = bufferState.isChannel() &&
+            Object.keys(bufferState.users).length > WHO_LOOP_MAX_USERS;
 
-        if (whoLoop && networkConnected && canWho && !hasAwayNotify) {
+        if (whoLoop && networkConnected && canWho && !hasAwayNotify && !tooManyUsers) {
             network.ircClient.who(bufferState.name);
         }
         nextLoop();

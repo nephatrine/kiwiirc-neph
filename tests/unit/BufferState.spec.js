@@ -217,6 +217,75 @@ describe('channel topics', () => {
     });
 });
 
+describe('WHO loop', () => {
+    let s;
+    let network;
+
+    beforeEach(() => {
+        jest.useFakeTimers();
+        s = state.create();
+        network = s.addNetwork('TestNetwork', 'TestNick', {
+            server: 'irc.example.com',
+        });
+        network.state = 'connected';
+        network.ircClient.who = jest.fn();
+    });
+
+    afterEach(() => {
+        jest.useRealTimers();
+        s.$destroy();
+    });
+
+    it('polls a small channel once every three minutes', () => {
+        const channel = s.addBuffer(network.id, '#chan');
+        channel.joined = true;
+
+        jest.advanceTimersByTime(30000);
+        expect(network.ircClient.who).not.toHaveBeenCalled();
+
+        jest.advanceTimersByTime(150000);
+        expect(network.ircClient.who).toHaveBeenCalledWith('#chan');
+    });
+
+    it('does not poll a channel with more than 100 users', () => {
+        const channel = s.addBuffer(network.id, '#chan');
+        channel.joined = true;
+        for (let i = 0; i < 101; i += 1) {
+            s.addUserToBuffer(channel, { nick: `user${i}` });
+        }
+
+        jest.advanceTimersByTime(180000);
+        expect(network.ircClient.who).not.toHaveBeenCalled();
+
+        jest.advanceTimersByTime(180000);
+        expect(network.ircClient.who).not.toHaveBeenCalled();
+    });
+
+    it('still polls a channel with exactly 100 users', () => {
+        const channel = s.addBuffer(network.id, '#chan');
+        channel.joined = true;
+        for (let i = 0; i < 100; i += 1) {
+            s.addUserToBuffer(channel, { nick: `user${i}` });
+        }
+
+        jest.advanceTimersByTime(180000);
+        expect(network.ircClient.who).toHaveBeenCalledWith('#chan');
+    });
+
+    it('does not let a removed buffer poll its replacement', () => {
+        const oldChannel = s.addBuffer(network.id, '#chan');
+        oldChannel.joined = true;
+        s.removeBuffer(oldChannel);
+
+        const newChannel = s.addBuffer(network.id, '#chan');
+        newChannel.joined = true;
+
+        jest.advanceTimersByTime(180000);
+        expect(network.ircClient.who).toHaveBeenCalledTimes(1);
+        expect(network.ircClient.who).toHaveBeenCalledWith('#chan');
+    });
+});
+
 describe('query user status', () => {
     it('does not WHO a query partner on Twitch', () => {
         let s = state.create();
