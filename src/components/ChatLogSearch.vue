@@ -14,7 +14,7 @@
                     </button>
                 </div>
 
-                <form class="kiwi-logsearch-form" @submit.prevent="search(true)">
+                <form class="u-form kiwi-logsearch-form" @submit.prevent="search(true)">
                     <input
                         ref="queryInput"
                         v-model="query"
@@ -112,11 +112,13 @@
                         class="kiwi-logsearch-result"
                         :class="{
                             'kiwi-logsearch-result-redacted': result.is_redacted,
-                            'kiwi-logsearch-result--unloaded': isServerResultUnloaded(result),
+                            'kiwi-logsearch-result--unloaded': isResultUnloaded(result),
                             'kiwi-logsearch-result--loading': isResultLoading(result),
                         }"
-                        :title="isServerResultUnloaded(result) ?
-                            $t('chatlogs_result_load_hint') : ''"
+                        :title="isResultUnloaded(result) ?
+                            $t('chatlogs_result_load_hint') :
+                            (isResultOpenLog(result) ?
+                                $t('chatlogs_result_open_log_hint') : '')"
                         @click="openResult(result)"
                     >
                         <span class="kiwi-logsearch-meta">
@@ -134,7 +136,13 @@
                             {{ $t('chatlogs_loading_context') }}
                         </span>
                         <span
-                            v-else-if="isServerResultUnloaded(result)"
+                            v-else-if="isResultOpenLog(result)"
+                            class="kiwi-logsearch-result-status"
+                        >
+                            {{ $t('chatlogs_open_log') }}
+                        </span>
+                        <span
+                            v-else-if="isResultUnloaded(result)"
                             class="kiwi-logsearch-result-status"
                         >
                             {{ $t('chatlogs_result_not_loaded') }}
@@ -192,6 +200,7 @@ export default {
             results: [],
             loadedResultIds: {},
             loadingResultIds: {},
+            openLogResultIds: {},
             loading: false,
             hasMore: false,
             offset: 0,
@@ -304,6 +313,9 @@ export default {
         open(options = {}) {
             this.visible = true;
             this.error = '';
+            if (typeof options.query === 'string') {
+                this.query = options.query;
+            }
 
             const available = this.availableSources;
             let source = options.source;
@@ -358,6 +370,7 @@ export default {
             this.results = [];
             this.loadedResultIds = {};
             this.loadingResultIds = {};
+            this.openLogResultIds = {};
             this.hasMore = false;
             this.offset = 0;
             this.serverBefore = 0;
@@ -407,19 +420,22 @@ export default {
             }
             return `local:${result.id}`;
         },
-        isServerResultUnloaded(result) {
+        isResultUnloaded(result) {
             return !!(result &&
-                result.source === MessageSearch.SOURCE_SERVER &&
-                !this.loadedResultIds[result.id]);
+                !this.loadedResultIds[result.id] &&
+                !this.openLogResultIds[result.id]);
+        },
+        isResultOpenLog(result) {
+            return !!(result &&
+                result.source === MessageSearch.SOURCE_LOCAL &&
+                this.openLogResultIds[result.id]);
         },
         isResultLoading(result) {
             return !!(result && this.loadingResultIds[result.id]);
         },
         syncLoadedResults() {
             this.results.forEach((result) => {
-                if (result.source !== MessageSearch.SOURCE_SERVER ||
-                    this.loadedResultIds[result.id]
-                ) {
+                if (this.loadedResultIds[result.id]) {
                     return;
                 }
                 const buffer = this.$state.getBufferByName(
@@ -428,29 +444,60 @@ export default {
                 );
                 if (buffer && buffer.findLogResultMessage(result)) {
                     this.$set(this.loadedResultIds, result.id, true);
+                    if (this.openLogResultIds[result.id]) {
+                        this.$set(this.openLogResultIds, result.id, false);
+                    }
                 }
             });
         },
         loadResultContext(result) {
             if (!result || this.loadingResultIds[result.id]) {
-                return;
+                return Promise.resolve();
             }
 
             this.$set(this.loadingResultIds, result.id, true);
             this.error = '';
 
-            MessageSearch.loadServerResult(this.$state, result).then((loaded) => {
-                this.$set(this.loadingResultIds, result.id, false);
-                if (!loaded) {
+            return MessageSearch.loadResultContext(this.$state, result)
+                .then((outcome) => {
+                    this.$set(this.loadingResultIds, result.id, false);
+                    if (outcome === 'local') {
+                        this.$set(this.openLogResultIds, result.id, true);
+                        return;
+                    }
+                    if (outcome !== 'loaded') {
+                        this.error = this.$t('chatlogs_jump_failed');
+                        return;
+                    }
+                    this.$set(this.loadedResultIds, result.id, true);
+                    this.syncLoadedResults();
+                })
+                .catch(() => {
+                    this.$set(this.loadingResultIds, result.id, false);
                     this.error = this.$t('chatlogs_jump_failed');
-                    return;
-                }
-                this.$set(this.loadedResultIds, result.id, true);
-                this.syncLoadedResults();
-            }).catch(() => {
-                this.$set(this.loadingResultIds, result.id, false);
-                this.error = this.$t('chatlogs_jump_failed');
-            });
+                });
+        },
+        openLogResult(result) {
+            if (!result || this.loadingResultIds[result.id]) {
+                return Promise.resolve();
+            }
+
+            this.$set(this.loadingResultIds, result.id, true);
+            this.error = '';
+
+            return MessageSearch.openLocalContext(this.$state, result)
+                .then((opened) => {
+                    this.$set(this.loadingResultIds, result.id, false);
+                    if (!opened) {
+                        this.error = this.$t('chatlogs_jump_failed');
+                        return;
+                    }
+                    this.close();
+                })
+                .catch(() => {
+                    this.$set(this.loadingResultIds, result.id, false);
+                    this.error = this.$t('chatlogs_jump_failed');
+                });
         },
         async search(reset) {
             if (this.loading && !reset) {
@@ -549,7 +596,14 @@ export default {
             }
         },
         openResult(result) {
-            if (this.isServerResultUnloaded(result)) {
+            if (this.isResultLoading(result)) {
+                return;
+            }
+            if (this.isResultOpenLog(result)) {
+                this.openLogResult(result);
+                return;
+            }
+            if (this.isResultUnloaded(result)) {
                 this.loadResultContext(result);
                 return;
             }
@@ -591,8 +645,8 @@ export default {
     flex-direction: column;
     padding: 1em;
     border-radius: 6px;
-    background: var(--kiwi-app-bg, #1e1e1e);
-    color: var(--kiwi-app-fg, #eee);
+    background: var(--brand-default-bg, #1e1e1e);
+    color: var(--brand-default-fg, #eee);
     box-shadow: 0 1em 3em rgb(0 0 0 / 35%);
 }
 
@@ -627,7 +681,7 @@ export default {
     align-items: center;
     gap: 0.35em;
     padding: 0.35em 0.5em;
-    border: 1px solid rgb(127 127 127 / 35%);
+    border: 1px solid var(--brand-midtone, #3a3a3a);
     border-radius: 4px;
     white-space: nowrap;
 }
@@ -661,7 +715,7 @@ export default {
 
 .kiwi-logsearch-error {
     margin-top: 0.8em;
-    color: #e05a5a;
+    color: var(--brand-error, #e05a5a);
 }
 
 .kiwi-logsearch-status {
@@ -679,7 +733,7 @@ export default {
     width: 100%;
     padding: 0.6em 0.4em;
     border: 0;
-    border-bottom: 1px solid rgb(127 127 127 / 20%);
+    border-bottom: 1px solid var(--brand-midtone, #3a3a3a);
     background: none;
     color: inherit;
     text-align: left;
@@ -687,7 +741,7 @@ export default {
 }
 
 .kiwi-logsearch-result:hover {
-    background: rgb(127 127 127 / 12%);
+    background: var(--brand-midtone, #3a3a3a);
 }
 
 .kiwi-logsearch-meta {
@@ -720,7 +774,7 @@ export default {
 .kiwi-logsearch-redacted {
     display: block;
     margin-bottom: 0.2em;
-    color: #e05a5a;
+    color: var(--brand-error, #e05a5a);
     font-size: 0.85em;
     font-weight: 600;
 }
@@ -731,7 +785,7 @@ export default {
 }
 
 .kiwi-logsearch-result-redacted {
-    border-left: 2px solid #e05a5a;
+    border-left: 2px solid var(--brand-error, #e05a5a);
     padding-left: 0.6em;
 }
 

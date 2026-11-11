@@ -17,6 +17,8 @@ and this project adheres to
   `draft/search` or `soju.im/search`, with a source selector for server history
   or desktop local logs, server-side pagination, one channel/nick target per
   server search, and read-only server context for results in unopened buffers.
+- **Message Search**: Added `/search <terms>` for the current channel or query,
+  preferring server history and falling back to desktop local logs when needed.
 - **Autocomplete**: Nick completion now includes known relayed users from the
   current buffer, including their display names as searchable labels. Display
   names are never inserted into the message.
@@ -127,6 +129,13 @@ and this project adheres to
   with the same name.
 - **Chat Logs**: Jumping to a searched or linked message now briefly highlights
   the target message so it is easy to find in the buffer.
+- **Message Search**: The search dialog now follows the selected theme. The
+  header search button is hidden when no search source is available. The state
+  browser button now appears only on desktop layouts while a special buffer is
+  selected; it is hidden in restricted single-network mode without a source and
+  disabled otherwise. Unloaded local results use the same load flow as server
+  results; if server history cannot reach a local result, the result changes to
+  Open Log and opens a local context buffer.
 - **History**: Hidden-only chathistory batches now advance a separate cursor and
   continue loading older batches automatically. Trimming clears that cursor so
   the next request starts from the oldest remaining message.

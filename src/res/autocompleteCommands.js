@@ -28,4 +28,5 @@ export default [
     { command: 'setname', alias: [], description: 'locale_id_command_setname' },
     { command: 'roll', alias: [], description: 'locale_id_command_roll' },
     { command: 'auto', alias: [], description: 'locale_id_command_auto' },
+    { command: 'search', alias: [], description: 'locale_id_command_search' },
 ];

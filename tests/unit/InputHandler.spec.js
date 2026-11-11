@@ -1,6 +1,11 @@
+jest.mock('@/libs/desktop/ChatLogs', () => ({
+    isAvailable: jest.fn(() => false),
+}));
+
 import { TextEncoder } from 'util';
 import InputHandler from '@/libs/InputHandler';
 import GlobalApi from '@/libs/GlobalApi';
+import * as ChatLogs from '@/libs/desktop/ChatLogs';
 import * as TextFormatting from '@/helpers/TextFormatting';
 
 /* eslint-disable no-underscore-dangle */
@@ -20,6 +25,7 @@ function makeHandler() {
         $watch: jest.fn(),
         $on: jest.fn(),
         $emit: jest.fn(),
+        addMessage: jest.fn(),
     };
     return new InputHandler(state);
 }
@@ -284,6 +290,99 @@ describe('InputHandler advertised limits', () => {
                 type: 'error',
                 message: 'error_nick_too_long',
             })
+        );
+    });
+});
+
+describe('InputHandler /search', () => {
+    let tSpy;
+
+    beforeEach(() => {
+        tSpy = jest.spyOn(TextFormatting, 't').mockImplementation((key) => key);
+        ChatLogs.isAvailable.mockReturnValue(false);
+    });
+
+    afterEach(() => {
+        tSpy.mockRestore();
+    });
+
+    function makeSearchContext() {
+        const handler = makeHandler();
+        const { network, buffer } = makeContext();
+        network.id = 7;
+        network.state = 'connected';
+        return { handler, network, buffer };
+    }
+
+    it('opens server search for the current buffer', () => {
+        const { handler, network, buffer } = makeSearchContext();
+        network.ircClient.search = {
+            isSupported: () => true,
+        };
+
+        handler.processLine('/search hello there', { network, buffer });
+
+        expect(handler.state.$emit).toHaveBeenCalledWith('chatlogs.open', {
+            source: 'server',
+            networkId: 7,
+            bufferName: '#channel',
+            query: 'hello there',
+        });
+        expect(network.ircClient.raw).not.toHaveBeenCalled();
+    });
+
+    it('opens local log search when server search is unavailable', () => {
+        ChatLogs.isAvailable.mockReturnValue(true);
+        const { handler, network, buffer } = makeSearchContext();
+
+        handler.processLine('/search hello', { network, buffer });
+
+        expect(handler.state.$emit).toHaveBeenCalledWith('chatlogs.open', {
+            source: 'local',
+            networkId: 7,
+            bufferName: '#channel',
+            query: 'hello',
+        });
+        expect(network.ircClient.raw).not.toHaveBeenCalled();
+    });
+
+    it('does not send a raw SEARCH command when no source is available', () => {
+        const { handler, network, buffer } = makeSearchContext();
+
+        handler.processLine('/search hello', { network, buffer });
+
+        expect(handler.state.addMessage).toHaveBeenCalledWith(
+            buffer,
+            expect.objectContaining({
+                type: 'error',
+                message: 'chatlogs_search_unavailable',
+            })
+        );
+        expect(handler.state.$emit).not.toHaveBeenCalledWith(
+            'chatlogs.open',
+            expect.anything()
+        );
+        expect(network.ircClient.raw).not.toHaveBeenCalled();
+    });
+
+    it('requires search terms', () => {
+        const { handler, network, buffer } = makeSearchContext();
+        network.ircClient.search = {
+            isSupported: () => true,
+        };
+
+        handler.processLine('/search', { network, buffer });
+
+        expect(handler.state.addMessage).toHaveBeenCalledWith(
+            buffer,
+            expect.objectContaining({
+                type: 'error',
+                message: 'chatlogs_search_usage',
+            })
+        );
+        expect(handler.state.$emit).not.toHaveBeenCalledWith(
+            'chatlogs.open',
+            expect.anything()
         );
     });
 });

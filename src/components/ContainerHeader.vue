@@ -65,7 +65,7 @@
                         <i class="bx bx-download" aria-hidden="true" />
                     </a>
                 </div>
-                <div class="kiwi-header-option">
+                <div v-if="canSearch" class="kiwi-header-option">
                     <a :title="$t('search_messages')" @click="searchMessages()">
                         <i class="bx bx-search" aria-hidden="true" />
                     </a>
@@ -170,7 +170,7 @@
                         <i class="bx bx-download" aria-hidden="true" />
                     </a>
                 </div>
-                <div class="kiwi-header-option">
+                <div v-if="canSearch" class="kiwi-header-option">
                     <a :title="$t('search_messages')" @click="searchMessages()">
                         <i class="bx bx-search" aria-hidden="true" />
                     </a>
@@ -230,6 +230,8 @@ import GlobalApi from '@/libs/GlobalApi';
 import toHtml from '@/libs/renderers/Html';
 import parseMessage from '@/libs/MessageParser';
 import * as Misc from '@/helpers/Misc';
+import * as ChatLogs from '@/libs/desktop/ChatLogs';
+import * as MessageSearch from '@/libs/MessageSearch';
 import BufferSettings from './BufferSettings';
 import ChannelBanlist from './ChannelBanlist';
 import AwayStatusIndicator from './AwayStatusIndicator';
@@ -282,6 +284,12 @@ export default {
             let user = this.$state.getUser(this.buffer.getNetwork().id, this.buffer.name);
             return !!user;
         },
+        canSearch() {
+            if (ChatLogs.isAvailable()) {
+                return true;
+            }
+            return MessageSearch.serverSearchAvailable(this.buffer.getNetwork());
+        },
     },
     watch: {
         buffer() {
@@ -322,6 +330,9 @@ export default {
             network.ircClient.join(this.buffer.name);
         },
         searchMessages() {
+            if (!this.canSearch) {
+                return;
+            }
             this.$state.$emit('chatlogs.open', {
                 networkId: this.buffer.networkid,
                 bufferName: this.buffer.name,

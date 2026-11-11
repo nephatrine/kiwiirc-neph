@@ -211,6 +211,25 @@ export function loadServerResult(state, result) {
     });
 }
 
+export function loadResultContext(state, result) {
+    return loadServerResult(state, result).then((loaded) => {
+        if (loaded) {
+            return 'loaded';
+        }
+        if (result && result.source === SOURCE_LOCAL && ChatLogs.isAvailable()) {
+            return 'local';
+        }
+        return 'failed';
+    });
+}
+
+export function openLocalContext(state, result) {
+    if (!result) {
+        return Promise.resolve(false);
+    }
+    return ChatLogContext.openContextResult(state, result);
+}
+
 export function openServerResult(state, result) {
     if (!result) {
         return Promise.resolve(false);

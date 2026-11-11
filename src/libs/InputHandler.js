@@ -5,6 +5,8 @@ import * as Misc from '@/helpers/Misc';
 import { byteLength, withinLimit } from '@/helpers/LoginFields';
 import { rollDice, formatRoll } from '@/helpers/Dice';
 import { each } from '@/helpers/Utils';
+import * as ChatLogs from '@/libs/desktop/ChatLogs';
+import * as MessageSearch from '@/libs/MessageSearch';
 import AliasRewriter from './AliasRewriter';
 import { addTwitchUserNotice } from './TwitchMiddleware';
 import { canRequestAutocomplete } from './Autocomplete';
@@ -377,6 +379,66 @@ inputCommands.auto = function inputCommandAuto(event, command, line, context) {
         buffer.name + ' ' + line,
         context
     );
+};
+
+inputCommands.search = function inputCommandSearch(event, command, line, context) {
+    event.handled = true;
+    const { network, buffer } = context;
+    const query = line.trim();
+
+    if (!query) {
+        this.state.addMessage(buffer, {
+            time: Date.now(),
+            nick: '*',
+            message: TextFormatting.t('chatlogs_search_usage'),
+            type: 'error',
+        });
+        return;
+    }
+
+    let target = '';
+    if (buffer) {
+        if (buffer.contextTarget) {
+            target = buffer.contextTarget;
+        } else if (
+            (typeof buffer.isChannel === 'function' && buffer.isChannel()) ||
+            (typeof buffer.isQuery === 'function' && buffer.isQuery())
+        ) {
+            target = buffer.name;
+        }
+    }
+
+    const serverAvailable = MessageSearch.serverSearchAvailable(network);
+    const localAvailable = ChatLogs.isAvailable();
+    if (!serverAvailable && !localAvailable) {
+        this.state.addMessage(buffer, {
+            time: Date.now(),
+            nick: '*',
+            message: TextFormatting.t('chatlogs_search_unavailable'),
+            type: 'error',
+        });
+        return;
+    }
+
+    let source = MessageSearch.SOURCE_LOCAL;
+    if (serverAvailable && target) {
+        source = MessageSearch.SOURCE_SERVER;
+    } else if (!localAvailable) {
+        this.state.addMessage(buffer, {
+            time: Date.now(),
+            nick: '*',
+            message: TextFormatting.t('chatlogs_server_target_required'),
+            type: 'error',
+        });
+        return;
+    }
+
+    this.state.$emit('chatlogs.open', {
+        source,
+        networkId: network.id,
+        bufferName: target,
+        query,
+    });
 };
 
 inputCommands.ctcp = function inputCommandCtcp(event, command, line, context) {

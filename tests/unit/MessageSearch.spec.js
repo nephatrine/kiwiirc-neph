@@ -181,6 +181,79 @@ describe('MessageSearch', () => {
         expect(buffer.loadMessageContext).toHaveBeenCalled();
     });
 
+    test('reports loaded when the result is already in the buffer', async() => {
+        const network = createNetwork();
+        const loadedMessage = { id: 1 };
+        const buffer = {
+            name: '#channel',
+            findLogResultMessage: () => loadedMessage,
+        };
+        const state = {
+            getNetwork: () => network,
+            getBufferByName: () => buffer,
+            addServerContextBuffer: jest.fn(() => buffer),
+            removeBuffer: jest.fn(),
+        };
+
+        const outcome = await MessageSearch.loadResultContext(state, {
+            source: 'server',
+            network_id: 7,
+            buffer_name: '#channel',
+        });
+
+        expect(outcome).toBe('loaded');
+    });
+
+    test('falls back to a local context when server history cannot load a local result', async() => {
+        const network = createNetwork();
+        network.ircClient.chathistory.isSupported = () => false;
+        ChatLogs.isAvailable.mockReturnValue(true);
+        const buffer = {
+            name: '#channel',
+            findLogResultMessage: () => null,
+            loadMessageContext: jest.fn(),
+        };
+        const state = {
+            getNetwork: () => network,
+            getBufferByName: () => buffer,
+            addServerContextBuffer: jest.fn(() => buffer),
+            removeBuffer: jest.fn(),
+        };
+
+        const outcome = await MessageSearch.loadResultContext(state, {
+            source: 'local',
+            network_id: 7,
+            buffer_name: '#channel',
+        });
+
+        expect(outcome).toBe('local');
+        expect(buffer.loadMessageContext).not.toHaveBeenCalled();
+    });
+
+    test('reports failure for a server result that cannot load', async() => {
+        const network = createNetwork();
+        network.ircClient.chathistory.isSupported = () => false;
+        ChatLogs.isAvailable.mockReturnValue(true);
+        const buffer = {
+            name: '#channel',
+            findLogResultMessage: () => null,
+        };
+        const state = {
+            getNetwork: () => network,
+            getBufferByName: () => buffer,
+            addServerContextBuffer: jest.fn(() => buffer),
+            removeBuffer: jest.fn(),
+        };
+
+        const outcome = await MessageSearch.loadResultContext(state, {
+            source: 'server',
+            network_id: 7,
+            buffer_name: '#channel',
+        });
+
+        expect(outcome).toBe('failed');
+    });
+
     test('loads an unopened result context without activating it', async() => {
         const network = createNetwork();
         const buffer = {

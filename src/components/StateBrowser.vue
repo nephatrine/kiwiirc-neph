@@ -20,8 +20,11 @@
         </div>
 
         <div
-            v-if="searchAvailable"
-            :title="$t('search_messages')"
+            v-if="searchVisible"
+            :title="searchAvailable ?
+                $t('search_messages') : $t('chatlogs_search_unavailable')"
+            :class="{ 'kiwi-statebrowser-search--disabled': !searchAvailable }"
+            :aria-disabled="!searchAvailable"
             class="kiwi-statebrowser-search"
             @click="clickSearch"
         >
@@ -115,6 +118,18 @@ export default {
         searchAvailable() {
             return MessageSearch.hasAnySearchSource(this.$state);
         },
+        searchHidden() {
+            return !this.searchAvailable && this.isRestrictedServer;
+        },
+        activeBufferIsSpecial() {
+            const buffer = this.$state.getActiveBuffer();
+            return !!(buffer && (buffer.isServer() || buffer.isSpecial()));
+        },
+        searchVisible() {
+            return !this.$state.ui.is_narrow &&
+                this.activeBufferIsSpecial &&
+                !this.searchHidden;
+        },
     },
     created() {
         this.listen(this.$state, 'document.clicked', (e) => {
@@ -156,6 +171,9 @@ export default {
             this.$state.$emit('active.component.toggle', AppSettings);
         },
         clickSearch: function clickSearch() {
+            if (!this.searchVisible || !this.searchAvailable) {
+                return;
+            }
             this.$state.$emit('chatlogs.open');
         },
         clickLogout: function clickLogout() {
@@ -245,6 +263,11 @@ export default {
     transition: background 0.2s, opacity 0.2s;
     z-index: 1;
     user-select: none;
+}
+
+.kiwi-statebrowser-search--disabled {
+    cursor: default;
+    opacity: 0.4;
 }
 
 /* Add network button */

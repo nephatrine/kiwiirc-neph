@@ -1780,6 +1780,18 @@ msgstr "Loading Context…"
 msgid "chatlogs_result_load_hint"
 msgstr "Click to load message context."
 
+msgid "chatlogs_result_open_log_hint"
+msgstr "Open this result in a local log context."
+
+msgid "chatlogs_open_log"
+msgstr "Open Log"
+
+msgid "chatlogs_search_usage"
+msgstr "Usage: /search <terms>"
+
+msgid "chatlogs_search_unavailable"
+msgstr "Message search is unavailable."
+
 msgid "chatlogs_server_query_prompt"
 msgstr "Enter a search term to search server history."
 
@@ -2849,6 +2861,10 @@ msgstr "Limnoria Command"
 #: Autocomplete request command
 msgid "command_auto"
 msgstr "Remote Autocomplete"
+
+#: Search message history
+msgid "command_search"
+msgstr "Search Messages"
 
 #: Autocomplete requests are unavailable
 msgid "autocomplete_unavailable"

@@ -40,6 +40,41 @@ describe('ContainerHeader link handling', () => {
         expect(context.$state.addBuffer).not.toHaveBeenCalled();
     });
 
+    test('enables search when the network supports server search', () => {
+        const context = makeContext({
+            state: 'connected',
+            ircClient: {
+                search: {
+                    isSupported: () => true,
+                },
+            },
+        });
+
+        expect(ContainerHeader.computed.canSearch.call(context)).toBe(true);
+    });
+
+    test('disables search without local logs or server search', () => {
+        const context = makeContext({
+            state: 'connected',
+            ircClient: {
+                search: {
+                    isSupported: () => false,
+                },
+            },
+        });
+
+        expect(ContainerHeader.computed.canSearch.call(context)).toBe(false);
+    });
+
+    test('does not open search when it is unavailable', () => {
+        const context = makeContext();
+        context.canSearch = false;
+
+        ContainerHeader.methods.searchMessages.call(context);
+
+        expect(context.$state.$emit).not.toHaveBeenCalled();
+    });
+
     test('still joins channel links in the topic', () => {
         const channel = {
             getAttribute: jest.fn((name) => (

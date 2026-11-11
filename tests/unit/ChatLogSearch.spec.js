@@ -4,7 +4,17 @@ jest.mock('@/libs/desktop/ChatLogs', () => ({
     onOpenSearch: jest.fn(() => () => {}),
 }));
 
+jest.mock('@/libs/MessageSearch', () => {
+    const actual = jest.requireActual('@/libs/MessageSearch');
+    return {
+        ...actual,
+        loadResultContext: jest.fn(),
+        openLocalContext: jest.fn(),
+    };
+});
+
 import * as ChatLogs from '@/libs/desktop/ChatLogs';
+import * as MessageSearch from '@/libs/MessageSearch';
 import ChatLogSearch from '@/components/ChatLogSearch';
 
 function makeContext(overrides = {}) {
@@ -18,6 +28,7 @@ function makeContext(overrides = {}) {
         results: [],
         loadedResultIds: {},
         loadingResultIds: {},
+        openLogResultIds: {},
         loading: false,
         hasMore: false,
         offset: 0,
@@ -35,14 +46,20 @@ function makeContext(overrides = {}) {
         },
         resetSearch: jest.fn(),
         resultKey: ChatLogSearch.methods.resultKey,
-        isServerResultUnloaded: ChatLogSearch.methods.isServerResultUnloaded,
+        isResultUnloaded: ChatLogSearch.methods.isResultUnloaded,
+        isResultOpenLog: ChatLogSearch.methods.isResultOpenLog,
         isResultLoading: ChatLogSearch.methods.isResultLoading,
         syncLoadedResults: jest.fn(),
         loadResultContext: jest.fn(),
+        openLogResult: jest.fn(),
         defaultServerTarget: ChatLogSearch.methods.defaultServerTarget,
         search: jest.fn(),
+        close: jest.fn(),
         $nextTick: (cb) => cb(),
         $refs: {},
+        $set: (target, key, value) => {
+            target[key] = value;
+        },
         $t: (key) => key,
         ...overrides,
     };
@@ -258,21 +275,173 @@ describe('ChatLogSearch buffer filters', () => {
         expect(context.serverBefore).toBe(Date.parse('2026-11-10T20:00:00.000Z'));
     });
 
-    test('loads an unloaded server result without closing the modal', () => {
+    test('loads an unloaded result without closing the modal', () => {
         const context = makeContext({
-            isServerResultUnloaded: () => true,
+            isResultUnloaded: () => true,
             loadResultContext: jest.fn(),
         });
 
         ChatLogSearch.methods.openResult.call(context, {
-            id: 'server-result',
+            id: 'unloaded-result',
             source: 'server',
         });
 
         expect(context.loadResultContext).toHaveBeenCalledWith({
+            id: 'unloaded-result',
+            source: 'server',
+        });
+    });
+
+    test('opens the local log context from an Open Log result', () => {
+        const context = makeContext({
+            isResultUnloaded: () => false,
+            isResultOpenLog: () => true,
+            openLogResult: jest.fn(),
+        });
+
+        ChatLogSearch.methods.openResult.call(context, {
+            id: 'local-result',
+            source: 'local',
+        });
+
+        expect(context.openLogResult).toHaveBeenCalledWith({
+            id: 'local-result',
+            source: 'local',
+        });
+    });
+
+    test('ignores clicks while a result is loading', () => {
+        const context = makeContext({
+            isResultLoading: () => true,
+            loadResultContext: jest.fn(),
+            openLogResult: jest.fn(),
+        });
+
+        ChatLogSearch.methods.openResult.call(context, {
+            id: 'loading-result',
+            source: 'local',
+        });
+
+        expect(context.loadResultContext).not.toHaveBeenCalled();
+        expect(context.openLogResult).not.toHaveBeenCalled();
+    });
+
+    test('treats local results as unloaded until they are loaded or marked Open Log', () => {
+        const context = makeContext();
+        const result = {
+            id: 'local-result',
+            source: 'local',
+        };
+
+        expect(context.isResultUnloaded(result)).toBe(true);
+        expect(context.isResultOpenLog(result)).toBe(false);
+
+        context.openLogResultIds[result.id] = true;
+
+        expect(context.isResultUnloaded(result)).toBe(false);
+        expect(context.isResultOpenLog(result)).toBe(true);
+    });
+
+    test('marks local results already present in the buffer as loaded', () => {
+        const result = {
+            id: 'local-result',
+            source: 'local',
+            network_id: 5,
+            buffer_name: '#channel',
+        };
+        const context = makeContext({
+            results: [result],
+            syncLoadedResults: ChatLogSearch.methods.syncLoadedResults,
+            $state: {
+                getActiveNetwork: () => null,
+                getActiveBuffer: () => null,
+                getBufferByName: () => ({
+                    findLogResultMessage: () => ({ id: 'message' }),
+                }),
+            },
+        });
+
+        context.syncLoadedResults();
+
+        expect(context.loadedResultIds[result.id]).toBe(true);
+    });
+
+    test('marks a failed local load as Open Log', async() => {
+        MessageSearch.loadResultContext.mockResolvedValue('local');
+        const context = makeContext({
+            loadResultContext: ChatLogSearch.methods.loadResultContext,
+            error: 'old error',
+        });
+
+        await context.loadResultContext({
+            id: 'local-result',
+            source: 'local',
+        });
+
+        expect(context.openLogResultIds['local-result']).toBe(true);
+        expect(context.loadingResultIds['local-result']).toBe(false);
+        expect(context.error).toBe('');
+    });
+
+    test('marks a successful context load as loaded', async() => {
+        MessageSearch.loadResultContext.mockResolvedValue('loaded');
+        const context = makeContext({
+            loadResultContext: ChatLogSearch.methods.loadResultContext,
+            syncLoadedResults: jest.fn(),
+        });
+
+        await context.loadResultContext({
+            id: 'loaded-result',
+            source: 'local',
+        });
+
+        expect(context.loadedResultIds['loaded-result']).toBe(true);
+        expect(context.error).toBe('');
+        expect(context.syncLoadedResults).toHaveBeenCalled();
+    });
+
+    test('keeps a failed server result unloaded with an error', async() => {
+        MessageSearch.loadResultContext.mockResolvedValue('failed');
+        const context = makeContext({
+            loadResultContext: ChatLogSearch.methods.loadResultContext,
+        });
+
+        await context.loadResultContext({
             id: 'server-result',
             source: 'server',
         });
+
+        expect(context.loadedResultIds['server-result']).toBeUndefined();
+        expect(context.openLogResultIds['server-result']).toBeUndefined();
+        expect(context.error).toBe('chatlogs_jump_failed');
+    });
+
+    test('opens a local log context from Open Log and closes the dialog', async() => {
+        MessageSearch.openLocalContext.mockResolvedValue(true);
+        const context = makeContext({
+            openLogResult: ChatLogSearch.methods.openLogResult,
+        });
+
+        await context.openLogResult({
+            id: 'local-result',
+            source: 'local',
+        });
+
+        expect(MessageSearch.openLocalContext).toHaveBeenCalled();
+        expect(context.close).toHaveBeenCalled();
+    });
+
+    test('applies a query supplied when opening the dialog', () => {
+        const context = makeContext();
+
+        ChatLogSearch.methods.open.call(context, {
+            query: 'hello world',
+            networkId: 5,
+            bufferName: '#channel',
+        });
+
+        expect(context.query).toBe('hello world');
+        expect(context.search).toHaveBeenCalledWith(true);
     });
 
     test('clears the buffer filter and searches again', () => {
