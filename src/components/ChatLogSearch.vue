@@ -110,7 +110,13 @@
                         :key="result.id"
                         type="button"
                         class="kiwi-logsearch-result"
-                        :class="{ 'kiwi-logsearch-result-redacted': result.is_redacted }"
+                        :class="{
+                            'kiwi-logsearch-result-redacted': result.is_redacted,
+                            'kiwi-logsearch-result--unloaded': isServerResultUnloaded(result),
+                            'kiwi-logsearch-result--loading': isResultLoading(result),
+                        }"
+                        :title="isServerResultUnloaded(result) ?
+                            $t('chatlogs_result_load_hint') : ''"
                         @click="openResult(result)"
                     >
                         <span class="kiwi-logsearch-meta">
@@ -120,6 +126,18 @@
                             <template v-if="result.nick">
                                 · {{ result.nick }}
                             </template>
+                        </span>
+                        <span
+                            v-if="isResultLoading(result)"
+                            class="kiwi-logsearch-result-status"
+                        >
+                            {{ $t('chatlogs_loading_context') }}
+                        </span>
+                        <span
+                            v-else-if="isServerResultUnloaded(result)"
+                            class="kiwi-logsearch-result-status"
+                        >
+                            {{ $t('chatlogs_result_not_loaded') }}
                         </span>
                         <span v-if="result.is_redacted" class="kiwi-logsearch-redacted">
                             {{ result.redacted_by ?
@@ -172,6 +190,8 @@ export default {
             networkId: 0,
             bufferName: '',
             results: [],
+            loadedResultIds: {},
+            loadingResultIds: {},
             loading: false,
             hasMore: false,
             offset: 0,
@@ -336,6 +356,8 @@ export default {
         },
         resetSearch() {
             this.results = [];
+            this.loadedResultIds = {};
+            this.loadingResultIds = {};
             this.hasMore = false;
             this.offset = 0;
             this.serverBefore = 0;
@@ -384,6 +406,51 @@ export default {
                         `${result.nick}:${result.message}`;
             }
             return `local:${result.id}`;
+        },
+        isServerResultUnloaded(result) {
+            return !!(result &&
+                result.source === MessageSearch.SOURCE_SERVER &&
+                !this.loadedResultIds[result.id]);
+        },
+        isResultLoading(result) {
+            return !!(result && this.loadingResultIds[result.id]);
+        },
+        syncLoadedResults() {
+            this.results.forEach((result) => {
+                if (result.source !== MessageSearch.SOURCE_SERVER ||
+                    this.loadedResultIds[result.id]
+                ) {
+                    return;
+                }
+                const buffer = this.$state.getBufferByName(
+                    result.network_id,
+                    result.buffer_name
+                );
+                if (buffer && buffer.findLogResultMessage(result)) {
+                    this.$set(this.loadedResultIds, result.id, true);
+                }
+            });
+        },
+        loadResultContext(result) {
+            if (!result || this.loadingResultIds[result.id]) {
+                return;
+            }
+
+            this.$set(this.loadingResultIds, result.id, true);
+            this.error = '';
+
+            MessageSearch.loadServerResult(this.$state, result).then((loaded) => {
+                this.$set(this.loadingResultIds, result.id, false);
+                if (!loaded) {
+                    this.error = this.$t('chatlogs_jump_failed');
+                    return;
+                }
+                this.$set(this.loadedResultIds, result.id, true);
+                this.syncLoadedResults();
+            }).catch(() => {
+                this.$set(this.loadingResultIds, result.id, false);
+                this.error = this.$t('chatlogs_jump_failed');
+            });
         },
         async search(reset) {
             if (this.loading && !reset) {
@@ -464,6 +531,7 @@ export default {
                     this.hasMore = !!result.hasMore;
                 }
                 this.lastSource = this.source;
+                this.syncLoadedResults();
             } catch (err) {
                 if (generation !== this.searchGeneration) {
                     return;
@@ -481,6 +549,11 @@ export default {
             }
         },
         openResult(result) {
+            if (this.isServerResultUnloaded(result)) {
+                this.loadResultContext(result);
+                return;
+            }
+
             MessageSearch.openResult(this.$state, result).then((opened) => {
                 if (!opened) {
                     this.$state.$emit(
@@ -626,6 +699,22 @@ export default {
 
 .kiwi-logsearch-message {
     overflow-wrap: anywhere;
+}
+
+.kiwi-logsearch-result--unloaded {
+    opacity: 0.65;
+}
+
+.kiwi-logsearch-result--loading {
+    cursor: wait;
+}
+
+.kiwi-logsearch-result-status {
+    display: block;
+    margin-top: 0.2em;
+    font-size: 0.8em;
+    font-weight: 600;
+    opacity: 0.8;
 }
 
 .kiwi-logsearch-redacted {

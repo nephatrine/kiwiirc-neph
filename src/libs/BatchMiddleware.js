@@ -105,6 +105,48 @@ function resolveBatch(network, client, batch) {
     // Resolve the batch into one or more synthetic events
     const results = handler(network, client, batch);
 
+    // Chathistory is commonly nested inside a labeled-response batch on
+    // bouncers. Preserve the chathistory type and target so the parent batch
+    // does not re-dispatch replayed messages as live traffic.
+    if (batch.type === 'chathistory') {
+        results.forEach((event) => {
+            event.historyBatch = {
+                type: batch.type,
+                id: batch.id,
+                params: batch.params,
+            };
+            const tags = {
+                ...(event.tags || {}),
+                'kiwi-history': true,
+            };
+            if (batch.params && batch.params[0]) {
+                tags['kiwi-history-target'] = batch.params[0];
+            }
+            event.tags = tags;
+        });
+    }
+
+    // Chathistory is commonly nested inside labeled-response on bouncers.
+    // Its promise resolves when the inner batch closes, but the parent batch
+    // closes on a later line. Dispatch history immediately so callers see the
+    // messages when getBufferHistory() resolves, and make sure the parent
+    // does not re-dispatch the same commands when it eventually closes.
+    if (batch.type === 'chathistory') {
+        batch.parent_ids.forEach((pId) => {
+            const parent = client.active_batches.get(pId);
+            if (parent) {
+                parent.commands = parent.commands.filter((cmd) => {
+                    const cmdBatchTag = cmd.tags.batch || '';
+                    const cmdBatchIds = cmdBatchTag.split(',');
+                    return !cmdBatchIds.includes(batch.id);
+                });
+            }
+        });
+
+        dispatchResults(network, client, batch, results);
+        return;
+    }
+
     // If this batch has parents, we inject the results into them instead of emitting
     if (batch.parent_ids.length > 0) {
         batch.parent_ids.forEach((pId) => {
@@ -122,45 +164,71 @@ function resolveBatch(network, client, batch) {
             }
         });
     } else {
-        // Top-level batch: Emit all resulting events directly to the command_handler
-        results.forEach((event) => {
-            // Mark as handled by our batch system to prevent recursion
-            const reEvent = event;
-            reEvent.is_batch_handled = true;
-
-            // Only set the batch metadata if it's not a synthetic summary
-            if (!reEvent.is_batch_summary) {
-                reEvent.batch = {
-                    type: batch.type,
-                    id: batch.id,
-                    params: batch.params,
-                };
-            }
-
-            // STRIP BATCH TAGS: Framework drops messages with batch tags it hasn't processed.
-            // Since we swallowed BATCH commands, we must strip the tags entirely.
-            const newTags = { ...reEvent.tags };
-            delete newTags.batch;
-
-            // Indelibly mark events replayed from chathistory so the rest of the application
-            // can safely isolate them from the active session state.
-            if (batch.type === 'chathistory') {
-                newTags['kiwi-history'] = true;
-            }
-
-            reEvent.tags = newTags;
-
-            // Re-dispatch to the command_handler to hit Kiwi's main loop
-            client.command_handler.dispatch(reEvent);
-        });
-
-        // IrcCommand keeps only a handful of fields, so a re-dispatched event
-        // cannot carry the batch it came from. Announce the close of the batch
-        // so handlers can flush whatever they accumulated from it.
-        client.emit('kiwi.batch.end', {
-            type: batch.type,
-            id: batch.id,
-            params: batch.params,
-        });
+        dispatchResults(network, client, batch, results);
     }
+}
+
+function dispatchResults(network, client, batch, results) {
+    // Emit all resulting events directly to the command_handler
+    results.forEach((event) => {
+        // Mark as handled by our batch system to prevent recursion
+        const reEvent = event;
+        reEvent.is_batch_handled = true;
+
+        // Only set the batch metadata if it's not a synthetic summary.
+        // A nested chathistory batch keeps its own type and target so
+        // history handlers can route it correctly.
+        if (reEvent.historyBatch) {
+            reEvent.batch = reEvent.historyBatch;
+            delete reEvent.historyBatch;
+        } else if (!reEvent.is_batch_summary) {
+            reEvent.batch = {
+                type: batch.type,
+                id: batch.id,
+                params: batch.params,
+            };
+        }
+
+        // STRIP BATCH TAGS: Framework drops messages with batch tags it hasn't processed.
+        // Since we swallowed BATCH commands, we must strip the tags entirely.
+        const newTags = { ...reEvent.tags };
+        delete newTags.batch;
+
+        // Indelibly mark events replayed from chathistory so the rest of the application
+        // can safely isolate them from the active session state.
+        if (batch.type === 'chathistory' ||
+            (reEvent.batch && reEvent.batch.type === 'chathistory')
+        ) {
+            newTags['kiwi-history'] = true;
+        }
+
+        reEvent.tags = newTags;
+
+        const historyTarget = newTags['kiwi-history-target'];
+        const historyBuffer = historyTarget &&
+            typeof network.bufferByName === 'function' ?
+            network.bufferByName(historyTarget) :
+            null;
+        if (historyBuffer) {
+            historyBuffer.historyBatchActive = true;
+        }
+
+        // Re-dispatch to the command_handler to hit Kiwi's main loop
+        try {
+            client.command_handler.dispatch(reEvent);
+        } finally {
+            if (historyBuffer) {
+                historyBuffer.historyBatchActive = false;
+            }
+        }
+    });
+
+    // IrcCommand keeps only a handful of fields, so a re-dispatched event
+    // cannot carry the batch it came from. Announce the close of the batch
+    // so handlers can flush whatever they accumulated from it.
+    client.emit('kiwi.batch.end', {
+        type: batch.type,
+        id: batch.id,
+        params: batch.params,
+    });
 }

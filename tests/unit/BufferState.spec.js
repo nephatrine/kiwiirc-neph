@@ -34,6 +34,24 @@ describe('raw buffer scrollback', () => {
     });
 });
 
+describe('message scroll targets', () => {
+    it('keeps a pending scroll target on the buffer', async() => {
+        const s = state.create();
+        const network = s.addNetwork('TestNetwork', 'TestNick', {});
+        const channel = s.addBuffer(network.id, '#chan');
+        const emit = jest.spyOn(s, '$emit');
+
+        const scrolled = channel.scrollToMessage(42);
+
+        expect(channel.pending_scroll_id).toBe(42);
+        expect(emit).toHaveBeenCalledWith('messagelist.scrollto', { id: 42 });
+
+        s.$emit('messagelist.scrolledto', { id: 42, buffer: channel });
+        await expect(scrolled).resolves.toBe(true);
+        expect(channel.pending_scroll_id).toBeNull();
+    });
+});
+
 describe('channel defaults', () => {
     it('uses the global show_joinparts default and a per-buffer override', () => {
         const s = state.create();

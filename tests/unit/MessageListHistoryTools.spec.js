@@ -86,3 +86,29 @@ describe('MessageList local log history tools', () => {
         });
     });
 });
+
+describe('MessageList history context scrolling', () => {
+    test('does not jump to the bottom while context is loading', () => {
+        const context = {
+            auto_scroll: true,
+            buffer: { historyContextLoading: true },
+            scrollToBottom: jest.fn(),
+        };
+
+        MessageList.methods.maybeScrollToBottom.call(context);
+
+        expect(context.scrollToBottom).not.toHaveBeenCalled();
+    });
+
+    test('keeps auto-scrolling when context is not loading', () => {
+        const context = {
+            auto_scroll: true,
+            buffer: { historyContextLoading: false },
+            scrollToBottom: jest.fn(),
+        };
+
+        MessageList.methods.maybeScrollToBottom.call(context);
+
+        expect(context.scrollToBottom).toHaveBeenCalled();
+    });
+});

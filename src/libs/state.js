@@ -982,6 +982,15 @@ function createNewState() {
                     return undefined;
                 }
 
+                if (buffer.historyBatchActive) {
+                    message.is_history = true;
+                    message.tags = Object.assign(
+                        {},
+                        message.tags || {},
+                        { 'kiwi-history': true }
+                    );
+                }
+
                 let user = this.getUser(buffer.networkid, message.nick);
                 let bufferMessage = new Message(message, user);
                 let isNewMessage = message.time > buffer.last_read;

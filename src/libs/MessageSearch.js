@@ -142,10 +142,11 @@ export function openLocalResult(state, result) {
 
     if (loaded) {
         state.setActiveBuffer(result.network_id, result.buffer_name);
-        state.$nextTick(() => {
-            buffer.scrollToMessage(loaded.id);
+        return new Promise((resolve) => {
+            state.$nextTick(() => {
+                buffer.scrollToMessage(loaded.id).then(resolve);
+            });
         });
-        return Promise.resolve(true);
     }
 
     const openContext = () => ChatLogContext.openContextResult(state, result);
@@ -165,6 +166,49 @@ export function openLocalResult(state, result) {
     return buffer.jumpToMessage(result).then((jumped) => (
         jumped ? true : openContext()
     ));
+}
+
+export function loadServerResult(state, result) {
+    if (!result) {
+        return Promise.resolve(false);
+    }
+
+    const network = state.getNetwork(result.network_id);
+    if (!network || network.state !== 'connected' || !result.buffer_name) {
+        return Promise.resolve(false);
+    }
+
+    let buffer = state.getBufferByName(network.id, result.buffer_name);
+    let createdContext = false;
+    if (!buffer) {
+        buffer = state.addServerContextBuffer(network.id, result.buffer_name);
+        createdContext = true;
+    }
+    if (!buffer) {
+        return Promise.resolve(false);
+    }
+
+    // Loading context is only the first step. Leave the active buffer and
+    // viewport alone until the user clicks the result again to jump to it.
+    if (buffer.findLogResultMessage(result)) {
+        return Promise.resolve(true);
+    }
+
+    if (!network.ircClient.chathistory ||
+        !network.ircClient.chathistory.isSupported()
+    ) {
+        if (createdContext) {
+            state.removeBuffer(buffer);
+        }
+        return Promise.resolve(false);
+    }
+
+    return buffer.loadMessageContext(result).then((loaded) => {
+        if (!loaded && createdContext) {
+            state.removeBuffer(buffer);
+        }
+        return loaded;
+    });
 }
 
 export function openServerResult(state, result) {
@@ -191,10 +235,11 @@ export function openServerResult(state, result) {
     state.setActiveBuffer(network.id, buffer.name);
 
     if (loaded) {
-        state.$nextTick(() => {
-            buffer.scrollToMessage(loaded.id);
+        return new Promise((resolve) => {
+            state.$nextTick(() => {
+                buffer.scrollToMessage(loaded.id).then(resolve);
+            });
         });
-        return Promise.resolve(true);
     }
 
     if (!network.ircClient.chathistory ||

@@ -123,4 +123,25 @@ describe('buffer history trimming', () => {
             expect(internalBuffer.trim_timeout).toBeNull();
         }
     );
+
+    test('does not build live history segments for internal buffers', () => {
+        jest.useFakeTimers();
+
+        const raw = s.addBuffer(network.id, '*raw');
+        network.setting('raw_scrollback_size', 5000);
+
+        for (let i = 0; i < 1000; i += 1) {
+            s.addMessage(raw, {
+                time: Date.now() + i,
+                nick: '',
+                message: '[S] raw line ' + i,
+                type: 'message',
+                tags: {},
+            });
+        }
+
+        expect(raw.getMessages()).toHaveLength(1000);
+        expect(raw.historySegments).toHaveLength(0);
+        expect(raw.historyGaps).toHaveLength(0);
+    });
 });

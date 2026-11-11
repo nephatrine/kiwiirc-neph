@@ -45,17 +45,30 @@ describe('chathistory cursor timestamps', () => {
     }
 
     test('uses the oldest tagged event time for the cursor and manual loading', async() => {
-        const latest = jest.fn(() => Promise.resolve({
-            commands: [
-                { tags: { time: '2026-11-10T20:06:05.166Z' } },
-                {
-                    tags: {
-                        time: '2026-11-10T21:35:24.550Z',
-                        msgid: 'chat-id',
-                    },
+        const latest = jest.fn(() => {
+            s.addMessage(buffer, {
+                time: Date.parse('2026-11-10T21:35:24.550Z'),
+                server_time: Date.parse('2026-11-10T21:35:24.550Z'),
+                nick: 'alice',
+                message: 'chat',
+                type: 'privmsg',
+                tags: {
+                    'kiwi-history': true,
+                    'msgid': 'chat-id',
                 },
-            ],
-        }));
+            });
+            return Promise.resolve({
+                commands: [
+                    { tags: { time: '2026-11-10T20:06:05.166Z' } },
+                    {
+                        tags: {
+                            time: '2026-11-10T21:35:24.550Z',
+                            msgid: 'chat-id',
+                        },
+                    },
+                ],
+            });
+        });
         const before = jest.fn(() => Promise.resolve({ commands: [] }));
         installHistory({ latest, before });
 

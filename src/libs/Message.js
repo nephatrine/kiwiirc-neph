@@ -121,7 +121,7 @@ export default class Message {
                 this.bridged_avatar = cleanAvatar;
             }
         }
-        this.is_history = !!(message.tags && (
+        this.is_history = !!message.is_history || !!(message.tags && (
             typeof message.tags['draft/chathistory-context'] !== 'undefined' ||
             typeof message.tags['kiwi-history'] !== 'undefined'
         ));

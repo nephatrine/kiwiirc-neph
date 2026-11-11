@@ -223,7 +223,12 @@ and this project adheres to
   cursors and history windows, include queued messages when checking whether a
   batch is displayable, and paginate from the oldest event in a batch. Loading
   previous history no longer re-fetches the same window or hides the control on
-  busy channels.
+  busy channels. Preserve chathistory metadata through nested labeled-response
+  batches, treat `draft/chathistory-end` per request direction, suppress false
+  latest-to-live gaps, and request automatic history for channels created after
+  the network is ready. Internal buffers no longer maintain live history
+  segments, unloaded server search results load their context on first click and
+  jump on the next, and gap controls expand the intended older or newer side.
 - **File Uploads**: Uploaded links are now tracked as pending messages and
   confirmed by the server echo, so the sender no longer sees a duplicate copy.
 - **Desktop Settings**: The default IRC handler action is only offered on

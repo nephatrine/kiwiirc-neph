@@ -69,6 +69,7 @@ describe('MessageList internal buffer trimming', () => {
         return {
             buffer: {
                 shouldTrimImmediately: () => immediate,
+                isRaw: () => false,
                 setting: (name) => (name === 'scrollback_size' ? 2 : false),
                 getMessages: () => makeMessages(),
                 getNetwork: () => ({ nick: 'me' }),

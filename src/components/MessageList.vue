@@ -234,6 +234,7 @@ export default {
             hover_nick: '',
             message_info_open: null,
             highlighted_message_id: null,
+            pending_scroll_id: null,
             timeToClose: false,
             startClosing: false,
             selectedMessages: Object.create(null),
@@ -383,6 +384,15 @@ export default {
             // previous check
             this.$nextTick(() => {
                 this.maybeScrollToBottom();
+                if (!this.pending_scroll_id &&
+                    this.buffer &&
+                    this.buffer.pending_scroll_id
+                ) {
+                    this.pending_scroll_id = this.buffer.pending_scroll_id;
+                }
+                if (this.pending_scroll_id) {
+                    this.maybeScrollToId(this.pending_scroll_id);
+                }
             });
         },
         buffer(newBuffer, oldBuffer) {
@@ -410,6 +420,11 @@ export default {
             this.force_smooth_scroll = false;
             this.$nextTick(() => {
                 this.scrollToBottom();
+                if (newBuffer.pending_scroll_id) {
+                    const id = newBuffer.pending_scroll_id;
+                    this.pending_scroll_id = id;
+                    this.maybeScrollToId(id);
+                }
             });
         },
     },
@@ -428,6 +443,11 @@ export default {
 
         this.$nextTick(() => {
             this.scrollToBottom();
+            if (this.buffer && this.buffer.pending_scroll_id) {
+                const id = this.buffer.pending_scroll_id;
+                this.pending_scroll_id = id;
+                this.maybeScrollToId(id);
+            }
             // this.smooth_scroll = true;
         });
 
@@ -437,7 +457,8 @@ export default {
 
         this.listen(this.$state, 'messagelist.scrollto', (opt) => {
             if (opt && opt.id) {
-                this.maybeScrollToId(opt.id);
+                this.pending_scroll_id = opt.id;
+                this.$nextTick(() => this.maybeScrollToId(opt.id));
             }
         });
 
@@ -852,19 +873,28 @@ export default {
             this.$el.scrollTop = this.$el.scrollHeight;
         },
         maybeScrollToBottom() {
-            if (this.auto_scroll) {
+            if (this.auto_scroll &&
+                !(this.buffer && this.buffer.historyContextLoading)
+            ) {
                 this.scrollToBottom();
             }
         },
         maybeScrollToId(id, position = 'middle', attempt = 0) {
             let msgEl = this.$el.querySelector('.kiwi-messagelist-message[data-message-id="' + id + '"]');
             if (!msgEl) {
-                if (attempt < 5) {
+                if (attempt < 40) {
                     setTimeout(() => {
                         this.maybeScrollToId(id, position, attempt + 1);
                     }, 50);
                 }
                 return;
+            }
+
+            if (this.pending_scroll_id === id) {
+                this.pending_scroll_id = null;
+            }
+            if (this.buffer && this.buffer.pending_scroll_id === id) {
+                this.buffer.pending_scroll_id = null;
             }
 
             this.highlightMessage(id);
@@ -884,7 +914,20 @@ export default {
             }
 
             this.auto_scroll = false;
-            this.$refs.scroller.scrollTo({ top: newTop, behavior: 'smooth' });
+
+            const scroller = this.$refs.scroller;
+            const previousScrollBehavior = scroller.style.scrollBehavior;
+            scroller.style.scrollBehavior = 'auto';
+            scroller.scrollTop = newTop;
+
+            requestAnimationFrame(() => {
+                scroller.scrollTop = newTop;
+                scroller.style.scrollBehavior = previousScrollBehavior;
+                this.$state.$emit('messagelist.scrolledto', {
+                    id: id,
+                    buffer: this.buffer,
+                });
+            });
         },
         getSelectedMessages() {
             let sel = document.getSelection();

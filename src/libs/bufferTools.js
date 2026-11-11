@@ -64,6 +64,12 @@ export function orderedMessages(buffer, opts = {}) {
     /* eslint-disable no-unused-vars */
     let ignoredVar = buffer.message_count;
 
+    // Raw protocol lines already arrive in display order and need no
+    // filtering. Avoid sorting the entire raw scrollback on every render.
+    if (buffer.isRaw() && !opts.inPlace) {
+        return bufferMessages.slice();
+    }
+
     let messages = [];
     if (opts.inPlace) {
         messages = bufferMessages;

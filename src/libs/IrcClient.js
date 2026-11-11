@@ -1212,6 +1212,14 @@ function clientMiddleware(state, network) {
             network.timeToLocal(event.time) :
             Date.now();
         let serverTime = (event && event.time) || 0;
+        if (event && !event.batch && event.tags && event.tags['kiwi-history-target']) {
+            event.batch = {
+                type: 'chathistory',
+                id: '',
+                params: [event.tags['kiwi-history-target']],
+            };
+        }
+
         const isHistory = !!(
             (event && event.batch && event.batch.type === 'chathistory') ||
             (event && event.tags && event.tags['kiwi-history']) ||
@@ -1850,6 +1858,7 @@ function clientMiddleware(state, network) {
                     buffer.joined = true;
                     buffer.flags.channel_badkey = false;
                     buffer.promoteServerContext();
+                    buffer.maybeRequestHistory();
                     isReconnect = numConnects > 1 && !!buffer.flags.reconnect_known;
                     network.ircClient.raw('MODE', event.channel);
                     if (!network.isTwitch() && !isReconnect) {

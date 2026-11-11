@@ -1761,6 +1761,15 @@ msgstr "Searches chat logs stored on this device."
 msgid "chatlogs_source_server_hint"
 msgstr "Searches history stored by the server or bouncer."
 
+msgid "chatlogs_result_not_loaded"
+msgstr "Not Loaded"
+
+msgid "chatlogs_loading_context"
+msgstr "Loading Context…"
+
+msgid "chatlogs_result_load_hint"
+msgstr "Click to load message context."
+
 msgid "chatlogs_server_query_prompt"
 msgstr "Enter a search term to search server history."
 

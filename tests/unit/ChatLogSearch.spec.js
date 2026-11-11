@@ -16,6 +16,8 @@ function makeContext(overrides = {}) {
         networkId: 0,
         bufferName: '',
         results: [],
+        loadedResultIds: {},
+        loadingResultIds: {},
         loading: false,
         hasMore: false,
         offset: 0,
@@ -33,6 +35,10 @@ function makeContext(overrides = {}) {
         },
         resetSearch: jest.fn(),
         resultKey: ChatLogSearch.methods.resultKey,
+        isServerResultUnloaded: ChatLogSearch.methods.isServerResultUnloaded,
+        isResultLoading: ChatLogSearch.methods.isResultLoading,
+        syncLoadedResults: jest.fn(),
+        loadResultContext: jest.fn(),
         defaultServerTarget: ChatLogSearch.methods.defaultServerTarget,
         search: jest.fn(),
         $nextTick: (cb) => cb(),
@@ -250,6 +256,23 @@ describe('ChatLogSearch buffer filters', () => {
         expect(context.results).toHaveLength(1);
         expect(context.results[0].source).toBe('server');
         expect(context.serverBefore).toBe(Date.parse('2026-11-10T20:00:00.000Z'));
+    });
+
+    test('loads an unloaded server result without closing the modal', () => {
+        const context = makeContext({
+            isServerResultUnloaded: () => true,
+            loadResultContext: jest.fn(),
+        });
+
+        ChatLogSearch.methods.openResult.call(context, {
+            id: 'server-result',
+            source: 'server',
+        });
+
+        expect(context.loadResultContext).toHaveBeenCalledWith({
+            id: 'server-result',
+            source: 'server',
+        });
     });
 
     test('clears the buffer filter and searches again', () => {

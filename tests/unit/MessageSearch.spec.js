@@ -155,6 +155,59 @@ describe('MessageSearch', () => {
         expect(MessageSearch.defaultSource(state)).toBe('server');
     });
 
+    test('loads server context without scrolling the result into view', async() => {
+        const network = createNetwork();
+        const buffer = {
+            name: '#channel',
+            findLogResultMessage: () => null,
+            loadMessageContext: jest.fn(() => Promise.resolve(true)),
+        };
+        const state = {
+            getNetwork: () => network,
+            getBufferByName: () => buffer,
+            addServerContextBuffer: jest.fn(() => buffer),
+            setActiveBuffer: jest.fn(),
+            removeBuffer: jest.fn(),
+        };
+
+        const loaded = await MessageSearch.loadServerResult(state, {
+            source: 'server',
+            network_id: 7,
+            buffer_name: '#channel',
+        });
+
+        expect(loaded).toBe(true);
+        expect(state.setActiveBuffer).not.toHaveBeenCalled();
+        expect(buffer.loadMessageContext).toHaveBeenCalled();
+    });
+
+    test('loads an unopened result context without activating it', async() => {
+        const network = createNetwork();
+        const buffer = {
+            name: '#channel',
+            findLogResultMessage: () => null,
+            loadMessageContext: jest.fn(() => Promise.resolve(true)),
+        };
+        const state = {
+            getNetwork: () => network,
+            getBufferByName: () => null,
+            addServerContextBuffer: jest.fn(() => buffer),
+            setActiveBuffer: jest.fn(),
+            removeBuffer: jest.fn(),
+        };
+
+        const loaded = await MessageSearch.loadServerResult(state, {
+            source: 'server',
+            network_id: 7,
+            buffer_name: '#channel',
+        });
+
+        expect(loaded).toBe(true);
+        expect(state.addServerContextBuffer).toHaveBeenCalledWith(7, '#channel');
+        expect(state.setActiveBuffer).not.toHaveBeenCalled();
+        expect(buffer.loadMessageContext).toHaveBeenCalled();
+    });
+
     test('creates a server context buffer for an unopened result', async() => {
         const network = createNetwork();
         const buffer = {

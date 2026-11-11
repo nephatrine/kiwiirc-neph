@@ -20,6 +20,67 @@ function makeBuffer() {
 }
 
 describe('history context gaps', () => {
+    it('does not treat messages dispatched inside a history batch as live', () => {
+        const { s, buffer } = makeBuffer();
+        buffer.historyBatchActive = true;
+
+        addChatMessage(s, buffer, {
+            time: 1000,
+            server_time: 1000,
+            type: 'traffic',
+            message: 'historical join',
+        });
+
+        expect(buffer.getMessages()[0].is_history).toBe(true);
+        expect(buffer.historySegments).toHaveLength(0);
+    });
+
+    it('loads older into the older side and newer into the newer side', async() => {
+        const { s, network, buffer } = makeBuffer();
+
+        addChatMessage(s, buffer, {
+            time: 1000,
+            server_time: 1000,
+            irc_id: 'live-1',
+            tags: { msgid: 'live-1' },
+        });
+        addChatMessage(s, buffer, {
+            time: 2000,
+            server_time: 2000,
+            irc_id: 'live-2',
+            tags: { msgid: 'live-2' },
+        });
+        addChatMessage(s, buffer, {
+            time: 3000,
+            server_time: 3000,
+            irc_id: 'history-1',
+            tags: { 'msgid': 'history-1', 'kiwi-history': true },
+        });
+        addChatMessage(s, buffer, {
+            time: 4000,
+            server_time: 4000,
+            irc_id: 'history-2',
+            tags: { 'msgid': 'history-2', 'kiwi-history': true },
+        });
+        buffer.noteHistoryWindow(3000, 4000);
+
+        const before = jest.fn(() => Promise.resolve({ commands: [] }));
+        const after = jest.fn(() => Promise.resolve({ commands: [] }));
+        network.ircClient.chathistory = {
+            isSupported: () => true,
+            supportedRefTypes: () => ['msgid'],
+            before,
+            after,
+        };
+
+        const gap = buffer.historyGaps[0];
+        await buffer.requestHistoryGap(gap, 'older');
+        expect(after).toHaveBeenCalledWith('#test', 'live-2');
+
+        await buffer.requestHistoryGap(gap, 'newer');
+        expect(before).toHaveBeenCalledWith('#test', 'history-1');
+    });
+
     it('tracks a gap between disjoint loaded history windows', () => {
         const { s, buffer } = makeBuffer();
 
@@ -118,6 +179,7 @@ describe('history context gaps', () => {
             supportedRefTypes: () => ['msgid'],
             around,
         };
+        buffer.scrollToMessage = jest.fn(() => Promise.resolve(true));
 
         const loaded = await buffer.jumpToMessage({
             irc_id: 'context-1',

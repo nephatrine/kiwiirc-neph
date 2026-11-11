@@ -15,7 +15,8 @@ let nextBufferId = 0;
 const HISTORY_MAX_RETRIES = 3;
 const HISTORY_RETRY_BASE_MS = 3000;
 const HISTORY_RETRY_MAX_MS = 12000;
-const HISTORY_HIDDEN_BATCH_LIMIT = 10;
+const HISTORY_HIDDEN_BATCH_LIMIT = 20;
+const SCROLL_TARGET_TIMEOUT_MS = 5000;
 const READ_MARKER_THROTTLE_MS = 1000;
 const TRIM_GRACE_MS = 30000;
 const READ_MARKER_CONFIRM_TIMEOUT_MS = 15000;
@@ -130,6 +131,7 @@ export default class BufferState {
 
         def(this, 'isMessageTrimming', true, true);
         def(this, 'historyJumpTarget', null, true);
+        def(this, 'pending_scroll_id', null, true);
         def(this, 'historyContextLoading', false, true);
         def(this, 'contextRowIds', Object.create(null), false);
         def(this, 'relayNicks', Object.create(null), false);
@@ -139,6 +141,10 @@ export default class BufferState {
         def(this, 'chathistory_pending_requests', 0, true);
         def(this, 'trim_timeout', null, true);
         def(this, 'chathistory_cursor', null, true);
+        def(this, 'history_latest_loaded', false, true);
+        def(this, 'history_latest_end', 0, true);
+        def(this, 'auto_history_requested', false, true);
+        def(this, 'historyBatchActive', false, true);
         def(this, 'read_marker_timeout', null, true);
         def(this, 'read_marker_pending', null, true);
         def(this, 'read_marker_pending_timer', null, true);
@@ -207,6 +213,9 @@ export default class BufferState {
         this.clearReadMarkerPending();
         this.chathistory_request_count = 0;
         this.chathistory_cursor = null;
+        this.history_latest_loaded = false;
+        this.history_latest_end = 0;
+        this.auto_history_requested = false;
         this.flags.is_requesting_chathistory = false;
         this.flags.chathistory_available = true;
         this.flags.names_received = false;
@@ -272,14 +281,16 @@ export default class BufferState {
             }
             this.initUserStatus();
         } else if (this.isChannel()) {
-            // For channels, we rely on the network-wide isReadyForHistory signal,
-            // which depends on names_received.
+            // A channel buffer may be created after the network has already
+            // become ready. Ask for latest history now; maybeRequestHistory()
+            // is idempotent and the NAMES path still covers the normal case.
+            this.maybeRequestHistory();
         }
     }
 
     maybeRequestHistory() {
         const network = this.getNetwork();
-        if (!network || this.chathistory_request_count > 0) {
+        if (!network || this.auto_history_requested) {
             return;
         }
 
@@ -305,6 +316,7 @@ export default class BufferState {
         }
 
         if (shouldRequest) {
+            this.auto_history_requested = true;
             this.requestLatestScrollback();
         }
     }
@@ -530,6 +542,18 @@ export default class BufferState {
             const older = segments[i - 1];
             const newer = segments[i];
             if (older.end < newer.start) {
+                // A successful LATEST request establishes that there is no
+                // history between its newest message and the live segment.
+                if (this.history_latest_loaded &&
+                    this.history_latest_end &&
+                    i === segments.length - 1 &&
+                    older.kind === 'history' &&
+                    newer.kind === 'live' &&
+                    older.end >= this.history_latest_end
+                ) {
+                    continue;
+                }
+
                 const key = `${older.start}:${older.end}:${newer.start}:${newer.end}`;
                 gaps.push({
                     key,
@@ -621,7 +645,7 @@ export default class BufferState {
     }
 
     noteLiveMessage(message) {
-        if (!message || message.is_history) {
+        if (!message || message.is_history || this.shouldTrimImmediately()) {
             return;
         }
 
@@ -653,6 +677,16 @@ export default class BufferState {
     }
 
     syncHistorySegments() {
+        if (this.shouldTrimImmediately()) {
+            if (this.historySegments.length) {
+                this.historySegments = [];
+            }
+            if (this.historyGaps.length) {
+                this.historyGaps = [];
+            }
+            return;
+        }
+
         const messages = this.allMessages();
         const next = [];
 
@@ -698,15 +732,15 @@ export default class BufferState {
         }
 
         const boundaryId = direction === 'older' ?
-            gap.newer.firstId :
-            gap.older.lastId;
+            gap.older.lastId :
+            gap.newer.firstId;
         const boundary = boundaryId ? this.messagesObj.messageIds[boundaryId] : null;
         const ref = this.historyReferenceForMessage(boundary);
         if (!ref) {
             return Promise.resolve(false);
         }
 
-        const func = direction === 'older' ? 'before' : 'after';
+        const func = direction === 'older' ? 'after' : 'before';
         const beforeCount = this.allMessages().length;
         this.historyContextLoading = true;
         this.isMessageTrimming = false;
@@ -732,7 +766,7 @@ export default class BufferState {
             return Promise.resolve(target);
         }
 
-        if (!this.addMessageBatch.queue().length || attempt >= 20) {
+        if (attempt >= 20) {
             return Promise.resolve(null);
         }
 
@@ -743,11 +777,21 @@ export default class BufferState {
         });
     }
 
-    jumpToMessage(result = {}) {
+    loadMessageContext(result = {}) {
+        return this.jumpToMessage(result, false);
+    }
+
+    jumpToMessage(result = {}, scroll = true) {
         const loaded = this.findLogResultMessage(result);
         if (loaded) {
-            this.state.$nextTick(() => this.scrollToMessage(loaded.id));
-            return Promise.resolve(true);
+            if (!scroll) {
+                return Promise.resolve(true);
+            }
+            return new Promise((resolve) => {
+                this.state.$nextTick(() => {
+                    this.scrollToMessage(loaded.id).then(resolve);
+                });
+            });
         }
 
         const history = this.getNetwork()?.ircClient?.chathistory;
@@ -772,15 +816,23 @@ export default class BufferState {
                     return false;
                 }
 
-                this.state.$nextTick(() => {
-                    this.scrollToMessage(target.id);
-                    setTimeout(() => {
-                        if (this.historyJumpTarget === result) {
-                            this.historyJumpTarget = null;
-                        }
-                    }, 1000);
+                if (!scroll) {
+                    this.historyJumpTarget = null;
+                    return true;
+                }
+
+                return new Promise((resolve) => {
+                    this.state.$nextTick(() => {
+                        this.scrollToMessage(target.id).then((scrolled) => {
+                            setTimeout(() => {
+                                if (this.historyJumpTarget === result) {
+                                    this.historyJumpTarget = null;
+                                }
+                            }, 1000);
+                            resolve(scrolled);
+                        });
+                    });
                 });
-                return true;
             })
             .catch(() => {
                 this.historyJumpTarget = null;
@@ -802,6 +854,8 @@ export default class BufferState {
         this.historySegments = [];
         this.historyGaps = [];
         this.historyGapExhausted = {};
+        this.history_latest_loaded = false;
+        this.history_latest_end = 0;
         this.contextOlderRowId = 0;
         this.contextNewerRowId = 0;
         Object.keys(this.contextRowIds).forEach((key) => {
@@ -1583,7 +1637,11 @@ export default class BufferState {
 
         // The messages array is deliberately non-reactive, so signal the
         // change explicitly after trimming or the rendered list stays stale.
-        this.message_count++;
+        // Internal buffers render from a bounded list and already mark their
+        // add batches, so avoid an extra full re-render per raw line.
+        if (!this.shouldTrimImmediately()) {
+            this.message_count++;
+        }
 
         return removed.length > 0;
     }
@@ -1837,7 +1895,43 @@ export default class BufferState {
     }
 
     scrollToMessage(id) {
-        this.state.$emit('messagelist.scrollto', { id: id });
+        if (!id) {
+            return Promise.resolve(false);
+        }
+
+        this.pending_scroll_id = id;
+
+        return new Promise((resolve) => {
+            let done = false;
+            let timeout = null;
+
+            const finish = (scrolled) => {
+                if (done) {
+                    return;
+                }
+                done = true;
+                clearTimeout(timeout);
+                this.state.$off('messagelist.scrolledto', onScrolled);
+                if (scrolled && this.pending_scroll_id === id) {
+                    this.pending_scroll_id = null;
+                }
+                resolve(scrolled);
+            };
+
+            const onScrolled = (event) => {
+                if (!event || event.id !== id) {
+                    return;
+                }
+                if (event.buffer && event.buffer !== this) {
+                    return;
+                }
+                finish(true);
+            };
+
+            this.state.$on('messagelist.scrolledto', onScrolled);
+            timeout = setTimeout(() => finish(false), SCROLL_TARGET_TIMEOUT_MS);
+            this.state.$emit('messagelist.scrollto', { id: id });
+        });
     }
 
     getLoadingState() {
@@ -1922,7 +2016,9 @@ function createMessageBatch(bufferState) {
         }
         bufferState.noteLiveMessage(newMessage);
         bufferState.scheduleTrim();
-        bufferTools.orderedMessages(bufferState, { inPlace: true, noFilter: true });
+        if (!bufferState.shouldTrimImmediately()) {
+            bufferTools.orderedMessages(bufferState, { inPlace: true, noFilter: true });
+        }
         bufferState.message_count++;
     };
     let addMultipleMessages = (newMessages) => {
@@ -1945,7 +2041,9 @@ function createMessageBatch(bufferState) {
                 bufferState.noteLiveMessage(msg);
             });
             bufferState.scheduleTrim();
-            bufferTools.orderedMessages(bufferState, { inPlace: true, noFilter: true });
+            if (!bufferState.shouldTrimImmediately()) {
+                bufferTools.orderedMessages(bufferState, { inPlace: true, noFilter: true });
+            }
         }
         // Trigger Vue's reactivity on the buffer whether messages were added or not, just in case
         // anything was depending on the batch queue which has now been emptied.
@@ -2174,9 +2272,18 @@ function getBufferHistory(
         }
         const cursorAdvanced = historyCursorKey(buffer.chathistory_cursor) !== cursorBefore;
 
+        if (chathistoryFuncName === 'latest') {
+            buffer.history_latest_loaded = true;
+        }
+
         const historyTimes = event.commands
             .map((command) => commandTimestamp(command))
             .filter((stamp) => stamp > 0);
+        if (chathistoryFuncName === 'latest') {
+            buffer.history_latest_end = historyTimes.length ?
+                Math.max(...historyTimes) :
+                0;
+        }
         if (historyTimes.length) {
             buffer.noteHistoryWindow(
                 Math.min(...historyTimes),
@@ -2185,18 +2292,19 @@ function getBufferHistory(
             );
         }
 
-        if (typeof event.is_end !== 'undefined') {
-            buffer.flag('chathistory_available', !event.is_end);
-            if (event.is_end) {
-                return undefined;
-            }
+        // draft/chathistory-end marks the end of the requested response, not
+        // that no history exists in every direction. Only BEFORE exhausts the
+        // older-history control.
+        if (event.is_end && chathistoryFuncName === 'before') {
+            buffer.flag('chathistory_available', false);
+            return undefined;
         }
 
         // The BNC server may reply with messages that are already in the buffer.
         // If we get no new messages that we didn't already have, assume that we have
         // all the available history
         let hasNewMessages = event.commands.some(
-            (msg) => msg.tags.msgid && !existingMessageIds[msg.tags.msgid]
+            (msg) => msg.tags && msg.tags.msgid && !existingMessageIds[msg.tags.msgid]
         );
 
         const displayable = hasDisplayableHistory(buffer, existingMessageIds);
@@ -2204,14 +2312,20 @@ function getBufferHistory(
         if (displayable) {
             buffer.flag('chathistory_available', true);
         } else if (!hasNewMessages && !cursorAdvanced) {
-            buffer.flag('chathistory_available', false);
+            // Only a BEFORE request can prove that older history is
+            // exhausted. An empty LATEST/AFTER/AROUND response must not hide
+            // the older-history control.
+            if (chathistoryFuncName === 'before') {
+                buffer.flag('chathistory_available', false);
+            }
             return undefined;
         } else {
             // Hidden-only batches still move the cursor. Keep manual loading
             // available and fetch the next older batch automatically.
             buffer.flag('chathistory_available', true);
 
-            if (chathistoryFuncName === 'before' &&
+            if ((chathistoryFuncName === 'before' ||
+                chathistoryFuncName === 'latest') &&
                 hiddenDepth < HISTORY_HIDDEN_BATCH_LIMIT
             ) {
                 const cursorRef = historyRefFromCursor(buffer);
