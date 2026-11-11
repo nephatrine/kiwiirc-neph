@@ -19,6 +19,9 @@ export default [
         ignores: [
             'build/*.js',
             'config/*.js',
+            'desktop/build/',
+            'desktop/node_modules/',
+            'desktop/release/',
             'tests/unit/coverage/',
         ],
     },

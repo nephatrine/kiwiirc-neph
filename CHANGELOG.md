@@ -133,6 +133,8 @@ and this project adheres to
   with the same name.
 - **Chat Logs**: Jumping to a searched or linked message now briefly highlights
   the target message so it is easy to find in the buffer.
+- **Tooling**: `npm run lint` and `npm run format` now include the desktop
+  Electron and desktop script code.
 - **Message Search**: The search dialog now follows the selected theme. The
   header search button is hidden when no search source is available. The state
   browser button now appears only on desktop layouts while a special buffer is
