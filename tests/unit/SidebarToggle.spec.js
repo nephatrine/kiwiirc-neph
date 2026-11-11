@@ -53,10 +53,25 @@ describe('sidebar component toggle', () => {
         testState.$emit('sidebar.component', component, {}, 'plugin-a');
         await Vue.nextTick();
         expect(testState.ui.sidebar_open).toBe(true);
+        expect(testState.ui.sidebar_section).toBe('component');
 
         vm.close();
         await Vue.nextTick();
         expect(testState.ui.sidebar_open).toBe(false);
+        expect(testState.ui.sidebar_section).toBe('');
+    });
+
+    it('reports the active nicklist section for automatic companion sizing', async() => {
+        testState.ui.app_width = 1200;
+        let network = testState.addNetwork('TestNetwork', 'TestNick', {});
+        testState.getOrAddBufferByName(network.id, '#chan');
+        testState.setActiveBuffer(network.id, '#chan');
+
+        vm.showNicklist();
+        await Vue.nextTick();
+
+        expect(testState.ui.sidebar_open).toBe(true);
+        expect(testState.ui.sidebar_section).toBe('nicklist');
     });
 
     it('shows a component with an id and reports it open', () => {

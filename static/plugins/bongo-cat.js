@@ -39,7 +39,6 @@ kiwi.plugin('bongo-cat', (kiwi, log) => {
             title: 'Bongo Companion',
             hint: 'Your little desk companion.',
             settings_hint: 'A little desk companion that taps along while you type.',
-            close: 'Close',
             settings: 'Settings',
             name: 'Name',
             hunger: 'Hunger',
@@ -58,8 +57,14 @@ kiwi.plugin('bongo-cat', (kiwi, log) => {
             reset_confirm: 'Reset Companion? This clears care, XP, and cosmetics.',
             reset_hint: "Reset your pet's current state and experience levels.",
             bongo_taps: 'Tap Sounds',
-            large_cat: 'Larger Companion',
+            grow_cat: 'Use Larger Companion',
+            shrink_cat: 'Use Smaller Companion',
+            size: 'Size',
+            size_auto: 'Automatic',
+            size_normal: 'Normal',
+            size_larger: 'Larger',
             position: 'Position',
+            position_auto: 'Automatic',
             position_bottom: 'Bottom Right',
             position_top: 'Top Right',
             move_to_top: 'Move companion to top right',
@@ -107,6 +112,9 @@ kiwi.plugin('bongo-cat', (kiwi, log) => {
     let DEFAULT_TIREDNESS = 20;
     let DEFAULT_MOOD = 80;
     let DEFAULT_VOLUME = 0.5;
+    let BASE_RIGHT_OFFSET = 8;
+    let BASE_BOTTOM_OFFSET = 48;
+    let BASE_TOP_OFFSET = 42;
     let MIN_HUNGER = 0;
     let MIN_TIREDNESS = 0;
     let MIN_MOOD = 0;
@@ -534,6 +542,21 @@ kiwi.plugin('bongo-cat', (kiwi, log) => {
         return Number.isFinite(number) ? number : fallback;
     }
 
+    function normalizePosition(value) {
+        if (value === 'top' || value === 'bottom' || value === 'auto') {
+            return value;
+        }
+        return 'auto';
+    }
+
+    function normalizeSize(stored) {
+        let value = stored && stored.size;
+        if (value === 'auto' || value === 'normal' || value === 'larger') {
+            return value;
+        }
+        return stored && stored.large === true ? 'larger' : 'auto';
+    }
+
     function timestampOr(value, fallback) {
         let number = Number(value);
         return Number.isFinite(number) && number > 0 ? number : fallback;
@@ -599,8 +622,8 @@ kiwi.plugin('bongo-cat', (kiwi, log) => {
             skin: normalizeSkinId(stored.skin) || DEFAULT_SKIN_ID,
             sound: typeof stored.sound === 'boolean' ? stored.sound : true,
             volume: clamp(numberOr(stored.volume, DEFAULT_VOLUME), 0, 1),
-            large: stored.large === true,
-            position: stored.position === 'top' ? 'top' : 'bottom',
+            size: normalizeSize(stored),
+            position: normalizePosition(stored.position),
             hidden: typeof stored.hidden === 'boolean' ? stored.hidden : true,
             hunger: clamp(numberOr(stored.hunger, DEFAULT_HUNGER), MIN_HUNGER, 100),
             tiredness: clamp(
@@ -660,7 +683,7 @@ kiwi.plugin('bongo-cat', (kiwi, log) => {
                 skin: store.skin,
                 sound: store.sound,
                 volume: store.volume,
-                large: store.large,
+                size: store.size,
                 position: store.position,
                 hidden: store.hidden,
                 hunger: store.hunger,
@@ -872,7 +895,12 @@ kiwi.plugin('bongo-cat', (kiwi, log) => {
                 highTone: false,
                 now: Date.now(),
                 toolbarOpen: false,
+                toolbarLift: 0,
                 toolbarObserver: null,
+                previousResolvedPosition: null,
+                positionAnimationStart: 0,
+                positionAnimationPending: false,
+                positionAnimation: null,
                 toolbarCheckTimer: null,
                 typingTimer: null,
                 sleepTimer: null,
@@ -951,6 +979,45 @@ kiwi.plugin('bongo-cat', (kiwi, log) => {
             },
             store: function() {
                 return store;
+            },
+            sidebarOpen: function() {
+                return !!(kiwi.state && kiwi.state.ui &&
+                    kiwi.state.ui.sidebar_open);
+            },
+            nicklistOpen: function() {
+                return !!(kiwi.state && kiwi.state.ui &&
+                    kiwi.state.ui.sidebar_open &&
+                    kiwi.state.ui.sidebar_section === 'nicklist');
+            },
+            resolvedPosition: function() {
+                if (store.position === 'auto') {
+                    return this.sidebarOpen ? 'bottom' : 'top';
+                }
+                return normalizePosition(store.position);
+            },
+            isLarge: function() {
+                return store.size === 'larger' ||
+                    (store.size === 'auto' && this.nicklistOpen);
+            },
+            placementStyle: function() {
+                let insets = kiwi.layout && kiwi.layout.insets ?
+                    kiwi.layout.insets :
+                    {};
+                let right = BASE_RIGHT_OFFSET + Math.max(0, numberOr(insets.right, 0));
+                if (this.resolvedPosition === 'top') {
+                    return {
+                        right: right + 'px',
+                        top: (BASE_TOP_OFFSET + Math.max(0, numberOr(insets.top, 0))) + 'px',
+                    };
+                }
+                let bottom = BASE_BOTTOM_OFFSET + Math.max(
+                    0,
+                    numberOr(this.toolbarLift, 0)
+                );
+                return {
+                    right: right + 'px',
+                    bottom: (bottom + Math.max(0, numberOr(insets.bottom, 0))) + 'px',
+                };
             },
             skinReady: function() {
                 return skinState.ready;
@@ -1310,12 +1377,38 @@ kiwi.plugin('bongo-cat', (kiwi, log) => {
             this.loadSkin();
             this.observeToolbar();
             this.updateToolbarOffset();
+            this.previousResolvedPosition = this.resolvedPosition;
+            window.addEventListener('resize', this.scheduleToolbarCheck);
+            document.addEventListener('click', this.onDocumentClick, true);
             this.sleepTimer = window.setInterval(this.tick.bind(this), CARE_TICK_MS);
+        },
+        beforeUpdate: function() {
+            if (this.previousResolvedPosition !== null &&
+                this.resolvedPosition !== this.previousResolvedPosition &&
+                this.$el &&
+                typeof this.$el.getBoundingClientRect === 'function'
+            ) {
+                this.positionAnimationStart = this.$el.getBoundingClientRect().top;
+                this.positionAnimationPending = true;
+            }
+        },
+        updated: function() {
+            if (this.positionAnimationPending) {
+                this.positionAnimationPending = false;
+                this.animatePositionChange(this.positionAnimationStart);
+            }
+            this.previousResolvedPosition = this.resolvedPosition;
         },
         beforeDestroy: function() {
             kiwi.off('input.activity', this.onActivity, this);
             kiwi.off('message.new', this.onMessage, this);
             kiwi.off('twitch.usernotice', this.onUserNotice, this);
+            window.removeEventListener('resize', this.scheduleToolbarCheck);
+            document.removeEventListener('click', this.onDocumentClick, true);
+            if (this.positionAnimation) {
+                this.positionAnimation.cancel();
+                this.positionAnimation = null;
+            }
             if (this.toolbarObserver) {
                 this.toolbarObserver.disconnect();
                 this.toolbarObserver = null;
@@ -1349,8 +1442,38 @@ kiwi.plugin('bongo-cat', (kiwi, log) => {
                 let active = document.querySelector('.kiwi-controlinput-active-tool');
                 return (!!tools && !inline) || !!(active && active.firstElementChild);
             },
+            measureToolbarLift: function() {
+                let input = document.querySelector('.kiwi-controlinput');
+                if (!input) {
+                    return 0;
+                }
+
+                let inputTop = input.getBoundingClientRect().top;
+                let toolbarRects = [];
+                let tools = document.querySelector('.kiwi-controlinput-tools-container');
+                if (tools) {
+                    toolbarRects.push(tools.getBoundingClientRect());
+                }
+
+                let active = document.querySelector('.kiwi-controlinput-active-tool');
+                if (active) {
+                    Array.from(active.children).forEach((child) => {
+                        toolbarRects.push(child.getBoundingClientRect());
+                    });
+                }
+
+                let tops = toolbarRects
+                    .filter((rect) => rect.height > 0)
+                    .map((rect) => rect.top);
+                if (!tops.length) {
+                    return 0;
+                }
+
+                return Math.max(0, inputTop - Math.min(...tops));
+            },
             updateToolbarOffset: function() {
                 this.toolbarOpen = this.isToolbarOpen();
+                this.toolbarLift = this.toolbarOpen ? this.measureToolbarLift() : 0;
             },
             scheduleToolbarCheck: function() {
                 if (this.toolbarCheckTimer) {
@@ -1360,6 +1483,39 @@ kiwi.plugin('bongo-cat', (kiwi, log) => {
                     this.toolbarCheckTimer = null;
                     this.updateToolbarOffset();
                 }, 0);
+            },
+            animatePositionChange: function(startTop) {
+                if (!this.$el ||
+                    typeof this.$el.animate !== 'function' ||
+                    !this.$el.getBoundingClientRect ||
+                    (window.matchMedia &&
+                        window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+                ) {
+                    return;
+                }
+
+                let endTop = this.$el.getBoundingClientRect().top;
+                let delta = startTop - endTop;
+                if (!delta) {
+                    return;
+                }
+
+                if (this.positionAnimation) {
+                    this.positionAnimation.cancel();
+                }
+                this.positionAnimation = this.$el.animate(
+                    [
+                        { transform: 'translateY(' + delta + 'px)' },
+                        { transform: 'translateY(0)' },
+                    ],
+                    {
+                        duration: 220,
+                        easing: 'ease-out',
+                    }
+                );
+                this.positionAnimation.onfinish = () => {
+                    this.positionAnimation = null;
+                };
             },
             isToolbarMutationRelevant: function(mutations) {
                 let selector = '.kiwi-controlinput-tools-container, ' +
@@ -1986,6 +2142,15 @@ kiwi.plugin('bongo-cat', (kiwi, log) => {
                 this.now = Date.now();
                 this.cardOpen = !this.cardOpen;
             },
+            onDocumentClick: function(event) {
+                if (!this.cardOpen || !event || !event.target) {
+                    return;
+                }
+                if (this.$el && this.$el.contains(event.target)) {
+                    return;
+                }
+                this.cardOpen = false;
+            },
             openSettings: function() {
                 this.cardOpen = false;
                 if (!AppSettings) {
@@ -2246,6 +2411,14 @@ kiwi.plugin('bongo-cat', (kiwi, log) => {
                     playTone(true);
                 }
             },
+            toggleSize: function() {
+                if (store.size === 'larger') {
+                    store.size = 'normal';
+                } else if (store.size === 'normal') {
+                    store.size = 'larger';
+                }
+                persist();
+            },
             togglePosition: function() {
                 store.position = store.position === 'top' ? 'bottom' : 'top';
                 persist();
@@ -2327,12 +2500,14 @@ kiwi.plugin('bongo-cat', (kiwi, log) => {
                 persist();
                 playTone(true);
             },
-            toggleLarge: function() {
-                store.large = !store.large;
-                persist();
+            setSize: function(value) {
+                if (value === 'auto' || value === 'normal' || value === 'larger') {
+                    store.size = value;
+                    persist();
+                }
             },
             setPosition: function(value) {
-                store.position = value === 'top' ? 'top' : 'bottom';
+                store.position = normalizePosition(value);
                 persist();
             },
             show: function() {

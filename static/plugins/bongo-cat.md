@@ -62,8 +62,8 @@ are stored in browser `localStorage` under `kiwiirc.bongo-cat`, not in Kiwi
 | Name                    | Companion display name, up to 20 characters.  | `Bongo`               |
 | Tap Sounds              | Enables typing and UI sounds.                 | On                    |
 | Volume                  | Sound volume from `0` to `1` in `0.05` steps. | `0.5`                 |
-| Larger Companion        | Uses the larger companion presentation.       | Off                   |
-| Position                | Bottom Right or Top Right.                    | Bottom Right          |
+| Size                    | Automatic, Normal, or Larger.                 | Automatic             |
+| Position                | Automatic, Bottom Right, or Top Right.        | Automatic             |
 | Release/Store Companion | Toggles companion visibility.                 | Hidden                |
 | Skin                    | Selects a configured skin ID.                 | First configured skin |
 | Hat                     | Equips an unlocked hat or No Hat.             | No Hat                |
@@ -111,11 +111,19 @@ care clocks, so hidden time does not create a decay backlog.
 
 ### Placement
 
-- Position can be set to Bottom Right (default) or Top Right.
+- Size can be set to Automatic (default), Normal, or Larger.
+- Automatic size uses Larger while the nicklist is open and visible, and Normal
+  for every other sidebar or layout state.
+- Position can be set to Automatic (default), Bottom Right, or Top Right.
+- Automatic position uses Bottom Right while any right sidebar is open and Top
+  Right when no right sidebar is open.
 - Bottom placement opens the stats card upward; top placement opens it downward.
-- A quick position button is available in the stats card next to the sound
-  toggle.
+- The stats card shows the position arrow only for explicit position modes and
+  the grow/shrink button only for explicit size modes.
+- Size and top/bottom position changes animate when reduced-motion preferences
+  allow it.
 - The position is stored with the companion state and is preserved by reset.
+- Clicking outside the stats card closes it.
 - On short viewports, the stats card becomes a scrollable top overlay so it
   remains usable.
 

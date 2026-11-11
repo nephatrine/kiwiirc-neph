@@ -20,14 +20,15 @@
             'kiwi-bongo-cat--acknowledge': acknowledging,
             'kiwi-bongo-cat--celebrate': celebrating,
             'kiwi-bongo-cat--worried': worried,
-            'kiwi-bongo-cat--large': store.large,
-            'kiwi-bongo-cat--top': store.position === 'top',
+            'kiwi-bongo-cat--large': isLarge,
+            'kiwi-bongo-cat--top': resolvedPosition === 'top',
             'kiwi-bongo-cat--radio': radioMode === 'jam' || radioMode === 'tired-jam' || radioMode === 'listen',
             'kiwi-bongo-cat--radio-jam': radioMode === 'jam',
             'kiwi-bongo-cat--radio-tired': radioMode === 'tired-jam',
             'kiwi-bongo-cat--radio-listen': radioMode === 'listen',
             'kiwi-bongo-cat--toolbar-open': toolbarOpen,
         }"
+        :style="placementStyle"
     >
         <transition name="kiwi-bongo-pop">
             <div
@@ -68,6 +69,7 @@
                             ></i>
                         </button>
                         <button
+                            v-if="store.position !== 'auto'"
                             type="button"
                             class="kiwi-bongo-cat__icon-button"
                             :aria-label="store.position === 'top'
@@ -85,13 +87,22 @@
                             ></i>
                         </button>
                         <button
+                            v-if="store.size !== 'auto'"
                             type="button"
                             class="kiwi-bongo-cat__icon-button"
-                            :aria-label="$t('bongo-cat:close')"
-                            :title="$t('bongo-cat:close')"
-                            @click="cardOpen = false"
+                            :aria-label="isLarge
+                                ? $t('bongo-cat:shrink_cat')
+                                : $t('bongo-cat:grow_cat')"
+                            :title="isLarge
+                                ? $t('bongo-cat:shrink_cat')
+                                : $t('bongo-cat:grow_cat')"
+                            @click="toggleSize"
                         >
-                            <i class="bx bx-x" aria-hidden="true"></i>
+                            <i
+                                class="bx"
+                                :class="isLarge ? 'bx-collapse-alt' : 'bx-expand-alt'"
+                                aria-hidden="true"
+                            ></i>
                         </button>
                     </div>
                 </div>
@@ -560,9 +571,17 @@
                     >
                 </div>
 
-                <label class="u-checkbox-wrapper">
-                    <span>{{ $t('bongo-cat:large_cat') }}</span>
-                    <input type="checkbox" :checked="store.large" @change="toggleLarge">
+                <label class="u-form-block">
+                    <span>{{ $t('bongo-cat:size') }}</span>
+                    <select
+                        class="u-input"
+                        :value="store.size"
+                        @change="setSize($event.target.value)"
+                    >
+                        <option value="auto">{{ $t('bongo-cat:size_auto') }}</option>
+                        <option value="normal">{{ $t('bongo-cat:size_normal') }}</option>
+                        <option value="larger">{{ $t('bongo-cat:size_larger') }}</option>
+                    </select>
                 </label>
 
                 <label class="u-form-block">
@@ -572,6 +591,7 @@
                         :value="store.position"
                         @change="setPosition($event.target.value)"
                     >
+                        <option value="auto">{{ $t('bongo-cat:position_auto') }}</option>
                         <option value="bottom">{{ $t('bongo-cat:position_bottom') }}</option>
                         <option value="top">{{ $t('bongo-cat:position_top') }}</option>
                     </select>

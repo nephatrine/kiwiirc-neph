@@ -61,6 +61,17 @@ and this project adheres to
   that overrides server-provided and built-in icons. Desktop users can choose a
   local image, which is copied into the app data directory and served through
   `kiwi-icon://`. Added the nightride fallback for `NETWORK=RektNetwork`.
+- **Plugin Layout API**: Added viewport-edge layout chrome insets that framing
+  plugins can register and other plugins can consume. NephWave and NephDeck now
+  report their frame insets, and Bongo Companion positions itself from the
+  combined insets instead of assuming a specific theme.
+- **Bongo Companion**: Added Automatic placement, which uses Bottom Right while
+  a right sidebar is open and Top Right when it is closed. Automatic is now the
+  default position. Added a Size selector with Automatic, Normal, and Larger
+  options; Automatic uses the larger companion only while the nicklist is
+  visible. The stats card closes when clicking outside, shows explicit position
+  and size controls independently, and animates position and size changes when
+  reduced-motion preferences allow it.
 - **App Settings**: Added a Channel Defaults section for global per-channel
   defaults such as joins/parts, topic/nick/mode changes, formatting, nicklist
   colors, notification level, sound, and unread counts. Added the remaining

@@ -24,12 +24,18 @@ export default Vue.extend({
         isOpen() {
             return this.sidebarOpen && this.section() && this.$state.ui.app_width > 769;
         },
+        activeSection() {
+            return this.section();
+        },
     },
     watch: {
         isOpen() {
             this.syncSidebarOpen();
         },
         isDrawn() {
+            this.syncSidebarOpen();
+        },
+        activeSection() {
             this.syncSidebarOpen();
         },
     },
@@ -58,7 +64,9 @@ export default Vue.extend({
     },
     methods: {
         syncSidebarOpen() {
-            this.$state.ui.sidebar_open = !!(this.isOpen || this.isDrawn);
+            let open = !!(this.isOpen || this.isDrawn);
+            this.$state.ui.sidebar_open = open;
+            this.$state.ui.sidebar_section = open ? this.section() : '';
         },
         section() {
             if (!this.sidebarOpen) {
