@@ -196,6 +196,10 @@ reactive object keys need `kiwi.Vue.set()` or `kiwi.Vue.delete()`. Use
 | `kiwi.i18n`                                    | i18next instance.                                    |
 | `kiwi.vueI18n`                                 | Vue I18n instance.                                   |
 | `kiwi.media`                                   | Reactive aggregate media state.                      |
+| `kiwi.layout.insets`                           | Reactive viewport-edge chrome insets.                |
+| `kiwi.setLayoutInsets(source, insets)`         | Reserve viewport edges for a chrome provider.        |
+| `kiwi.clearLayoutInsets(source)`               | Remove a chrome provider's insets.                   |
+| `kiwi.getLayoutInsets()`                       | Read a copy of the combined insets.                  |
 | `kiwi.log`                                     | Shared logger.                                       |
 | `kiwi.logLevel(level)`                         | Set the global log level.                            |
 | `kiwi.require(path)`                           | Load an exported application module.                 |
@@ -625,6 +629,59 @@ time. Registering the same name again replaces the earlier service.
 The bundled radio plugin registers a `radio` service with `enabled()`,
 `getRadio()`, and `openBrowser()`.
 
+## Layout Chrome Insets
+
+Plugins that add fixed chrome around the layout can reserve the viewport edges
+it occupies. Other plugins can then position overlays inside the remaining
+content area.
+
+Insets are CSS pixels. Missing or invalid edges are treated as `0`. Multiple
+providers are combined by taking the maximum value for each edge.
+
+```js
+kiwi.setLayoutInsets('my-chrome', {
+    top: 48,
+    right: 12,
+    bottom: 32,
+    left: 12,
+});
+
+// Remove the reservation when the chrome is disabled.
+kiwi.clearLayoutInsets('my-chrome');
+```
+
+`setLayoutInsets()` returns an unsubscribe function:
+
+```js
+const clear = kiwi.setLayoutInsets('my-chrome', insets);
+// later
+clear();
+```
+
+Consumers can read reactive state from a Vue component:
+
+```js
+computed: {
+    insetBottom() {
+        return kiwi.layout.insets.bottom;
+    },
+},
+```
+
+Or read a copy from plain JavaScript:
+
+```js
+const insets = kiwi.getLayoutInsets();
+element.style.right = (18 + insets.right) + 'px';
+element.style.bottom = (88 + insets.bottom) + 'px';
+```
+
+The `layout.insets` event fires when the combined insets change. Providers must
+register after their chrome is visible, update on layout changes, and clear
+their source when the chrome is removed or the plugin is deactivated. The
+NephWave and NephDeck chrome plugins and the Bongo Companion are reference
+implementations.
+
 ## Events
 
 `kiwi` is an event emitter. Listen with `kiwi.on()` and remove listeners with
@@ -646,6 +703,7 @@ Common events:
 | `message.reaction`, `message.redaction` | `{ message, buffer }`                  |
 | `input.activity`                        | `{ network, buffer, textLength }`      |
 | `media.playing`                         | `{ playing, source, metadata }`        |
+| `layout.insets`                         | `{ top, right, bottom, left }`         |
 | `plugin.loaded`                         | `{ name }`                             |
 | `network.new`, `network.removed`        | `{ network }` or `{ network, source }` |
 | `buffer.new`, `buffer.close`            | `{ buffer }`                           |

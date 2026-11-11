@@ -46,6 +46,19 @@ describe('sidebar component toggle', () => {
         vm = null;
     });
 
+    it('tracks right sidebar visibility in shared UI state', async() => {
+        testState.ui.app_width = 1200;
+        let component = { template: '<div />' };
+
+        testState.$emit('sidebar.component', component, {}, 'plugin-a');
+        await Vue.nextTick();
+        expect(testState.ui.sidebar_open).toBe(true);
+
+        vm.close();
+        await Vue.nextTick();
+        expect(testState.ui.sidebar_open).toBe(false);
+    });
+
     it('shows a component with an id and reports it open', () => {
         let component = { template: '<div />' };
         testState.$emit('sidebar.component', component, { foo: 'bar' }, 'plugin-a');

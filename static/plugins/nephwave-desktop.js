@@ -494,6 +494,7 @@ kiwi.plugin('nephwave-desktop', (kiwi, log) => {
         hideModals();
         document.body.classList.add('nephwave-minimized');
         updateTaskStates();
+        scheduleLayoutInsets();
         if (messengerTask) {
             messengerTask.focus();
         }
@@ -506,6 +507,7 @@ kiwi.plugin('nephwave-desktop', (kiwi, log) => {
         minimized = false;
         document.body.classList.remove('nephwave-minimized');
         updateTaskStates();
+        scheduleLayoutInsets();
     }
 
     function closeActivePanels() {
@@ -814,6 +816,7 @@ kiwi.plugin('nephwave-desktop', (kiwi, log) => {
     function addDocumentListeners() {
         document.addEventListener('click', onDocumentClick, true);
         document.addEventListener('keydown', onDocumentKeydown);
+        window.addEventListener('resize', updateLayoutInsets);
         kiwi.on('message.new', onMessage);
         kiwi.on('active.component', onActiveComponent);
     }
@@ -821,8 +824,34 @@ kiwi.plugin('nephwave-desktop', (kiwi, log) => {
     function removeDocumentListeners() {
         document.removeEventListener('click', onDocumentClick, true);
         document.removeEventListener('keydown', onDocumentKeydown);
+        window.removeEventListener('resize', updateLayoutInsets);
         kiwi.off('message.new', onMessage);
         kiwi.off('active.component', onActiveComponent);
+    }
+
+    function updateLayoutInsets() {
+        if (typeof kiwi.setLayoutInsets !== 'function') {
+            return;
+        }
+        let bezel = chromeRoot && !chromeRoot.hidden && !minimized ?
+            chromeRoot.querySelector('.nephwave-bezel') :
+            null;
+        if (!bezel) {
+            kiwi.clearLayoutInsets('nephwave-desktop');
+            return;
+        }
+
+        let rect = bezel.getBoundingClientRect();
+        kiwi.setLayoutInsets('nephwave-desktop', {
+            top: Math.max(0, rect.top),
+            right: Math.max(0, window.innerWidth - rect.right),
+            bottom: Math.max(0, window.innerHeight - rect.bottom),
+            left: Math.max(0, rect.left),
+        });
+    }
+
+    function scheduleLayoutInsets() {
+        window.requestAnimationFrame(updateLayoutInsets);
     }
 
     /* ---- Chrome construction ---- */
@@ -1037,12 +1066,16 @@ kiwi.plugin('nephwave-desktop', (kiwi, log) => {
             addDocumentListeners();
         }
         startClock();
+        scheduleLayoutInsets();
     }
 
     function deactivate() {
         active = false;
         minimized = false;
         removeDocumentListeners();
+        if (typeof kiwi.clearLayoutInsets === 'function') {
+            kiwi.clearLayoutInsets('nephwave-desktop');
+        }
         stopClock();
         hideStartMenu();
         hideModals();

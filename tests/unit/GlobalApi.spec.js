@@ -291,4 +291,86 @@ describe('GlobalApi plugin surface', () => {
         expect(api.isMediaPlaying()).toBe(false);
         expect(api.getMediaSources()).toEqual({});
     });
+
+    it('tracks layout chrome insets from multiple providers', () => {
+        let events = [];
+        api.on('layout.insets', (insets) => events.push(insets));
+
+        api.setLayoutInsets('frame', {
+            top: 48,
+            right: 10,
+            bottom: 32,
+            left: 12,
+        });
+        expect(api.getLayoutInsets()).toEqual({
+            top: 48,
+            right: 10,
+            bottom: 32,
+            left: 12,
+        });
+        expect(api.layout.insets).toEqual(api.getLayoutInsets());
+
+        api.setLayoutInsets('rail', {
+            right: 24,
+            bottom: 8,
+        });
+        expect(api.getLayoutInsets()).toEqual({
+            top: 48,
+            right: 24,
+            bottom: 32,
+            left: 12,
+        });
+
+        api.clearLayoutInsets('frame');
+        expect(api.getLayoutInsets()).toEqual({
+            top: 0,
+            right: 24,
+            bottom: 8,
+            left: 0,
+        });
+
+        api.clearLayoutInsets('rail');
+        expect(api.getLayoutInsets()).toEqual({
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+        });
+        expect(events).toHaveLength(4);
+    });
+
+    it('normalizes invalid layout insets and supports unsubscribe', () => {
+        const clear = api.setLayoutInsets('chrome', {
+            top: -10,
+            right: 'bad',
+            bottom: 12,
+            left: Infinity,
+        });
+
+        expect(api.getLayoutInsets()).toEqual({
+            top: 0,
+            right: 0,
+            bottom: 12,
+            left: 0,
+        });
+
+        clear();
+        expect(api.getLayoutInsets()).toEqual({
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+        });
+    });
+
+    it('does not emit layout events when the combined insets are unchanged', () => {
+        let events = [];
+        api.on('layout.insets', (insets) => events.push(insets));
+
+        api.setLayoutInsets('frame', { bottom: 20 });
+        api.setLayoutInsets('other', { bottom: 10 });
+        api.clearLayoutInsets('other');
+
+        expect(events).toHaveLength(1);
+    });
 });

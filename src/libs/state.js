@@ -31,6 +31,7 @@ function createNewState() {
         ui: {
             active_network: 0,
             active_buffer: '',
+            sidebar_open: false,
             last_active_buffers: [],
             app_has_focus: true,
             app_is_visible: true,

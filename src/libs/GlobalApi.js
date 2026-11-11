@@ -12,6 +12,21 @@ let singletonInstance = null;
 let pluginsToInit = [];
 let nextPluginId = 0;
 
+const LAYOUT_EDGES = ['top', 'right', 'bottom', 'left'];
+
+function normalizeLayoutInsets(insets = {}) {
+    const normalized = {};
+    LAYOUT_EDGES.forEach((edge) => {
+        const value = Number(insets[edge]);
+        normalized[edge] = Number.isFinite(value) && value > 0 ? value : 0;
+    });
+    return normalized;
+}
+
+function layoutInsetsEqual(a, b) {
+    return LAYOUT_EDGES.every((edge) => a[edge] === b[edge]);
+}
+
 /** The global kiwi API instance */
 export default class GlobalApi extends EventEmitter {
     constructor() {
@@ -59,6 +74,16 @@ export default class GlobalApi extends EventEmitter {
         /** Reactive media playback state reported by plugins */
         this.media = Vue.observable({
             playing: false,
+            sources: {},
+        });
+        /** Reactive viewport-edge insets reserved by layout chrome plugins */
+        this.layout = Vue.observable({
+            insets: {
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+            },
             sources: {},
         });
         /* eslint-disable no-underscore-dangle */
@@ -275,6 +300,81 @@ export default class GlobalApi extends EventEmitter {
 
     clearMediaSource(source) {
         this.setMediaPlaying(source, false);
+    }
+
+    /**
+     * Register the viewport-edge area reserved by a layout chrome plugin.
+     *
+     * Values are CSS pixels. Sources are combined by taking the maximum value
+     * for each edge. All-zero insets remove the source.
+     *
+     * @param {String} source Stable source identifier, eg. 'nephwave-desktop'
+     * @param {Object} insets Values for top, right, bottom, and left
+     * @returns {Function} Removes this source's insets when called
+     */
+    setLayoutInsets(source, insets = {}) {
+        const key = String(source || '');
+        if (!key) {
+            return () => {};
+        }
+
+        const normalized = normalizeLayoutInsets(insets);
+        const hasInsets = LAYOUT_EDGES.some((edge) => normalized[edge] > 0);
+        if (hasInsets) {
+            Vue.set(this.layout.sources, key, normalized);
+        } else if (this.layout.sources[key]) {
+            Vue.delete(this.layout.sources, key);
+        }
+        this.recomputeLayoutInsets();
+
+        return () => this.clearLayoutInsets(key);
+    }
+
+    /**
+     * Remove a previously registered layout chrome source.
+     * @param {String} source Stable source identifier
+     */
+    clearLayoutInsets(source) {
+        const key = String(source || '');
+        if (!key || !this.layout.sources[key]) {
+            return;
+        }
+        Vue.delete(this.layout.sources, key);
+        this.recomputeLayoutInsets();
+    }
+
+    /**
+     * Get a copy of the combined layout chrome insets.
+     * @returns {Object} Values for top, right, bottom, and left
+     */
+    getLayoutInsets() {
+        return {
+            top: this.layout.insets.top,
+            right: this.layout.insets.right,
+            bottom: this.layout.insets.bottom,
+            left: this.layout.insets.left,
+        };
+    }
+
+    recomputeLayoutInsets() {
+        const next = {};
+        LAYOUT_EDGES.forEach((edge) => {
+            next[edge] = 0;
+        });
+
+        Object.keys(this.layout.sources).forEach((source) => {
+            const insets = this.layout.sources[source];
+            LAYOUT_EDGES.forEach((edge) => {
+                next[edge] = Math.max(next[edge], insets[edge] || 0);
+            });
+        });
+
+        if (layoutInsetsEqual(this.layout.insets, next)) {
+            return;
+        }
+
+        this.layout.insets = next;
+        this.emit('layout.insets', this.getLayoutInsets());
     }
 
     setThemeManager(themeManager) {

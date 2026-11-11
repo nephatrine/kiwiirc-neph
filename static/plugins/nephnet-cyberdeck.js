@@ -631,6 +631,7 @@ kiwi.plugin('nephnet-cyberdeck', (kiwi, log) => {
     /* ---- Activation / deactivation ---- */
     function addInteractionListeners() {
         document.addEventListener('click', onDocumentClick, true);
+        window.addEventListener('resize', updateLayoutInsets);
         kiwi.on('message.new', onHighlightMessage);
         kiwi.on('network.connecting', onLinkChange);
         kiwi.on('irc.raw.ERROR', onLinkChange);
@@ -640,11 +641,37 @@ kiwi.plugin('nephnet-cyberdeck', (kiwi, log) => {
 
     function removeInteractionListeners() {
         document.removeEventListener('click', onDocumentClick, true);
+        window.removeEventListener('resize', updateLayoutInsets);
         kiwi.off('message.new', onHighlightMessage);
         kiwi.off('network.connecting', onLinkChange);
         kiwi.off('irc.raw.ERROR', onLinkChange);
         kiwi.off('network.removed', onLinkChange);
         kiwi.off('irc.raw.001', onSignalRefresh);
+    }
+
+    function updateLayoutInsets() {
+        if (typeof kiwi.setLayoutInsets !== 'function') {
+            return;
+        }
+        let bezel = chromeRoot && !chromeRoot.hidden ?
+            chromeRoot.querySelector('.nephnet-bezel') :
+            null;
+        if (!bezel) {
+            kiwi.clearLayoutInsets('nephnet-cyberdeck');
+            return;
+        }
+
+        let rect = bezel.getBoundingClientRect();
+        kiwi.setLayoutInsets('nephnet-cyberdeck', {
+            top: Math.max(0, rect.top),
+            right: Math.max(0, window.innerWidth - rect.right),
+            bottom: Math.max(0, window.innerHeight - rect.bottom),
+            left: Math.max(0, rect.left),
+        });
+    }
+
+    function scheduleLayoutInsets() {
+        window.requestAnimationFrame(updateLayoutInsets);
     }
 
     /* The sidebar spine is only part of the shell when a state browser is
@@ -691,12 +718,16 @@ kiwi.plugin('nephnet-cyberdeck', (kiwi, log) => {
             active = true;
             addInteractionListeners();
         }
+        scheduleLayoutInsets();
     }
 
     function deactivate() {
         if (active) {
             active = false;
             removeInteractionListeners();
+        }
+        if (typeof kiwi.clearLayoutInsets === 'function') {
+            kiwi.clearLayoutInsets('nephnet-cyberdeck');
         }
         poweredOn = true;
         if (document.body) {
