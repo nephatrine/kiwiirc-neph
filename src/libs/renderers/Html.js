@@ -71,6 +71,9 @@ function render(blocks, renderEmoticons) {
         case 'emoji':
             content = EmojiProvider.blockToHtml(block, blocks.length === 1, showEmoticons);
             break;
+        case 'raw':
+            content = escapeHtml(block.content);
+            break;
         default:
             content = EmojiProvider.wrapEmojiText(block.content);
         }

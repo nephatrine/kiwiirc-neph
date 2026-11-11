@@ -6,7 +6,8 @@ import {
     stripStyles,
     sanitizeUrl,
     getPreviewCategory,
-    isSpoilerBlock
+    isSpoilerBlock,
+    controlCharsToGlyphs
 } from '@/helpers/Misc';
 import toHtml from '@/libs/renderers/Html';
 import GlobalApi from '@/libs/GlobalApi';
@@ -21,6 +22,14 @@ function def(target, key, value) {
         writable: true,
         value,
     });
+}
+
+function isRawBuffer(buffer) {
+    return !!(
+        buffer &&
+        typeof buffer.isRaw === 'function' &&
+        buffer.isRaw()
+    );
 }
 
 function cleanBridgedName(value) {
@@ -179,6 +188,13 @@ export default class Message {
 
         this.hasRendered = true;
 
+        if (isRawBuffer(messageList.buffer)) {
+            this.toBlocks(messageList.buffer, messageList.useExtraFormatting);
+            this.hasUserLink = false;
+            this.html = toHtml(this.blocks, false);
+            return this.html;
+        }
+
         let state = getState();
         let network = messageList.buffer.getNetwork();
         let showEmoticons = state.setting('buffers.emoji_convert_incoming') &&
@@ -199,6 +215,22 @@ export default class Message {
     }
 
     toBlocks(buffer, useExtraFormatting) {
+        if (isRawBuffer(buffer)) {
+            if (!this.hasParsed || this.lastUsedExtraFormatting !== useExtraFormatting) {
+                this.blocks = [{
+                    type: 'raw',
+                    content: controlCharsToGlyphs(String(this.message || '')),
+                    styles: {},
+                }];
+                this.mentioned_urls = [];
+                this.hasUserLink = false;
+                this.embed.payload = null;
+                this.hasParsed = true;
+                this.lastUsedExtraFormatting = useExtraFormatting;
+            }
+            return this.blocks;
+        }
+
         if (this.hasParsed && this.lastUsedExtraFormatting === useExtraFormatting) {
             return this.blocks;
         }

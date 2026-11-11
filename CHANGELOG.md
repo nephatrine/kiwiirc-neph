@@ -117,6 +117,10 @@ and this project adheres to
 
 ### Changed
 
+- **Raw Buffer**: Raw protocol lines now bypass message formatting, URL, channel,
+  user, emoji, and preview processing, and use a compact monospace row instead
+  of the normal message layouts. Timestamps, `[S]`/`[C]` prefixes, and visible
+  control glyphs are preserved.
 - **Chat Logs**: Jumping to a searched or linked message now briefly highlights
   the target message so it is easy to find in the buffer.
 - **History**: Hidden-only chathistory batches now advance a separate cursor and

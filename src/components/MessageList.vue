@@ -7,6 +7,7 @@
         :class="{
             'kiwi-messagelist--smoothscroll': smooth_scroll,
             'kiwi-messagelist--showtyping': buffer.setting('share_typing'),
+            'kiwi-messagelist--raw': buffer.isRaw(),
         }"
         @click.self="onListClick"
         @scroll.passive="onScroll"
@@ -117,12 +118,20 @@
                                         : '',
                                 ]"
                             >
+                                <!-- Raw protocol lines bypass the normal message layouts
+                                    and their post-processing.
+                                -->
+                                <message-list-message-raw
+                                    v-if="buffer.isRaw()"
+                                    :message="message"
+                                    :ml="thisMl"
+                                />
                                 <!-- message.template is checked first for a custom component,
                                     then each message layout checks for a message.bodyTemplate
                                     custom component to apply only to the body area
                                 -->
                                 <div
-                                    v-if="message.render()
+                                    v-else-if="message.render()
                                         && message.template
                                         && message.template.$el
                                         && isTemplateVue(message.template)"
@@ -203,6 +212,7 @@ import RemoveBeforeUpdate from './utils/RemoveBeforeUpdate';
 import MessageListMessageCompact from './MessageListMessageCompact';
 import MessageListMessageModern from './MessageListMessageModern';
 import MessageListMessageInline from './MessageListMessageInline';
+import MessageListMessageRaw from './MessageListMessageRaw';
 import LoadingAnimation from './LoadingAnimation';
 import BufferKey from './BufferKey';
 import HistoryGap from './HistoryGap';
@@ -220,6 +230,7 @@ export default {
         MessageListMessageModern,
         MessageListMessageCompact,
         MessageListMessageInline,
+        MessageListMessageRaw,
         LoadingAnimation,
         BufferKey,
         HistoryGap,
