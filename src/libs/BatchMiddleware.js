@@ -97,6 +97,8 @@ function resolveBatch(network, client, batch) {
         'netjoin': BatchHandlers.handleNetjoinBatch,
         'draft/multiline': BatchHandlers.handleMultilineBatch,
         'chathistory': BatchHandlers.handleChathistoryBatch,
+        'search': BatchHandlers.handleSearchBatch,
+        'soju.im/search': BatchHandlers.handleSearchBatch,
     };
     const handler = handlerMap[batch.type] || BatchHandlers.handleDefaultBatch;
 

@@ -82,6 +82,7 @@ describe('MessageList local log history tools', () => {
         expect(emit).toHaveBeenCalledWith('chatlogs.open', {
             networkId: 7,
             bufferName: '#channel',
+            source: 'local',
         });
     });
 });

@@ -19,6 +19,29 @@ describe('read-only context buffers', () => {
         expect(exportedNames).not.toContain(context.name);
     });
 
+    it('creates a read-only server context using the real buffer name', () => {
+        const s = state.create();
+        const network = s.addNetwork('TestNet', 'TestNick', {
+            server: 'irc.example.com',
+        });
+        const context = s.addServerContextBuffer(network.id, '#old');
+
+        expect(context.name).toBe('#old');
+        expect(context.contextOnly).toBe(true);
+        expect(context.contextSource).toBe('server');
+        expect(context.contextTarget).toBe('#old');
+        expect(context.show_input).toBe(false);
+        expect(s.getBufferByName(network.id, '#old')).toBe(context);
+
+        expect(s.addServerContextBuffer(network.id, '#old')).toBe(context);
+
+        expect(context.promoteServerContext()).toBe(true);
+        expect(context.contextOnly).toBe(false);
+        expect(context.contextSource).toBe('');
+        expect(context.contextTarget).toBe('');
+        expect(context.show_input).toBe(true);
+    });
+
     it('does not PART a context buffer when it is closed', () => {
         const s = state.create();
         const network = s.addNetwork('TestNet', 'TestNick', {

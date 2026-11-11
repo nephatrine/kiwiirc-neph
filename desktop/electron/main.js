@@ -476,7 +476,7 @@ function buildApplicationMenu() {
             },
             { type: 'separator' },
             {
-                label: 'Search Chat Logs…',
+                label: 'Search Messages…',
                 accelerator: 'CmdOrCtrl+Shift+F',
                 click: () => {
                     if (mainWindow) {

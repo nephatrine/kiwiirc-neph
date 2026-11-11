@@ -48,7 +48,7 @@
                         <message-list :buffer="buffer" />
                     </div>
                     <sidebar
-                        v-if="!buffer.isSpecial()"
+                        v-if="!buffer.isSpecial() && !buffer.contextOnly"
                         :network="network"
                         :buffer="buffer"
                         :sidebar-state="sidebarState"

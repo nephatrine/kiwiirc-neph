@@ -14,12 +14,23 @@
         <div v-resizeobserver="onListResize">
             <div v-if="buffer.contextOnly" class="kiwi-messagelist-context">
                 <div class="kiwi-messagelist-context-title">
-                    {{ $t('history_context_for', { channel: buffer.contextTarget }) }}
+                    {{
+                        buffer.contextSource === 'server' ?
+                            $t('history_context_server_for', { channel: buffer.contextTarget }) :
+                            $t('history_context_for', { channel: buffer.contextTarget })
+                    }}
                 </div>
                 <div class="kiwi-messagelist-context-note">
-                    {{ $t('history_context_readonly') }}
+                    {{
+                        buffer.contextSource === 'server' ?
+                            $t('history_context_server_readonly') :
+                            $t('history_context_readonly')
+                    }}
                 </div>
-                <div class="kiwi-messagelist-context-actions">
+                <div
+                    v-if="buffer.contextSource !== 'server'"
+                    class="kiwi-messagelist-context-actions"
+                >
                     <button
                         type="button"
                         class="u-button"
@@ -262,7 +273,7 @@ export default {
             return isCorrectBufferType && isSupported && this.buffer.flags.chathistory_available;
         },
         shouldShowLocalLogsTools() {
-            if (!this.localLogsAvailable) {
+            if (!this.localLogsAvailable || this.buffer.contextOnly) {
                 return false;
             }
 
@@ -778,6 +789,7 @@ export default {
             this.$state.$emit('chatlogs.open', {
                 networkId: this.buffer.networkid,
                 bufferName: this.buffer.name,
+                source: 'local',
             });
         },
         loadContext(direction) {

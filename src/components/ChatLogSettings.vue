@@ -96,7 +96,7 @@ export default {
             }
         },
         openSearch() {
-            this.$state.$emit('chatlogs.open');
+            this.$state.$emit('chatlogs.open', { source: 'local' });
         },
         async clearLogs() {
             if (!window.confirm(this.$t('chatlogs_clear_confirm'))) {

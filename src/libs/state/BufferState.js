@@ -50,7 +50,7 @@ function historyMessageTime(message) {
 
 /** The IRC buffer instance */
 export default class BufferState {
-    constructor(name, networkid, state, messageDict) {
+    constructor(name, networkid, state, messageDict, options = {}) {
         // Enumerable properties that become reactive under Vue
         this.id = nextBufferId++;
         this.networkid = networkid;
@@ -100,8 +100,9 @@ export default class BufferState {
         this.historySegments = [];
         this.historyGaps = [];
         this.historyGapExhausted = {};
-        this.contextOnly = false;
-        this.contextTarget = '';
+        this.contextOnly = !!options.contextOnly;
+        this.contextSource = options.contextSource || '';
+        this.contextTarget = options.contextTarget || '';
         this.contextOlderRowId = 0;
         this.contextNewerRowId = 0;
 
@@ -143,7 +144,7 @@ export default class BufferState {
         def(this, 'read_marker_pending_timer', null, true);
 
         // poll who to update away status if away-notify is not enabled
-        if (this.isChannel() || this.isQuery()) {
+        if (!this.contextOnly && (this.isChannel() || this.isQuery())) {
             maybeStartWhoLoop(this);
         }
 
@@ -156,7 +157,10 @@ export default class BufferState {
         }
 
         function onNetworkMotd(event, network) {
-            if (network === this.getNetwork() && !this.flags.motd_history_done) {
+            if (!this.contextOnly &&
+                network === this.getNetwork() &&
+                !this.flags.motd_history_done
+            ) {
                 this.flags.motd_history_done = true;
                 this.initHistory();
             }
@@ -186,7 +190,7 @@ export default class BufferState {
         state.$on('buffer.close', onBufferCloseBound);
         state.$on('irc.motd', onNetworkMotdBound);
 
-        if (this.getNetwork()?.state === 'connected') {
+        if (!this.contextOnly && this.getNetwork()?.state === 'connected') {
             this.initHistory();
             this.flags.motd_history_done = true;
         }
@@ -974,6 +978,18 @@ export default class BufferState {
         }
 
         return this.state.setting('buffers.' + name);
+    }
+
+    promoteServerContext() {
+        if (this.contextSource !== 'server') {
+            return false;
+        }
+
+        this.contextOnly = false;
+        this.contextSource = '';
+        this.contextTarget = '';
+        this.show_input = true;
+        return true;
     }
 
     rename(newName) {

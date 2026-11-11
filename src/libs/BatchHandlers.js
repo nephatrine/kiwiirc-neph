@@ -139,6 +139,20 @@ export function handleChathistoryBatch(network, client, batch) {
     return batch.commands;
 }
 
+export function handleSearchBatch(network, client, batch) {
+    if (client.search && client.search.batchCallbacks) {
+        client.search.batchCallbacks.resolve({
+            command: 'BATCH',
+            tags: batch.tags,
+            commands: batch.commands,
+        }, batch.tags && batch.tags.label);
+    }
+
+    // Search results are displayed by the search UI. They must not be
+    // re-dispatched into the normal chat buffers.
+    return [];
+}
+
 /**
  * Default handler just returns the constituent commands unchanged.
  */

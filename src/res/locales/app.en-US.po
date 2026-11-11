@@ -1734,9 +1734,9 @@ msgstr "The profile was imported, but its passwords could not be saved securely.
 msgid "profile_open_folder_failed"
 msgstr "Unable to open the profile folder: {{reason}}"
 
-#: Search locally stored chat logs
+#: Search server history or locally stored chat logs
 msgid "chatlogs_search_title"
-msgstr "Search Chat Logs"
+msgstr "Search Messages"
 
 msgid "chatlogs_search_placeholder"
 msgstr "Search messages..."
@@ -1758,6 +1758,45 @@ msgstr "Load More"
 
 msgid "chatlogs_search_failed"
 msgstr "Chat log search failed: {{reason}}"
+
+msgid "chatlogs_source_local"
+msgstr "Local Logs"
+
+msgid "chatlogs_source_server"
+msgstr "Server History"
+
+msgid "chatlogs_source_local_hint"
+msgstr "Searches chat logs stored on this device."
+
+msgid "chatlogs_source_server_hint"
+msgstr "Searches history stored by the server or bouncer."
+
+msgid "chatlogs_server_query_prompt"
+msgstr "Enter a search term to search server history."
+
+msgid "chatlogs_server_network_required"
+msgstr "Select a network to search server history."
+
+msgid "chatlogs_server_target"
+msgstr "Channel Or Nick"
+
+msgid "chatlogs_server_target_required"
+msgstr "Enter a channel or nick to search server history."
+
+msgid "chatlogs_server_target_hint"
+msgstr "Server searches cover one channel or nick at a time."
+
+msgid "chatlogs_server_unavailable"
+msgstr "Server history search is unavailable for this network."
+
+msgid "chatlogs_server_search_failed"
+msgstr "Server history search failed: {{reason}}"
+
+msgid "search_messages"
+msgstr "Search Messages"
+
+msgid "chatlogs_local_unavailable"
+msgstr "Local chat logs are only available in the desktop app."
 
 msgid "chatlogs_settings"
 msgstr "Chat Logs"
@@ -1782,6 +1821,12 @@ msgstr "History"
 
 msgid "history_context_for"
 msgstr "History for {{channel}}"
+
+msgid "history_context_server_for"
+msgstr "Server history for {{channel}}"
+
+msgid "history_context_server_readonly"
+msgstr "Read-only server history around a search result."
 
 msgid "history_context_readonly"
 msgstr "Local Chat Logs · Read-only"

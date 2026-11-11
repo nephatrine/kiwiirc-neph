@@ -237,6 +237,7 @@ function handleMessage(type, event, command, line, context) {
 
     let buffer = localBuffer.length && this.state.getOrAddBufferByName(network.id, localBuffer);
     if (buffer) {
+        buffer.promoteServerContext();
         let textFormatType = 'privmsg';
         if (type === 'action') {
             textFormatType = 'action';
@@ -653,6 +654,7 @@ inputCommands.query = function inputCommandQuery(event, command, line, context) 
 
     let buffer = this.state.getOrAddBufferByName(network.id, nick);
 
+    buffer.promoteServerContext();
     this.state.setActiveBuffer(network.id, buffer.name);
 
     if (message) {

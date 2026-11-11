@@ -7,12 +7,20 @@
         <template v-if="isContextOnly">
             <div class="kiwi-header-name-container">
                 <div class="kiwi-header-name" :title="buffer.contextTarget">
-                    {{ $t('history_context_for', { channel: buffer.contextTarget }) }}
+                    {{
+                        buffer.contextSource === 'server' ?
+                            $t('history_context_server_for', { channel: buffer.contextTarget }) :
+                            $t('history_context_for', { channel: buffer.contextTarget })
+                    }}
                 </div>
             </div>
             <div class="kiwi-header-center">
                 <div class="kiwi-header-topic">
-                    {{ $t('history_context_readonly') }}
+                    {{
+                        buffer.contextSource === 'server' ?
+                            $t('history_context_server_readonly') :
+                            $t('history_context_readonly')
+                    }}
                 </div>
             </div>
         </template>
@@ -55,6 +63,11 @@
                 <div v-if="!isMobile" class="kiwi-header-option">
                     <a :title="$t('export_buffer')" @click="exportBuffer()">
                         <i class="bx bx-download" aria-hidden="true" />
+                    </a>
+                </div>
+                <div class="kiwi-header-option">
+                    <a :title="$t('search_messages')" @click="searchMessages()">
+                        <i class="bx bx-search" aria-hidden="true" />
                     </a>
                 </div>
                 <div
@@ -155,6 +168,11 @@
                 <div v-if="!isMobile" class="kiwi-header-option">
                     <a :title="$t('export_buffer')" @click="exportBuffer()">
                         <i class="bx bx-download" aria-hidden="true" />
+                    </a>
+                </div>
+                <div class="kiwi-header-option">
+                    <a :title="$t('search_messages')" @click="searchMessages()">
+                        <i class="bx bx-search" aria-hidden="true" />
                     </a>
                 </div>
                 <div
@@ -302,6 +320,12 @@ export default {
             let network = this.buffer.getNetwork();
             this.buffer.enabled = true;
             network.ircClient.join(this.buffer.name);
+        },
+        searchMessages() {
+            this.$state.$emit('chatlogs.open', {
+                networkId: this.buffer.networkid,
+                bufferName: this.buffer.name,
+            });
         },
         onHeaderClick(event) {
             let target = event.target;

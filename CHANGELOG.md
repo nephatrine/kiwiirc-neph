@@ -13,6 +13,10 @@ and this project adheres to
 - **Chat Logs**: Added an Open Channel Logs action when server chathistory is
   unavailable or exhausted, with the desktop log search filtered to the current
   network and buffer.
+- **Message Search**: Added server-side history search for servers advertising
+  `draft/search` or `soju.im/search`, with a source selector for server history
+  or desktop local logs, server-side pagination, one channel/nick target per
+  server search, and read-only server context for results in unopened buffers.
 - **Autocomplete**: Nick completion now includes known relayed users from the
   current buffer, including their display names as searchable labels. Display
   names are never inserted into the message.

@@ -19,6 +19,15 @@
             <i class="bx bx-log-out" aria-hidden="true" />
         </div>
 
+        <div
+            v-if="searchAvailable"
+            :title="$t('search_messages')"
+            class="kiwi-statebrowser-search"
+            @click="clickSearch"
+        >
+            <i class="bx bx-search" aria-hidden="true" />
+        </div>
+
         <state-browser-usermenu
             v-if="isPersistingState"
             :network="getNetwork"
@@ -64,6 +73,7 @@
 'kiwi public';
 
 import GlobalApi from '@/libs/GlobalApi';
+import * as MessageSearch from '@/libs/MessageSearch';
 import StateBrowserNetwork from './StateBrowserNetwork';
 import StateBrowserUsermenu from './StateBrowserUsermenu';
 import AppSettings from './AppSettings';
@@ -101,6 +111,9 @@ export default {
         },
         networksToShow: function networksToShow() {
             return this.networks.filter((net) => !net.hidden);
+        },
+        searchAvailable() {
+            return MessageSearch.hasAnySearchSource(this.$state);
         },
     },
     created() {
@@ -141,6 +154,9 @@ export default {
         },
         clickAppSettings: function clickAppSettings() {
             this.$state.$emit('active.component.toggle', AppSettings);
+        },
+        clickSearch: function clickSearch() {
+            this.$state.$emit('chatlogs.open');
         },
         clickLogout: function clickLogout() {
             this.$state.logout();
@@ -208,6 +224,23 @@ export default {
     font-size: 20px;
     opacity: 0.8;
     border-bottom-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+    transition: background 0.2s, opacity 0.2s;
+    z-index: 1;
+    user-select: none;
+}
+
+.kiwi-statebrowser-search {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 32px;
+    line-height: 32px;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 20px;
+    opacity: 0.8;
     border-bottom-left-radius: 14px;
     transition: background 0.2s, opacity 0.2s;
     z-index: 1;

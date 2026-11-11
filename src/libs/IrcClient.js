@@ -30,6 +30,7 @@ import persistenceMiddleware from './PersistenceMiddleware';
 import webpushMiddleware from './WebpushMiddleware';
 import WhoQueue from './WhoQueue';
 import chathistoryMiddleware from './ChathistoryMiddleware';
+import searchMiddleware from './SearchMiddleware';
 import * as BatchHandlers from './BatchHandlers';
 import * as ServerConnection from './ServerConnection';
 import * as RelayMeta from './RelayMeta';
@@ -105,6 +106,7 @@ const CONTROL_CAPS = [
 // is ever requested (see CapNegotiation.js).
 const METADATA_CAPS = ['draft/metadata-3', 'draft/metadata-2'];
 const WEBPUSH_CAPS = ['draft/webpush', 'soju.im/webpush'];
+const SEARCH_CAPS = ['draft/search', 'soju.im/search'];
 
 export function installTwitchAction(ircClient) {
     ircClient.action = function twitchAction(target, message, tags) {
@@ -132,6 +134,7 @@ export function create(state, network) {
     });
 
     ircClient.use(chathistoryMiddleware(network));
+    ircClient.use(searchMiddleware(network));
     ircClient.use(isupportMiddleware(network));
     ircClient.use(typingMiddleware(network));
     ircClient.use(autocompleteMiddleware(network));
@@ -805,6 +808,21 @@ function clientMiddleware(state, network) {
                 }
             }
 
+            // Search caps are negotiated by preference, never both, and
+            // never on the bouncer control connection.
+            if (!network.isBouncerController() && !network.searchCap()) {
+                const advertisedSearch = Object.keys(event.capabilities).map((c) => (
+                    c.toLowerCase()
+                ));
+                const preferredSearch = SEARCH_CAPS.find(
+                    (cap) => advertisedSearch.includes(cap)
+                );
+                if (preferredSearch) {
+                    client.requestCap(preferredSearch);
+                    requested.push(preferredSearch);
+                }
+            }
+
             if (requested.length > 0) {
                 let serverBuffer = network.serverBuffer();
                 state.addMessage(serverBuffer, {
@@ -1013,6 +1031,23 @@ function clientMiddleware(state, network) {
             const preferredWebpush = preferredCap(advertisedLsCaps, WEBPUSH_CAPS);
             if (preferredWebpush) {
                 foldPreferredCap(client, preferredWebpush, WEBPUSH_CAPS);
+            }
+        }
+
+        // Server-side message search uses the same command under the draft
+        // and Soju vendor names. Request exactly one, and never from the
+        // bouncer control connection.
+        if (
+            command === 'CAP' &&
+            event &&
+            event.params &&
+            event.params[1] === 'LS' &&
+            !network.isBouncerController() &&
+            !network.searchCap()
+        ) {
+            const preferredSearch = preferredCap(advertisedLsCaps, SEARCH_CAPS);
+            if (preferredSearch) {
+                foldPreferredCap(client, preferredSearch, SEARCH_CAPS);
             }
         }
 
@@ -1814,6 +1849,7 @@ function clientMiddleware(state, network) {
                     buffer.enabled = true;
                     buffer.joined = true;
                     buffer.flags.channel_badkey = false;
+                    buffer.promoteServerContext();
                     isReconnect = numConnects > 1 && !!buffer.flags.reconnect_known;
                     network.ircClient.raw('MODE', event.channel);
                     if (!network.isTwitch() && !isReconnect) {

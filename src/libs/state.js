@@ -751,17 +751,22 @@ function createNewState() {
                 return false;
             },
 
-            addContextBuffer(networkid, targetName) {
+            addContextBuffer(networkid, targetName, options = {}) {
                 const network = this.getNetwork(networkid);
                 if (!network || !targetName) {
                     return null;
                 }
 
-                const name = `*context-${network.id}-${Date.now()}-${Math.random()
+                const name = options.name || `*context-${network.id}-${Date.now()}-${Math.random()
                     .toString(36)
                     .slice(2)}`;
-                const buffer = new BufferState(name, network.id, state, messages);
+                const buffer = new BufferState(name, network.id, state, messages, {
+                    contextOnly: true,
+                    contextSource: options.source || 'local',
+                    contextTarget: targetName,
+                });
                 buffer.contextOnly = true;
+                buffer.contextSource = options.source || 'local';
                 buffer.contextTarget = targetName;
                 buffer.joined = false;
                 buffer.enabled = false;
@@ -772,14 +777,27 @@ function createNewState() {
                 return buffer;
             },
 
+            addServerContextBuffer(networkid, targetName) {
+                const existing = this.getBufferByName(networkid, targetName);
+                if (existing) {
+                    return existing;
+                }
+                return this.addContextBuffer(networkid, targetName, {
+                    name: targetName,
+                    source: 'server',
+                });
+            },
+
             addBuffer(networkid, bufferName) {
                 if (!bufferName) {
                     return false;
                 }
 
-                // If we already have this buffer, don't re-add it
+                // If we already have this buffer, don't re-add it. A user
+                // opening the real buffer promotes a read-only search context.
                 let buffer = this.getBufferByName(networkid, bufferName);
                 if (buffer) {
+                    buffer.promoteServerContext();
                     return buffer;
                 }
 

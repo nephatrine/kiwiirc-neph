@@ -403,6 +403,10 @@ export default {
                 // meta + o
                 this.$state.$emit('active.component.toggle', AppSettings);
                 event.preventDefault();
+            } else if (meta && event.shiftKey && event.key.toLowerCase() === 'f') {
+                // meta + shift + f
+                this.$state.$emit('chatlogs.open');
+                event.preventDefault();
             } else if (meta && event.key === 's') {
                 // meta + s
                 let network = this.$state.getActiveNetwork();

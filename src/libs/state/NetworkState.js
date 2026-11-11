@@ -606,6 +606,18 @@ export default class NetworkState {
         return '';
     }
 
+    // Negotiated message-search capability, preferring the draft name over
+    // soju's vendor name. Exactly one is ever requested.
+    searchCap() {
+        if (this.hasCap('draft/search')) {
+            return 'draft/search';
+        }
+        if (this.hasCap('soju.im/search')) {
+            return 'soju.im/search';
+        }
+        return '';
+    }
+
     // Negotiated bouncer-networks capability, preferring the draft name over
     // soju's vendor name. Exactly one is ever requested (see CapNegotiation.js).
     bouncerCap() {

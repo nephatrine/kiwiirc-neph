@@ -10,7 +10,9 @@ export function findContextBuffer(state, networkId, targetName) {
         return null;
     }
     return network.buffers.find((buffer) => (
-        buffer.contextOnly && network.caseCompare(buffer.contextTarget, targetName)
+        buffer.contextOnly &&
+        buffer.contextSource !== 'server' &&
+        network.caseCompare(buffer.contextTarget, targetName)
     )) || null;
 }
 
