@@ -210,6 +210,30 @@
                         />
                     </label>
 
+                    <div class="kiwi-networksettings-network-icon">
+                        <input-text
+                            v-model="networkIconUrl"
+                            :label="$t('settings_network_icon')"
+                            :disabled="settingsLocked"
+                        />
+                        <div
+                            v-if="desktopNetworkIconsAvailable"
+                            class="kiwi-networksettings-network-icon-actions"
+                        >
+                            <button
+                                type="button"
+                                class="u-button"
+                                :disabled="settingsLocked"
+                                @click="chooseNetworkIcon"
+                            >
+                                {{ $t('settings_network_icon_choose') }}
+                            </button>
+                        </div>
+                        <div class="kiwi-networksettings-hint">
+                            {{ $t('settings_network_icon_hint') }}
+                        </div>
+                    </div>
+
                     <div class="kiwi-networksettings-option">
                         <label>
                             <span class="kiwi-appsettings-showraw-label">
@@ -265,6 +289,7 @@
 'kiwi public';
 
 import * as Misc from '@/helpers/Misc';
+import * as NetworkIcons from '@/libs/desktop/NetworkIcons';
 import Captcha from '@/components/Captcha';
 import { status as secretStorageStatus } from '@/libs/desktop/Secrets';
 import ServerSelector from './ServerSelector';
@@ -478,6 +503,17 @@ export default {
         startupOptions() {
             return this.$state.getSetting('settings.startupOptions');
         },
+        desktopNetworkIconsAvailable() {
+            return NetworkIcons.isAvailable();
+        },
+        networkIconUrl: {
+            get() {
+                return this.network.setting('network_icon_url') || '';
+            },
+            set(value) {
+                this.network.setting('network_icon_url', String(value || '').trim());
+            },
+        },
         settingShowRaw: {
             get() {
                 return this.network.setting('show_raw');
@@ -526,6 +562,20 @@ export default {
     methods: {
         readableStateError(err) {
             return Misc.networkErrorMessage(err);
+        },
+        chooseNetworkIcon() {
+            NetworkIcons.choose(this.network.name).then((result) => {
+                if (!result || result.canceled || !result.url) {
+                    return;
+                }
+                this.network.setting('network_icon_url', result.url);
+            }).catch(() => {
+                this.$state.$emit(
+                    'notification.show',
+                    this.$t('settings_network_icon_failed'),
+                    { force: true }
+                );
+            });
         },
         connect() {
             if (this.network.state !== 'disconnected') {
@@ -762,6 +812,20 @@ export default {
 
 .kiwi-networksettings .kiwi-networksettings-advanced .kiwi-networksettings-option-input .u-input-text {
     margin-bottom: 0;
+}
+
+.kiwi-networksettings-network-icon {
+    margin-bottom: 20px;
+}
+
+.kiwi-networksettings-network-icon-actions {
+    margin-top: 8px;
+}
+
+.kiwi-networksettings-hint {
+    margin-top: 6px;
+    opacity: 0.7;
+    font-size: 0.9em;
 }
 
 //Large connection button

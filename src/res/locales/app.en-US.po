@@ -1267,6 +1267,22 @@ msgstr "Advanced"
 msgid "settings_encoding"
 msgstr "Protocol Encoding"
 
+#: Network icon URL
+msgid "settings_network_icon"
+msgstr "Network Icon URL"
+
+#: Choose a local network icon
+msgid "settings_network_icon_choose"
+msgstr "Choose Image"
+
+#: Network icon hint
+msgid "settings_network_icon_hint"
+msgstr "Overrides the server icon and built-in fallback. Leave empty for automatic icons."
+
+#: Network icon selection failed
+msgid "settings_network_icon_failed"
+msgstr "Unable to use the selected image."
+
 #: Raw buffer
 msgid "settings_show_raw"
 msgstr "Raw Buffer (Requires Reload)"

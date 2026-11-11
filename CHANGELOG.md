@@ -57,6 +57,10 @@ and this project adheres to
   plugin, `/lim` is not a client command.
 - **Network List**: Added per-network move-up controls and the OFTC fallback
   network icon.
+- **Network Icons**: Added a per-network icon URL in Server Details → Advanced
+  that overrides server-provided and built-in icons. Desktop users can choose a
+  local image, which is copied into the app data directory and served through
+  `kiwi-icon://`. Added the nightride fallback for `NETWORK=RektNetwork`.
 - **App Settings**: Added a Channel Defaults section for global per-channel
   defaults such as joins/parts, topic/nick/mode changes, formatting, nicklist
   colors, notification level, sound, and unread counts. Added the remaining

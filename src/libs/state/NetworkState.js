@@ -208,6 +208,16 @@ export default class NetworkState {
     }
 
     get iconUrl() {
+        const customIcon = this.setting('network_icon_url');
+        if (customIcon) {
+            const customUrl = /^kiwi-icon:\/\//i.test(customIcon) ?
+                customIcon :
+                Misc.sanitizeUrl(customIcon);
+            if (customUrl) {
+                return customUrl.replace('{size}', '64');
+            }
+        }
+
         let iconToken = this.supports('DRAFT/ICON');
         if (iconToken && typeof iconToken === 'string') {
             const sanitized = Misc.sanitizeUrl(iconToken);
@@ -215,6 +225,9 @@ export default class NetworkState {
         }
 
         const networkName = String(this.supports('NETWORK') || this.name || '').toLowerCase();
+        if (networkName === 'rektnetwork') {
+            return '/static/nightride.webp';
+        }
         if (networkName === 'libera.chat') {
             return '/static/libera.svg';
         }

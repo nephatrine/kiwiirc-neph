@@ -104,6 +104,42 @@ describe('NetworkSettings server details', () => {
         ).toBeNull();
     });
 
+    it('stores a custom network icon URL and chooses a desktop image', async() => {
+        window.kiwiDesktop = {
+            networkIcons: {
+                choose: jest.fn(async() => ({
+                    canceled: false,
+                    url: 'kiwi-icon://network-icon/testnet.png',
+                })),
+            },
+        };
+        const comp = mount();
+        comp.show_advanced = true;
+        await Vue.nextTick();
+
+        const input = fieldByLabel(comp, 'settings_network_icon');
+        expect(input).not.toBeNull();
+
+        input.value = 'https://example.com/icon.png';
+        input.dispatchEvent(new Event('input'));
+        await Vue.nextTick();
+        expect(network.setting('network_icon_url'))
+            .toBe('https://example.com/icon.png');
+
+        const button = comp.$el.querySelector(
+            '.kiwi-networksettings-network-icon-actions button'
+        );
+        expect(button).not.toBeNull();
+        button.click();
+        await Promise.resolve();
+        await Vue.nextTick();
+
+        expect(window.kiwiDesktop.networkIcons.choose)
+            .toHaveBeenCalledWith('TestNet');
+        expect(network.setting('network_icon_url'))
+            .toBe('kiwi-icon://network-icon/testnet.png');
+    });
+
     it('shows the initial channel list only before channels exist', async() => {
         network.connection.channels = '#one,#two key';
         const comp = mount();

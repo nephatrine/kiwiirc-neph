@@ -29,6 +29,12 @@ const {
     resolveEmojiPackFile,
     uninstallEmojiPack,
 } = require('./emoji-packs');
+const {
+    ALLOWED_EXTENSION_LIST,
+    ICON_SCHEME,
+    installNetworkIcon,
+    resolveNetworkIconFile,
+} = require('./network-icons');
 const httpService = require('./http');
 const { handleMediaRequest } = require('./media');
 const { MEDIA_SCHEME } = require('./media-url');
@@ -95,6 +101,16 @@ protocol.registerSchemesAsPrivileged([
             stream: true,
         },
     },
+    {
+        scheme: ICON_SCHEME,
+        privileges: {
+            standard: true,
+            secure: true,
+            supportFetchAPI: true,
+            corsEnabled: true,
+            stream: true,
+        },
+    },
 ]);
 
 let mainWindow = null;
@@ -137,10 +153,12 @@ if (!app.requestSingleInstanceLock()) {
         registerDesktopConfigIpc();
         registerThemeIpc();
         registerEmojiPackIpc();
+        registerNetworkIconIpc();
         buildApplicationMenu();
         await registerAppProtocol();
         registerThemeProtocol();
         registerEmojiPackProtocol();
+        registerNetworkIconProtocol();
         registerMediaProtocol();
         registerEmbedRequestHeaders();
         registerTwitchFramePolicy();
@@ -390,6 +408,27 @@ function registerEmojiPackIpc() {
     ));
 }
 
+function registerNetworkIconIpc() {
+    ipcMain.handle('kiwi:network-icons-choose', async(event, networkName) => {
+        const result = await dialog.showOpenDialog(mainWindow, {
+            properties: ['openFile'],
+            filters: [{
+                name: 'Images',
+                extensions: ALLOWED_EXTENSION_LIST,
+            }],
+        });
+        if (result.canceled || !result.filePaths.length) {
+            return { canceled: true };
+        }
+
+        return installNetworkIcon(
+            app.getPath('userData'),
+            networkName,
+            result.filePaths[0]
+        );
+    });
+}
+
 function requireChatLogStore() {
     if (!chatLogStore) {
         throw new Error('chat logging is unavailable');
@@ -615,6 +654,32 @@ function registerEmojiPackProtocol() {
     protocol.handle(EMOJI_PACK_SCHEME, async(request) => {
         try {
             const resolved = await resolveEmojiPackFile(
+                app.getPath('userData'),
+                request.url
+            );
+            if (!resolved) {
+                return new Response('Not found', { status: 404 });
+            }
+
+            const response = await net.fetch(
+                pathToFileURL(resolved.filePath).toString()
+            );
+            const headers = new Headers(response.headers);
+            headers.set('Content-Type', resolved.mimeType);
+            return new Response(response.body, {
+                status: response.status,
+                headers,
+            });
+        } catch (err) {
+            return new Response('Not found', { status: 404 });
+        }
+    });
+}
+
+function registerNetworkIconProtocol() {
+    protocol.handle(ICON_SCHEME, async(request) => {
+        try {
+            const resolved = await resolveNetworkIconFile(
                 app.getPath('userData'),
                 request.url
             );

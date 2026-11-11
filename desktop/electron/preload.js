@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
         chatLogs: true,
         themes: true,
         emojiPacks: true,
+        networkIcons: true,
         dcc: false,
     },
     http: {
@@ -63,6 +64,12 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
         list: () => ipcRenderer.invoke('kiwi:emoji-packs-list'),
         install: () => ipcRenderer.invoke('kiwi:emoji-packs-install'),
         uninstall: (id) => ipcRenderer.invoke('kiwi:emoji-packs-uninstall', id),
+    },
+    networkIcons: {
+        choose: (networkName) => ipcRenderer.invoke(
+            'kiwi:network-icons-choose',
+            networkName
+        ),
     },
     logs: {
         append: (entries) => ipcRenderer.invoke('kiwi:logs-append', entries),
