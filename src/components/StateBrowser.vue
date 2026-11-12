@@ -463,7 +463,7 @@ export default {
     }
 
     .kiwi-wrap.kiwi-wrap--statebrowser-drawopen .kiwi-statebrowser {
-        width: 75%;
+        width: var(--kiwi-statebrowser-drawer-width, 75%);
         left: 0;
         z-index: 100;
         transition: left 0.07s, width 0.1s;

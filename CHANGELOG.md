@@ -363,6 +363,10 @@ and this project adheres to
   per animation frame.
 - **Shutdown**: Replaced the deprecated `unload` handler with `pagehide`, so
   connection shutdown no longer triggers the Chromium unload policy violation.
+- **Mobile Layout**: Limited the mobile state-browser drawer width, stacked
+  the search dialog controls for narrow screens, and updated the bundled
+  NephDeck and NephWave chrome offsets to follow the new drawer width. NephDeck
+  app settings now sit inside its mobile chrome instead of under it.
 - **Connections**: Added an HTTPS mixed-content warning when a direct ws://
   endpoint is configured, recommending wss:// or an IRC gateway instead.
 - **Plugins**: Exposed the Link Preview module to plugins, fixing the Radio

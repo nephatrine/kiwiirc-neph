@@ -520,6 +520,11 @@ body {
 
 /* Small screen will cause the statebrowser to act as a drawer */
 @media screen and (max-width: 769px) {
+    .kiwi-wrap {
+        /* Chrome themes must reuse this for their open workspace offset. */
+        --kiwi-statebrowser-drawer-width: min(75%, 320px);
+    }
+
     .kiwi-workspace {
         left: 0;
         margin-left: 0;
@@ -534,7 +539,7 @@ body {
     }
 
     .kiwi-wrap--statebrowser-drawopen .kiwi-workspace {
-        left: 75%;
+        left: var(--kiwi-statebrowser-drawer-width, 75%);
         transition: left 0.1s;
         transition-delay: 0s;
     }

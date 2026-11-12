@@ -802,4 +802,43 @@ export default {
 .kiwi-logsearch-fade-leave-to {
     opacity: 0;
 }
+
+@media screen and (width <= 769px) {
+    .kiwi-logsearch {
+        padding: 4vh 0.75em 0.75em;
+    }
+
+    .kiwi-logsearch-panel {
+        width: min(100%, 32rem);
+        max-height: 88vh;
+    }
+
+    .kiwi-logsearch-form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.6em;
+        align-items: stretch;
+    }
+
+    .kiwi-logsearch-form input,
+    .kiwi-logsearch-form select,
+    .kiwi-logsearch-form .kiwi-logsearch-source,
+    .kiwi-logsearch-form .kiwi-logsearch-buffer,
+    .kiwi-logsearch-form .u-button {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .kiwi-logsearch-form .kiwi-logsearch-buffer {
+        justify-content: space-between;
+    }
+
+    .kiwi-logsearch-form .u-button {
+        justify-content: center;
+    }
+
+    .kiwi-logsearch-meta {
+        overflow-wrap: anywhere;
+    }
+}
 </style>

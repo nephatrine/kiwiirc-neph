@@ -2232,7 +2232,13 @@ body.nephnet-deck-active .kiwi-statebrowser {
     }
 
     body.nephnet-deck-active .kiwi-wrap--statebrowser-drawopen .kiwi-workspace {
-        left: 75%;
+        left: var(--kiwi-statebrowser-drawer-width, 75%);
+    }
+
+    body.nephnet-deck-active .kiwi-appsettings {
+        inset: 34px 12px 30px 12px;
+        width: auto;
+        height: auto;
     }
 }
 

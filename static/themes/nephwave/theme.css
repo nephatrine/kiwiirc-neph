@@ -2514,7 +2514,7 @@ body.nephwave-minimized .kiwi-statebrowser {
     }
 
     body.nephwave-active .kiwi-wrap--statebrowser-drawopen .kiwi-workspace {
-        left: 75%;
+        left: var(--kiwi-statebrowser-drawer-width, 75%);
     }
 
     body.nephwave-active .kiwi-startup-common {
