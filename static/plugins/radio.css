@@ -106,8 +106,63 @@
     font-weight: bold;
 }
 
+.kiwi-radio-browser-add {
+    margin-left: auto;
+    cursor: pointer;
+    user-select: none;
+}
+
+.kiwi-radio-browser-close {
+    margin-left: 8px;
+}
+
 .kiwi-radio-browser-status {
     padding: 12px;
+}
+
+.kiwi-radio-station-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border-bottom: 1px solid var(--brand-midtone, #444);
+    text-align: left;
+}
+
+.kiwi-radio-station-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.kiwi-radio-station-form-title {
+    font-weight: 700;
+}
+
+.kiwi-radio-station-icon-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.kiwi-radio-station-icon-row .u-input {
+    flex: 1;
+}
+
+.kiwi-radio-station-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.kiwi-radio-station-form-detail {
+    opacity: 0.8;
+    font-size: 0.9em;
+}
+
+.kiwi-radio-station-form-error {
+    color: var(--brand-error, #e05a5a);
+    font-size: 0.9em;
 }
 
 .kiwi-radio-browser-list {
@@ -170,11 +225,17 @@
     font-weight: 700;
 }
 
-.kiwi-radio-browser-star {
+.kiwi-radio-browser-star,
+.kiwi-radio-browser-homepage,
+.kiwi-radio-browser-edit,
+.kiwi-radio-browser-remove {
     opacity: 0.85;
 }
 
-.kiwi-radio-browser-star:hover {
+.kiwi-radio-browser-star:hover,
+.kiwi-radio-browser-homepage:hover,
+.kiwi-radio-browser-edit:hover,
+.kiwi-radio-browser-remove:hover {
     opacity: 1;
 }
 
@@ -184,6 +245,42 @@
     font-size: 0.9em;
 }
 
+.kiwi-radio-browser-info {
+    margin-top: 4px;
+    opacity: 0.7;
+    font-size: 0.8em;
+}
+
 .kiwi-radio-browser-error {
     margin-top: 4px;
+}
+
+.kiwi-radio-browser-hidden {
+    padding: 10px 12px;
+    border-top: 1px solid var(--brand-midtone, #444);
+    text-align: left;
+}
+
+.kiwi-radio-browser-hidden-list {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.kiwi-radio-browser-hidden-station {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.kiwi-radio-browser-restore-all {
+    margin-top: 4px;
+    cursor: pointer;
+}
+
+.kiwi-radio-settings .u-checkbox-wrapper {
+    display: flex;
+    margin-bottom: 10px;
 }

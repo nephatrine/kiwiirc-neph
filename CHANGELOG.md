@@ -72,6 +72,20 @@ and this project adheres to
   visible. The stats card closes when clicking outside, shows explicit position
   and size controls independently, and animates position and size changes when
   reduced-motion preferences allow it.
+- **Radio**: The player and station browser now remain available when no
+  stations are defined. Added a General settings block for Enable Radio, Show
+  Now Playing, and Show Waveform, plus Show Station Icons for hiding artwork and
+  the empty artwork column in the station browser. Added station management for
+  adding, editing, removing, and restoring user stations and hidden station-file
+  entries, with URL or desktop-local icons. Stations can have a homepage URL and
+  multiple ordered stream URLs with automatic fallback. The station channels
+  field was removed; channel names in descriptions remain clickable. Waveform
+  styles include None, Bars, Mirror Bars, Wave, Area Wave, LED Spectrum, Pulse,
+  and Peak Caps. The player favorite button was removed; stations are starred
+  from the station browser. Desktop builds now use native HTTP for station and
+  now-playing metadata, fetch station details in a staggered background queue,
+  show genre, bitrate, and listener details, and support manual details lookup.
+  Failed metadata requests back off instead of retrying continuously.
 - **App Settings**: Added a Channel Defaults section for global per-channel
   defaults such as joins/parts, topic/nick/mode changes, formatting, nicklist
   colors, notification level, sound, and unread counts. Added the remaining

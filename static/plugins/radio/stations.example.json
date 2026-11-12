@@ -2,9 +2,12 @@
     {
         "name": "Example",
         "image": "https://example.com/logo.png",
-        "source": "https://example.com/stream",
+        "sources": [
+            "https://example.com/stream",
+            "https://backup.example.com/stream"
+        ],
+        "homepage": "https://example.com/radio",
         "description": "An example station",
-        "channels": "#radio",
         "nowPlaying": "https://example.com/status-json.xsl"
     },
     {

@@ -30,29 +30,15 @@
             <span
                 ref="nameTrack"
                 class="kiwi-radio-controls-name"
-                :title="radio.ui.currentName"
+                :title="radio.ui.currentLabel || radio.ui.currentName"
             >
                 <span
                     ref="nameText"
                     class="kiwi-radio-controls-name-text"
                     :class="{ 'kiwi-radio-controls-name-text--scroll': nameScroll > 0 }"
                     :style="nameScrollStyle"
-                >{{ radio.ui.currentName }}</span>
+                >{{ radio.ui.currentLabel || radio.ui.currentName }}</span>
             </span>
-            <a
-                v-if="radio.ui.currentName"
-                :title="radio.isStarred(radio.ui.currentName)
-                    ? $t('radio:unstar')
-                    : $t('radio:star')"
-                @click="radio.toggleStar(radio.ui.currentName)"
-            >
-                <i
-                    :class="radio.isStarred(radio.ui.currentName)
-                        ? 'bx bxs-star'
-                        : 'bx bx-star'"
-                    aria-hidden="true"
-                ></i>
-            </a>
             <a :title="$t('radio:stations')" @click="openList">
                 <i class="bx bx-list-ul" aria-hidden="true"></i>
             </a>
@@ -107,6 +93,13 @@
         <div class="kiwi-radio-browser-header">
             <span>{{ $t('radio:stations') }}</span>
             <a
+                class="kiwi-radio-browser-add"
+                :title="$t('radio:add_station')"
+                @click.stop="openAddForm"
+            >
+                <i class="bx bx-plus" aria-hidden="true"></i>
+            </a>
+            <a
                 class="kiwi-radio-browser-close"
                 :title="$t('radio:close')"
                 @click.stop="close(true)"
@@ -114,6 +107,101 @@
                 <i class="bx bx-x" aria-hidden="true"></i>
             </a>
         </div>
+
+        <form
+            v-if="showForm"
+            class="kiwi-radio-station-form"
+            @submit.prevent="saveStation"
+        >
+            <div class="kiwi-radio-station-form-title">
+                {{ editingSource ? $t('radio:edit_station') : $t('radio:add_station') }}
+            </div>
+            <label>
+                <span>{{ $t('radio:station_name') }}</span>
+                <input
+                    v-model.trim="draft.name"
+                    class="u-input"
+                    type="text"
+                >
+            </label>
+            <label>
+                <span>{{ $t('radio:station_sources') }}</span>
+                <textarea
+                    v-model="draft.sources"
+                    class="u-input"
+                    rows="3"
+                    required
+                    @blur="autoFetchDetails"
+                ></textarea>
+            </label>
+            <label>
+                <span>{{ $t('radio:station_homepage') }}</span>
+                <input
+                    v-model.trim="draft.homepage"
+                    class="u-input"
+                    type="url"
+                >
+            </label>
+            <label>
+                <span>{{ $t('radio:station_icon') }}</span>
+                <div class="kiwi-radio-station-icon-row">
+                    <input
+                        v-model.trim="draft.image"
+                        class="u-input"
+                        type="url"
+                    >
+                    <button
+                        v-if="desktopIconsAvailable"
+                        type="button"
+                        class="u-button"
+                        @click.prevent="chooseIcon"
+                    >
+                        {{ $t('radio:choose_icon') }}
+                    </button>
+                </div>
+            </label>
+            <label>
+                <span>{{ $t('radio:station_description') }}</span>
+                <textarea
+                    v-model="draft.description"
+                    class="u-input"
+                    rows="2"
+                ></textarea>
+            </label>
+            <label>
+                <span>{{ $t('radio:station_now_playing') }}</span>
+                <input
+                    v-model.trim="draft.nowPlaying"
+                    class="u-input"
+                    type="url"
+                >
+            </label>
+            <div class="kiwi-radio-station-form-actions">
+                <button type="submit" class="u-button u-button-primary">
+                    {{ editingSource ? $t('radio:save_station') : $t('radio:add_station') }}
+                </button>
+                <button
+                    v-if="desktopMetadataAvailable"
+                    type="button"
+                    class="u-button"
+                    :disabled="fetchingDetails"
+                    @click.prevent="fetchDetails"
+                >
+                    {{ fetchingDetails
+                        ? $t('radio:fetching_details')
+                        : $t('radio:fetch_details') }}
+                </button>
+                <button type="button" class="u-button" @click="closeForm">
+                    {{ $t('radio:cancel') }}
+                </button>
+            </div>
+            <div v-if="detailStatus" class="kiwi-radio-station-form-detail">
+                {{ $t('radio:' + detailStatus) }}
+            </div>
+            <div v-if="formError" class="kiwi-radio-station-form-error">
+                {{ $t('radio:' + formError) }}
+            </div>
+        </form>
         <div v-if="radio.ui.loading" class="kiwi-radio-browser-status">
             {{ $t('radio:loading') }}
         </div>
@@ -131,18 +219,23 @@
                 :class="{ 'kiwi-radio-browser-station--active': radio.ui.currentName === station.name }"
                 @click="radio.play(station)"
             >
-                <img
-                    v-if="station.image"
-                    class="kiwi-radio-browser-image"
-                    :src="station.image"
-                    alt=""
-                >
-                <div v-else class="kiwi-radio-browser-image kiwi-radio-browser-image--empty">
-                    <i class="bx bx-music" aria-hidden="true"></i>
-                </div>
+                <template v-if="showStationIcons">
+                    <img
+                        v-if="stationImage(station)"
+                        class="kiwi-radio-browser-image"
+                        :src="stationImage(station)"
+                        alt=""
+                    >
+                    <div
+                        v-else
+                        class="kiwi-radio-browser-image kiwi-radio-browser-image--empty"
+                    >
+                        <i class="bx bx-music" aria-hidden="true"></i>
+                    </div>
+                </template>
                 <div class="kiwi-radio-browser-body">
                     <div class="kiwi-radio-browser-title">
-                        <span class="kiwi-radio-browser-name">{{ station.name }}</span>
+                        <span class="kiwi-radio-browser-name">{{ stationName(station) }}</span>
                         <a
                             class="kiwi-radio-browser-star"
                             :title="radio.isStarred(station.name)
@@ -157,19 +250,128 @@
                                 aria-hidden="true"
                             ></i>
                         </a>
+                        <a
+                            v-if="stationHomepage(station)"
+                            class="kiwi-radio-browser-homepage"
+                            :href="stationHomepage(station)"
+                            :title="$t('radio:station_homepage')"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            @click.stop
+                        >
+                            <i class="bx bx-link-external" aria-hidden="true"></i>
+                        </a>
+                        <a
+                            v-if="station.custom"
+                            class="kiwi-radio-browser-edit"
+                            :title="$t('radio:edit_station')"
+                            @click.stop="openEditForm(station)"
+                        >
+                            <i class="bx bx-pencil" aria-hidden="true"></i>
+                        </a>
+                        <a
+                            class="kiwi-radio-browser-remove"
+                            :title="$t('radio:remove_station')"
+                            @click.stop="removeStation(station)"
+                        >
+                            <i class="bx bx-trash" aria-hidden="true"></i>
+                        </a>
                     </div>
                     <div
-                        v-if="station.description || station.channels"
+                        v-if="stationDescription(station)"
                         class="kiwi-radio-browser-description"
                         @click="onDetailsClick"
                         v-html="details(station)"
                     ></div>
+                    <div
+                        v-if="stationInfoLine(station)"
+                        class="kiwi-radio-browser-info"
+                    >{{ stationInfoLine(station) }}</div>
                     <div v-if="radio.ui.failed[station.name]" class="kiwi-radio-browser-error">
                         {{ $t('radio:error') }}
                     </div>
                 </div>
             </div>
         </div>
+        <div
+            v-if="radio.ui.hiddenStations.length"
+            class="kiwi-radio-browser-hidden"
+        >
+            <button
+                type="button"
+                class="u-button"
+                @click="showHidden = !showHidden"
+            >
+                {{ $t('radio:hidden_stations', {
+                    count: radio.ui.hiddenStations.length,
+                }) }}
+            </button>
+            <div v-if="showHidden" class="kiwi-radio-browser-hidden-list">
+                <div
+                    v-for="station in radio.ui.hiddenStations"
+                    :key="station.source"
+                    class="kiwi-radio-browser-hidden-station"
+                >
+                    <span>{{ stationName(station) }}</span>
+                    <a @click="restoreStation(station)">
+                        {{ $t('radio:restore_station') }}
+                    </a>
+                </div>
+                <a
+                    v-if="radio.ui.hiddenStations.length > 1"
+                    class="kiwi-radio-browser-restore-all"
+                    @click="restoreAllStations"
+                >
+                    {{ $t('radio:restore_all_stations') }}
+                </a>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="kiwi-radio-settings">
+    <div class="kiwi-appsettings-section kiwi-radio-settings">
+        <label class="u-checkbox-wrapper">
+            <span>{{ $t('radio:enable') }}</span>
+            <input
+                type="checkbox"
+                :checked="enabled"
+                @change="setEnabled($event.target.checked)"
+            >
+        </label>
+        <label class="u-checkbox-wrapper">
+            <span>{{ $t('radio:show_now_playing') }}</span>
+            <input
+                type="checkbox"
+                :checked="nowPlaying"
+                @change="setNowPlaying($event.target.checked)"
+            >
+        </label>
+        <label class="u-checkbox-wrapper">
+            <span>{{ $t('radio:show_station_icons') }}</span>
+            <input
+                type="checkbox"
+                :checked="showStationIcons"
+                @change="setShowStationIcons($event.target.checked)"
+            >
+        </label>
+        <label class="u-form-block">
+            <span>{{ $t('radio:show_waveform') }}</span>
+            <select
+                class="u-input"
+                :value="waveStyle"
+                @change="setWaveStyle($event.target.value)"
+            >
+                <option value="none">{{ $t('radio:wave_none') }}</option>
+                <option value="bars">{{ $t('radio:wave_bars') }}</option>
+                <option value="mirror">{{ $t('radio:wave_mirror') }}</option>
+                <option value="wave">{{ $t('radio:wave_wave') }}</option>
+                <option value="area">{{ $t('radio:wave_area') }}</option>
+                <option value="led">{{ $t('radio:wave_led') }}</option>
+                <option value="pulse">{{ $t('radio:wave_pulse') }}</option>
+                <option value="peaks">{{ $t('radio:wave_peaks') }}</option>
+            </select>
+        </label>
     </div>
 </template>
 

@@ -1,3 +1,5 @@
+'kiwi public';
+
 function desktopNetworkIcons() {
     if (typeof window === 'undefined' || !window.kiwiDesktop) {
         return null;
