@@ -112,8 +112,101 @@
     user-select: none;
 }
 
+.kiwi-radio-browser-visualizer {
+    margin-left: auto;
+    cursor: pointer;
+    user-select: none;
+}
+
+.kiwi-radio-browser-add + .kiwi-radio-browser-visualizer {
+    margin-left: 8px;
+}
+
 .kiwi-radio-browser-close {
     margin-left: 8px;
+}
+
+.kiwi-radio-visualizer {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    background: #02050a;
+    color: #fff;
+}
+
+.kiwi-radio-visualizer:fullscreen {
+    width: 100vw;
+    height: 100vh;
+}
+
+.kiwi-radio-visualizer-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.kiwi-radio-visualizer-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 16px;
+    pointer-events: none;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.6),
+        transparent 28%,
+        transparent 68%,
+        rgba(0, 0, 0, 0.7)
+    );
+}
+
+.kiwi-radio-visualizer-heading {
+    text-align: left;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.kiwi-radio-visualizer-title {
+    font-size: 1.2em;
+    font-weight: 700;
+}
+
+.kiwi-radio-visualizer-track {
+    margin-top: 4px;
+    font-size: 0.95em;
+    opacity: 0.85;
+}
+
+.kiwi-radio-visualizer-notice {
+    align-self: center;
+    max-width: 80%;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.55);
+    text-align: center;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.kiwi-radio-visualizer-actions {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+}
+
+.kiwi-radio-visualizer-actions a {
+    color: var(--brand-primary-hover, #5ec9a6);
+    cursor: pointer;
+    font-size: 1.35em;
+    opacity: 0.85;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.kiwi-radio-visualizer-actions a:hover {
+    opacity: 1;
 }
 
 .kiwi-radio-browser-status {

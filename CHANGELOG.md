@@ -85,7 +85,9 @@ and this project adheres to
   from the station browser. Desktop builds now use native HTTP for station and
   now-playing metadata, fetch station details in a staggered background queue,
   show genre, bitrate, and listener details, and support manual details lookup.
-  Failed metadata requests back off instead of retrying continuously.
+  Failed metadata requests back off instead of retrying continuously. Added a
+  MilkDrop-inspired station-browser visualizer with a WebGL feedback effect, 2D
+  fallback, fullscreen mode, and playback controls.
 - **App Settings**: Added a Channel Defaults section for global per-channel
   defaults such as joins/parts, topic/nick/mode changes, formatting, nicklist
   colors, notification level, sound, and unread counts. Added the remaining

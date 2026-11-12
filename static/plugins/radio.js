@@ -678,6 +678,8 @@ kiwi.plugin('radio', (kiwi, log) => {
             waveReady: false,
             trackTitle: '',
             nowPlayingInfo: null,
+            visualizerOpen: false,
+            visualizerNotice: '',
             missing: false,
         });
         let fileStations = [];
@@ -711,6 +713,10 @@ kiwi.plugin('radio', (kiwi, log) => {
 
         function waveEnabled() {
             return waveStyle() !== 'none';
+        }
+
+        function waveNeeded() {
+            return waveEnabled() || ui.visualizerOpen;
         }
 
         function volume() {
@@ -1048,6 +1054,9 @@ kiwi.plugin('radio', (kiwi, log) => {
                 return;
             }
             recovering = true;
+            if (ui.visualizerOpen) {
+                ui.visualizerNotice = 'visualizer_no_audio';
+            }
             let station = activeStation;
             let sources = stationSources(station);
             let src = sources[activeSourceIndex] ||
@@ -1083,7 +1092,7 @@ kiwi.plugin('radio', (kiwi, log) => {
         }
 
         function attachWave() {
-            if (!waveEnabled() || ui.analyser || !ui.audio) {
+            if (!waveNeeded() || ui.analyser || !ui.audio) {
                 return;
             }
             if (!ui.audio.crossOrigin) {
@@ -1091,6 +1100,9 @@ kiwi.plugin('radio', (kiwi, log) => {
             }
             let AudioCtx = window.AudioContext || window.webkitAudioContext;
             if (!AudioCtx) {
+                if (ui.visualizerOpen) {
+                    ui.visualizerNotice = 'visualizer_no_audio';
+                }
                 return;
             }
             try {
@@ -1100,7 +1112,7 @@ kiwi.plugin('radio', (kiwi, log) => {
                 }
                 let source = ctx.createMediaElementSource(ui.audio);
                 let analyser = ctx.createAnalyser();
-                analyser.fftSize = 64;
+                analyser.fftSize = ui.visualizerOpen ? 256 : 64;
                 source.connect(analyser);
                 analyser.connect(ctx.destination);
                 ui.audioCtx = ctx;
@@ -1109,6 +1121,9 @@ kiwi.plugin('radio', (kiwi, log) => {
             } catch (err) {
                 ui.analyser = null;
                 ui.waveReady = false;
+                if (ui.visualizerOpen) {
+                    ui.visualizerNotice = 'visualizer_no_audio';
+                }
             }
         }
 
@@ -1373,6 +1388,7 @@ kiwi.plugin('radio', (kiwi, log) => {
             let index = Math.max(0, Math.min(sourceIndex, sources.length - 1));
             activeStation = station;
             activeSourceIndex = index;
+            ui.visualizerNotice = '';
             activeAttempt += 1;
             let attempt = activeAttempt;
             stopTrackPoll();
@@ -1415,7 +1431,7 @@ kiwi.plugin('radio', (kiwi, log) => {
             }
             let sources = stationSources(activeStation);
             if (activeStation && activeSourceIndex + 1 < sources.length) {
-                playSource(activeStation, activeSourceIndex + 1, waveEnabled());
+                playSource(activeStation, activeSourceIndex + 1, waveNeeded());
                 return;
             }
             if (activeStation) {
@@ -1431,7 +1447,7 @@ kiwi.plugin('radio', (kiwi, log) => {
             }
             activeStation = station;
             activeSourceIndex = 0;
-            playSource(station, 0, waveEnabled());
+            playSource(station, 0, waveNeeded());
         }
 
         function playCurrent() {
@@ -1587,6 +1603,19 @@ kiwi.plugin('radio', (kiwi, log) => {
             kiwi.state.$emit('active.component', null);
         }
 
+        function setVisualizer(open) {
+            let next = !!open;
+            if (ui.visualizerOpen === next) {
+                return;
+            }
+            ui.visualizerOpen = next;
+            ui.visualizerNotice = '';
+            if (ui.analyser) {
+                ui.analyser.fftSize = ui.visualizerOpen ? 256 : 64;
+            }
+            applySettings();
+        }
+
         function applySettings() {
             if (!enabled()) {
                 pause();
@@ -1600,7 +1629,7 @@ kiwi.plugin('radio', (kiwi, log) => {
 
             let station = current();
             if (!ui.playing) {
-                if (!waveEnabled()) {
+                if (!waveNeeded()) {
                     stopWave();
                 }
                 if (!metadataEnabled(null)) {
@@ -1627,7 +1656,7 @@ kiwi.plugin('radio', (kiwi, log) => {
                 startDetailQueue();
             }
 
-            if (!waveEnabled()) {
+            if (!waveNeeded()) {
                 stopWave();
                 return;
             }
@@ -1636,6 +1665,9 @@ kiwi.plugin('radio', (kiwi, log) => {
                 play(station);
             } else {
                 attachWave();
+            }
+            if (!waveEnabled()) {
+                stopWave();
             }
         }
 
@@ -1708,6 +1740,7 @@ kiwi.plugin('radio', (kiwi, log) => {
             restoreAllStations: restoreAllStations,
             startDetailQueue: startDetailQueue,
             stopDetailQueue: stopDetailQueue,
+            setVisualizer: setVisualizer,
             fetchStationDetails: function(station) {
                 return loadStationDetails(station);
             },
@@ -1731,13 +1764,876 @@ kiwi.plugin('radio', (kiwi, log) => {
         return true;
     }
 
+    const RADIO_VISUALIZER_AUDIO_BINS = 128;
+    const RADIO_VISUALIZER_VERTEX = `
+        attribute vec2 a_position;
+        varying vec2 v_uv;
+
+        void main() {
+            v_uv = a_position * 0.5 + 0.5;
+            gl_Position = vec4(a_position, 0.0, 1.0);
+        }
+    `;
+    const RADIO_VISUALIZER_FEEDBACK = `
+        precision mediump float;
+
+        uniform sampler2D u_prev;
+        uniform sampler2D u_audio;
+        uniform vec2 u_resolution;
+        uniform float u_time;
+        uniform float u_bass;
+        uniform float u_mid;
+        uniform float u_treble;
+        uniform float u_beat;
+        varying vec2 v_uv;
+
+        vec3 palette(float t) {
+            return 0.5 + 0.5 * cos(
+                6.28318 * (vec3(1.0, 0.7, 0.4) * t + vec3(0.0, 0.33, 0.67))
+            );
+        }
+
+        void main() {
+            vec2 uv = v_uv;
+            vec2 p = uv - 0.5;
+            p.x *= u_resolution.x / max(1.0, u_resolution.y);
+            float radius = length(p);
+            float angle = atan(p.y, p.x);
+            float t = u_time * 0.08;
+            float zoom = 1.0 -
+                (0.012 + u_bass * 0.035 + u_beat * 0.025) +
+                sin(t * 1.7) * 0.004;
+            vec2 warp = vec2(
+                sin(uv.y * 11.0 + t * 2.1) * (0.0015 + u_mid * 0.003),
+                cos(uv.x * 9.0 + t * 1.6) * (0.0015 + u_mid * 0.003)
+            );
+            vec2 sampleUv = (uv - 0.5) * zoom + 0.5 + warp;
+            sampleUv = clamp(sampleUv, 0.001, 0.999);
+            vec3 previous = texture2D(u_prev, sampleUv).rgb *
+                (0.955 + u_bass * 0.02);
+
+            float bin = floor(clamp(
+                (angle / 6.28318 + 0.5) * 127.0,
+                0.0,
+                127.0
+            ));
+            float audio = texture2D(
+                u_audio,
+                vec2((bin + 0.5) / 128.0, 0.5)
+            ).r;
+            float ringRadius = 0.24 + audio * 0.19 + u_bass * 0.04;
+            float ring = 1.0 - smoothstep(
+                0.0,
+                0.012,
+                abs(radius - ringRadius)
+            );
+            float halo = (1.0 - smoothstep(
+                0.0,
+                0.20,
+                abs(radius - ringRadius)
+            )) * (0.18 + audio * 0.4);
+            float swirl = pow(
+                max(0.0, sin(angle * 5.0 + t * 2.5 + radius * 18.0)),
+                6.0
+            );
+            float glow = (1.0 - smoothstep(0.0, 0.52, radius)) *
+                (0.04 + u_bass * 0.12);
+            vec3 colour = palette(
+                angle / 6.28318 + t * 0.35 + u_treble * 0.4
+            );
+            vec3 resultColour = previous * 0.93;
+            resultColour += colour * (ring * (0.7 + u_treble * 1.2));
+            resultColour += colour * halo * 0.35;
+            resultColour += palette(t + 0.3) * swirl *
+                (0.03 + u_mid * 0.18);
+            resultColour += colour * glow;
+            resultColour += vec3(0.02, 0.04, 0.06) * (1.0 - radius);
+            gl_FragColor = vec4(clamp(resultColour, 0.0, 1.0), 1.0);
+        }
+    `;
+    const RADIO_VISUALIZER_COPY = `
+        precision mediump float;
+
+        uniform sampler2D u_texture;
+        varying vec2 v_uv;
+
+        void main() {
+            gl_FragColor = vec4(texture2D(u_texture, v_uv).rgb, 1.0);
+        }
+    `;
+
+    const RadioVisualizer = kiwi.Vue.extend({
+        template: '#kiwi-radio-visualizer',
+        data: function() {
+            return {
+                radio: getRadio(),
+                isFullscreen: false,
+                reducedMotion: false,
+            };
+        },
+        computed: {
+            playing: function() {
+                return this.radio.ui.playing;
+            },
+            stationLabel: function() {
+                let station = this.radio.current();
+                if (station) {
+                    return stationDisplayName(station);
+                }
+                return this.radio.ui.currentLabel ||
+                    this.radio.ui.currentName ||
+                    '';
+            },
+            trackTitle: function() {
+                return this.radio.ui.trackTitle;
+            },
+            audioReady: function() {
+                return this.radio.ui.waveReady && !!this.radio.ui.analyser;
+            },
+            notice: function() {
+                if (this.radio.ui.visualizerNotice) {
+                    return this.radio.ui.visualizerNotice;
+                }
+                if (this.playing && !this.audioReady) {
+                    return 'visualizer_waiting_audio';
+                }
+                return '';
+            },
+            fullscreenTitle: function() {
+                return this.isFullscreen ?
+                    'visualizer_exit_fullscreen' :
+                    'visualizer_fullscreen';
+            },
+        },
+        mounted: function() {
+            this.reducedMotion = !!(
+                window.matchMedia &&
+                window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            );
+            this.visual = {
+                disposed: false,
+                raf: 0,
+                frame: null,
+                lastFrame: 0,
+                time: 0,
+                canvas: null,
+                container: null,
+                resizeObserver: null,
+                gl: null,
+                ctx2d: null,
+                feedbackProgram: null,
+                copyProgram: null,
+                quadBuffer: null,
+                audioTexture: null,
+                feedbackUniforms: null,
+                copyUniforms: null,
+                textures: [],
+                framebuffers: [],
+                readIndex: 0,
+                writeIndex: 1,
+                feedbackWidth: 0,
+                feedbackHeight: 0,
+                audioBins: new Uint8Array(RADIO_VISUALIZER_AUDIO_BINS),
+                frequencyData: null,
+                bass: 0,
+                mid: 0,
+                treble: 0,
+                bassAverage: 0,
+                beat: 0,
+            };
+
+            document.addEventListener('fullscreenchange', this.onFullscreenChange);
+            document.addEventListener(
+                'webkitfullscreenchange',
+                this.onFullscreenChange
+            );
+            if (window.ResizeObserver) {
+                this.visual.resizeObserver = new window.ResizeObserver(() => {
+                    this.resizeCanvas();
+                });
+                this.visual.resizeObserver.observe(this.$refs.container);
+            } else {
+                window.addEventListener('resize', this.resizeCanvas);
+            }
+
+            this.radio.setVisualizer(true);
+            this.$nextTick(() => {
+                if (!this.visual || this.visual.disposed) {
+                    return;
+                }
+                this.initCanvas();
+                this.startLoop();
+            });
+        },
+        beforeDestroy: function() {
+            if (!this.visual) {
+                return;
+            }
+            this.visual.disposed = true;
+            this.stopLoop();
+            if (this.visual.resizeObserver) {
+                this.visual.resizeObserver.disconnect();
+            } else {
+                window.removeEventListener('resize', this.resizeCanvas);
+            }
+            document.removeEventListener(
+                'fullscreenchange',
+                this.onFullscreenChange
+            );
+            document.removeEventListener(
+                'webkitfullscreenchange',
+                this.onFullscreenChange
+            );
+            let fullscreen = document.fullscreenElement ||
+                document.webkitFullscreenElement;
+            if (fullscreen && fullscreen === this.$refs.container) {
+                let exit = document.exitFullscreen ||
+                    document.webkitExitFullscreen;
+                if (exit) {
+                    try {
+                        let result = exit.call(document);
+                        if (result && result.catch) {
+                            result.catch(() => {});
+                        }
+                    } catch (err) {
+                        // Ignore fullscreen exit failures.
+                    }
+                }
+            }
+            this.destroyWebGL();
+            this.radio.setVisualizer(false);
+        },
+        methods: {
+            onFullscreenChange: function() {
+                let fullscreen = document.fullscreenElement ||
+                    document.webkitFullscreenElement;
+                this.isFullscreen = !!fullscreen &&
+                    fullscreen === this.$refs.container;
+            },
+            toggleFullscreen: function() {
+                let container = this.$refs.container;
+                if (!container) {
+                    return;
+                }
+                let fullscreen = document.fullscreenElement ||
+                    document.webkitFullscreenElement;
+                let action;
+                if (fullscreen === container) {
+                    action = document.exitFullscreen ||
+                        document.webkitExitFullscreen;
+                    if (!action) {
+                        return;
+                    }
+                    try {
+                        let result = action.call(document);
+                        if (result && result.catch) {
+                            result.catch(() => {});
+                        }
+                    } catch (err) {
+                        // Ignore fullscreen exit failures.
+                    }
+                    return;
+                }
+                action = container.requestFullscreen ||
+                    container.webkitRequestFullscreen;
+                if (!action) {
+                    return;
+                }
+                try {
+                    let result = action.call(container);
+                    if (result && result.catch) {
+                        result.catch(() => {});
+                    }
+                } catch (err) {
+                    // Ignore fullscreen request failures.
+                }
+            },
+            startLoop: function() {
+                if (!this.visual || this.visual.raf) {
+                    return;
+                }
+                this.visual.frame = (now) => {
+                    this.drawFrame(now);
+                };
+                this.visual.raf = window.requestAnimationFrame(
+                    this.visual.frame
+                );
+            },
+            stopLoop: function() {
+                if (!this.visual) {
+                    return;
+                }
+                if (this.visual.raf) {
+                    window.cancelAnimationFrame(this.visual.raf);
+                    this.visual.raf = 0;
+                }
+            },
+            drawFrame: function(now) {
+                let visual = this.visual;
+                if (!visual || visual.disposed) {
+                    return;
+                }
+                let time = typeof now === 'number' ? now : Date.now();
+                if (!visual.lastFrame) {
+                    visual.lastFrame = time;
+                }
+                let delta = Math.min(0.1, (time - visual.lastFrame) / 1000);
+                visual.lastFrame = time;
+                visual.time += delta;
+
+                if (!document.hidden) {
+                    this.updateAudio();
+                    if (visual.gl) {
+                        this.drawWebGL();
+                    } else {
+                        this.draw2D();
+                    }
+                }
+                visual.raf = window.requestAnimationFrame(visual.frame);
+            },
+            average: function(data, start, end) {
+                if (!data || end <= start) {
+                    return 0;
+                }
+                let total = 0;
+                for (let index = start; index < end; index += 1) {
+                    total += data[index];
+                }
+                return total / (end - start);
+            },
+            updateAudio: function() {
+                let visual = this.visual;
+                let analyser = this.radio.ui.analyser;
+                let bins = visual.audioBins;
+                if (!analyser) {
+                    bins.fill(0);
+                    visual.bass *= 0.94;
+                    visual.mid *= 0.94;
+                    visual.treble *= 0.94;
+                    visual.beat *= 0.9;
+                    return;
+                }
+
+                let length = analyser.frequencyBinCount;
+                if (!visual.frequencyData ||
+                    visual.frequencyData.length !== length
+                ) {
+                    visual.frequencyData = new Uint8Array(length);
+                }
+                analyser.getByteFrequencyData(visual.frequencyData);
+                for (let index = 0; index < RADIO_VISUALIZER_AUDIO_BINS; index += 1) {
+                    let mapped = Math.floor(
+                        ((index / (RADIO_VISUALIZER_AUDIO_BINS - 1)) ** 1.7) *
+                        (length - 1)
+                    );
+                    bins[index] = visual.frequencyData[
+                        Math.min(length - 1, Math.max(0, mapped))
+                    ];
+                }
+
+                let bass = this.average(
+                    visual.frequencyData,
+                    0,
+                    Math.min(8, length)
+                ) / 255;
+                let mid = this.average(
+                    visual.frequencyData,
+                    Math.min(8, length),
+                    Math.min(64, length)
+                ) / 255;
+                let treble = this.average(
+                    visual.frequencyData,
+                    Math.min(64, length),
+                    length
+                ) / 255;
+                visual.bass = visual.bass * 0.82 + bass * 0.18;
+                visual.mid = visual.mid * 0.82 + mid * 0.18;
+                visual.treble = visual.treble * 0.82 + treble * 0.18;
+                visual.bassAverage = visual.bassAverage * 0.96 +
+                    bass * 0.04;
+                if (bass > visual.bassAverage * 1.25 + 0.03) {
+                    visual.beat = 1;
+                } else {
+                    visual.beat *= 0.9;
+                }
+            },
+            initCanvas: function() {
+                let visual = this.visual;
+                let canvas = this.$refs.canvas;
+                let container = this.$refs.container;
+                if (!visual || !canvas || !container) {
+                    return;
+                }
+                visual.canvas = canvas;
+                visual.container = container;
+                this.resizeCanvas();
+
+                let gl = null;
+                try {
+                    gl = canvas.getContext('webgl', {
+                        alpha: false,
+                        antialias: false,
+                        depth: false,
+                        powerPreference: 'high-performance',
+                    }) || canvas.getContext('experimental-webgl');
+                } catch (err) {
+                    gl = null;
+                }
+                if (gl && this.setupWebGL(gl)) {
+                    this.resizeWebGL();
+                    return;
+                }
+                visual.gl = null;
+                visual.ctx2d = canvas.getContext('2d');
+            },
+            resizeCanvas: function() {
+                let visual = this.visual;
+                if (!visual || !visual.canvas || !visual.container) {
+                    return;
+                }
+                let dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+                let width = Math.max(
+                    1,
+                    Math.round(visual.container.clientWidth * dpr)
+                );
+                let height = Math.max(
+                    1,
+                    Math.round(visual.container.clientHeight * dpr)
+                );
+                let scale = Math.min(1, 1920 / width, 1080 / height);
+                width = Math.max(1, Math.round(width * scale));
+                height = Math.max(1, Math.round(height * scale));
+                if (visual.canvas.width === width &&
+                    visual.canvas.height === height
+                ) {
+                    return;
+                }
+                visual.canvas.width = width;
+                visual.canvas.height = height;
+                visual.ctx2d = visual.ctx2d &&
+                    visual.canvas.getContext('2d');
+                if (visual.gl) {
+                    this.resizeWebGL();
+                }
+            },
+            resizeWebGL: function() {
+                let visual = this.visual;
+                if (!visual || !visual.gl || !visual.canvas) {
+                    return;
+                }
+                let scale = Math.min(
+                    1,
+                    1280 / visual.canvas.width,
+                    720 / visual.canvas.height
+                );
+                let width = Math.max(
+                    64,
+                    Math.floor(visual.canvas.width * scale)
+                );
+                let height = Math.max(
+                    36,
+                    Math.floor(visual.canvas.height * scale)
+                );
+                if (visual.feedbackWidth === width &&
+                    visual.feedbackHeight === height
+                ) {
+                    return;
+                }
+                visual.feedbackWidth = width;
+                visual.feedbackHeight = height;
+                this.createFeedbackTargets();
+            },
+            createFeedbackTargets: function() {
+                let visual = this.visual;
+                let gl = visual.gl;
+                if (!gl) {
+                    return;
+                }
+                this.deleteFeedbackTargets();
+                visual.textures = [];
+                visual.framebuffers = [];
+                gl.clearColor(0, 0, 0, 1);
+                for (let index = 0; index < 2; index += 1) {
+                    let texture = gl.createTexture();
+                    gl.bindTexture(gl.TEXTURE_2D, texture);
+                    gl.texParameteri(
+                        gl.TEXTURE_2D,
+                        gl.TEXTURE_MIN_FILTER,
+                        gl.LINEAR
+                    );
+                    gl.texParameteri(
+                        gl.TEXTURE_2D,
+                        gl.TEXTURE_MAG_FILTER,
+                        gl.LINEAR
+                    );
+                    gl.texParameteri(
+                        gl.TEXTURE_2D,
+                        gl.TEXTURE_WRAP_S,
+                        gl.CLAMP_TO_EDGE
+                    );
+                    gl.texParameteri(
+                        gl.TEXTURE_2D,
+                        gl.TEXTURE_WRAP_T,
+                        gl.CLAMP_TO_EDGE
+                    );
+                    gl.texImage2D(
+                        gl.TEXTURE_2D,
+                        0,
+                        gl.RGBA,
+                        visual.feedbackWidth,
+                        visual.feedbackHeight,
+                        0,
+                        gl.RGBA,
+                        gl.UNSIGNED_BYTE,
+                        null
+                    );
+
+                    let framebuffer = gl.createFramebuffer();
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+                    gl.framebufferTexture2D(
+                        gl.FRAMEBUFFER,
+                        gl.COLOR_ATTACHMENT0,
+                        gl.TEXTURE_2D,
+                        texture,
+                        0
+                    );
+                    gl.clear(gl.COLOR_BUFFER_BIT);
+                    visual.textures.push(texture);
+                    visual.framebuffers.push(framebuffer);
+                }
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                visual.readIndex = 0;
+                visual.writeIndex = 1;
+            },
+            deleteFeedbackTargets: function() {
+                let visual = this.visual;
+                let gl = visual && visual.gl;
+                if (!gl) {
+                    return;
+                }
+                (visual.textures || []).forEach((texture) => {
+                    gl.deleteTexture(texture);
+                });
+                (visual.framebuffers || []).forEach((framebuffer) => {
+                    gl.deleteFramebuffer(framebuffer);
+                });
+                visual.textures = [];
+                visual.framebuffers = [];
+            },
+            compileShader: function(gl, type, source) {
+                let shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                    let info = gl.getShaderInfoLog(shader);
+                    gl.deleteShader(shader);
+                    throw new Error('radio visualizer shader: ' + info);
+                }
+                return shader;
+            },
+            createProgram: function(gl, vertexSource, fragmentSource) {
+                let vertex = this.compileShader(
+                    gl,
+                    gl.VERTEX_SHADER,
+                    vertexSource
+                );
+                let fragment = this.compileShader(
+                    gl,
+                    gl.FRAGMENT_SHADER,
+                    fragmentSource
+                );
+                let program = gl.createProgram();
+                gl.attachShader(program, vertex);
+                gl.attachShader(program, fragment);
+                gl.bindAttribLocation(program, 0, 'a_position');
+                gl.linkProgram(program);
+                gl.deleteShader(vertex);
+                gl.deleteShader(fragment);
+                if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                    let info = gl.getProgramInfoLog(program);
+                    gl.deleteProgram(program);
+                    throw new Error('radio visualizer program: ' + info);
+                }
+                return program;
+            },
+            setupWebGL: function(gl) {
+                let visual = this.visual;
+                visual.gl = gl;
+                try {
+                    let feedbackProgram = this.createProgram(
+                        gl,
+                        RADIO_VISUALIZER_VERTEX,
+                        RADIO_VISUALIZER_FEEDBACK
+                    );
+                    let copyProgram = this.createProgram(
+                        gl,
+                        RADIO_VISUALIZER_VERTEX,
+                        RADIO_VISUALIZER_COPY
+                    );
+                    let quadBuffer = gl.createBuffer();
+                    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+                    gl.bufferData(
+                        gl.ARRAY_BUFFER,
+                        new Float32Array([
+                            -1, -1,
+                            1, -1,
+                            -1, 1,
+                            1, 1,
+                        ]),
+                        gl.STATIC_DRAW
+                    );
+
+                    let audioTexture = gl.createTexture();
+                    gl.bindTexture(gl.TEXTURE_2D, audioTexture);
+                    gl.texParameteri(
+                        gl.TEXTURE_2D,
+                        gl.TEXTURE_MIN_FILTER,
+                        gl.LINEAR
+                    );
+                    gl.texParameteri(
+                        gl.TEXTURE_2D,
+                        gl.TEXTURE_MAG_FILTER,
+                        gl.LINEAR
+                    );
+                    gl.texParameteri(
+                        gl.TEXTURE_2D,
+                        gl.TEXTURE_WRAP_S,
+                        gl.CLAMP_TO_EDGE
+                    );
+                    gl.texParameteri(
+                        gl.TEXTURE_2D,
+                        gl.TEXTURE_WRAP_T,
+                        gl.CLAMP_TO_EDGE
+                    );
+                    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+                    gl.texImage2D(
+                        gl.TEXTURE_2D,
+                        0,
+                        gl.LUMINANCE,
+                        RADIO_VISUALIZER_AUDIO_BINS,
+                        1,
+                        0,
+                        gl.LUMINANCE,
+                        gl.UNSIGNED_BYTE,
+                        visual.audioBins
+                    );
+
+                    visual.feedbackProgram = feedbackProgram;
+                    visual.copyProgram = copyProgram;
+                    visual.quadBuffer = quadBuffer;
+                    visual.audioTexture = audioTexture;
+                    visual.feedbackUniforms = {
+                        prev: gl.getUniformLocation(feedbackProgram, 'u_prev'),
+                        audio: gl.getUniformLocation(feedbackProgram, 'u_audio'),
+                        resolution: gl.getUniformLocation(
+                            feedbackProgram,
+                            'u_resolution'
+                        ),
+                        time: gl.getUniformLocation(feedbackProgram, 'u_time'),
+                        bass: gl.getUniformLocation(feedbackProgram, 'u_bass'),
+                        mid: gl.getUniformLocation(feedbackProgram, 'u_mid'),
+                        treble: gl.getUniformLocation(
+                            feedbackProgram,
+                            'u_treble'
+                        ),
+                        beat: gl.getUniformLocation(feedbackProgram, 'u_beat'),
+                    };
+                    visual.copyUniforms = {
+                        texture: gl.getUniformLocation(
+                            copyProgram,
+                            'u_texture'
+                        ),
+                    };
+                    gl.disable(gl.DEPTH_TEST);
+                    gl.disable(gl.BLEND);
+                    gl.clearColor(0, 0, 0, 1);
+                    return true;
+                } catch (err) {
+                    this.destroyWebGL();
+                    return false;
+                }
+            },
+            uploadAudio: function() {
+                let visual = this.visual;
+                let gl = visual.gl;
+                if (!gl || !visual.audioTexture) {
+                    return;
+                }
+                gl.activeTexture(gl.TEXTURE1);
+                gl.bindTexture(gl.TEXTURE_2D, visual.audioTexture);
+                gl.texImage2D(
+                    gl.TEXTURE_2D,
+                    0,
+                    gl.LUMINANCE,
+                    RADIO_VISUALIZER_AUDIO_BINS,
+                    1,
+                    0,
+                    gl.LUMINANCE,
+                    gl.UNSIGNED_BYTE,
+                    visual.audioBins
+                );
+            },
+            drawWebGL: function() {
+                let visual = this.visual;
+                let gl = visual.gl;
+                if (!gl || !visual.feedbackWidth || !visual.textures.length) {
+                    return;
+                }
+                this.uploadAudio();
+                gl.bindFramebuffer(
+                    gl.FRAMEBUFFER,
+                    visual.framebuffers[visual.writeIndex]
+                );
+                gl.viewport(
+                    0,
+                    0,
+                    visual.feedbackWidth,
+                    visual.feedbackHeight
+                );
+                gl.useProgram(visual.feedbackProgram);
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(
+                    gl.TEXTURE_2D,
+                    visual.textures[visual.readIndex]
+                );
+                gl.uniform1i(visual.feedbackUniforms.prev, 0);
+                gl.activeTexture(gl.TEXTURE1);
+                gl.bindTexture(gl.TEXTURE_2D, visual.audioTexture);
+                gl.uniform1i(visual.feedbackUniforms.audio, 1);
+                gl.uniform2f(
+                    visual.feedbackUniforms.resolution,
+                    visual.feedbackWidth,
+                    visual.feedbackHeight
+                );
+                gl.uniform1f(
+                    visual.feedbackUniforms.time,
+                    visual.time * (this.reducedMotion ? 0.25 : 1)
+                );
+                gl.uniform1f(visual.feedbackUniforms.bass, visual.bass);
+                gl.uniform1f(visual.feedbackUniforms.mid, visual.mid);
+                gl.uniform1f(visual.feedbackUniforms.treble, visual.treble);
+                gl.uniform1f(visual.feedbackUniforms.beat, visual.beat);
+                gl.bindBuffer(gl.ARRAY_BUFFER, visual.quadBuffer);
+                gl.enableVertexAttribArray(0);
+                gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                gl.viewport(0, 0, visual.canvas.width, visual.canvas.height);
+                gl.useProgram(visual.copyProgram);
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(
+                    gl.TEXTURE_2D,
+                    visual.textures[visual.writeIndex]
+                );
+                gl.uniform1i(visual.copyUniforms.texture, 0);
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+                let swap = visual.readIndex;
+                visual.readIndex = visual.writeIndex;
+                visual.writeIndex = swap;
+            },
+            draw2D: function() {
+                let visual = this.visual;
+                let ctx = visual.ctx2d;
+                if (!ctx || !visual.canvas) {
+                    return;
+                }
+                let width = visual.canvas.width;
+                let height = visual.canvas.height;
+                let time = visual.time * (this.reducedMotion ? 0.25 : 1);
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.fillStyle = 'rgba(2, 5, 10, 0.22)';
+                ctx.fillRect(0, 0, width, height);
+                ctx.globalCompositeOperation = 'lighter';
+
+                let centerX = width / 2;
+                let centerY = height / 2;
+                let size = Math.min(width, height);
+                let baseRadius = size * (0.13 + visual.bass * 0.02);
+                let bars = 96;
+                ctx.lineCap = 'round';
+                for (let index = 0; index < bars; index += 1) {
+                    let value = visual.audioBins[Math.floor(
+                        (index / bars) * RADIO_VISUALIZER_AUDIO_BINS
+                    )] / 255;
+                    let angle = (index / bars) * Math.PI * 2 +
+                        time * 0.12;
+                    let outer = baseRadius + value * size * 0.22 + 4;
+                    let hue = (index / bars * 360 + time * 25) % 360;
+                    ctx.strokeStyle = 'hsla(' + hue +
+                        ', 90%, 65%, 0.65)';
+                    ctx.lineWidth = Math.max(1, width / bars * 0.28);
+                    ctx.beginPath();
+                    ctx.moveTo(
+                        centerX + Math.cos(angle) * baseRadius,
+                        centerY + Math.sin(angle) * baseRadius
+                    );
+                    ctx.lineTo(
+                        centerX + Math.cos(angle) * outer,
+                        centerY + Math.sin(angle) * outer
+                    );
+                    ctx.stroke();
+                }
+
+                let hue = (time * 18) % 360;
+                ctx.strokeStyle = 'hsla(' + hue + ', 90%, 65%, 0.5)';
+                ctx.lineWidth = Math.max(1, size * 0.004);
+                ctx.beginPath();
+                ctx.arc(
+                    centerX,
+                    centerY,
+                    baseRadius * (1.4 + visual.beat * 0.12),
+                    0,
+                    Math.PI * 2
+                );
+                ctx.stroke();
+                ctx.globalCompositeOperation = 'source-over';
+            },
+            destroyWebGL: function() {
+                let visual = this.visual;
+                if (!visual) {
+                    return;
+                }
+                let gl = visual.gl;
+                if (!gl) {
+                    return;
+                }
+                this.deleteFeedbackTargets();
+                if (visual.quadBuffer) {
+                    gl.deleteBuffer(visual.quadBuffer);
+                }
+                if (visual.audioTexture) {
+                    gl.deleteTexture(visual.audioTexture);
+                }
+                if (visual.feedbackProgram) {
+                    gl.deleteProgram(visual.feedbackProgram);
+                }
+                if (visual.copyProgram) {
+                    gl.deleteProgram(visual.copyProgram);
+                }
+                visual.gl = null;
+                visual.feedbackProgram = null;
+                visual.copyProgram = null;
+                visual.quadBuffer = null;
+                visual.audioTexture = null;
+                visual.feedbackUniforms = null;
+                visual.copyUniforms = null;
+            },
+        },
+    });
+
     const RadioBrowser = kiwi.Vue.extend({
         template: '#kiwi-radio-browser',
+        components: {
+            RadioVisualizer: RadioVisualizer,
+        },
         data: function() {
             return {
                 radio: getRadio(),
                 showForm: false,
                 showHidden: false,
+                showVisualizer: false,
                 editingSource: '',
                 formError: '',
                 fetchingDetails: false,
@@ -1786,8 +2682,17 @@ kiwi.plugin('radio', (kiwi, log) => {
         beforeDestroy: function() {
             this.radio.ui.listOpen = false;
             this.radio.stopDetailQueue();
+            this.radio.setVisualizer(false);
         },
         methods: {
+            openVisualizer: function() {
+                this.showVisualizer = true;
+                this.radio.setVisualizer(true);
+            },
+            closeVisualizer: function() {
+                this.showVisualizer = false;
+                this.radio.setVisualizer(false);
+            },
             stationName: function(station) {
                 return stationDisplayName(station);
             },
@@ -1996,6 +2901,8 @@ kiwi.plugin('radio', (kiwi, log) => {
             close: function(reopen) {
                 this.radio.ui.listOpen = false;
                 this.radio.stopDetailQueue();
+                this.showVisualizer = false;
+                this.radio.setVisualizer(false);
                 this.$state.$emit('active.component', null);
                 if (reopen) {
                     this.$state.$emit('statebrowser.show');
@@ -2556,6 +3463,13 @@ kiwi.plugin('radio', (kiwi, log) => {
             wave_led: 'LED Spectrum',
             wave_pulse: 'Pulse',
             wave_peaks: 'Peak Caps',
+            visualizer: 'Visualizer',
+            visualizer_idle: 'Select a station to start the visualizer.',
+            visualizer_waiting_audio: 'Waiting for audio samples…',
+            visualizer_no_audio: 'This stream does not provide audio samples for the visualizer.',
+            visualizer_back: 'Back to Stations',
+            visualizer_fullscreen: 'Fullscreen',
+            visualizer_exit_fullscreen: 'Exit Fullscreen',
             add_station: 'Add Station',
             edit_station: 'Edit Station',
             save_station: 'Save Station',

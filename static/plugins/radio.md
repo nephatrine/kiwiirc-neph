@@ -140,6 +140,9 @@ fetching for that station.
   available genre, bitrate, and listener details. Channel names inside
   descriptions are clickable and open the corresponding IRC channel. Disable
   Show Station Icons to hide artwork and the empty artwork column.
+- The visualizer button switches the station browser to a full-panel
+  MilkDrop-inspired effect with playback controls and a fullscreen toggle.
+  It animates ambiently when no station is playing.
 - Stations can be starred from the station browser. Starred stations sort first.
 - `autoPlay` waits for the first document click before starting the last
   station.
@@ -147,6 +150,23 @@ fetching for that station.
   Mirror Bars, Wave, Area Wave, LED Spectrum, Pulse, or Peak Caps in the Radio
   settings block.
 - Playback failures are marked per station and stop playback for that station.
+
+## Visualizer
+
+The station browser has a Visualizer button that replaces the station list with
+a full-panel WebGL feedback effect. It uses audio-reactive warp, zoom, rotation,
+a radial spectrum, colour cycling, and beat pulses, with a 2D canvas fallback
+when WebGL is unavailable.
+
+The overlay keeps the current station and track visible and provides
+play/pause, previous/next, back to stations, and fullscreen controls. Esc exits
+fullscreen without closing the visualizer. An idle station shows an ambient
+animation instead of auto-playing.
+
+Audio-reactive rendering needs Web Audio samples, which requires the stream to
+allow CORS. Streams that block CORS still play normally and show the ambient
+visualizer, with a notice instead of audio-reactive motion. Native desktop HTTP
+does not change this because it does not proxy the `<audio>` element.
 
 ## Service API
 
@@ -185,6 +205,7 @@ The controller returned by `getRadio()` exposes:
 | `restoreAllStations()`    | Restores every hidden file-provided station.                                                                                                                                               |
 | `startDetailQueue()`      | Starts staggered desktop station-detail enrichment for the open browser.                                                                                                                   |
 | `stopDetailQueue()`       | Stops pending station-detail enrichment.                                                                                                                                                    |
+| `setVisualizer(open)`     | Enables or disables visualizer audio analysis and its restart behavior.                                                                                                                      |
 | `fetchStationDetails(station)` | Fetches desktop station details immediately and caches them. Returns the details or `null`.                                                                                           |
 | `volume()`                | Effective volume, including `forceVolume`.                                                                                                                                                 |
 | `current()`               | Current station object or `null`.                                                                                                                                                          |

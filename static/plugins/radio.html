@@ -91,13 +91,22 @@
 <template id="kiwi-radio-browser">
     <div class="kiwi-radio-browser">
         <div class="kiwi-radio-browser-header">
-            <span>{{ $t('radio:stations') }}</span>
+            <span>{{ showVisualizer ? $t('radio:visualizer') : $t('radio:stations') }}</span>
             <a
+                v-if="!showVisualizer"
                 class="kiwi-radio-browser-add"
                 :title="$t('radio:add_station')"
                 @click.stop="openAddForm"
             >
                 <i class="bx bx-plus" aria-hidden="true"></i>
+            </a>
+            <a
+                v-if="!showVisualizer"
+                class="kiwi-radio-browser-visualizer"
+                :title="$t('radio:visualizer')"
+                @click.stop="openVisualizer"
+            >
+                <i class="bx bx-pulse" aria-hidden="true"></i>
             </a>
             <a
                 class="kiwi-radio-browser-close"
@@ -108,6 +117,12 @@
             </a>
         </div>
 
+        <radio-visualizer
+            v-if="showVisualizer"
+            @close="closeVisualizer"
+        ></radio-visualizer>
+
+        <template v-if="!showVisualizer">
         <form
             v-if="showForm"
             class="kiwi-radio-station-form"
@@ -323,6 +338,63 @@
                     @click="restoreAllStations"
                 >
                     {{ $t('radio:restore_all_stations') }}
+                </a>
+            </div>
+        </div>
+        </template>
+    </div>
+</template>
+
+<template id="kiwi-radio-visualizer">
+    <div ref="container" class="kiwi-radio-visualizer">
+        <canvas ref="canvas" class="kiwi-radio-visualizer-canvas"></canvas>
+        <div class="kiwi-radio-visualizer-overlay">
+            <div class="kiwi-radio-visualizer-heading">
+                <div class="kiwi-radio-visualizer-title">
+                    {{ stationLabel || $t('radio:visualizer') }}
+                </div>
+                <div v-if="trackTitle" class="kiwi-radio-visualizer-track">
+                    {{ trackTitle }}
+                </div>
+            </div>
+            <div v-if="!playing" class="kiwi-radio-visualizer-notice">
+                {{ $t('radio:visualizer_idle') }}
+            </div>
+            <div v-else-if="notice" class="kiwi-radio-visualizer-notice">
+                {{ $t('radio:' + notice) }}
+            </div>
+            <div class="kiwi-radio-visualizer-actions">
+                <a
+                    :title="playing ? $t('radio:pause') : $t('radio:play')"
+                    @click="radio.toggle()"
+                >
+                    <i
+                        :class="playing ? 'bx bx-pause' : 'bx bx-play'"
+                        aria-hidden="true"
+                    ></i>
+                </a>
+                <a :title="$t('radio:prev')" @click="radio.skip(-1)">
+                    <i class="bx bx-skip-previous" aria-hidden="true"></i>
+                </a>
+                <a :title="$t('radio:next')" @click="radio.skip(1)">
+                    <i class="bx bx-skip-next" aria-hidden="true"></i>
+                </a>
+                <a
+                    :title="$t('radio:visualizer_back')"
+                    @click="$emit('close')"
+                >
+                    <i class="bx bx-list-ul" aria-hidden="true"></i>
+                </a>
+                <a
+                    :title="$t('radio:' + fullscreenTitle)"
+                    @click="toggleFullscreen"
+                >
+                    <i
+                        :class="isFullscreen
+                            ? 'bx bx-exit-fullscreen'
+                            : 'bx bx-fullscreen'"
+                        aria-hidden="true"
+                    ></i>
                 </a>
             </div>
         </div>
