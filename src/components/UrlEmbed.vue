@@ -56,7 +56,6 @@
                     :src="`https://player.vimeo.com/video/${media.id}`"
                     frameborder="0"
                     allow="autoplay; fullscreen; picture-in-picture"
-                    allowfullscreen
                     loading="lazy"
                     @load="onLoad"
                     @error="onFrameError"
@@ -67,9 +66,8 @@
             <div class="kiwi-url-embed-frame" :style="containerStyle">
                 <iframe
                     :src="media.src"
-                    :allow="media.allow"
+                    :allow="embedAllow"
                     frameborder="0"
-                    allowfullscreen
                     loading="lazy"
                     @load="onLoad"
                     @error="onFrameError"
@@ -121,7 +119,6 @@
                     :src="linkPreview.embedUrl"
                     allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
                     frameborder="0"
-                    allowfullscreen
                     loading="lazy"
                     @load="onLoad"
                     @error="onFrameError"
@@ -171,7 +168,6 @@
                     :src="`https://www.youtube-nocookie.com/embed/${media.id}`"
                     frameborder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                    allowfullscreen
                     loading="lazy"
                     @load="onLoad"
                     @error="onFrameError"
@@ -184,7 +180,6 @@
                     :src="`https://www.youtube-nocookie.com/embed/videoseries?list=${media.id}`"
                     frameborder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                    allowfullscreen
                     loading="lazy"
                     @load="onLoad"
                     @error="onFrameError"
@@ -197,7 +192,6 @@
                     :src="`https://www.youtube-nocookie.com/embed/${media.id}`"
                     frameborder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                    allowfullscreen
                     loading="lazy"
                     @load="onLoad"
                     @error="onFrameError"
@@ -210,7 +204,6 @@
                     :src="`https://clips.twitch.tv/embed?clip=${media.id}&parent=${hostname}&theme=${themeMode}`"
                     frameborder="0"
                     allow="autoplay; fullscreen"
-                    allowfullscreen="true"
                     loading="lazy"
                     @load="onLoad"
                     @error="onFrameError"
@@ -223,7 +216,6 @@
                     :src="`https://player.twitch.tv/?channel=${media.id}&parent=${hostname}&theme=${themeMode}`"
                     frameborder="0"
                     allow="autoplay; fullscreen"
-                    allowfullscreen="true"
                     loading="lazy"
                     @load="onLoad"
                     @error="onFrameError"
@@ -236,7 +228,6 @@
                     :src="`https://player.twitch.tv/?video=${media.id}&parent=${hostname}&theme=${themeMode}`"
                     frameborder="0"
                     allow="autoplay; fullscreen"
-                    allowfullscreen="true"
                     loading="lazy"
                     @load="onLoad"
                     @error="onFrameError"
@@ -273,7 +264,6 @@
                     :src="`https://streamable.com/o/${media.id}`"
                     frameborder="0"
                     allow="autoplay; fullscreen"
-                    allowfullscreen
                     loading="lazy"
                     @load="onLoad"
                     @error="onFrameError"
@@ -286,7 +276,6 @@
                     :src="`https://www.redgifs.com/ifr/${media.id}`"
                     frameborder="0"
                     allow="autoplay; fullscreen"
-                    allowfullscreen
                     loading="lazy"
                     @load="onLoad"
                     @error="onFrameError"
@@ -299,7 +288,6 @@
                     :src="`https://open.spotify.com/embed/${media.id}`"
                     frameborder="0"
                     allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                    allowfullscreen
                     loading="lazy"
                     @load="onLoad"
                     @error="onFrameError"
@@ -369,6 +357,13 @@ export default {
         },
         mediaUrl() {
             return desktopMediaUrl(this.media.url);
+        },
+        embedAllow() {
+            const allow = String(this.media.allow || '').trim();
+            if (/\bfullscreen\b/i.test(allow)) {
+                return allow;
+            }
+            return allow ? allow + '; fullscreen' : 'fullscreen';
         },
         previewImage() {
             return this.linkPreview && this.linkPreview.image ?

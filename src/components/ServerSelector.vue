@@ -78,6 +78,12 @@
                 </input-text>
             </div>
         </transition-expand>
+        <div
+            v-if="insecureWebsocket"
+            class="kiwi-serverselector-insecure-warning"
+        >
+            {{ $t('insecure_websocket_https') }}
+        </div>
     </div>
 </template>
 
@@ -168,6 +174,20 @@ export default {
             return !!String(
                 this.$state.getSetting('settings.kiwiServer') || ''
             ).trim();
+        },
+        insecureWebsocket() {
+            if (typeof window === 'undefined' ||
+                window.location.protocol !== 'https:' ||
+                !this.connection
+            ) {
+                return false;
+            }
+            let server = String(this.connection.server || '');
+            let path = String(this.connection.path || '');
+            let directWs = !!this.connection.direct && !this.connection.tls;
+            let explicitWs = /^ws:\/\//i.test(server) ||
+                /^ws:\/\//i.test(path);
+            return directWs || explicitWs;
         },
         serverProtocols() {
             // A bouncer-managed network is an IRC network, not a websocket
@@ -431,6 +451,17 @@ export default {
     position: relative;
     top: 1px;
     font-size: 1.3em;
+}
+
+.kiwi-serverselector-insecure-warning {
+    margin-top: 0.6em;
+    padding: 0.6em 0.8em;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-style: italic;
+    text-align: left;
 }
 
 .kiwi-serverselector-type {

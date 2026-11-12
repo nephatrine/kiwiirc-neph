@@ -348,6 +348,26 @@ and this project adheres to
   live network after connecting, duplicate connect calls are ignored during
   negotiation, and probe channels cannot collide with network channel IDs.
 
+### Fixed
+
+- **Desktop Embeds**: Embed load errors now share one IPC listener, avoiding
+  listener-limit warnings when many embeds are open. Removed duplicate
+  `allowfullscreen` attributes in favor of `allow="… fullscreen …"`.
+- **Performance**: Hidden raw buffers now keep a bounded lightweight backlog
+  instead of creating full messages and trim timers for every raw line. Batch
+  tick timers are shared per tick, empty trim timers are no longer cleared,
+  IRC ping-timeout resets are coalesced during event bursts, in-order messages
+  no longer trigger a full scrollback sort, and late messages are inserted in
+  order instead of re-sorting the scrollback. Radio waveform colours are
+  cached between theme changes, and message-list scroll checks are coalesced
+  per animation frame.
+- **Shutdown**: Replaced the deprecated `unload` handler with `pagehide`, so
+  connection shutdown no longer triggers the Chromium unload policy violation.
+- **Connections**: Added an HTTPS mixed-content warning when a direct ws://
+  endpoint is configured, recommending wss:// or an IRC gateway instead.
+- **Plugins**: Exposed the Link Preview module to plugins, fixing the Radio
+  plugin's missing-module warning during startup.
+
 ## [2.1.0] - 2026-11-03
 
 ### Added

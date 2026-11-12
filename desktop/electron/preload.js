@@ -1,6 +1,36 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+const EMBED_ERROR_CHANNEL = 'kiwi:embed-error';
+const embedErrorHandlers = new Set();
+let embedErrorListening = false;
 let cachedConfig = null;
+
+function listenForEmbedErrors() {
+    if (embedErrorListening) {
+        return;
+    }
+    embedErrorListening = true;
+    ipcRenderer.on(EMBED_ERROR_CHANNEL, (event, url, error) => {
+        embedErrorHandlers.forEach((handler) => {
+            try {
+                handler({ url, error });
+            } catch (err) {
+                // One embed handler must not block the others.
+            }
+        });
+    });
+}
+
+function onEmbedError(handler) {
+    if (typeof handler !== 'function') {
+        return () => {};
+    }
+    listenForEmbedErrors();
+    embedErrorHandlers.add(handler);
+    return () => {
+        embedErrorHandlers.delete(handler);
+    };
+}
 
 function desktopConfig() {
     if (cachedConfig === null) {
@@ -91,10 +121,6 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
         proxyUrl: (url) => `kiwi-media://media/${encodeURIComponent(url)}`,
     },
     embedErrors: {
-        on: (handler) => {
-            const listener = (event, url, error) => handler({ url, error });
-            ipcRenderer.on('kiwi:embed-error', listener);
-            return () => ipcRenderer.removeListener('kiwi:embed-error', listener);
-        },
+        on: (handler) => onEmbedError(handler),
     },
 });

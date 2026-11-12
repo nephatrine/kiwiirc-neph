@@ -114,6 +114,32 @@ export function installTwitchAction(ircClient) {
     };
 }
 
+// irc-framework resets its ping timeout on every incoming IRC event. Timer
+// bookkeeping inside its connection object is relatively expensive, so
+// coalesce resets while data is arriving. This still leaves the full timeout
+// window after the last reset.
+export function throttlePingTimeoutReset(ircClient, minInterval = 1000) {
+    if (!ircClient || typeof ircClient.resetPingTimeoutTimer !== 'function') {
+        return;
+    }
+    if (ircClient.resetPingTimeoutTimer.kiwiThrottled) {
+        return;
+    }
+
+    const resetPingTimeout = ircClient.resetPingTimeoutTimer;
+    let lastReset = 0;
+    const throttledReset = function throttledReset() {
+        const now = Date.now();
+        if (now - lastReset < minInterval) {
+            return;
+        }
+        lastReset = now;
+        resetPingTimeout.call(this);
+    };
+    throttledReset.kiwiThrottled = true;
+    ircClient.resetPingTimeoutTimer = throttledReset;
+}
+
 export function create(state, network) {
     let networkid = network.id;
 
@@ -128,6 +154,9 @@ export function create(state, network) {
     });
 
     ircClient.whoQueue = new WhoQueue(ircClient);
+    ircClient.connection.on('socket connected', () => {
+        throttlePingTimeoutReset(ircClient);
+    });
 
     DESIRED_CAPS.forEach((cap) => {
         ircClient.requestCap(cap);
@@ -331,11 +360,16 @@ export function create(state, network) {
         }
 
         let buffer = state.getOrAddBufferByName(networkid, '*raw');
-        state.addMessage(buffer, {
+        let rawMessage = {
             time: Date.now(),
             nick: '',
             message: (event.from_server ? '[S] ' : '[C] ') + event.line,
-        });
+        };
+        if (buffer.isVisible) {
+            state.addMessage(buffer, rawMessage);
+        } else {
+            buffer.queueRawMessage(rawMessage);
+        }
     });
 
     ircClient.on('typing', (event) => {

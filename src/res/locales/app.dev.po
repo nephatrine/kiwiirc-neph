@@ -145,6 +145,10 @@ msgstr "Messages"
 msgid "protocol"
 msgstr "Protocol"
 
+#: Warning shown when a direct ws:// connection is configured from an HTTPS page.
+msgid "insecure_websocket_https"
+msgstr "This HTTPS page is configured with an insecure ws:// connection. Use wss:// or an IRC gateway instead."
+
 #: Network
 msgid "network"
 msgstr "Network"

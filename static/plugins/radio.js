@@ -2960,6 +2960,8 @@ kiwi.plugin('radio', (kiwi, log) => {
                 wavePeaks: null,
                 wavePulseLevel: 0,
                 waveLastUpdate: 0,
+                waveTop: '#5ec9a6',
+                waveBottom: '#2f896b',
                 nameScroll: 0,
                 nameObserver: null,
                 trackScroll: 0,
@@ -3027,6 +3029,7 @@ kiwi.plugin('radio', (kiwi, log) => {
                 handler: function(show) {
                     this.stopWave();
                     if (show) {
+                        this.readWaveColours();
                         this.drawWave();
                     }
                 },
@@ -3043,6 +3046,10 @@ kiwi.plugin('radio', (kiwi, log) => {
                 });
             }
         },
+        mounted: function() {
+            this.readWaveColours();
+            this.listen(this.$state, 'theme.change', this.readWaveColours);
+        },
         beforeDestroy: function() {
             this.stopWave();
             if (this.nameObserver) {
@@ -3052,6 +3059,15 @@ kiwi.plugin('radio', (kiwi, log) => {
             this.disconnectTrackObserver();
         },
         methods: {
+            readWaveColours: function() {
+                let canvas = this.$refs.wave;
+                if (!canvas) {
+                    return;
+                }
+                let styles = window.getComputedStyle(canvas);
+                this.waveTop = styles.getPropertyValue('--brand-primary-hover').trim() || '#5ec9a6';
+                this.waveBottom = styles.getPropertyValue('--brand-primary').trim() || '#2f896b';
+            },
             observeName: function() {
                 let track = this.$refs.nameTrack;
                 if (!track || this.nameObserver || !window.ResizeObserver) {
@@ -3336,9 +3352,8 @@ kiwi.plugin('radio', (kiwi, log) => {
 
                 let style = this.radio.waveStyle();
                 let ctx = canvas.getContext('2d');
-                let styles = window.getComputedStyle(canvas);
-                let top = styles.getPropertyValue('--brand-primary-hover').trim() || '#5ec9a6';
-                let bottom = styles.getPropertyValue('--brand-primary').trim() || '#2f896b';
+                let top = this.waveTop;
+                let bottom = this.waveBottom;
                 let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
                 gradient.addColorStop(0, top);
                 gradient.addColorStop(1, bottom);

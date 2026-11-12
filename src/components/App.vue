@@ -308,13 +308,16 @@ export default {
                 }
                 return undefined;
             };
-            window.onunload = () => {
+            this.listen(window, 'pagehide', (event) => {
+                if (event.persisted) {
+                    return;
+                }
                 this.$state.networks.forEach((net) => {
                     if (net.connection.direct && net.state === 'connected') {
                         net.ircClient.raw('QUIT', this.$state.setting('quitMessage') || 'Client Closed Connection');
                     }
                 });
-            };
+            });
         },
         emitBufferPaste(event) {
             // bail if no buffer is active, or the buffer is hidden by another component

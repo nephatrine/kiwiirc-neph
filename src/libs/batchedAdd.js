@@ -51,6 +51,10 @@ export default function batchedAdd(singleFn, batchedFn, numInsertsSec = 3) {
     function batchFn(item) {
         if (!inTick) {
             numInLastSec++;
+            inTick = true;
+            setTimeout(() => {
+                inTick = false;
+            });
         }
 
         // If already queuing or we reached our limit on items/sec, queue the item
@@ -58,10 +62,6 @@ export default function batchedAdd(singleFn, batchedFn, numInsertsSec = 3) {
             queue.push(item);
             maybeStartLoop();
         } else {
-            inTick = true;
-            setTimeout(() => {
-                inTick = false;
-            });
             singleFn(item);
             resetAddCounter();
         }

@@ -137,6 +137,7 @@ export default class BufferState {
         def(this, 'historyContextLoading', false, true);
         def(this, 'contextRowIds', Object.create(null), false);
         def(this, 'relayNicks', Object.create(null), false);
+        def(this, 'rawBacklog', [], false);
         def(this, 'addMessageBatch', createMessageBatch(this), false);
         def(this, 'addUserBatch', createUserBatch(this), false);
         def(this, 'chathistory_retry_timeout', null, true);
@@ -370,6 +371,9 @@ export default class BufferState {
         this.flag('is_visible', newVal);
 
         if (newVal) {
+            if (this.isRaw()) {
+                this.flushRawBacklog();
+            }
             this.flag('unread', 0);
             this.flag('highlight', false);
             this.flag('error', false);
@@ -1562,6 +1566,28 @@ export default class BufferState {
         this.addMessageBatch(message);
     }
 
+    queueRawMessage(message) {
+        let limit = Number(this.setting('scrollback_size')) || 0;
+        if (limit <= 0) {
+            this.rawBacklog.length = 0;
+            return;
+        }
+        this.rawBacklog.push(message);
+        if (this.rawBacklog.length > limit) {
+            this.rawBacklog.splice(0, this.rawBacklog.length - limit);
+        }
+    }
+
+    flushRawBacklog() {
+        if (!this.rawBacklog.length) {
+            return;
+        }
+        let backlog = this.rawBacklog.splice(0);
+        backlog.forEach((message) => {
+            this.state.addMessage(this, message);
+        });
+    }
+
     noteRelayNick(nick) {
         if (!nick) {
             return;
@@ -1595,6 +1621,9 @@ export default class BufferState {
     }
 
     cancelScheduledTrim() {
+        if (!this.trim_timeout) {
+            return;
+        }
         clearTimeout(this.trim_timeout);
         this.trim_timeout = null;
     }
@@ -2007,8 +2036,9 @@ function createMessageBatch(bufferState) {
         if (newMessage.irc_id && bufferState.messagesObj.messageIds[newMessage.irc_id]) {
             return;
         }
+        let messages = bufferState.messagesObj.messages;
         bufferState.updateLatestMessages(newMessage);
-        bufferState.messagesObj.messages.push(newMessage);
+        bufferTools.insertMessageInOrder(messages, newMessage);
         bufferState.messagesObj.messageIds[newMessage.id] = newMessage;
         if (newMessage.irc_id) {
             bufferState.messagesObj.messageIds[newMessage.irc_id] = newMessage;
@@ -2018,9 +2048,6 @@ function createMessageBatch(bufferState) {
         }
         bufferState.noteLiveMessage(newMessage);
         bufferState.scheduleTrim();
-        if (!bufferState.shouldTrimImmediately()) {
-            bufferTools.orderedMessages(bufferState, { inPlace: true, noFilter: true });
-        }
         bufferState.message_count++;
     };
     let addMultipleMessages = (newMessages) => {

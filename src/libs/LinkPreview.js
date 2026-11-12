@@ -1,3 +1,5 @@
+'kiwi public';
+
 import { desktopFetch, isDesktop } from '@/libs/desktop/Http';
 import * as Misc from '@/helpers/Misc';
 import {

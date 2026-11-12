@@ -441,6 +441,8 @@ export default {
     },
     created() {
         this.highlight_timeout = null;
+        // Non-reactive: updated from scroll frames and must not trigger renders.
+        this.scroll_frame = 0;
 
         if (this.buffer && this.buffer.shouldTrimImmediately()) {
             this.buffer.trimMessages(true);
@@ -448,6 +450,10 @@ export default {
     },
     beforeDestroy() {
         this.clearTemporaryHighlight();
+        if (this.scroll_frame) {
+            window.cancelAnimationFrame(this.scroll_frame);
+            this.scroll_frame = 0;
+        }
     },
     mounted() {
         this.addCopyListeners();
@@ -839,7 +845,13 @@ export default {
             });
         },
         onScroll() {
-            this.checkScrollingState();
+            if (this.scroll_frame) {
+                return;
+            }
+            this.scroll_frame = window.requestAnimationFrame(() => {
+                this.scroll_frame = 0;
+                this.checkScrollingState();
+            });
         },
         checkScrollingState() {
             let el = this.$el;

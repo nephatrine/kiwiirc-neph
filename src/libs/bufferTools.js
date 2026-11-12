@@ -51,6 +51,49 @@ export function orderBuffers(buffers) {
     return list;
 }
 
+export function compareMessages(first, second) {
+    if (first.time < second.time) {
+        return -1;
+    }
+    if (first.time > second.time) {
+        return 1;
+    }
+    if (first.instance_num < second.instance_num) {
+        return -1;
+    }
+    if (first.instance_num > second.instance_num) {
+        return 1;
+    }
+    return 0;
+}
+
+export function messageNeedsSort(previous, message) {
+    if (!previous || !message) {
+        return false;
+    }
+    return compareMessages(previous, message) > 0;
+}
+
+export function insertMessageInOrder(messages, message) {
+    if (!messages.length ||
+        !messageNeedsSort(messages[messages.length - 1], message)) {
+        messages.push(message);
+        return;
+    }
+
+    let low = 0;
+    let high = messages.length;
+    while (low < high) {
+        let middle = Math.floor((low + high) / 2);
+        if (compareMessages(messages[middle], message) <= 0) {
+            low = middle + 1;
+        } else {
+            high = middle;
+        }
+    }
+    messages.splice(low, 0, message);
+}
+
 export function orderedMessages(buffer, opts = {}) {
     let state = getState();
     let network = buffer.getNetwork();
