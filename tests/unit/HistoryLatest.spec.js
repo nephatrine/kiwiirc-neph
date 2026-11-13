@@ -68,6 +68,63 @@ describe('latest chathistory boundaries', () => {
             .toBe(true);
     });
 
+    test('ignores non-displayable events when closing the latest gap', async() => {
+        const { s, network, buffer } = makeHistoryBuffer();
+        const now = Date.now();
+        const earlier = now - 60000;
+        const reactionTime = now - 30000;
+
+        s.addMessage(buffer, {
+            time: now,
+            server_time: now,
+            nick: 'TestNick',
+            message: 'live message',
+            type: 'privmsg',
+            tags: {},
+        });
+
+        network.ircClient.chathistory = {
+            isSupported: () => true,
+            supportedRefTypes: () => ['timestamp'],
+            latest: jest.fn(() => {
+                s.addMessage(buffer, {
+                    time: earlier,
+                    server_time: earlier,
+                    nick: 'alice',
+                    message: 'older message',
+                    irc_id: 'older',
+                    type: 'privmsg',
+                    tags: { 'kiwi-history': true, 'msgid': 'older' },
+                });
+                return Promise.resolve({
+                    commands: [
+                        {
+                            time: earlier,
+                            tags: { 'kiwi-history': true, 'msgid': 'older' },
+                        },
+                        {
+                            // Reaction TAGMSGs are consumed before they reach
+                            // the buffer, but still appear in chathistory.
+                            time: reactionTime,
+                            tags: {
+                                'kiwi-history': true,
+                                'msgid': 'reaction',
+                                '+draft/react': '👍',
+                            },
+                        },
+                    ],
+                    is_end: true,
+                });
+            }),
+        };
+
+        buffer.requestLatestScrollback();
+        await flush();
+
+        expect(buffer.history_latest_end).toBe(earlier);
+        expect(buffer.historyGaps).toHaveLength(0);
+    });
+
     test('keeps an older gap when the latest window has no segment', () => {
         const { s, buffer } = makeHistoryBuffer();
         const now = Date.now();

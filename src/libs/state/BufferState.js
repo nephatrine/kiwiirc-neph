@@ -549,7 +549,8 @@ export default class BufferState {
             const newer = segments[i];
             if (older.end < newer.start) {
                 // A successful LATEST request establishes that there is no
-                // history between its newest message and the live segment.
+                // displayable history between its newest stored message and
+                // the live segment.
                 if (this.history_latest_loaded &&
                     this.history_latest_end &&
                     i === segments.length - 1 &&
@@ -619,7 +620,7 @@ export default class BufferState {
         const from = Number(start);
         const to = Number(end);
         if (!Number.isFinite(from) || !Number.isFinite(to)) {
-            return;
+            return null;
         }
 
         const messages = this.allMessages().filter((message) => {
@@ -627,7 +628,7 @@ export default class BufferState {
             return time >= Math.min(from, to) && time <= Math.max(from, to);
         });
         if (!messages.length) {
-            return;
+            return null;
         }
 
         const sorted = messages.slice().sort((a, b) => (
@@ -648,6 +649,7 @@ export default class BufferState {
         } else {
             this.addHistorySegment(segment);
         }
+        return segment;
     }
 
     noteLiveMessage(message) {
@@ -2311,17 +2313,22 @@ function getBufferHistory(
         const historyTimes = event.commands
             .map((command) => commandTimestamp(command))
             .filter((stamp) => stamp > 0);
-        if (chathistoryFuncName === 'latest') {
-            buffer.history_latest_end = historyTimes.length ?
-                Math.max(...historyTimes) :
-                0;
-        }
+        let historyWindow = null;
         if (historyTimes.length) {
-            buffer.noteHistoryWindow(
+            historyWindow = buffer.noteHistoryWindow(
                 Math.min(...historyTimes),
                 Math.max(...historyTimes),
                 chathistoryFuncName
             );
+        }
+        if (chathistoryFuncName === 'latest') {
+            // event.commands may include non-displayable events such as
+            // TAGMSG reactions. Only the newest stored message proves where
+            // displayable history ends.
+            buffer.history_latest_end = historyWindow ? historyWindow.end : 0;
+            // noteHistoryWindow() refreshes gaps before this boundary is
+            // known, so refresh once more with the final visible history end.
+            buffer.refreshHistoryGaps();
         }
 
         // draft/chathistory-end marks the end of the requested response, not

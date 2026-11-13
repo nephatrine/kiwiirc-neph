@@ -164,6 +164,10 @@ and this project adheres to
 
 ### Changed
 
+- **Presets**: The browser header preset switcher is now optional through a
+  default-on Show Preset Switcher setting in Appearance. The Electron app keeps
+  its native Presets menu independent of that setting, and both menus list only
+  presets whose themes are enabled.
 - **Raw Buffer**: Raw protocol lines now bypass message formatting, URL,
   channel, user, emoji, and preview processing, and use a compact monospace row
   instead of the normal message layouts. Timestamps, `[S]`/`[C]` prefixes, and
@@ -293,6 +297,20 @@ and this project adheres to
   the network is ready. Internal buffers no longer maintain live history
   segments, unloaded server search results load their context on first click and
   jump on the next, and gap controls expand the intended older or newer side.
+- **Chat History**: The LATEST-to-live boundary now uses the newest stored
+  message rather than non-displayable events such as reaction TAGMSGs, so a
+  history batch ending with reactions no longer creates a false gap after
+  reconnect.
+- **Presets**: Switching presets now refreshes the message list so theme and
+  layout changes do not leave stale nickname colors, timestamps, or avatar
+  sizing behind.
+- **Inline Layout**: Timestamps no longer overlap message action buttons with
+  long or 12-hour time formats.
+- **Avatars**: Constrained SVG intrinsic sizing and avatar wrappers so avatars
+  cannot expand to fill the message list during theme or preset changes.
+- **Bongo Companion**: Popup action and icon-button text now follows the theme
+  surface and foreground colors, fixing unreadable buttons on light themes
+  without input color tokens.
 - **File Uploads**: Uploaded links are now tracked as pending messages and
   confirmed by the server echo, so the sender no longer sees a duplicate copy.
 - **Desktop Settings**: The default IRC handler action is only offered on
