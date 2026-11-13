@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const execSync = require('child_process').execSync;
 const DefinePlugin = require('webpack').DefinePlugin;
+const NormalModuleReplacementPlugin = require('webpack').NormalModuleReplacementPlugin;
 const ProvidePlugin = require('webpack').ProvidePlugin;
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const StyleLintPlugin = require('stylelint-webpack-plugin');
@@ -70,6 +71,12 @@ module.exports = {
             new ProvidePlugin({
                 Buffer: ['buffer', 'Buffer'],
             }),
+            // sockjs-client registers a deprecated unload listener. Replace its
+            // event helper with one that uses pagehide instead.
+            new NormalModuleReplacementPlugin(
+                /sockjs-client[\\/]lib[\\/]utils[\\/]event\.js$/,
+                path.resolve(__dirname, 'build/webpack/sockjs-event.js')
+            ),
             new StyleLintPlugin({
                 files: ['src/**/*.{vue,htm,html,css,sss,less,scss}'],
             }),
