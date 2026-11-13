@@ -109,6 +109,14 @@
                 <i class="bx bx-pulse" aria-hidden="true"></i>
             </a>
             <a
+                v-if="showVisualizer"
+                class="kiwi-radio-browser-stations"
+                :title="$t('radio:visualizer_back')"
+                @click.stop="closeVisualizer"
+            >
+                <i class="bx bx-list-ul" aria-hidden="true"></i>
+            </a>
+            <a
                 class="kiwi-radio-browser-close"
                 :title="$t('radio:close')"
                 @click.stop="close(true)"

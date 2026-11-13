@@ -91,8 +91,10 @@ and this project adheres to
   now-playing metadata, fetch station details in a staggered background queue,
   show genre, bitrate, and listener details, and support manual details lookup.
   Failed metadata requests back off instead of retrying continuously. Added a
-  MilkDrop-inspired station-browser visualizer with a WebGL feedback effect, 2D
-  fallback, fullscreen mode, and playback controls.
+  MilkDrop-inspired station-browser visualizer with layered WebGL feedback,
+  reactive spectrum ribbons, spiral arms, beat shockwaves, a 2D fallback,
+  fullscreen mode, and playback controls. The browser header toggles back to the
+  station list without closing the pane.
 - **App Settings**: Added a Channel Defaults section for global per-channel
   defaults such as joins/parts, topic/nick/mode changes, formatting, nicklist
   colors, notification level, sound, and unread counts. Added the remaining

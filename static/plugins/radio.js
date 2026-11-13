@@ -1781,16 +1781,43 @@ kiwi.plugin('radio', (kiwi, log) => {
         uniform sampler2D u_audio;
         uniform vec2 u_resolution;
         uniform float u_time;
+        uniform float u_spin;
+        uniform float u_twist;
         uniform float u_bass;
         uniform float u_mid;
         uniform float u_treble;
+        uniform float u_energy;
+        uniform float u_centroid;
+        uniform float u_flux;
         uniform float u_beat;
         varying vec2 v_uv;
 
+        float hash21(vec2 p) {
+            p = fract(p * vec2(123.34, 456.21));
+            p += dot(p, p + 45.32);
+            return fract(p.x * p.y);
+        }
+
+        float noise21(vec2 p) {
+            vec2 i = floor(p);
+            vec2 f = fract(p);
+            f = f * f * (3.0 - 2.0 * f);
+            float a = hash21(i);
+            float b = hash21(i + vec2(1.0, 0.0));
+            float c = hash21(i + vec2(0.0, 1.0));
+            float d = hash21(i + vec2(1.0, 1.0));
+            return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+        }
+
         vec3 palette(float t) {
             return 0.5 + 0.5 * cos(
-                6.28318 * (vec3(1.0, 0.7, 0.4) * t + vec3(0.0, 0.33, 0.67))
+                6.28318 * (vec3(1.0, 0.72, 0.42) * t + vec3(0.02, 0.31, 0.64))
             );
+        }
+
+        float audioAt(float angle) {
+            float x = fract(angle / 6.2831853 + 0.5);
+            return texture2D(u_audio, vec2(x, 0.5)).r;
         }
 
         void main() {
@@ -1799,55 +1826,133 @@ kiwi.plugin('radio', (kiwi, log) => {
             p.x *= u_resolution.x / max(1.0, u_resolution.y);
             float radius = length(p);
             float angle = atan(p.y, p.x);
-            float t = u_time * 0.08;
-            float zoom = 1.0 -
-                (0.012 + u_bass * 0.035 + u_beat * 0.025) +
-                sin(t * 1.7) * 0.004;
-            vec2 warp = vec2(
-                sin(uv.y * 11.0 + t * 2.1) * (0.0015 + u_mid * 0.003),
-                cos(uv.x * 9.0 + t * 1.6) * (0.0015 + u_mid * 0.003)
-            );
-            vec2 sampleUv = (uv - 0.5) * zoom + 0.5 + warp;
-            sampleUv = clamp(sampleUv, 0.001, 0.999);
-            vec3 previous = texture2D(u_prev, sampleUv).rgb *
-                (0.955 + u_bass * 0.02);
+            float audio = audioAt(angle);
 
-            float bin = floor(clamp(
-                (angle / 6.28318 + 0.5) * 127.0,
-                0.0,
-                127.0
-            ));
-            float audio = texture2D(
-                u_audio,
-                vec2((bin + 0.5) / 128.0, 0.5)
+            float c = cos(u_spin);
+            float s = sin(u_spin);
+            vec2 rotated = mat2(c, -s, s, c) * p;
+            float zoom = 1.0 - (
+                0.006 + u_bass * 0.045 + u_beat * 0.035
+            );
+            vec2 flow = vec2(
+                sin(rotated.y * 8.0 + u_twist + u_time * 0.7),
+                cos(rotated.x * 7.0 - u_twist * 0.8 + u_time * 0.6)
+            );
+            flow += vec2(
+                noise21(rotated * 6.0 + u_time * 0.15),
+                noise21(rotated * 6.0 - u_time * 0.12)
+            ) * 2.0 - 1.0;
+            rotated += flow * (
+                0.0015 + u_mid * 0.008 + u_flux * 0.01
+            );
+            vec2 sampleUv = rotated / zoom + 0.5;
+            float chroma = 0.0015 + u_beat * 0.003;
+            vec2 chromaDir = normalize(p + vec2(0.0001));
+            vec3 previous;
+            previous.r = texture2D(
+                u_prev,
+                clamp(sampleUv + chromaDir * chroma, 0.001, 0.999)
             ).r;
-            float ringRadius = 0.24 + audio * 0.19 + u_bass * 0.04;
+            previous.g = texture2D(
+                u_prev,
+                clamp(sampleUv, 0.001, 0.999)
+            ).g;
+            previous.b = texture2D(
+                u_prev,
+                clamp(sampleUv - chromaDir * chroma, 0.001, 0.999)
+            ).b;
+            previous *= 0.91 + u_bass * 0.025;
+
+            float bandA = audioAt(angle + u_twist * 0.15);
+            float bandB = audioAt(-angle + u_twist * 0.23);
+            float wave = sin(
+                angle * 7.0 + radius * 24.0 - u_twist * 1.8
+            ) * 0.5 + sin(
+                angle * 13.0 - radius * 17.0 + u_twist * 2.4
+            ) * 0.5;
+            float ringBase = 0.16 + u_bass * 0.05;
+            float ringRadius = ringBase + bandA * 0.20 +
+                wave * (0.008 + u_mid * 0.018);
+            float ringWidth = 0.004 + u_treble * 0.008 + u_beat * 0.004;
             float ring = 1.0 - smoothstep(
                 0.0,
-                0.012,
+                ringWidth,
                 abs(radius - ringRadius)
             );
-            float halo = (1.0 - smoothstep(
+            float ring2Radius = ringRadius + 0.018 +
+                bandB * 0.09 - u_beat * 0.01;
+            float ring2 = 1.0 - smoothstep(
                 0.0,
-                0.20,
-                abs(radius - ringRadius)
-            )) * (0.18 + audio * 0.4);
-            float swirl = pow(
-                max(0.0, sin(angle * 5.0 + t * 2.5 + radius * 18.0)),
-                6.0
+                ringWidth * 0.7,
+                abs(radius - ring2Radius)
             );
-            float glow = (1.0 - smoothstep(0.0, 0.52, radius)) *
-                (0.04 + u_bass * 0.12);
-            vec3 colour = palette(
-                angle / 6.28318 + t * 0.35 + u_treble * 0.4
+
+            float arms = 3.0 + u_treble * 4.0;
+            float armPhase = angle * arms +
+                log(radius + 0.035) * (2.2 + u_mid * 2.8) -
+                u_twist * (0.7 + u_flux * 1.8);
+            float arm = pow(
+                max(0.0, cos(armPhase)),
+                8.0 + u_treble * 14.0
             );
-            vec3 resultColour = previous * 0.93;
-            resultColour += colour * (ring * (0.7 + u_treble * 1.2));
-            resultColour += colour * halo * 0.35;
-            resultColour += palette(t + 0.3) * swirl *
-                (0.03 + u_mid * 0.18);
-            resultColour += colour * glow;
-            resultColour += vec3(0.02, 0.04, 0.06) * (1.0 - radius);
+            float armFade = smoothstep(0.035, 0.18, radius) *
+                (1.0 - smoothstep(
+                    0.32,
+                    0.52 + u_bass * 0.08,
+                    radius
+                ));
+            arm *= armFade * (0.25 + audio * 0.9 + u_flux * 0.5);
+
+            float ribbonPhase = angle * (5.0 + u_mid * 3.0) +
+                log(radius + 0.02) * 3.4 + u_spin * 0.6;
+            float ribbon = pow(max(0.0, cos(ribbonPhase)), 4.0);
+            ribbon *= smoothstep(0.10, 0.25, radius) *
+                (1.0 - smoothstep(0.36, 0.62, radius)) *
+                (0.12 + u_mid * 0.55);
+
+            vec2 sparkUv = uv * vec2(
+                u_resolution.x / max(1.0, u_resolution.y),
+                1.0
+            ) * 28.0;
+            float spark = pow(
+                hash21(floor(
+                    sparkUv + vec2(u_twist * 1.7, u_time * 0.8)
+                )),
+                28.0 - u_treble * 12.0
+            );
+            spark *= smoothstep(0.12, 0.5, radius) *
+                (0.15 + u_treble * 1.4);
+
+            float shockRadius = 0.10 + (1.0 - u_beat) * 0.48;
+            float shock = 1.0 - smoothstep(
+                0.0,
+                0.006 + (1.0 - u_beat) * 0.012,
+                abs(radius - shockRadius)
+            );
+            shock *= u_beat * (1.0 - smoothstep(0.55, 0.75, radius));
+            float glow = (1.0 - smoothstep(0.0, 0.55, radius)) *
+                (0.03 + u_energy * 0.12 + u_bass * 0.08);
+
+            vec3 colorA = palette(
+                angle / 6.28318 + u_spin * 0.12 + u_centroid * 0.5
+            );
+            vec3 colorB = palette(
+                -angle / 6.28318 + u_twist * 0.08 + 0.37 + u_energy * 0.3
+            );
+            vec3 resultColour = previous * 0.90;
+            resultColour += colorA * ring * (0.8 + u_treble * 1.5);
+            resultColour += colorB * ring2 * (0.35 + u_mid * 0.8);
+            resultColour += colorA * arm * (0.35 + u_energy * 0.85);
+            resultColour += colorB * ribbon * 0.3;
+            resultColour += mix(colorA, vec3(1.0), 0.6) * spark * 0.8;
+            resultColour += mix(
+                colorA,
+                vec3(1.0, 0.85, 0.65),
+                0.5
+            ) * shock * 0.65;
+            resultColour += colorA * glow;
+            resultColour += vec3(0.015, 0.025, 0.04) * (1.0 - radius);
+            resultColour = resultColour / (1.0 + resultColour * 0.25);
             gl_FragColor = vec4(clamp(resultColour, 0.0, 1.0), 1.0);
         }
     `;
@@ -1935,11 +2040,17 @@ kiwi.plugin('radio', (kiwi, log) => {
                 feedbackHeight: 0,
                 audioBins: new Uint8Array(RADIO_VISUALIZER_AUDIO_BINS),
                 frequencyData: null,
+                previousFrequencyData: null,
                 bass: 0,
                 mid: 0,
                 treble: 0,
+                energy: 0,
+                centroid: 0,
+                flux: 0,
                 bassAverage: 0,
                 beat: 0,
+                spin: 0,
+                twist: 0,
             };
 
             document.addEventListener('fullscreenchange', this.onFullscreenChange);
@@ -2082,7 +2193,7 @@ kiwi.plugin('radio', (kiwi, log) => {
                 visual.time += delta;
 
                 if (!document.hidden) {
-                    this.updateAudio();
+                    this.updateAudio(delta);
                     if (visual.gl) {
                         this.drawWebGL();
                     } else {
@@ -2101,16 +2212,27 @@ kiwi.plugin('radio', (kiwi, log) => {
                 }
                 return total / (end - start);
             },
-            updateAudio: function() {
+            updateAudio: function(delta) {
                 let visual = this.visual;
                 let analyser = this.radio.ui.analyser;
                 let bins = visual.audioBins;
+                let step = typeof delta === 'number' ?
+                    Math.max(0, delta) :
+                    0.016;
+                let motion = this.reducedMotion ? 0.25 : 1;
                 if (!analyser) {
                     bins.fill(0);
                     visual.bass *= 0.94;
                     visual.mid *= 0.94;
                     visual.treble *= 0.94;
+                    visual.energy *= 0.94;
+                    visual.centroid *= 0.96;
+                    visual.flux *= 0.88;
                     visual.beat *= 0.9;
+                    visual.spin = (visual.spin + step * 0.03 * motion) %
+                        (Math.PI * 2);
+                    visual.twist = (visual.twist + step * 0.12 * motion) %
+                        (Math.PI * 8);
                     return;
                 }
 
@@ -2121,6 +2243,23 @@ kiwi.plugin('radio', (kiwi, log) => {
                     visual.frequencyData = new Uint8Array(length);
                 }
                 analyser.getByteFrequencyData(visual.frequencyData);
+
+                let flux = 0;
+                if (!visual.previousFrequencyData ||
+                    visual.previousFrequencyData.length !== length
+                ) {
+                    visual.previousFrequencyData = new Uint8Array(length);
+                } else {
+                    for (let index = 0; index < length; index += 1) {
+                        flux += Math.abs(
+                            visual.frequencyData[index] -
+                            visual.previousFrequencyData[index]
+                        );
+                    }
+                    flux /= length * 255;
+                }
+                visual.previousFrequencyData.set(visual.frequencyData);
+
                 for (let index = 0; index < RADIO_VISUALIZER_AUDIO_BINS; index += 1) {
                     let mapped = Math.floor(
                         ((index / (RADIO_VISUALIZER_AUDIO_BINS - 1)) ** 1.7) *
@@ -2146,16 +2285,46 @@ kiwi.plugin('radio', (kiwi, log) => {
                     Math.min(64, length),
                     length
                 ) / 255;
+                let energy = this.average(
+                    visual.frequencyData,
+                    0,
+                    length
+                ) / 255;
+                let weighted = 0;
+                let total = 0;
+                for (let index = 0; index < length; index += 1) {
+                    let value = visual.frequencyData[index];
+                    weighted += value * index;
+                    total += value;
+                }
+                let centroid = total > 0 ?
+                    weighted / total / Math.max(1, length - 1) :
+                    0;
+
                 visual.bass = visual.bass * 0.82 + bass * 0.18;
                 visual.mid = visual.mid * 0.82 + mid * 0.18;
                 visual.treble = visual.treble * 0.82 + treble * 0.18;
+                visual.energy = visual.energy * 0.82 + energy * 0.18;
+                visual.centroid = visual.centroid * 0.88 + centroid * 0.12;
+                visual.flux = visual.flux * 0.65 + flux * 0.35;
+
+                let beatSignal = bass * 0.7 + flux * 0.8;
                 visual.bassAverage = visual.bassAverage * 0.96 +
-                    bass * 0.04;
-                if (bass > visual.bassAverage * 1.25 + 0.03) {
+                    beatSignal * 0.04;
+                if (beatSignal > visual.bassAverage * 1.18 + 0.025) {
                     visual.beat = 1;
                 } else {
-                    visual.beat *= 0.9;
+                    visual.beat *= 0.88;
                 }
+
+                visual.spin = (visual.spin + step * (
+                    0.06 + visual.mid * 0.85 +
+                    visual.flux * 1.2 + visual.beat * 0.15
+                ) * motion) % (Math.PI * 2);
+                visual.twist = (visual.twist + step * (
+                    0.18 + visual.mid * 2.2 +
+                    visual.treble * 0.6 + visual.flux * 1.4
+                ) * motion) % (Math.PI * 8);
             },
             initCanvas: function() {
                 let visual = this.visual;
@@ -2430,12 +2599,23 @@ kiwi.plugin('radio', (kiwi, log) => {
                             'u_resolution'
                         ),
                         time: gl.getUniformLocation(feedbackProgram, 'u_time'),
+                        spin: gl.getUniformLocation(feedbackProgram, 'u_spin'),
+                        twist: gl.getUniformLocation(feedbackProgram, 'u_twist'),
                         bass: gl.getUniformLocation(feedbackProgram, 'u_bass'),
                         mid: gl.getUniformLocation(feedbackProgram, 'u_mid'),
                         treble: gl.getUniformLocation(
                             feedbackProgram,
                             'u_treble'
                         ),
+                        energy: gl.getUniformLocation(
+                            feedbackProgram,
+                            'u_energy'
+                        ),
+                        centroid: gl.getUniformLocation(
+                            feedbackProgram,
+                            'u_centroid'
+                        ),
+                        flux: gl.getUniformLocation(feedbackProgram, 'u_flux'),
                         beat: gl.getUniformLocation(feedbackProgram, 'u_beat'),
                     };
                     visual.copyUniforms = {
@@ -2509,9 +2689,17 @@ kiwi.plugin('radio', (kiwi, log) => {
                     visual.feedbackUniforms.time,
                     visual.time * (this.reducedMotion ? 0.25 : 1)
                 );
+                gl.uniform1f(visual.feedbackUniforms.spin, visual.spin);
+                gl.uniform1f(visual.feedbackUniforms.twist, visual.twist);
                 gl.uniform1f(visual.feedbackUniforms.bass, visual.bass);
                 gl.uniform1f(visual.feedbackUniforms.mid, visual.mid);
                 gl.uniform1f(visual.feedbackUniforms.treble, visual.treble);
+                gl.uniform1f(visual.feedbackUniforms.energy, visual.energy);
+                gl.uniform1f(
+                    visual.feedbackUniforms.centroid,
+                    visual.centroid
+                );
+                gl.uniform1f(visual.feedbackUniforms.flux, visual.flux);
                 gl.uniform1f(visual.feedbackUniforms.beat, visual.beat);
                 gl.bindBuffer(gl.ARRAY_BUFFER, visual.quadBuffer);
                 gl.enableVertexAttribArray(0);
@@ -2543,51 +2731,142 @@ kiwi.plugin('radio', (kiwi, log) => {
                 let height = visual.canvas.height;
                 let time = visual.time * (this.reducedMotion ? 0.25 : 1);
                 ctx.globalCompositeOperation = 'source-over';
-                ctx.fillStyle = 'rgba(2, 5, 10, 0.22)';
+                ctx.fillStyle = 'rgba(2, 5, 10, 0.20)';
                 ctx.fillRect(0, 0, width, height);
                 ctx.globalCompositeOperation = 'lighter';
 
                 let centerX = width / 2;
                 let centerY = height / 2;
                 let size = Math.min(width, height);
-                let baseRadius = size * (0.13 + visual.bass * 0.02);
                 let bars = 96;
+                let rings = 3;
                 ctx.lineCap = 'round';
-                for (let index = 0; index < bars; index += 1) {
-                    let value = visual.audioBins[Math.floor(
-                        (index / bars) * RADIO_VISUALIZER_AUDIO_BINS
-                    )] / 255;
-                    let angle = (index / bars) * Math.PI * 2 +
-                        time * 0.12;
-                    let outer = baseRadius + value * size * 0.22 + 4;
-                    let hue = (index / bars * 360 + time * 25) % 360;
-                    ctx.strokeStyle = 'hsla(' + hue +
-                        ', 90%, 65%, 0.65)';
-                    ctx.lineWidth = Math.max(1, width / bars * 0.28);
-                    ctx.beginPath();
-                    ctx.moveTo(
-                        centerX + Math.cos(angle) * baseRadius,
-                        centerY + Math.sin(angle) * baseRadius
+
+                for (let layer = 0; layer < rings; layer += 1) {
+                    let baseRadius = size * (
+                        0.12 + layer * 0.038 + visual.bass * 0.03
                     );
-                    ctx.lineTo(
-                        centerX + Math.cos(angle) * outer,
-                        centerY + Math.sin(angle) * outer
+                    let direction = layer % 2 === 0 ? 1 : -1;
+                    let rotation = visual.spin * direction + layer * 1.7;
+                    let alpha = 0.72 - layer * 0.17;
+                    for (let index = 0; index < bars; index += 1) {
+                        let value = visual.audioBins[Math.floor(
+                            (index / bars) * RADIO_VISUALIZER_AUDIO_BINS
+                        )] / 255;
+                        let angle = (index / bars) * Math.PI * 2 + rotation;
+                        let wobble = Math.sin(
+                            angle * (3 + layer) +
+                            visual.twist +
+                            index * 0.35
+                        ) * size * (0.004 + visual.mid * 0.008);
+                        let inner = baseRadius + wobble;
+                        let outer = inner + value * size * (
+                            0.11 - layer * 0.022
+                        ) + 3;
+                        let hue = (
+                            visual.centroid * 260 +
+                            index / bars * 180 +
+                            time * 18 +
+                            layer * 50
+                        ) % 360;
+                        ctx.strokeStyle = 'hsla(' + hue +
+                            ', 92%, ' + (68 - layer * 6) + '%, ' +
+                            alpha + ')';
+                        ctx.lineWidth = Math.max(
+                            1,
+                            width / bars * (0.18 + value * 0.24)
+                        );
+                        ctx.beginPath();
+                        ctx.moveTo(
+                            centerX + Math.cos(angle) * inner,
+                            centerY + Math.sin(angle) * inner
+                        );
+                        ctx.lineTo(
+                            centerX + Math.cos(angle) * outer,
+                            centerY + Math.sin(angle) * outer
+                        );
+                        ctx.stroke();
+                    }
+                }
+
+                let arms = 3 + Math.floor(visual.treble * 3);
+                ctx.lineWidth = Math.max(1, size * 0.0035);
+                for (let arm = 0; arm < arms; arm += 1) {
+                    let hue = (
+                        visual.centroid * 260 +
+                        arm / arms * 180 +
+                        time * 22
+                    ) % 360;
+                    ctx.strokeStyle = 'hsla(' + hue + ', 90%, 68%, 0.45)';
+                    ctx.beginPath();
+                    for (let step = 0; step <= 48; step += 1) {
+                        let ratio = step / 48;
+                        let radius = size * (0.05 + ratio * 0.43);
+                        let angle = visual.spin * (arm % 2 === 0 ? 1 : -1) +
+                            arm / arms * Math.PI * 2 +
+                            Math.log(radius + 1) * (2.2 + visual.mid * 2.4) +
+                            visual.twist * 0.2;
+                        let x = centerX + Math.cos(angle) * radius;
+                        let y = centerY + Math.sin(angle) * radius;
+                        if (step === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                    ctx.stroke();
+                }
+
+                let sparks = 12 + Math.floor(visual.treble * 28);
+                for (let index = 0; index < sparks; index += 1) {
+                    let angle = visual.spin * 0.7 +
+                        index * 2.399 +
+                        time * 0.6;
+                    let radius = size * (
+                        0.08 + ((index * 0.37) % 0.42)
+                    );
+                    let x = centerX + Math.cos(angle) * radius;
+                    let y = centerY + Math.sin(angle) * radius;
+                    let hue = (
+                        visual.centroid * 260 +
+                        index * 37 +
+                        time * 30
+                    ) % 360;
+                    let sparkSize = Math.max(
+                        1,
+                        size * 0.002 * (1 + visual.treble * 2)
+                    );
+                    ctx.fillStyle = 'hsla(' + hue + ', 90%, 76%, ' +
+                        (0.18 + visual.treble * 0.5) + ')';
+                    ctx.fillRect(
+                        x - sparkSize / 2,
+                        y - sparkSize / 2,
+                        sparkSize,
+                        sparkSize
+                    );
+                }
+
+                if (visual.beat > 0.02) {
+                    let shockRadius = size * (
+                        0.10 + (1 - visual.beat) * 0.42
+                    );
+                    let hue = (
+                        visual.centroid * 260 + time * 20
+                    ) % 360;
+                    ctx.strokeStyle = 'hsla(' + hue +
+                        ', 95%, 72%, ' + (visual.beat * 0.55) + ')';
+                    ctx.lineWidth = Math.max(1, size * 0.004);
+                    ctx.beginPath();
+                    ctx.arc(
+                        centerX,
+                        centerY,
+                        shockRadius,
+                        0,
+                        Math.PI * 2
                     );
                     ctx.stroke();
                 }
 
-                let hue = (time * 18) % 360;
-                ctx.strokeStyle = 'hsla(' + hue + ', 90%, 65%, 0.5)';
-                ctx.lineWidth = Math.max(1, size * 0.004);
-                ctx.beginPath();
-                ctx.arc(
-                    centerX,
-                    centerY,
-                    baseRadius * (1.4 + visual.beat * 0.12),
-                    0,
-                    Math.PI * 2
-                );
-                ctx.stroke();
                 ctx.globalCompositeOperation = 'source-over';
             },
             destroyWebGL: function() {

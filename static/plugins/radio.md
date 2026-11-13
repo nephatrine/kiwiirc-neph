@@ -32,41 +32,41 @@ or set `plugin-radio.url` to another stations file.
 Preferences use normal Kiwi user settings. The plugin registers these defaults
 itself, so there is no config-template block.
 
-| Key                           | Default                              | Notes                                                                           |
-| ----------------------------- | ------------------------------------ | ------------------------------------------------------------------------------- |
-| `plugin-radio.url`            | `static/plugins/radio/stations.json` | Stations JSON5.                                                                 |
-| `plugin-radio.enabled`        | `true`                               | Enables the player interface and controls.                                      |
-| `plugin-radio.nowPlaying`     | `true`                               | Fetches station metadata and track information automatically. Per-station settings still apply. |
-| `plugin-radio.showStationIcons` | `true`                             | Shows station artwork in the station browser.                                    |
-| `plugin-radio.customStations` | `[]`                                 | User-added stations with name, stream URLs, homepage, icon, description, and now-playing URL. |
-| `plugin-radio.hiddenStations` | `[]`                                 | Stream sources hidden from the configured station file.                          |
-| `plugin-radio.waveStyle`      | `bars`                               | `none`, `bars`, `mirror`, `wave`, `area`, `led`, `pulse`, or `peaks`.           |
-| `plugin-radio.showWave`       | `true`                               | Legacy fallback used when `waveStyle` is unset.                                 |
-| `plugin-radio.volume`         | `0.4`                                | `0` to `1`.                                                                     |
-| `plugin-radio.starred`        | `[]`                                 | Station names. Users star stations from the station browser.                    |
-| `plugin-radio.active`         | `""`                                 | Last station name.                                                              |
-| `plugin-radio.autoPlay`       | `false`                              | If true, waits for a click before playing.                                      |
-| `plugin-radio.forceVolume`    | `false`                              | Start at the admin volume and do not save a user volume until the slider moves. |
-| `plugin-radio.reloadOnOpen`   | `false`                              | Fetch the station list again when the list opens.                               |
-| `plugin-radio.forceShowClose` | `false`                              | Reserved. The station list always has a close control.                          |
+| Key                             | Default                              | Notes                                                                                           |
+| ------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `plugin-radio.url`              | `static/plugins/radio/stations.json` | Stations JSON5.                                                                                 |
+| `plugin-radio.enabled`          | `true`                               | Enables the player interface and controls.                                                      |
+| `plugin-radio.nowPlaying`       | `true`                               | Fetches station metadata and track information automatically. Per-station settings still apply. |
+| `plugin-radio.showStationIcons` | `true`                               | Shows station artwork in the station browser.                                                   |
+| `plugin-radio.customStations`   | `[]`                                 | User-added stations with name, stream URLs, homepage, icon, description, and now-playing URL.   |
+| `plugin-radio.hiddenStations`   | `[]`                                 | Stream sources hidden from the configured station file.                                         |
+| `plugin-radio.waveStyle`        | `bars`                               | `none`, `bars`, `mirror`, `wave`, `area`, `led`, `pulse`, or `peaks`.                           |
+| `plugin-radio.showWave`         | `true`                               | Legacy fallback used when `waveStyle` is unset.                                                 |
+| `plugin-radio.volume`           | `0.4`                                | `0` to `1`.                                                                                     |
+| `plugin-radio.starred`          | `[]`                                 | Station names. Users star stations from the station browser.                                    |
+| `plugin-radio.active`           | `""`                                 | Last station name.                                                                              |
+| `plugin-radio.autoPlay`         | `false`                              | If true, waits for a click before playing.                                                      |
+| `plugin-radio.forceVolume`      | `false`                              | Start at the admin volume and do not save a user volume until the slider moves.                 |
+| `plugin-radio.reloadOnOpen`     | `false`                              | Fetch the station list again when the list opens.                                               |
+| `plugin-radio.forceShowClose`   | `false`                              | Reserved. The station list always has a close control.                                          |
 
 Administrators can set defaults under `plugin-radio` in configuration. Users
-override them through normal settings. The General settings tab includes a
-Radio block for Enable Radio, Fetch Station Metadata, Show Station Icons, and
-Show Waveform.
+override them through normal settings. The General settings tab includes a Radio
+block for Enable Radio, Fetch Station Metadata, Show Station Icons, and Show
+Waveform.
 
 ## Station File
 
 The station file is parsed as JSON5, so plain JSON works unchanged.
 
-| Field         | Required | Meaning                                                                                                                         |
-| ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `name`        | No       | Display and accessibility name. Falls back to the first stream URL.                                                            |
-| `image`       | No       | Station artwork. Must be `http`/`https` or a root-relative path such as `/static/stations/logo.png`.                            |
-| `sources`     | Yes*     | Ordered list of stream URLs. Must be `http` or `https`. On an HTTPS page, `http` streams are dropped.                            |
-| `source`      | Yes*     | Legacy single stream URL. Used when `sources` is absent.                                                                       |
-| `homepage`    | No       | Station homepage opened from the browser.                                                                                      |
-| `description` | No       | Description text.                                                                                                               |
+| Field         | Required | Meaning                                                                                                                                              |
+| ------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | No       | Display and accessibility name. Falls back to the first stream URL.                                                                                  |
+| `image`       | No       | Station artwork. Must be `http`/`https` or a root-relative path such as `/static/stations/logo.png`.                                                 |
+| `sources`     | Yes\*    | Ordered list of stream URLs. Must be `http` or `https`. On an HTTPS page, `http` streams are dropped.                                                |
+| `source`      | Yes\*    | Legacy single stream URL. Used when `sources` is absent.                                                                                             |
+| `homepage`    | No       | Station homepage opened from the browser.                                                                                                            |
+| `description` | No       | Description text.                                                                                                                                    |
 | `nowPlaying`  | No       | `false` disables automatic metadata fetching. A URL supplies a custom metadata endpoint. Omitted uses the stream host's Icecast or Shoutcast status. |
 
 \* One of `sources` or `source` is required. Stations without a valid stream URL
@@ -81,8 +81,8 @@ Streams are tried in order until one succeeds.
   without editing the file. They remain recoverable from **Hidden Stations**.
 - Custom stations and hidden file stations persist under the settings listed
   above.
-- Stream URLs are entered one per line, in preference order. Playback falls
-  back to the next URL if one fails.
+- Stream URLs are entered one per line, in preference order. Playback falls back
+  to the next URL if one fails.
 - A station homepage can be provided and is opened from the station browser.
 - Icon URLs accept `http`/`https` and root-relative paths. On desktop, **Choose
   Image** copies a local image into the existing `kiwi-icon://` storage and uses
@@ -99,9 +99,9 @@ object.
 
 ### Desktop Metadata
 
-The desktop app sends these requests through its native HTTP bridge, so they
-are not limited by browser CORS. The web client keeps the browser's normal
-CORS behavior.
+The desktop app sends these requests through its native HTTP bridge, so they are
+not limited by browser CORS. The web client keeps the browser's normal CORS
+behavior.
 
 When the station browser opens, the desktop app enriches station entries in the
 background:
@@ -116,9 +116,9 @@ background:
 - Requests are staggered one station at a time with a randomized delay. The
   queue is cancelled when the browser closes.
 - Successful details are cached for about six hours.
-- Failures use exponential backoff from about five minutes up to six hours,
-  with jitter. A failed station is retried later rather than ignored forever,
-  but it is not polled continuously.
+- Failures use exponential backoff from about five minutes up to six hours, with
+  jitter. A failed station is retried later rather than ignored forever, but it
+  is not polled continuously.
 - **Fetch Details** in the Add/Edit form performs the lookup immediately and
   remains available when automatic metadata fetching is disabled.
 
@@ -141,8 +141,9 @@ fetching for that station.
   descriptions are clickable and open the corresponding IRC channel. Disable
   Show Station Icons to hide artwork and the empty artwork column.
 - The visualizer button switches the station browser to a full-panel
-  MilkDrop-inspired effect with playback controls and a fullscreen toggle.
-  It animates ambiently when no station is playing.
+  MilkDrop-inspired effect with playback controls and a fullscreen toggle. A
+  matching Stations button returns to the list without closing the pane. The
+  visualizer animates ambiently when no station is playing.
 - Stations can be starred from the station browser. Starred stations sort first.
 - `autoPlay` waits for the first document click before starting the last
   station.
@@ -154,12 +155,16 @@ fetching for that station.
 ## Visualizer
 
 The station browser has a Visualizer button that replaces the station list with
-a full-panel WebGL feedback effect. It uses audio-reactive warp, zoom, rotation,
-a radial spectrum, colour cycling, and beat pulses, with a 2D canvas fallback
-when WebGL is unavailable.
+a full-panel WebGL feedback effect. Bass drives zoom and pulse, mid and spectral
+flux drive rotation and warp, and the treble adds sparkle and sharper spiral
+arms. Reactive spectrum ribbons, beat shockwaves, and centroid-based palette
+shifts keep the effect tied to the music. A 2D canvas fallback mirrors the same
+layers when WebGL is unavailable.
 
-The overlay keeps the current station and track visible and provides
-play/pause, previous/next, back to stations, and fullscreen controls. Esc exits
+The overlay keeps the current station and track visible and provides play/pause,
+previous/next, back to stations, and fullscreen controls. The browser header also
+shows a Stations toggle while the visualizer is open. The overlay action remains
+available in fullscreen, where the browser header is hidden. Esc exits
 fullscreen without closing the visualizer. An idle station shows an ambient
 animation instead of auto-playing.
 
@@ -181,45 +186,45 @@ if (service && service.enabled()) {
 
 Service methods:
 
-| Method          | Returns    | Meaning                                                                    |
-| --------------- | ---------- | -------------------------------------------------------------------------- |
+| Method          | Returns    | Meaning                                                                     |
+| --------------- | ---------- | --------------------------------------------------------------------------- |
 | `enabled()`     | Boolean    | True when Enable Radio is on, even if the station list is empty or missing. |
-| `getRadio()`    | Controller | Returns the shared radio controller.                                       |
-| `openBrowser()` | Boolean    | Opens the station browser. Returns false when the player is disabled.      |
+| `getRadio()`    | Controller | Returns the shared radio controller.                                        |
+| `openBrowser()` | Boolean    | Opens the station browser. Returns false when the player is disabled.       |
 
 The controller returned by `getRadio()` exposes:
 
-| Member                    | Meaning                                                                                                                                                                                    |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ui`                      | Reactive player state, including stations, loading, error, playing, muted, current station name and display label, browser-open state, failed stations, waveform state, track title, current now-playing metadata, and missing-file state. |
-| `setting(name, fallback)` | Reads a `plugin-radio.*` setting with a fallback.                                                                                                                                          |
-| `enabled()`               | Player availability.                                                                                                                                                                       |
-| `waveStyle()`             | Returns `none` or `bars`, honoring the legacy `showWave` setting.                                                                                                                          |
-| `waveEnabled()`           | True when a waveform style is enabled.                                                                                                                                                     |
-| `applySettings()`         | Reapplies enable, now-playing, and waveform changes to the running player.                                                                                                                |
-| `closeBrowser()`          | Closes the active station browser.                                                                                                                                                         |
-| `addStation(station)`     | Adds a user station and returns `{ ok, error }`.                                                                                                                                           |
-| `updateStation(source, station)` | Updates a user station by its original stream source.                                                                                                                               |
-| `removeStation(station)`  | Removes a user station or hides a file-provided station.                                                                                                                                   |
-| `restoreStation(station)` | Restores a hidden file-provided station.                                                                                                                                                   |
-| `restoreAllStations()`    | Restores every hidden file-provided station.                                                                                                                                               |
-| `startDetailQueue()`      | Starts staggered desktop station-detail enrichment for the open browser.                                                                                                                   |
-| `stopDetailQueue()`       | Stops pending station-detail enrichment.                                                                                                                                                    |
-| `setVisualizer(open)`     | Enables or disables visualizer audio analysis and its restart behavior.                                                                                                                      |
-| `fetchStationDetails(station)` | Fetches desktop station details immediately and caches them. Returns the details or `null`.                                                                                           |
-| `volume()`                | Effective volume, including `forceVolume`.                                                                                                                                                 |
-| `current()`               | Current station object or `null`.                                                                                                                                                          |
-| `loadStations()`          | Reloads the station file.                                                                                                                                                                  |
-| `play(station)`           | Plays a station object with one or more valid stream URLs, trying them in order.                                                                                                           |
-| `playCurrent()`           | Plays the current or last station.                                                                                                                                                         |
-| `pause()`                 | Stops playback.                                                                                                                                                                            |
-| `toggle()`                | Toggles play/pause.                                                                                                                                                                        |
-| `skip(step)`              | Moves by `1` or `-1` through the station list.                                                                                                                                             |
-| `setVolume(value)`        | Sets volume from `0` to `1` and unlocks the user volume.                                                                                                                                   |
-| `toggleMute()`            | Toggles mute.                                                                                                                                                                              |
-| `isStarred(name)`         | Checks a station name against the starred list.                                                                                                                                            |
-| `toggleStar(name)`        | Adds or removes a station name from the starred list.                                                                                                                                      |
-| `stopWave()`              | Stops the waveform animation.                                                                                                                                                              |
+| Member                           | Meaning                                                                                                                                                                                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ui`                             | Reactive player state, including stations, loading, error, playing, muted, current station name and display label, browser-open state, failed stations, waveform state, track title, current now-playing metadata, and missing-file state. |
+| `setting(name, fallback)`        | Reads a `plugin-radio.*` setting with a fallback.                                                                                                                                                                                          |
+| `enabled()`                      | Player availability.                                                                                                                                                                                                                       |
+| `waveStyle()`                    | Returns `none` or `bars`, honoring the legacy `showWave` setting.                                                                                                                                                                          |
+| `waveEnabled()`                  | True when a waveform style is enabled.                                                                                                                                                                                                     |
+| `applySettings()`                | Reapplies enable, now-playing, and waveform changes to the running player.                                                                                                                                                                 |
+| `closeBrowser()`                 | Closes the active station browser.                                                                                                                                                                                                         |
+| `addStation(station)`            | Adds a user station and returns `{ ok, error }`.                                                                                                                                                                                           |
+| `updateStation(source, station)` | Updates a user station by its original stream source.                                                                                                                                                                                      |
+| `removeStation(station)`         | Removes a user station or hides a file-provided station.                                                                                                                                                                                   |
+| `restoreStation(station)`        | Restores a hidden file-provided station.                                                                                                                                                                                                   |
+| `restoreAllStations()`           | Restores every hidden file-provided station.                                                                                                                                                                                               |
+| `startDetailQueue()`             | Starts staggered desktop station-detail enrichment for the open browser.                                                                                                                                                                   |
+| `stopDetailQueue()`              | Stops pending station-detail enrichment.                                                                                                                                                                                                   |
+| `setVisualizer(open)`            | Enables or disables visualizer audio analysis and its restart behavior.                                                                                                                                                                    |
+| `fetchStationDetails(station)`   | Fetches desktop station details immediately and caches them. Returns the details or `null`.                                                                                                                                                |
+| `volume()`                       | Effective volume, including `forceVolume`.                                                                                                                                                                                                 |
+| `current()`                      | Current station object or `null`.                                                                                                                                                                                                          |
+| `loadStations()`                 | Reloads the station file.                                                                                                                                                                                                                  |
+| `play(station)`                  | Plays a station object with one or more valid stream URLs, trying them in order.                                                                                                                                                           |
+| `playCurrent()`                  | Plays the current or last station.                                                                                                                                                                                                         |
+| `pause()`                        | Stops playback.                                                                                                                                                                                                                            |
+| `toggle()`                       | Toggles play/pause.                                                                                                                                                                                                                        |
+| `skip(step)`                     | Moves by `1` or `-1` through the station list.                                                                                                                                                                                             |
+| `setVolume(value)`               | Sets volume from `0` to `1` and unlocks the user volume.                                                                                                                                                                                   |
+| `toggleMute()`                   | Toggles mute.                                                                                                                                                                                                                              |
+| `isStarred(name)`                | Checks a station name against the starred list.                                                                                                                                                                                            |
+| `toggleStar(name)`               | Adds or removes a station name from the starred list.                                                                                                                                                                                      |
+| `stopWave()`                     | Stops the waveform animation.                                                                                                                                                                                                              |
 
 ## Styling
 

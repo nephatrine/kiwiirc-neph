@@ -112,7 +112,8 @@
     user-select: none;
 }
 
-.kiwi-radio-browser-visualizer {
+.kiwi-radio-browser-visualizer,
+.kiwi-radio-browser-stations {
     margin-left: auto;
     cursor: pointer;
     user-select: none;
