@@ -27,6 +27,9 @@ export default Vue.extend({
         activeSection() {
             return this.section();
         },
+        activeViewOpen() {
+            return !!this.$state.ui.active_view_open;
+        },
     },
     watch: {
         isOpen() {
@@ -36,6 +39,9 @@ export default Vue.extend({
             this.syncSidebarOpen();
         },
         activeSection() {
+            this.syncSidebarOpen();
+        },
+        activeViewOpen() {
             this.syncSidebarOpen();
         },
     },
@@ -64,7 +70,7 @@ export default Vue.extend({
     },
     methods: {
         syncSidebarOpen() {
-            let open = !!(this.isOpen || this.isDrawn);
+            let open = !!(this.isOpen || this.isDrawn) && !this.activeViewOpen;
             this.$state.ui.sidebar_open = open;
             this.$state.ui.sidebar_section = open ? this.section() : '';
         },

@@ -74,6 +74,28 @@ describe('sidebar component toggle', () => {
         expect(testState.ui.sidebar_section).toBe('nicklist');
     });
 
+    it('clears reported sidebar visibility while a full-page view is open', async() => {
+        testState.ui.app_width = 1200;
+        let network = testState.addNetwork('TestNetwork', 'TestNick', {});
+        testState.getOrAddBufferByName(network.id, '#chan');
+        testState.setActiveBuffer(network.id, '#chan');
+
+        vm.showNicklist();
+        await Vue.nextTick();
+        expect(testState.ui.sidebar_open).toBe(true);
+        expect(testState.ui.sidebar_section).toBe('nicklist');
+
+        testState.ui.active_view_open = true;
+        await Vue.nextTick();
+        expect(testState.ui.sidebar_open).toBe(false);
+        expect(testState.ui.sidebar_section).toBe('');
+
+        testState.ui.active_view_open = false;
+        await Vue.nextTick();
+        expect(testState.ui.sidebar_open).toBe(true);
+        expect(testState.ui.sidebar_section).toBe('nicklist');
+    });
+
     it('shows a component with an id and reports it open', () => {
         let component = { template: '<div />' };
         testState.$emit('sidebar.component', component, { foo: 'bar' }, 'plugin-a');

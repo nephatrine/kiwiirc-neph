@@ -33,6 +33,7 @@ function createNewState() {
             active_buffer: '',
             sidebar_open: false,
             sidebar_section: '',
+            active_view_open: false,
             last_active_buffers: [],
             app_has_focus: true,
             app_is_visible: true,

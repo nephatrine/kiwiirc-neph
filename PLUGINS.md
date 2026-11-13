@@ -439,6 +439,13 @@ sidebar content. The component receives `network`, `buffer`, and `sidebar-state`
 in addition to `props`. `sidebarState.isComponentOpen(id)` is available for
 checking state.
 
+`kiwi.state.ui.sidebar_open` and `sidebar_section` describe the sidebar that is
+actually visible. When a full-page active view replaces the buffer area, both
+are cleared even if a sidebar was open underneath.
+`kiwi.state.ui.active_view_open` is true while such a view is open. Overlays
+near the right edge can treat `active_view_open || sidebar_open` as an occupied
+sidebar.
+
 ### Startup Screens
 
 `kiwi.addStartup(name, component)` registers a startup screen. Select it with

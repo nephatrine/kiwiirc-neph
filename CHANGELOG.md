@@ -64,7 +64,12 @@ and this project adheres to
 - **Plugin Layout API**: Added viewport-edge layout chrome insets that framing
   plugins can register and other plugins can consume. NephWave and NephDeck now
   report their frame insets, and Bongo Companion positions itself from the
-  combined insets instead of assuming a specific theme.
+  combined insets instead of assuming a specific theme. Sidebar tracking now
+  clears while a full-page active view is open, with
+  `kiwi.state.ui.active_view_open` exposing that state.
+- **Bongo Companion**: Automatic sizing now returns to Normal while a full-page
+  view covers the sidebar, and automatic positioning uses Bottom Right while a
+  full-page view is open regardless of the sidebar underneath.
 - **Bongo Companion**: Added Automatic placement, which uses Bottom Right while
   a right sidebar is open and Top Right when it is closed. Automatic is now the
   default position. Added a Size selector with Automatic, Normal, and Larger
@@ -355,18 +360,18 @@ and this project adheres to
   `allowfullscreen` attributes in favor of `allow="… fullscreen …"`.
 - **Performance**: Hidden raw buffers now keep a bounded lightweight backlog
   instead of creating full messages and trim timers for every raw line. Batch
-  tick timers are shared per tick, empty trim timers are no longer cleared,
-  IRC ping-timeout resets are coalesced during event bursts, in-order messages
-  no longer trigger a full scrollback sort, and late messages are inserted in
-  order instead of re-sorting the scrollback. Radio waveform colours are
-  cached between theme changes, and message-list scroll checks are coalesced
-  per animation frame.
+  tick timers are shared per tick, empty trim timers are no longer cleared, IRC
+  ping-timeout resets are coalesced during event bursts, in-order messages no
+  longer trigger a full scrollback sort, and late messages are inserted in order
+  instead of re-sorting the scrollback. Radio waveform colours are cached
+  between theme changes, and message-list scroll checks are coalesced per
+  animation frame.
 - **Shutdown**: Replaced the deprecated `unload` handler with `pagehide`, so
   connection shutdown no longer triggers the Chromium unload policy violation.
-- **Mobile Layout**: Limited the mobile state-browser drawer width, stacked
-  the search dialog controls for narrow screens, and updated the bundled
-  NephDeck and NephWave chrome offsets to follow the new drawer width. NephDeck
-  app settings now sit inside its mobile chrome instead of under it.
+- **Mobile Layout**: Limited the mobile state-browser drawer width, stacked the
+  search dialog controls for narrow screens, and updated the bundled NephDeck
+  and NephWave chrome offsets to follow the new drawer width. NephDeck app
+  settings now sit inside its mobile chrome instead of under it.
 - **Connections**: Added an HTTPS mixed-content warning when a direct ws://
   endpoint is configured, recommending wss:// or an IRC gateway instead.
 - **Plugins**: Exposed the Link Preview module to plugins, fixing the Radio

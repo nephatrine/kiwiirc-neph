@@ -211,20 +211,20 @@ export default {
         },
         listenForActiveComponents() {
             this.listen(this.$state, 'active.component', (component, props) => {
-                this.activeComponent = null;
-                if (component) {
-                    this.activeComponentProps = props;
-                    this.activeComponent = component;
-                }
+                this.setActiveComponent(component, props);
             });
             this.listen(this.$state, 'active.component.toggle', (component, props) => {
                 if (component === this.activeComponent) {
-                    this.activeComponent = null;
+                    this.setActiveComponent(null);
                 } else if (component) {
-                    this.activeComponentProps = props;
-                    this.activeComponent = component;
+                    this.setActiveComponent(component, props);
                 }
             });
+        },
+        setActiveComponent(component, props) {
+            this.activeComponent = component || null;
+            this.activeComponentProps = component ? (props || {}) : {};
+            this.$state.ui.active_view_open = !!component;
         },
         watchForThemes() {
             this.listen(this.$state, 'theme.change', () => {
