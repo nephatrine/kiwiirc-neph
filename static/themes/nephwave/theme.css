@@ -1233,6 +1233,50 @@ body.nephwave-active .kiwi-personal {
     color: var(--nw-error);
 }
 
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck {
+    --kiwi-cyberdeck-line: var(--nw-panel-dark);
+    --kiwi-cyberdeck-rail: var(--nw-purple);
+    --kiwi-cyberdeck-accent: var(--nw-accent);
+    --kiwi-cyberdeck-panel: linear-gradient(90deg, #fff, #faf4e3);
+    --kiwi-cyberdeck-time: #756e62;
+    --kiwi-cyberdeck-radius: 0;
+}
+
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck .kiwi-messagelist-cyberdeck-avatar {
+    box-shadow: 0 0 0 1px var(--nw-panel-dark);
+}
+
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck .kiwi-messagelist-cyberdeck-header {
+    padding-bottom: 3px;
+    border-bottom: 1px solid var(--nw-panel-dark);
+}
+
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck .kiwi-messagelist-cyberdeck-header .kiwi-messagelist-nick {
+    letter-spacing: 0.04em;
+}
+
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck .kiwi-messagelist-body {
+    color: #111;
+    box-shadow: inset 0 0 12px rgb(0 0 0 / 8%);
+}
+
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message--highlight {
+    background: var(--nw-highlight);
+    box-shadow: inset 3px 0 0 var(--nw-accent);
+}
+
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck .kiwi-messagereactions-reaction {
+    color: var(--nw-ink);
+    background: #fff;
+    border-color: var(--nw-panel-dark);
+    border-radius: 0;
+}
+
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck .kiwi-messagereactions-reaction--reacted {
+    background: var(--nw-selected);
+    border-color: var(--nw-accent);
+}
+
 .kiwi-messageinfo,
 .kiwi-userbox {
     color: var(--nw-ink);

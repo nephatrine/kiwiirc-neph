@@ -78,6 +78,29 @@ describe('AppSettings channel defaults', () => {
         expect(s.setting('emojiPackPreference')).toBe('local');
     });
 
+    it('offers the Cyberdeck layout and realnames for it', () => {
+        const context = {
+            $state: s,
+            messageLayouts: AppSettings.computed.messageLayouts.call({}),
+        };
+
+        AppSettings.computed.settingMessageLayout.set.call(context, 'cyberdeck');
+
+        expect(s.setting('buffers.messageLayout')).toBe('cyberdeck');
+        expect(AppSettings.computed.settingMessageLayout.get.call(context))
+            .toBe('cyberdeck');
+
+        expect(AppSettings.computed.messageLayoutUsesRealNames.call({
+            settingMessageLayout: 'cyberdeck',
+        })).toBe(true);
+        expect(AppSettings.computed.messageLayoutUsesRealNames.call({
+            settingMessageLayout: 'modern',
+        })).toBe(true);
+        expect(AppSettings.computed.messageLayoutUsesRealNames.call({
+            settingMessageLayout: 'inline',
+        })).toBe(false);
+    });
+
     it('only shows pack preference with custom emoji or a desktop client', () => {
         delete window.kiwiDesktop;
         s.setting('customEmojis', {});

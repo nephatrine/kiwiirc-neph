@@ -195,8 +195,9 @@ export default {
     border: 1px solid rgba(66, 133, 244, 0.4);
 }
 
-/* Compact layout specific styling */
+/* Compact and cyberdeck layout styling */
 .kiwi-messageactions--compact,
+.kiwi-messageactions--cyberdeck,
 .kiwi-messageactions--inline {
     .kiwi-messageactions-badge,
     .kiwi-messageactions-dropdown,

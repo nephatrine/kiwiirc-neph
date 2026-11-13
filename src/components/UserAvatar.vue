@@ -1,8 +1,13 @@
 <template>
-    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="kiwi-avatar">
+    <svg
+        viewBox="0 0 100 100"
+        xmlns="http://www.w3.org/2000/svg"
+        :class="`kiwi-avatar--${shape}`"
+        class="kiwi-avatar"
+    >
         <g
             v-bind="awayStatus.vbind"
-            clip-path="url(#kiwi-avatar-clip)"
+            :clip-path="`url(#${clipId})`"
         >
             <rect
                 v-if="avatar.showBackground"
@@ -96,6 +101,11 @@ const props = defineProps({
         type: String,
         default: 'small',
     },
+    shape: {
+        type: String,
+        default: 'circle',
+        validator: (value) => ['circle', 'square'].indexOf(value) !== -1,
+    },
     forceShowStatus: {
         type: Boolean,
         default: false,
@@ -105,6 +115,10 @@ const props = defineProps({
         default: false,
     },
 });
+
+const clipId = computed(() => (
+    props.shape === 'square' ? 'kiwi-avatar-clip-square' : 'kiwi-avatar-clip'
+));
 
 const getSizeObj = (size) => ({
     url: props.user.avatar[size],

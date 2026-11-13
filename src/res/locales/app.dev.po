@@ -456,6 +456,22 @@ msgstr "Refresh Theme"
 msgid "settings_messagelayout"
 msgstr "Message Layout"
 
+#: Traditional message layout
+msgid "settings_messagelayout_traditional"
+msgstr "Traditional"
+
+#: Modern message layout
+msgid "settings_messagelayout_modern"
+msgstr "Modern"
+
+#: Inline message layout
+msgid "settings_messagelayout_inline"
+msgstr "Inline"
+
+#: Cyberdeck message layout
+msgid "settings_messagelayout_cyberdeck"
+msgstr "Cyberdeck"
+
 #: Monospaced font
 msgid "settings_use_monospace"
 msgstr "Monospaced Font"

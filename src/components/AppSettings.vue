@@ -257,9 +257,18 @@
                             <label class="kiwi-appsettings-messagelistDisplay">
                                 <span>{{ $t('settings_messagelayout') }} </span>
                                 <select v-model="settingMessageLayout">
-                                    <option value="traditional">Traditional</option>
-                                    <option value="modern">Modern</option>
-                                    <option value="inline">Inline</option>
+                                    <option value="traditional">
+                                        {{ $t('settings_messagelayout_traditional') }}
+                                    </option>
+                                    <option value="modern">
+                                        {{ $t('settings_messagelayout_modern') }}
+                                    </option>
+                                    <option value="inline">
+                                        {{ $t('settings_messagelayout_inline') }}
+                                    </option>
+                                    <option value="cyberdeck">
+                                        {{ $t('settings_messagelayout_cyberdeck') }}
+                                    </option>
                                 </select>
                             </label>
                             <label
@@ -323,7 +332,7 @@
                                 <input v-model="settingBufferShowPresenceChanges" type="checkbox">
                             </label>
                             <label
-                                v-if="settingMessageLayout === 'modern'"
+                                v-if="messageLayoutUsesRealNames"
                                 class="u-checkbox-wrapper"
                             >
                                 <span>{{ $t('settings_show_realnames') }} </span>
@@ -1146,7 +1155,12 @@ export default {
                 traditional: 'compact',
                 modern: 'modern',
                 inline: 'inline',
+                cyberdeck: 'cyberdeck',
             };
+        },
+        messageLayoutUsesRealNames() {
+            return this.settingMessageLayout === 'modern' ||
+                this.settingMessageLayout === 'cyberdeck';
         },
         settingMessageLayout: {
             get() {

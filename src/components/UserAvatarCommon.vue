@@ -7,6 +7,9 @@
         <clipPath id="kiwi-avatar-clip">
             <circle r="50" cx="50" cy="50" />
         </clipPath>
+        <clipPath id="kiwi-avatar-clip-square">
+            <rect width="100" height="100" />
+        </clipPath>
         <mask id="kiwi-avatar-mask">
             <rect width="100" height="100" fill="#fff" />
             <circle r="14" cx="50" cy="0" :transform="awayStatusTransform" />

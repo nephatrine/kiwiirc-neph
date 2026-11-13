@@ -1351,6 +1351,153 @@ body.nephnet-deck-active .kiwi-welcome-simple-error {
     border-left: 2px solid var(--brand-primary);
 }
 
+/* Cyberdeck layout */
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck {
+    --kiwi-cyberdeck-line: var(--cd-steel);
+    --kiwi-cyberdeck-rail: rgb(var(--cd-glow-rgb) / 0.55);
+    --kiwi-cyberdeck-accent: var(--brand-primary);
+    --kiwi-cyberdeck-panel: linear-gradient(
+        90deg,
+        rgb(var(--cd-glow-rgb) / 8%),
+        rgb(0 0 0 / 12%)
+    );
+    --kiwi-cyberdeck-time: var(--cd-screen-dim);
+    --kiwi-cyberdeck-radius: 0;
+}
+
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message--authorfirst {
+    border-top: 1px solid rgb(var(--cd-glow-rgb) / 8%);
+}
+
+body .kiwi-wrap .kiwi-messagelist-cyberdeck-avatar {
+    box-shadow:
+        0 0 0 1px #000,
+        0 0 12px rgb(var(--cd-glow-rgb) / 18%);
+}
+
+body .kiwi-wrap .kiwi-messagelist-cyberdeck-avatar::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1px solid rgb(var(--cd-glow-rgb) / 22%);
+    border-top-color: var(--brand-primary);
+    border-bottom-color: var(--brand-primary);
+    z-index: 2;
+    opacity: 0;
+    transform: scale(1.22);
+    transform-origin: center;
+    transition:
+        opacity 120ms ease-out,
+        transform 160ms ease-out,
+        box-shadow 160ms ease-out;
+    pointer-events: none;
+}
+
+@media (hover: hover) {
+    body .kiwi-wrap .kiwi-messagelist-cyberdeck-avatar:hover::before {
+        opacity: 1;
+        transform: scale(1);
+        border-color: var(--brand-primary);
+        box-shadow: 0 0 8px rgb(var(--cd-glow-rgb) / 35%);
+        animation: kiwi-cyberdeck-lock-on 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+}
+
+@keyframes kiwi-cyberdeck-lock-on {
+    0% {
+        opacity: 0;
+        transform: scale(1.3);
+        box-shadow: 0 0 0 rgb(var(--cd-glow-rgb) / 0%);
+    }
+
+    45% {
+        opacity: 1;
+        transform: scale(0.96);
+    }
+
+    65% {
+        opacity: 0.55;
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 8px rgb(var(--cd-glow-rgb) / 35%);
+    }
+}
+
+body .kiwi-wrap .kiwi-messagelist-cyberdeck-avatar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        rgb(0 0 0 / 22%) 0 1px,
+        transparent 1px 3px
+    );
+    opacity: 0.32;
+    z-index: 3;
+    pointer-events: none;
+}
+
+body .kiwi-wrap .kiwi-messagelist-cyberdeck-header {
+    padding-bottom: 3px;
+    border-bottom: 1px dashed rgb(var(--cd-glow-rgb) / 16%);
+}
+
+body .kiwi-wrap .kiwi-messagelist-cyberdeck-header .kiwi-messagelist-nick {
+    font-family: Orbitron, var(--kiwi-font-mono);
+    letter-spacing: 0.06em;
+    text-shadow: 0 0 10px rgb(var(--cd-glow-rgb) / 35%);
+}
+
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck .kiwi-messagelist-body {
+    color: var(--brand-default-fg);
+    box-shadow: inset 0 0 18px rgb(0 0 0 / 22%);
+}
+
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message--own {
+    background: linear-gradient(
+        90deg,
+        rgb(var(--cd-glow-rgb) / 10%),
+        transparent 70%
+    );
+}
+
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message--highlight {
+    background: rgb(var(--cd-glow-rgb) / 12%);
+    box-shadow: inset 3px 0 0 var(--brand-primary);
+}
+
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck .kiwi-messagelist-cyberdeck-marker {
+    box-shadow: 0 0 7px rgb(var(--cd-glow-rgb) / 55%);
+}
+
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck .kiwi-messagereactions-reaction {
+    color: var(--brand-default-fg);
+    background: rgb(0 0 0 / 20%);
+    border-color: var(--cd-rim);
+    border-radius: 0;
+}
+
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck .kiwi-messagereactions-reaction--reacted {
+    background: rgb(var(--cd-glow-rgb) / 15%);
+    border-color: var(--brand-primary);
+}
+
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-topic {
+    box-shadow:
+        inset 0 0 20px rgb(0 0 0 / 24%),
+        0 0 10px rgb(var(--cd-glow-rgb) / 12%);
+}
+
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-traffic .kiwi-messagelist-body,
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-mode .kiwi-messagelist-body,
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-error .kiwi-messagelist-body {
+    font-family: var(--kiwi-font-mono);
+    letter-spacing: 0.03em;
+}
+
 .kiwi-messagelist-message-whois {
     background: var(--brand-midtone);
 }
@@ -2172,12 +2319,23 @@ body.nephnet-deck-powered-off .nephnet-btn--power {
         animation: none;
     }
 
+    body .kiwi-wrap .kiwi-messagelist-cyberdeck-avatar::before {
+        transition: none;
+    }
+
     body.nephnet-deck-powered-off .nephnet-topbar,
     body.nephnet-deck-powered-off .kiwi-statebrowser,
     body.nephnet-deck-powered-off .nephnet-bottombar-label,
     body.nephnet-deck-powered-off .nephnet-bottombar-right,
     body.nephnet-deck-powered-off .nephnet-controls > *:not(.nephnet-btn--power) {
         transition: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) and (hover: hover) {
+    body .kiwi-wrap .kiwi-messagelist-cyberdeck-avatar:hover::before {
+        animation: none;
+        transform: scale(1);
     }
 }
 

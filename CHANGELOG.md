@@ -19,6 +19,9 @@ and this project adheres to
   server search, and read-only server context for results in unopened buffers.
 - **Message Search**: Added `/search <terms>` for the current channel or query,
   preferring server history and falling back to desktop local logs when needed.
+- **Message Layouts**: Added a Cyberdeck layout with avatar plates, timestamp
+  rails, grouped author rows, and theme-variable support. NephDeck and NephWave
+  provide matching custom styling.
 - **Autocomplete**: Nick completion now includes known relayed users from the
   current buffer, including their display names as searchable labels. Display
   names are never inserted into the message.

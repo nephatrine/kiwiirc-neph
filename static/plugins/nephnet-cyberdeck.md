@@ -29,6 +29,9 @@ remains usable without it.
 - Adds a clock and network signal indicator.
 - Triggers glitch effects on highlights, link changes, and preset switches.
 - Supports the Amber, Green, and Cyan presets inside the unified NephDeck theme.
+- Styles the optional Cyberdeck message layout with cassette-deck rails, avatar
+  bezels, and phosphor accents. The layout is available under Message Layout in
+  App Settings for every theme.
 
 ## Controls
 
