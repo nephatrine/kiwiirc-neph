@@ -45,7 +45,7 @@
                 <template v-else>
                     <div class="kiwi-container-messages">
                         <slot name="before" />
-                        <message-list :buffer="buffer" />
+                        <message-list :key="messageListKey" :buffer="buffer" />
                     </div>
                     <sidebar
                         v-if="!buffer.isSpecial() && !buffer.contextOnly"
@@ -92,6 +92,21 @@ export default {
         };
     },
     computed: {
+        // Remount the list when the visual layout changes so theme and preset
+        // transitions do not leave stale message rows behind.
+        messageListKey() {
+            const buffer = this.buffer;
+            const layout = buffer && typeof buffer.setting === 'function' ?
+                buffer.setting('messageLayout') :
+                this.$state.setting('buffers.messageLayout');
+
+            return [
+                buffer ? buffer.name : '',
+                this.$state.setting('theme') || '',
+                layout || '',
+                this.$state.setting('useMonospace') ? 'mono' : 'sans',
+            ].join('|');
+        },
         bufferType: function bufferType() {
             let type = '';
 

@@ -1,6 +1,6 @@
 <template>
     <div
-        v-if="!isNarrow && !isDesktopApp && presets.length"
+        v-if="!isNarrow && !isDesktopApp && showPresetSwitcher && presets.length"
         ref="root"
         class="kiwi-header-option kiwi-header-option-presets"
         @click.stop
@@ -55,6 +55,7 @@ import ThemeManager from '@/libs/ThemeManager';
 import {
     LAYOUT_PRESETS,
     applyLayoutPreset,
+    availableLayoutPresets,
     isLayoutPresetActive
 } from '@/helpers/LayoutPresets';
 
@@ -72,9 +73,11 @@ export default {
         isDesktopApp() {
             return typeof window !== 'undefined' && !!window.kiwiDesktop;
         },
+        showPresetSwitcher() {
+            return this.$state.setting('showPresetSwitcher') !== false;
+        },
         presets() {
-            const themeManager = ThemeManager.instance();
-            return LAYOUT_PRESETS.filter((preset) => themeManager.findTheme(preset.theme));
+            return availableLayoutPresets(ThemeManager.instance());
         },
         activePresetId() {
             const themeManager = ThemeManager.instance();

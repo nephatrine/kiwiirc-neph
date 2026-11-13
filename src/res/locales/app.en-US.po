@@ -542,6 +542,10 @@ msgstr "Show Presence Changes"
 msgid "settings_show_message_info"
 msgstr "Message Info on Touch"
 
+#: Show preset switcher
+msgid "settings_show_preset_switcher"
+msgstr "Show Preset Switcher"
+
 #: Show preview handles
 msgid "settings_show_link_previews"
 msgstr "Show Preview Handles"

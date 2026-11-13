@@ -2,6 +2,8 @@
     <svg
         viewBox="0 0 100 100"
         xmlns="http://www.w3.org/2000/svg"
+        width="100"
+        height="100"
         :class="`kiwi-avatar--${shape}`"
         class="kiwi-avatar"
     >
@@ -264,6 +266,9 @@ const toggleAway = () => {
 
 <style lang="less">
 .kiwi-avatar {
+    display: block;
+    max-width: 100px;
+    max-height: 100px;
     font-size: 0;
     line-height: 0;
     user-select: none;

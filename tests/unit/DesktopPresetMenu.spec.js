@@ -37,7 +37,7 @@ describe('desktop preset menu bridge', () => {
         expect(window.kiwiDesktop.presets.onApply).toHaveBeenCalledWith(
             expect.any(Function)
         );
-        expect(off).toBe(unsubscribe);
+        expect(typeof off).toBe('function');
 
         handler('nephnet');
 
@@ -47,6 +47,63 @@ describe('desktop preset menu bridge', () => {
         );
         expect(state.setting).toHaveBeenCalledWith('useMonospace', false);
         expect(themeManager.setTheme).toHaveBeenCalledWith('NephDeck');
+
+        off();
+        expect(unsubscribe).toHaveBeenCalled();
+    });
+
+    it('reports enabled presets and updates when themes change', () => {
+        let themeWatcher = null;
+        const unsubscribe = jest.fn();
+        const unwatch = jest.fn();
+        const setAvailable = jest.fn();
+        const state = {
+            setting: jest.fn(),
+            $watch: jest.fn((expression, handler) => {
+                if (expression === 'settings.themes') {
+                    themeWatcher = handler;
+                }
+                return unwatch;
+            }),
+        };
+        const themeManager = {
+            findTheme: jest.fn((name) => (
+                name === 'NephDeck' ? { name } : null
+            )),
+            setTheme: jest.fn(),
+        };
+
+        window.kiwiDesktop = {
+            presets: {
+                onApply: jest.fn(() => unsubscribe),
+                setAvailable,
+            },
+        };
+
+        const off = initDesktopPresetMenu(state, themeManager);
+
+        expect(setAvailable).toHaveBeenCalledWith([
+            { id: 'nephnet', label: 'NephNET' },
+        ]);
+        expect(state.$watch).toHaveBeenCalledWith(
+            'settings.themes',
+            expect.any(Function),
+            { deep: true }
+        );
+
+        themeManager.findTheme.mockImplementation((name) => (
+            name === 'NephDeck' || name === 'NephWave' ? { name } : null
+        ));
+        themeWatcher();
+
+        expect(setAvailable).toHaveBeenLastCalledWith([
+            { id: 'nephnet', label: 'NephNET' },
+            { id: 'aim', label: 'AIM' },
+        ]);
+
+        off();
+        expect(unsubscribe).toHaveBeenCalled();
+        expect(unwatch).toHaveBeenCalled();
     });
 
     it('ignores unknown preset ids', () => {

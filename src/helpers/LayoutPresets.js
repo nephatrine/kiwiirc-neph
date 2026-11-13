@@ -41,6 +41,10 @@ export const LAYOUT_PRESETS = Object.freeze([
     },
 ]);
 
+export function availableLayoutPresets(themeManager) {
+    return LAYOUT_PRESETS.filter((preset) => themeManager.findTheme(preset.theme));
+}
+
 export function applyLayoutPreset(state, themeManager, preset) {
     if (!preset || !themeManager.findTheme(preset.theme)) {
         return false;

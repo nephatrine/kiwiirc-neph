@@ -49,6 +49,7 @@ const {
     saveWindowState,
     saveWindowStateSync,
 } = require('./window-state');
+const { buildPresetMenu, normalisePresetItems } = require('./preset-menu');
 
 const APP_SCHEME = 'app';
 const APP_HOST = 'kiwi';
@@ -119,6 +120,7 @@ let desktopConfigPath = null;
 let profileStore = null;
 let secretStore = null;
 let chatLogStore = null;
+let availablePresets = [];
 let allowUnload = false;
 
 if (!app.requestSingleInstanceLock()) {
@@ -154,6 +156,7 @@ if (!app.requestSingleInstanceLock()) {
         registerThemeIpc();
         registerEmojiPackIpc();
         registerNetworkIconIpc();
+        registerPresetIpc();
         buildApplicationMenu();
         await registerAppProtocol();
         registerThemeProtocol();
@@ -465,6 +468,22 @@ function suggestedDownloadName(url) {
     }
 }
 
+function registerPresetIpc() {
+    ipcMain.on('kiwi:presets-available', (event, presets) => {
+        if (!mainWindow || event.sender !== mainWindow.webContents) {
+            return;
+        }
+
+        const nextPresets = normalisePresetItems(presets);
+        if (JSON.stringify(nextPresets) === JSON.stringify(availablePresets)) {
+            return;
+        }
+
+        availablePresets = nextPresets;
+        buildApplicationMenu();
+    });
+}
+
 function sendLayoutPreset(id) {
     if (!mainWindow || mainWindow.isDestroyed()) {
         return;
@@ -541,31 +560,10 @@ function buildApplicationMenu() {
         ],
     });
 
-    template.push({
-        label: 'Presets',
-        submenu: [
-            {
-                label: 'NephNET',
-                click: () => sendLayoutPreset('nephnet'),
-            },
-            {
-                label: 'AIM',
-                click: () => sendLayoutPreset('aim'),
-            },
-            {
-                label: 'Discord',
-                click: () => sendLayoutPreset('discord'),
-            },
-            {
-                label: 'IRC',
-                click: () => sendLayoutPreset('irc'),
-            },
-            {
-                label: 'Teams',
-                click: () => sendLayoutPreset('teams'),
-            },
-        ],
-    });
+    const presetMenu = buildPresetMenu(availablePresets, sendLayoutPreset);
+    if (presetMenu) {
+        template.push(presetMenu);
+    }
 
     if (process.platform === 'darwin') {
         template.push({ role: 'windowMenu' });

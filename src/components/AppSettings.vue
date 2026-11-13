@@ -127,6 +127,13 @@
                                     {{ $t('settings_no_installed_themes') }}
                                 </p>
                             </div>
+                            <label
+                                v-if="presetSwitcherOptionVisible"
+                                class="u-checkbox-wrapper"
+                            >
+                                <span>{{ $t('settings_show_preset_switcher') }} </span>
+                                <input v-model="settingShowPresetSwitcher" type="checkbox">
+                            </label>
                             <label class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_show_link_previews') }} </span>
                                 <input v-model="settingBufferShowLinkPreviews" type="checkbox">
@@ -829,6 +836,7 @@
 
 import ThemeManager from '@/libs/ThemeManager';
 import { mergeInstalledThemes } from '@/libs/InstalledThemes';
+import { availableLayoutPresets } from '@/helpers/LayoutPresets';
 import {
     listUploadServices,
     retentionFor,
@@ -1008,6 +1016,12 @@ export default {
         desktopThemesAvailable() {
             return desktop.isDesktop() && desktop.themes.isAvailable();
         },
+        presetSwitcherOptionVisible() {
+            if (desktop.isDesktop() || this.$state.ui.is_narrow) {
+                return false;
+            }
+            return availableLayoutPresets(ThemeManager.instance()).length > 0;
+        },
         installedThemes() {
             return (this.settings.themes || []).filter((theme) => theme.installed);
         },
@@ -1051,6 +1065,7 @@ export default {
         settingEmojiPickerMaxVersion: bindSetting('emojiPickerMaxVersion'),
         settingAutoReconnect: bindSetting('autoReconnect'),
         settingUseMonospace: bindSetting('useMonospace'),
+        settingShowPresetSwitcher: bindSetting('showPresetSwitcher'),
         settingHighlights: bindSetting('highlights'),
         settingShowEmojiPicker: bindSetting('showEmojiPicker'),
         settingShowColorPicker: bindSetting('showColorPicker'),

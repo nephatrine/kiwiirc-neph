@@ -1,6 +1,7 @@
 import {
     LAYOUT_PRESETS,
     applyLayoutPreset,
+    availableLayoutPresets,
     isLayoutPresetActive
 } from '@/helpers/LayoutPresets';
 
@@ -66,6 +67,17 @@ describe('layout presets', () => {
                 monospace: false,
             },
         ]);
+    });
+
+    it('lists only presets whose themes are enabled', () => {
+        const themeManager = {
+            findTheme: jest.fn((name) => (
+                name === 'NephDeck' || name === 'NephWave' ? { name } : null
+            )),
+        };
+
+        expect(availableLayoutPresets(themeManager).map((preset) => preset.id))
+            .toEqual(['nephnet', 'aim']);
     });
 
     it('applies theme, layout, and font settings together', () => {

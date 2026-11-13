@@ -135,6 +135,11 @@ export default {
     transition: background 0.2s;
 }
 
+.kiwi-statebrowser-usermenu-avatar .kiwi-avatar {
+    width: 100%;
+    height: 100%;
+}
+
 .kiwi-statebrowser-usermenu-body {
     width: 100%;
     box-sizing: border-box;

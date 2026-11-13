@@ -252,7 +252,7 @@ export default {
 .kiwi-messagelist-message--text .kiwi-messagelist-time {
     position: absolute;
     top: 0;
-    right: 0;
+    right: 44px;
     padding: 0 10px;
     display: none;
     opacity: 0.8;
@@ -332,7 +332,7 @@ export default {
 .kiwi-messagelist-actions {
     display: none;
     position: absolute;
-    right: 72px;
+    right: 10px;
     top: 2px;
 }
 
@@ -349,7 +349,7 @@ export default {
 }
 
 .kiwi-messagelist-message--text:hover {
-    padding-right: 115px;
+    padding-right: 140px;
 }
 
 .kiwi-messagelist-message--no-timestamps.kiwi-messagelist-message--text:hover {

@@ -129,6 +129,9 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
             ipcRenderer.on('kiwi:apply-preset', listener);
             return () => ipcRenderer.removeListener('kiwi:apply-preset', listener);
         },
+        setAvailable: (presets) => {
+            ipcRenderer.send('kiwi:presets-available', presets);
+        },
     },
     embedErrors: {
         on: (handler) => onEmbedError(handler),

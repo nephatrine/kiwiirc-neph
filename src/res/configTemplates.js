@@ -27,6 +27,7 @@ export const configTemplates = {
         ],
         windowTitle: 'Kiwi IRC - The web IRC client',
         useMonospace: false,
+        showPresetSwitcher: true,
         language: '',
         theme: 'Kiwi Dark',
         google_fonts: ['Source Sans Pro:wght@400;700', 'Source Code Pro'],

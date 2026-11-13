@@ -78,6 +78,15 @@ describe('AppSettings channel defaults', () => {
         expect(s.setting('emojiPackPreference')).toBe('local');
     });
 
+    it('shows the preset switcher by default and binds its setting', () => {
+        expect(getComputed('settingShowPresetSwitcher')).toBe(true);
+
+        setComputed('settingShowPresetSwitcher', false);
+
+        expect(s.setting('showPresetSwitcher')).toBe(false);
+        expect(getComputed('settingShowPresetSwitcher')).toBe(false);
+    });
+
     it('offers the Corporate and Cyberdeck layouts and realnames for them', () => {
         const context = {
             $state: s,

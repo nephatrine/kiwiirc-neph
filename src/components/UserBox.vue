@@ -1185,6 +1185,11 @@ export default {
     flex-shrink: 0;
 }
 
+.kiwi-userbox-avatar .kiwi-avatar {
+    width: 100%;
+    height: 100%;
+}
+
 .kiwi-userbox-userinfo {
     box-sizing: border-box;
     margin-top: 1.2em;
