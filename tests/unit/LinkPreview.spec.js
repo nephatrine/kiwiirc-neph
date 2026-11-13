@@ -113,6 +113,19 @@ describe('link preview rendering', () => {
             .toBe('https://example.com/article');
     });
 
+    it('does not re-embed a URL after its metadata preview fails', () => {
+        const state = getState();
+        const url = 'https://example.com/article';
+        state.setting('buffers.inline_link_auto_previews', true);
+        state.setting('buffers.generic_link_previews', true);
+        window.kiwiDesktop = {};
+        window.kiwi = { state };
+
+        expect(autoEmbed(url)).toBe(url);
+        markPreviewFailed(url);
+        expect(autoEmbed(url)).toBeNull();
+    });
+
     it('does not auto-embed generic metadata previews when metadata previews are disabled', () => {
         const state = getState();
         state.setting('buffers.inline_link_auto_previews', true);

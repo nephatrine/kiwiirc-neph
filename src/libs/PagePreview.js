@@ -1,6 +1,8 @@
 import { desktopFetch, isDesktop } from '@/libs/desktop/Http';
 
 const CACHE_LIMIT = 100;
+const FAILURE_CACHE_LIMIT = 100;
+const FAILURE_TTL_MS = 5 * 60 * 1000;
 const MAX_HTML_BYTES = 2 * 1024 * 1024;
 const MAX_OEMBED_BYTES = 256 * 1024;
 const MAX_JSON_LD_BYTES = 200 * 1024;
@@ -90,6 +92,8 @@ const AMAZON_HOSTS = new Set([
 ]);
 
 const cache = new Map();
+const failures = new Map();
+const inFlight = new Map();
 
 function cleanText(value, maxLength) {
     return String(value || '')
@@ -932,7 +936,34 @@ function remember(url, preview) {
         const oldest = cache.keys().next().value;
         cache.delete(oldest);
     }
+    failures.delete(url);
     cache.set(url, preview);
+}
+
+function rememberFailure(url) {
+    const now = Date.now();
+    failures.forEach((expiresAt, key) => {
+        if (expiresAt <= now) {
+            failures.delete(key);
+        }
+    });
+    if (failures.size >= FAILURE_CACHE_LIMIT) {
+        const oldest = failures.keys().next().value;
+        failures.delete(oldest);
+    }
+    failures.set(url, now + FAILURE_TTL_MS);
+}
+
+function hasRecentFailure(url) {
+    const expiresAt = failures.get(url);
+    if (!expiresAt) {
+        return false;
+    }
+    if (expiresAt <= Date.now()) {
+        failures.delete(url);
+        return false;
+    }
+    return true;
 }
 
 function fetchJson(url) {
@@ -1078,6 +1109,8 @@ function resolveGeneric(url) {
 
 export function clearPagePreviewCache() {
     cache.clear();
+    failures.clear();
+    inFlight.clear();
 }
 
 export function resolvePagePreview(url) {
@@ -1087,6 +1120,14 @@ export function resolvePagePreview(url) {
 
     if (cache.has(url)) {
         return Promise.resolve(cache.get(url));
+    }
+
+    if (hasRecentFailure(url)) {
+        return Promise.reject(new Error('page preview recently failed'));
+    }
+
+    if (inFlight.has(url)) {
+        return inFlight.get(url);
     }
 
     const repo = parseGitHubRepo(url);
@@ -1117,8 +1158,16 @@ export function resolvePagePreview(url) {
         request = resolveGeneric(url);
     }
 
-    return request.then((preview) => {
+    const tracked = request.then((preview) => {
         remember(url, preview);
         return preview;
+    }).catch((err) => {
+        rememberFailure(url);
+        throw err;
+    }).finally(() => {
+        inFlight.delete(url);
     });
+
+    inFlight.set(url, tracked);
+    return tracked;
 }

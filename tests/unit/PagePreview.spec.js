@@ -258,6 +258,36 @@ describe('Tier D page previews', () => {
         expect(global.fetch).not.toHaveBeenCalled();
     });
 
+    it('deduplicates concurrent preview requests for the same URL', async() => {
+        let releaseFetch;
+        global.fetch = jest.fn(() => new Promise((resolve) => {
+            releaseFetch = () => resolve(htmlResponse(`
+                <html><head><meta property="og:title" content="Shared page"></head></html>
+            `));
+        }));
+
+        const first = resolvePagePreview('https://example.com/shared');
+        const second = resolvePagePreview('https://example.com/shared');
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        releaseFetch();
+
+        const results = await Promise.all([first, second]);
+        expect(results[0].title).toBe('Shared page');
+        expect(results[1]).toBe(results[0]);
+    });
+
+    it('temporarily caches failed preview requests', async() => {
+        global.fetch = jest.fn().mockRejectedValue(new Error('CORS failed'));
+
+        await expect(resolvePagePreview('https://example.com/failing'))
+            .rejects.toThrow('CORS failed');
+        await expect(resolvePagePreview('https://example.com/failing'))
+            .rejects.toThrow('page preview recently failed');
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
     it('enforces the web HTML size limit', async() => {
         delete window.kiwiDesktop;
         global.fetch = jest.fn().mockResolvedValue({

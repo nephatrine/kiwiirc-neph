@@ -383,6 +383,9 @@ and this project adheres to
   settings now sit inside its mobile chrome instead of under it.
 - **Connections**: Added an HTTPS mixed-content warning when a direct ws://
   endpoint is configured, recommending wss:// or an IRC gateway instead.
+- **Link Previews**: Failed previews no longer trigger message re-rendering loops
+  that repeatedly refetched the same URL. Concurrent preview requests are shared,
+  and failed previews are cached briefly before retrying.
 - **Plugins**: Exposed the Link Preview module to plugins, fixing the Radio
   plugin's missing-module warning during startup.
 

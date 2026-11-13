@@ -9,7 +9,11 @@ import {
 import { isWebGenericHost, resolvePagePreview } from './PagePreview';
 
 const CACHE_LIMIT = 100;
+const FAILURE_CACHE_LIMIT = 100;
+const FAILURE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map();
+const failures = new Map();
+const inFlight = new Map();
 
 function cleanText(value, maxLength) {
     return String(value || '')
@@ -106,7 +110,65 @@ function remember(url, card) {
         const oldest = cache.keys().next().value;
         cache.delete(oldest);
     }
+    failures.delete(url);
     cache.set(url, card);
+}
+
+function rememberFailure(url) {
+    const now = Date.now();
+    failures.forEach((expiresAt, key) => {
+        if (expiresAt <= now) {
+            failures.delete(key);
+        }
+    });
+    if (failures.size >= FAILURE_CACHE_LIMIT) {
+        const oldest = failures.keys().next().value;
+        failures.delete(oldest);
+    }
+    failures.set(url, now + FAILURE_TTL_MS);
+}
+
+function hasRecentFailure(url) {
+    const expiresAt = failures.get(url);
+    if (!expiresAt) {
+        return false;
+    }
+    if (expiresAt <= Date.now()) {
+        failures.delete(url);
+        return false;
+    }
+    return true;
+}
+
+function resolveDeduped(url, loader) {
+    if (cache.has(url)) {
+        return Promise.resolve(cache.get(url));
+    }
+
+    if (hasRecentFailure(url)) {
+        return Promise.reject(new Error('link preview recently failed'));
+    }
+
+    if (inFlight.has(url)) {
+        return inFlight.get(url);
+    }
+
+    const tracked = Promise.resolve()
+        .then(loader)
+        .then((card) => {
+            remember(url, card);
+            return card;
+        })
+        .catch((err) => {
+            rememberFailure(url);
+            throw err;
+        })
+        .finally(() => {
+            inFlight.delete(url);
+        });
+
+    inFlight.set(url, tracked);
+    return tracked;
 }
 
 function fetchPreviewJson(endpoint) {
@@ -172,6 +234,8 @@ function resolvePageFallback(url) {
 
 export function clearLinkPreviewCache() {
     cache.clear();
+    failures.clear();
+    inFlight.clear();
 }
 
 export function isLinkPreviewSupported(url) {
@@ -179,22 +243,20 @@ export function isLinkPreviewSupported(url) {
 }
 
 export function resolveEmbedFallback(url) {
-    if (cache.has(url)) {
-        return Promise.resolve(cache.get(url));
-    }
+    return resolveDeduped(url, () => {
+        const provider = getOEmbedFallbackProvider(url);
+        const tierB = provider ?
+            resolveOEmbedFallback(provider, url) :
+            Promise.reject(new Error('no embed fallback provider'));
 
-    const provider = getOEmbedFallbackProvider(url);
-    const tierB = provider ?
-        resolveOEmbedFallback(provider, url) :
-        Promise.reject(new Error('no embed fallback provider'));
+        return tierB.catch((err) => {
+            if (!isDesktop() && !isWebGenericHost(url)) {
+                throw err;
+            }
 
-    return tierB.catch((err) => {
-        if (!isDesktop() && !isWebGenericHost(url)) {
-            throw err;
-        }
-
-        return resolvePageFallback(url).catch(() => {
-            throw err;
+            return resolvePageFallback(url).catch(() => {
+                throw err;
+            });
         });
     });
 }
@@ -205,25 +267,23 @@ export function resolveLinkPreview(url) {
         return Promise.reject(new Error('unsupported link preview provider'));
     }
 
-    if (cache.has(url)) {
-        return Promise.resolve(cache.get(url));
-    }
-
-    return resolveWithProvider(provider, url).catch((err) => {
-        if (!provider.oembed) {
-            throw err;
-        }
-
-        if (!provider.fetchUrl) {
-            return resolvePageFallback(url).catch(() => {
+    return resolveDeduped(url, () => (
+        resolveWithProvider(provider, url).catch((err) => {
+            if (!provider.oembed) {
                 throw err;
-            });
-        }
+            }
 
-        return resolveOEmbedFallback(provider, url).catch((oembedErr) => (
-            resolvePageFallback(url).catch(() => {
-                throw oembedErr;
-            })
-        ));
-    });
+            if (!provider.fetchUrl) {
+                return resolvePageFallback(url).catch(() => {
+                    throw err;
+                });
+            }
+
+            return resolveOEmbedFallback(provider, url).catch((oembedErr) => (
+                resolvePageFallback(url).catch(() => {
+                    throw oembedErr;
+                })
+            ));
+        })
+    ));
 }

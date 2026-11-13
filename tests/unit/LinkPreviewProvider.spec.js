@@ -493,4 +493,42 @@ describe('link preview providers', () => {
 
         expect(global.fetch).toHaveBeenCalledTimes(1);
     });
+
+    it('deduplicates concurrent provider requests', async() => {
+        let releaseFetch;
+        global.fetch = jest.fn(() => new Promise((resolve) => {
+            releaseFetch = () => resolve({
+                ok: true,
+                json: async() => ({
+                    title: 'Shared photo',
+                    provider_name: 'Flickr',
+                }),
+            });
+        }));
+
+        const url = 'https://www.flickr.com/photos/user/654321';
+        const first = resolveLinkPreview(url);
+        const second = resolveLinkPreview(url);
+
+        await new Promise((resolve) => {
+            setTimeout(resolve, 0);
+        });
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        releaseFetch();
+
+        const results = await Promise.all([first, second]);
+        expect(results[0].title).toBe('Shared photo');
+        expect(results[1]).toBe(results[0]);
+    });
+
+    it('temporarily caches failed provider requests', async() => {
+        global.fetch = jest.fn().mockRejectedValue(new Error('provider failed'));
+
+        const url = 'https://www.flickr.com/photos/user/999999';
+        await expect(resolveLinkPreview(url)).rejects.toThrow('provider failed');
+        await expect(resolveLinkPreview(url))
+            .rejects.toThrow('link preview recently failed');
+
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
 });

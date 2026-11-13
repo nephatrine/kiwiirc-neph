@@ -6,6 +6,7 @@ import {
     stripStyles,
     sanitizeUrl,
     getPreviewCategory,
+    isPreviewFailed,
     isSpoilerBlock,
     controlCharsToGlyphs
 } from '@/helpers/Misc';
@@ -310,6 +311,12 @@ export default class Message {
         }
 
         let url = this.mentioned_urls[0];
+
+        if (isPreviewFailed(url)) {
+            this.embed.payload = null;
+            this.embed.type = 'url';
+            return;
+        }
 
         // Ensure we have a valid whitelist, defaulting to allow-all
         let whitelistRegex = buffer.setting('inline_link_auto_preview_whitelist') || '.*';
