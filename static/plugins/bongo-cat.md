@@ -113,10 +113,11 @@ care clocks, so hidden time does not create a decay backlog.
 
 - Size can be set to Automatic (default), Normal, or Larger.
 - Automatic size uses Larger while the nicklist is open and visible, and Normal
-  for every other sidebar or layout state.
+  for every other sidebar or layout state, including full-page views that cover
+  the sidebar.
 - Position can be set to Automatic (default), Bottom Right, or Top Right.
-- Automatic position uses Bottom Right while any right sidebar is open and Top
-  Right when no right sidebar is open.
+- Automatic position uses Bottom Right while any right sidebar is open or a
+  full-page view is open, and Top Right otherwise.
 - Bottom placement opens the stats card upward; top placement opens it downward.
 - The stats card shows the position arrow only for explicit position modes and
   the grow/shrink button only for explicit size modes.

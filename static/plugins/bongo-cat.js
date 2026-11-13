@@ -980,6 +980,10 @@ kiwi.plugin('bongo-cat', (kiwi, log) => {
             store: function() {
                 return store;
             },
+            activeViewOpen: function() {
+                return !!(kiwi.state && kiwi.state.ui &&
+                    kiwi.state.ui.active_view_open);
+            },
             sidebarOpen: function() {
                 return !!(kiwi.state && kiwi.state.ui &&
                     kiwi.state.ui.sidebar_open);
@@ -987,11 +991,12 @@ kiwi.plugin('bongo-cat', (kiwi, log) => {
             nicklistOpen: function() {
                 return !!(kiwi.state && kiwi.state.ui &&
                     kiwi.state.ui.sidebar_open &&
-                    kiwi.state.ui.sidebar_section === 'nicklist');
+                    kiwi.state.ui.sidebar_section === 'nicklist' &&
+                    !this.activeViewOpen);
             },
             resolvedPosition: function() {
                 if (store.position === 'auto') {
-                    return this.sidebarOpen ? 'bottom' : 'top';
+                    return (this.activeViewOpen || this.sidebarOpen) ? 'bottom' : 'top';
                 }
                 return normalizePosition(store.position);
             },
