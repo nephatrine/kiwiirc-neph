@@ -120,6 +120,16 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
     media: {
         proxyUrl: (url) => `kiwi-media://media/${encodeURIComponent(url)}`,
     },
+    presets: {
+        onApply: (handler) => {
+            if (typeof handler !== 'function') {
+                return () => {};
+            }
+            const listener = (event, id) => handler(id);
+            ipcRenderer.on('kiwi:apply-preset', listener);
+            return () => ipcRenderer.removeListener('kiwi:apply-preset', listener);
+        },
+    },
     embedErrors: {
         on: (handler) => onEmbedError(handler),
     },

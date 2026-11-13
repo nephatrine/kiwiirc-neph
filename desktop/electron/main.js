@@ -465,6 +465,13 @@ function suggestedDownloadName(url) {
     }
 }
 
+function sendLayoutPreset(id) {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+        return;
+    }
+    mainWindow.webContents.send('kiwi:apply-preset', id);
+}
+
 function buildApplicationMenu() {
     const template = [];
 
@@ -531,6 +538,32 @@ function buildApplicationMenu() {
             { role: 'zoomOut' },
             { type: 'separator' },
             { role: 'togglefullscreen' },
+        ],
+    });
+
+    template.push({
+        label: 'Presets',
+        submenu: [
+            {
+                label: 'NephNET',
+                click: () => sendLayoutPreset('nephnet'),
+            },
+            {
+                label: 'AIM',
+                click: () => sendLayoutPreset('aim'),
+            },
+            {
+                label: 'Discord',
+                click: () => sendLayoutPreset('discord'),
+            },
+            {
+                label: 'IRC',
+                click: () => sendLayoutPreset('irc'),
+            },
+            {
+                label: 'Teams',
+                click: () => sendLayoutPreset('teams'),
+            },
         ],
     });
 

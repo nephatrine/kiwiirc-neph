@@ -476,6 +476,14 @@ msgstr "Inline"
 msgid "settings_messagelayout_cyberdeck"
 msgstr "Cyberdeck"
 
+#: Header preset menu
+msgid "presets"
+msgstr "Presets"
+
+#: Monospace preset detail
+msgid "presets_monospace"
+msgstr "Monospace"
+
 #: Monospaced font
 msgid "settings_use_monospace"
 msgstr "Monospaced Font"

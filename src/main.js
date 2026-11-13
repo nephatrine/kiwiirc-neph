@@ -32,6 +32,7 @@ import * as LocalStorage from '@/libs/storage/Local';
 import * as DesktopStorage from '@/libs/storage/Desktop';
 import { migrateLegacyProfile } from '@/libs/storage/DesktopMigration';
 import * as DesktopSecrets from '@/libs/desktop/Secrets';
+import { initDesktopPresetMenu } from '@/libs/desktop/PresetMenu';
 import * as Misc from '@/helpers/Misc';
 import GlobalApi from '@/libs/GlobalApi';
 import { AudioManager } from '@/libs/AudioManager';
@@ -660,6 +661,7 @@ function initInputCommands() {
 function startApp() {
     let state = getState();
 
+    initDesktopPresetMenu(state);
     new WindowTitle(state);
 
     api.emit('init');

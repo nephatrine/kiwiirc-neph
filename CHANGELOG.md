@@ -23,6 +23,9 @@ and this project adheres to
   metadata, and grouped author rows. Added a Cyberdeck layout with avatar
   plates, timestamp rails, grouped author rows, and theme-variable support.
   NephDeck and NephWave provide matching Cyberdeck styling.
+- **Presets**: Added a header menu in browsers and a native application menu in
+  the Electron app for one-click NephNET, AIM, Discord, IRC, and Teams
+  combinations of theme, message layout, and monospace font.
 - **Autocomplete**: Nick completion now includes known relayed users from the
   current buffer, including their display names as searchable labels. Display
   names are never inserted into the message.

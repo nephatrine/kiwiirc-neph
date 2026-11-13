@@ -109,6 +109,7 @@
                     :sidebar-state="sidebarState"
                     class="kiwi-header-option"
                 />
+                <header-presets />
             </div>
             <div v-if="!isJoined && isConnected" class="kiwi-header-notjoined">
                 <a class="u-link kiwi-header-join-channel-button" @click="joinCurrentBuffer">
@@ -137,6 +138,7 @@
                         <i class="bx bx-download" aria-hidden="true" />
                     </a>
                 </div>
+                <header-presets />
             </div>
             <div class="kiwi-header-server-connection">
                 <a
@@ -201,6 +203,7 @@
                     :sidebar-state="sidebarState"
                     class="kiwi-header-option"
                 />
+                <header-presets />
             </div>
         </template>
 
@@ -217,6 +220,7 @@
                         <i class="bx bx-download" aria-hidden="true" />
                     </a>
                 </div>
+                <header-presets />
             </div>
         </template>
     </div>
@@ -234,12 +238,14 @@ import * as ChatLogs from '@/libs/desktop/ChatLogs';
 import * as MessageSearch from '@/libs/MessageSearch';
 import BufferSettings from './BufferSettings';
 import ChannelBanlist from './ChannelBanlist';
+import HeaderPresets from './HeaderPresets';
 import AwayStatusIndicator from './AwayStatusIndicator';
 
 export default {
     components: {
         BufferSettings,
         ChannelBanlist,
+        HeaderPresets,
         AwayStatusIndicator,
     },
     props: ['buffer', 'sidebarState'],
