@@ -389,31 +389,31 @@ overrides them.
 
 ### Layout and Display
 
-| Key                            | Default       | Description                                                                                                                   |
-| ------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `messageLayout`                | `modern`      | `modern`, `compact`, `inline`, or `cyberdeck`. The Cyberdeck layout uses avatar plates, timestamps, and cassette-style rails. |
-| `show_timestamps`              | `true`        | Show message timestamps.                                                                                                      |
-| `timestamp_format`             | `%H:%M:%S`    | Timestamp format: `%H:%M:%S`, `%l:%M:%S %p`, or `decimal` for decimal time. Other formats hide the Time System selector.      |
-| `timestamp_full_format`        | `""`          | Full timestamp format. Empty uses the browser locale.                                                                         |
-| `show_hostnames`               | `false`       | Show `nick!user@host` in system messages.                                                                                     |
-| `show_realnames`               | `false`       | Show realnames in the modern and Cyberdeck message layouts.                                                                   |
-| `show_joinparts`               | `true`        | Show join and part messages.                                                                                                  |
-| `show_topics`                  | `true`        | Show topic changes.                                                                                                           |
-| `show_topic_in_header`         | `false`       | Show topic in header. Desktop defaults to `true`.                                                                             |
-| `show_nick_changes`            | `true`        | Show nick changes.                                                                                                            |
-| `show_mode_changes`            | `true`        | Show mode changes.                                                                                                            |
-| `show_presence_changes`        | `true`        | Show presence changes.                                                                                                        |
-| `show_buffer_groups`           | `true`        | Group buffers by type in the sidebar.                                                                                         |
-| `coloured_nicklist`            | `true`        | Colour nicknames in the nicklist.                                                                                             |
-| `colour_nicknames_in_messages` | `true`        | Colour nicknames in messages.                                                                                                 |
-| `nicklist_avatars`             | `true`        | Show avatars in the nicklist.                                                                                                 |
-| `hide_message_counts`          | `false`       | Hide unread message counts.                                                                                                   |
-| `show_message_info`            | `true`        | Show the message info action.                                                                                                 |
-| `extra_formatting`             | `true`        | Enable Markdown-style and extra formatting.                                                                                   |
-| `emoji_convert_as_typed`       | `false`       | Convert emoji shortcodes while typing.                                                                                        |
-| `emoji_convert_incoming`       | `true`        | Convert emoji shortcodes in incoming messages.                                                                                |
-| `show_redactions`              | `placeholder` | `hidden`, `placeholder`, or `revealed`.                                                                                       |
-| `favorite`                     | `false`       | Per-buffer favourite default.                                                                                                 |
+| Key                            | Default       | Description                                                                                                                                             |
+| ------------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `messageLayout`                | `modern`      | `modern`, `corporate`, `compact`, `inline`, or `cyberdeck`. Corporate uses aligned chat bubbles; Cyberdeck uses avatar plates and cassette-style rails. |
+| `show_timestamps`              | `true`        | Show message timestamps.                                                                                                                                |
+| `timestamp_format`             | `%H:%M:%S`    | Timestamp format: `%H:%M:%S`, `%l:%M:%S %p`, or `decimal` for decimal time. Other formats hide the Time System selector.                                |
+| `timestamp_full_format`        | `""`          | Full timestamp format. Empty uses the browser locale.                                                                                                   |
+| `show_hostnames`               | `false`       | Show `nick!user@host` in system messages.                                                                                                               |
+| `show_realnames`               | `false`       | Show realnames in the Modern, Corporate, and Cyberdeck message layouts.                                                                                 |
+| `show_joinparts`               | `true`        | Show join and part messages.                                                                                                                            |
+| `show_topics`                  | `true`        | Show topic changes.                                                                                                                                     |
+| `show_topic_in_header`         | `false`       | Show topic in header. Desktop defaults to `true`.                                                                                                       |
+| `show_nick_changes`            | `true`        | Show nick changes.                                                                                                                                      |
+| `show_mode_changes`            | `true`        | Show mode changes.                                                                                                                                      |
+| `show_presence_changes`        | `true`        | Show presence changes.                                                                                                                                  |
+| `show_buffer_groups`           | `true`        | Group buffers by type in the sidebar.                                                                                                                   |
+| `coloured_nicklist`            | `true`        | Colour nicknames in the nicklist.                                                                                                                       |
+| `colour_nicknames_in_messages` | `true`        | Colour nicknames in messages.                                                                                                                           |
+| `nicklist_avatars`             | `true`        | Show avatars in the nicklist.                                                                                                                           |
+| `hide_message_counts`          | `false`       | Hide unread message counts.                                                                                                                             |
+| `show_message_info`            | `true`        | Show the message info action.                                                                                                                           |
+| `extra_formatting`             | `true`        | Enable Markdown-style and extra formatting.                                                                                                             |
+| `emoji_convert_as_typed`       | `false`       | Convert emoji shortcodes while typing.                                                                                                                  |
+| `emoji_convert_incoming`       | `true`        | Convert emoji shortcodes in incoming messages.                                                                                                          |
+| `show_redactions`              | `placeholder` | `hidden`, `placeholder`, or `revealed`.                                                                                                                 |
+| `favorite`                     | `false`       | Per-buffer favourite default.                                                                                                                           |
 
 ### History and Scrolling
 

@@ -195,8 +195,9 @@ export default {
     border: 1px solid rgba(66, 133, 244, 0.4);
 }
 
-/* Compact and cyberdeck layout styling */
+/* Compact, corporate, and cyberdeck layout styling */
 .kiwi-messageactions--compact,
+.kiwi-messageactions--corporate,
 .kiwi-messageactions--cyberdeck,
 .kiwi-messageactions--inline {
     .kiwi-messageactions-badge,
@@ -227,6 +228,11 @@ export default {
         width: 26px;
         height: 26px;
     }
+}
+
+.kiwi-messageactions--corporate-own .kiwi-messageactions-dropdown {
+    right: auto;
+    left: 28px;
 }
 
 /* Hard reset for any global emoji styles */

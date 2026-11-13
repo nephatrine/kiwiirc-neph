@@ -24,8 +24,8 @@ files.
 
 - 38 built-in themes, including Catppuccin, Tokyo Night, Solarized, NephDeck,
   NephWave, and Radioactive.
-- Custom theme URLs, light/dark variants, an emoji picker, and modern, compact,
-  inline, or Cyberdeck message layouts.
+- Custom theme URLs, light/dark variants, an emoji picker, and modern,
+  corporate, compact, inline, or Cyberdeck message layouts.
 - Configurable per-network settings and desktop notifications.
 
 ### Media & Previews

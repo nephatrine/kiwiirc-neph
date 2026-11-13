@@ -464,6 +464,10 @@ msgstr "Traditional"
 msgid "settings_messagelayout_modern"
 msgstr "Modern"
 
+#: Corporate message layout
+msgid "settings_messagelayout_corporate"
+msgstr "Corporate"
+
 #: Inline message layout
 msgid "settings_messagelayout_inline"
 msgstr "Inline"

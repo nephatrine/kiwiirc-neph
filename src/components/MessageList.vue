@@ -164,6 +164,12 @@
                                     :idx="filteredMessages.indexOf(message)"
                                     :ml="thisMl"
                                 />
+                                <message-list-message-corporate
+                                    v-else-if="listType === 'corporate'"
+                                    :message="message"
+                                    :idx="filteredMessages.indexOf(message)"
+                                    :ml="thisMl"
+                                />
                                 <message-list-message-compact
                                     v-else-if="listType === 'compact'"
                                     :message="message"
@@ -216,6 +222,7 @@ import { isEmojiOnlyBlocks } from '@/libs/EmojiProvider';
 import { isPreviewCard } from '@/helpers/BridgeCard';
 import RemoveBeforeUpdate from './utils/RemoveBeforeUpdate';
 import MessageListMessageCompact from './MessageListMessageCompact';
+import MessageListMessageCorporate from './MessageListMessageCorporate';
 import MessageListMessageCyberdeck from './MessageListMessageCyberdeck';
 import MessageListMessageModern from './MessageListMessageModern';
 import MessageListMessageInline from './MessageListMessageInline';
@@ -235,6 +242,7 @@ export default {
     components: {
         RemoveBeforeUpdate,
         MessageListMessageModern,
+        MessageListMessageCorporate,
         MessageListMessageCyberdeck,
         MessageListMessageCompact,
         MessageListMessageInline,

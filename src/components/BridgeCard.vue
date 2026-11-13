@@ -150,9 +150,15 @@ export default {
     flex-direction: column;
     gap: 8px;
     padding: 10px 12px;
-    border-left: 3px solid rgb(127 127 127 / 0.45);
+    border-left: 3px solid var(
+        --kiwi-bridge-card-accent,
+        rgb(127 127 127 / 0.45)
+    );
     border-radius: 4px;
-    background: rgb(127 127 127 / 0.06);
+    background: var(
+        --kiwi-bridge-card-bg,
+        rgb(127 127 127 / 0.06)
+    );
 }
 
 .kiwi-bridge-card.kiwi-messagelist-body {

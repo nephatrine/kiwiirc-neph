@@ -263,6 +263,9 @@
                                     <option value="modern">
                                         {{ $t('settings_messagelayout_modern') }}
                                     </option>
+                                    <option value="corporate">
+                                        {{ $t('settings_messagelayout_corporate') }}
+                                    </option>
                                     <option value="inline">
                                         {{ $t('settings_messagelayout_inline') }}
                                     </option>
@@ -1154,12 +1157,14 @@ export default {
             return {
                 traditional: 'compact',
                 modern: 'modern',
+                corporate: 'corporate',
                 inline: 'inline',
                 cyberdeck: 'cyberdeck',
             };
         },
         messageLayoutUsesRealNames() {
             return this.settingMessageLayout === 'modern' ||
+                this.settingMessageLayout === 'corporate' ||
                 this.settingMessageLayout === 'cyberdeck';
         },
         settingMessageLayout: {

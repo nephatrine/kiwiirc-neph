@@ -78,11 +78,17 @@ describe('AppSettings channel defaults', () => {
         expect(s.setting('emojiPackPreference')).toBe('local');
     });
 
-    it('offers the Cyberdeck layout and realnames for it', () => {
+    it('offers the Corporate and Cyberdeck layouts and realnames for them', () => {
         const context = {
             $state: s,
             messageLayouts: AppSettings.computed.messageLayouts.call({}),
         };
+
+        AppSettings.computed.settingMessageLayout.set.call(context, 'corporate');
+
+        expect(s.setting('buffers.messageLayout')).toBe('corporate');
+        expect(AppSettings.computed.settingMessageLayout.get.call(context))
+            .toBe('corporate');
 
         AppSettings.computed.settingMessageLayout.set.call(context, 'cyberdeck');
 
@@ -90,6 +96,9 @@ describe('AppSettings channel defaults', () => {
         expect(AppSettings.computed.settingMessageLayout.get.call(context))
             .toBe('cyberdeck');
 
+        expect(AppSettings.computed.messageLayoutUsesRealNames.call({
+            settingMessageLayout: 'corporate',
+        })).toBe(true);
         expect(AppSettings.computed.messageLayoutUsesRealNames.call({
             settingMessageLayout: 'cyberdeck',
         })).toBe(true);
