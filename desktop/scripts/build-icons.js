@@ -6,7 +6,9 @@ const projectRoot = path.resolve(__dirname, '../..');
 const sourceSvg = path.join(projectRoot, 'static', 'kiwi.svg');
 const buildDir = path.join(projectRoot, 'desktop', 'build');
 const iconDir = path.join(buildDir, 'icons');
+const assetsDir = path.join(projectRoot, 'desktop', 'assets');
 const windowsIcon = path.join(buildDir, 'icon.ico');
+const trayIcon = path.join(assetsDir, 'tray.png');
 const pngSizes = [16, 20, 24, 32, 40, 48, 64, 96, 128, 256, 512];
 const windowsSizes = pngSizes.filter((size) => size <= 256);
 
@@ -46,6 +48,7 @@ const magick = magickCommand();
 
 fs.rmSync(iconDir, { recursive: true, force: true });
 fs.mkdirSync(iconDir, { recursive: true });
+fs.mkdirSync(assetsDir, { recursive: true });
 
 const pngFiles = pngSizes.map((size) => {
     const output = path.join(iconDir, `${size}x${size}.png`);
@@ -56,6 +59,17 @@ const pngFiles = pngSizes.map((size) => {
 const windowsPngs = windowsSizes.map((size) => path.join(iconDir, `${size}x${size}.png`));
 run(magick, [...windowsPngs, windowsIcon]);
 
+run('rsvg-convert', ['-w', '32', '-h', '32', sourceSvg, '-o', trayIcon]);
+
+const badgePath = path.join(assetsDir, 'badge.png');
+run(magick, [
+    '-size', '16x16',
+    'xc:none',
+    '-fill', '#b32d2d',
+    '-draw', 'circle 8,8 8,2',
+    badgePath,
+]);
+
 const iconStats = fs.statSync(windowsIcon);
 if (!iconStats.isFile() || iconStats.size === 0) {
     throw new Error(`Failed to create ${windowsIcon}`);
@@ -63,3 +77,5 @@ if (!iconStats.isFile() || iconStats.size === 0) {
 
 console.log(`Generated ${windowsIcon}`);
 console.log(`Generated ${pngFiles.length} PNG icons in ${iconDir}`);
+console.log(`Generated ${trayIcon}`);
+console.log(`Generated ${badgePath}`);

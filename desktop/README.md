@@ -235,6 +235,22 @@ The Web Push setting is hidden in desktop builds, and the desktop client does
 not negotiate `draft/webpush` or `soju.im/webpush`. Web builds keep the existing
 browser notification and Web Push behavior.
 
+## Tray and Close to Tray
+
+Desktop builds show a system tray icon while the app is running. The tray menu
+provides Show/Hide, a Close to Tray toggle, and Quit. The unread count and
+highlight state are reflected in the tray tooltip and, where the OS supports it,
+the application badge.
+
+Close to Tray is enabled by default when the tray is available. Closing the
+window then hides it instead of disconnecting IRC sessions. Disable it from
+**Settings → General → Close to Tray**, or from the tray menu. If the tray
+cannot be created, close-to-tray is disabled for the session and the window
+closes normally.
+
+The preference is stored in `<userData>/desktop-settings.json` and is not part
+of profile export/import.
+
 ## Window State
 
 Window size, position, and maximized state are stored in `window-state.json`
@@ -277,9 +293,10 @@ The desktop icons are generated from `static/kiwi.svg`:
 npm run icons
 ```
 
-This writes a multi-resolution `build/icon.ico` for Windows and PNG sizes under
-`build/icons/` for Linux. The generated files are committed so packaging does
-not need SVG tooling. Regenerating requires `rsvg-convert` and ImageMagick.
+This writes a multi-resolution `build/icon.ico` for Windows, PNG sizes under
+`build/icons/` for Linux, and the runtime tray and overlay assets under
+`assets/`. The generated files are committed so packaging does not need SVG
+tooling. Regenerating requires `rsvg-convert` and ImageMagick.
 
 ## Packaging
 

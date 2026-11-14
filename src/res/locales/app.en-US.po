@@ -738,6 +738,14 @@ msgstr "All"
 msgid "settings_block_private"
 msgstr "Block Direct Messages"
 
+#: Close the window to the system tray
+msgid "settings_close_to_tray"
+msgstr "Close to Tray"
+
+#: Close-to-tray hint
+msgid "settings_close_to_tray_hint"
+msgstr "Keep Kiwi IRC running in the system tray when the window is closed."
+
 #: Messages in scrollback
 msgid "settings_scrollback"
 msgstr "Scrollback Messages"

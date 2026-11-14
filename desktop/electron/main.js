@@ -3,10 +3,12 @@ const {
     BrowserWindow,
     Menu,
     Notification,
+    Tray,
     dialog,
     ipcMain,
     protocol,
     net,
+    nativeImage,
     safeStorage,
     screen,
     session,
@@ -42,6 +44,8 @@ const { MEDIA_SCHEME } = require('./media-url');
 const { createProfileStore, MAX_STORAGE_BYTES } = require('./profile-store');
 const { createSecretStore } = require('./secrets');
 const { createNotificationService } = require('./notifications');
+const { createDesktopSettingsStore } = require('./desktop-settings');
+const { createTrayService } = require('./tray');
 const { createChatLogStore } = require('./chat-log-store');
 const { addEmbedReferer } = require('./embed-referer');
 const { addAppFrameAncestor } = require('./twitch-embed-policy');
@@ -125,26 +129,25 @@ let desktopConfigPath = null;
 let profileStore = null;
 let secretStore = null;
 let notificationService = null;
+let desktopSettingsStore = null;
+let trayService = null;
 let chatLogStore = null;
 let availablePresets = [];
 let allowUnload = false;
+let isQuitting = false;
 
 if (!app.requestSingleInstanceLock()) {
     app.quit();
 } else {
     app.on('second-instance', () => {
-        if (!mainWindow) {
-            return;
-        }
-        if (mainWindow.isMinimized()) {
-            mainWindow.restore();
-        }
-        mainWindow.focus();
+        showMainWindow();
     });
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
             createWindow();
+        } else {
+            showMainWindow();
         }
     });
 
@@ -153,6 +156,8 @@ if (!app.requestSingleInstanceLock()) {
         const userDataDir = app.getPath('userData');
         profileStore = createProfileStore(userDataDir);
         secretStore = createSecretStore({ userDataDir, safeStorage });
+        desktopSettingsStore = createDesktopSettingsStore(userDataDir);
+        await desktopSettingsStore.load();
         notificationService = createNotificationService({
             Notification,
             getWindow: () => mainWindow,
@@ -175,6 +180,27 @@ if (!app.requestSingleInstanceLock()) {
         registerNetworkIconIpc();
         registerPresetIpc();
         registerNotificationIpc();
+        trayService = createTrayService({
+            app,
+            Tray,
+            Menu,
+            nativeImage,
+            getWindow: () => mainWindow,
+            getSettings: () => desktopSettingsStore.get(),
+            onChangeCloseToTray: (enabled) => {
+                saveCloseToTray(enabled).catch((err) => {
+                    console.error('Failed to update tray settings:', err);
+                });
+            },
+            onQuit: quitFromTray,
+            trayIconPath: resolveDesktopIcon('tray.png'),
+            badgeIconPath: resolveDesktopIcon('badge.png'),
+            platform: process.platform,
+        });
+        if (!trayService.create()) {
+            console.warn('System tray unavailable; close-to-tray is disabled.');
+        }
+        registerTrayIpc();
         buildApplicationMenu();
         await registerAppProtocol();
         registerThemeProtocol();
@@ -184,6 +210,9 @@ if (!app.requestSingleInstanceLock()) {
         registerEmbedRequestHeaders();
         registerTwitchFramePolicy();
         createWindow();
+        if (trayService) {
+            trayService.updateMenu();
+        }
         registerEmbedErrorForwarding();
     }).catch((err) => {
         console.error('Failed to start desktop shell:', err);
@@ -197,6 +226,13 @@ if (!app.requestSingleInstanceLock()) {
     });
 
     app.on('before-quit', () => {
+        isQuitting = true;
+
+        if (trayService) {
+            trayService.destroy();
+            trayService = null;
+        }
+
         if (notificationService) {
             notificationService.closeAll();
             notificationService = null;
@@ -521,6 +557,75 @@ function registerNotificationIpc() {
     ipcMain.handle('kiwi:notification-close', (event, id) => (
         notificationService ? notificationService.close(id) : false
     ));
+}
+
+function registerTrayIpc() {
+    ipcMain.on('kiwi:tray-supported', (event) => {
+        event.returnValue = !!(trayService && trayService.isAvailable());
+    });
+    ipcMain.handle('kiwi:tray-settings', () => (
+        desktopSettingsStore ?
+            desktopSettingsStore.get() :
+            { closeToTray: false }
+    ));
+    ipcMain.handle('kiwi:tray-settings-set', (event, patch) => {
+        if (!patch || typeof patch !== 'object' ||
+            typeof patch.closeToTray !== 'boolean'
+        ) {
+            throw new Error('invalid tray settings');
+        }
+        return saveCloseToTray(patch.closeToTray);
+    });
+    ipcMain.on('kiwi:tray-badge', (event, summary) => {
+        if (trayService) {
+            trayService.updateBadge(summary);
+        }
+    });
+}
+
+async function saveCloseToTray(enabled) {
+    if (!desktopSettingsStore) {
+        return { closeToTray: !!enabled };
+    }
+
+    const settings = await desktopSettingsStore.set({
+        closeToTray: !!enabled,
+    });
+    if (trayService) {
+        trayService.setCloseToTray(settings.closeToTray);
+    }
+    sendToRenderer('kiwi:tray-settings-changed', settings);
+    return settings;
+}
+
+function quitFromTray() {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        showMainWindow();
+    }
+    isQuitting = true;
+    app.quit();
+}
+
+function showMainWindow() {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+        return false;
+    }
+
+    if (mainWindow.isMinimized()) {
+        mainWindow.restore();
+    }
+    mainWindow.show();
+    mainWindow.focus();
+    if (trayService) {
+        trayService.updateMenu();
+    }
+    return true;
+}
+
+function resolveDesktopIcon(name) {
+    return app.isPackaged ?
+        path.join(process.resourcesPath, 'assets', name) :
+        path.join(__dirname, '..', 'assets', name);
 }
 
 function sendToRenderer(channel, ...args) {
@@ -916,7 +1021,7 @@ function createWindow() {
     window.on('move', scheduleWindowStateSave);
     window.on('maximize', scheduleWindowStateSave);
     window.on('unmaximize', scheduleWindowStateSave);
-    window.on('close', () => {
+    window.on('close', (event) => {
         if (stateTimer) {
             clearTimeout(stateTimer);
             stateTimer = null;
@@ -928,6 +1033,22 @@ function createWindow() {
             } catch (err) {
                 // Window state is best-effort.
             }
+        }
+
+        if (!isQuitting && trayService && trayService.shouldHideOnClose()) {
+            event.preventDefault();
+            window.hide();
+            trayService.updateMenu();
+        }
+    });
+    window.on('show', () => {
+        if (trayService) {
+            trayService.updateMenu();
+        }
+    });
+    window.on('hide', () => {
+        if (trayService) {
+            trayService.updateMenu();
         }
     });
     window.once('ready-to-show', () => {
@@ -946,6 +1067,9 @@ function createWindow() {
         }
         if (mainWindow === window) {
             mainWindow = null;
+        }
+        if (trayService) {
+            trayService.updateMenu();
         }
     });
 

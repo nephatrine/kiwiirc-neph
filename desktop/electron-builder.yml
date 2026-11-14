@@ -9,6 +9,8 @@ files:
 extraResources:
   - from: ../dist
     to: dist
+  - from: assets
+    to: assets
 linux:
   category: Network
   desktop:

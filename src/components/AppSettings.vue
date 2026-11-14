@@ -33,6 +33,17 @@
                                 <span>{{ $t('settings_block_private') }} </span>
                                 <input v-model="settingBufferBlockPms" type="checkbox">
                             </label>
+                            <label v-if="desktopTrayAvailable" class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_close_to_tray') }} </span>
+                                <input
+                                    v-model="desktopCloseToTray"
+                                    type="checkbox"
+                                    @change="saveDesktopCloseToTray"
+                                >
+                            </label>
+                            <p v-if="desktopTrayAvailable" class="kiwi-appsettings-hint">
+                                {{ $t('settings_close_to_tray_hint') }}
+                            </p>
                             <div
                                 v-if="canRegisterProtocolHandler"
                                 style="margin-top: 10px; text-align: center;"
@@ -848,6 +859,7 @@ import {
     serviceFromId
 } from '@/libs/fileupload';
 import desktop from '@/libs/desktop';
+import * as DesktopTray from '@/libs/desktop/Tray';
 import { getInstalledEmojiPackages, refreshLocalEmojiPacks } from '@/libs/LocalEmojiPacks';
 import { loadEmojiPacksSettings } from '@/libs/LazyLoad';
 import GlobalApi from '@/libs/GlobalApi';
@@ -908,6 +920,8 @@ export default {
             themeError: '',
             emojiPackInstallBusy: false,
             emojiPackError: '',
+            desktopTrayAvailable: false,
+            desktopCloseToTray: false,
             pluginUiElements: GlobalApi.singleton().appSettingsPlugins,
             generalSettingsBlocks: GlobalApi.singleton().generalSettingsBlocks,
             networkSettingsBlocks: GlobalApi.singleton().networkSettingsBlocks,
@@ -1215,11 +1229,44 @@ export default {
     created() {
         this.listenForThemeSettings();
 
+        this.desktopTrayAvailable = DesktopTray.isAvailable();
+        if (this.desktopTrayAvailable) {
+            this.loadDesktopTraySettings();
+            const removeTrayListener = DesktopTray.onSettingsChanged((settings) => {
+                if (settings && typeof settings.closeToTray === 'boolean') {
+                    this.desktopCloseToTray = settings.closeToTray;
+                }
+            });
+            this.$once('hook:destroyed', removeTrayListener);
+        }
+
         this.listen(this.$state, 'settings.tab.show', (tabName) => {
             this.showTab(tabName);
         });
     },
     methods: {
+        async loadDesktopTraySettings() {
+            try {
+                const settings = await DesktopTray.getSettings();
+                if (settings && typeof settings.closeToTray === 'boolean') {
+                    this.desktopCloseToTray = settings.closeToTray;
+                }
+            } catch (err) {
+                // Tray settings are optional.
+            }
+        },
+        async saveDesktopCloseToTray() {
+            try {
+                const settings = await DesktopTray.setSettings({
+                    closeToTray: this.desktopCloseToTray,
+                });
+                if (settings && typeof settings.closeToTray === 'boolean') {
+                    this.desktopCloseToTray = settings.closeToTray;
+                }
+            } catch (err) {
+                // Tray settings are optional.
+            }
+        },
         closeSettings() {
             this.$state.$emit('active.component');
         },

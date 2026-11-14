@@ -13,6 +13,8 @@ and this project adheres to
 - **Desktop Notifications**: Added native system notifications with
   click-to-open behavior, tag replacement, TTL handling, and focused-window
   suppression.
+- **Desktop Tray**: Added a system tray icon with show/hide, unread badges,
+  highlight tooltips, close-to-tray, and an explicit Quit action.
 - **Nicklist**: Added an optional Grouped Nicklists setting that shows Owner,
   Operator, Half-Op, Voiced, Users/Online, and Offline headings based on each
   user's highest channel privilege.
@@ -172,6 +174,9 @@ and this project adheres to
 
 - **Desktop Web Push**: Desktop builds now use native notifications and no
   longer negotiate or expose browser Web Push.
+- **Desktop Window**: Closing the window now hides it to the system tray by
+  default when the tray is available, keeping IRC connections alive. The General
+  settings page and tray menu provide a Close to Tray toggle.
 - **Avatars**: The default away-status indicator position is now bottom-right.
 - **Presets**: The browser header preset switcher is now optional through a
   default-on Show Preset Switcher setting in Appearance. The Electron app keeps

@@ -99,6 +99,7 @@ import GlobalApi from '@/libs/GlobalApi';
 import desktop from '@/libs/desktop';
 import ThemeManager from '@/libs/ThemeManager';
 import * as Notifications from '@/libs/Notifications';
+import { listenForUnread } from '@/libs/DesktopBadge';
 import * as bufferTools from '@/libs/bufferTools';
 import Logger from '@/libs/Logger';
 
@@ -161,6 +162,7 @@ export default {
         this.initStateBrowser();
         this.initMediaviewer();
         this.configureFavicon();
+        listenForUnread(this.$state);
 
         this.listen(document, 'visibilitychange', this.onVisibilityChange);
         this.listen(document, 'keydown', (event) => this.onKeyDown(event));

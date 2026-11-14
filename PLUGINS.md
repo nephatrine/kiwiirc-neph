@@ -792,6 +792,9 @@ Available helpers:
 - `files.isAvailable()`
 - `media.proxyUrl(url)`
 - `media.isAvailable()`
+- `notifications.show({ id, title, body, tag, ttl })`
+- `notifications.close(id)`
+- `notifications.isAvailable()`
 - `secrets.status()`
 - `secrets.load(stateKey)`
 - `secrets.save(stateKey, values)`
@@ -811,6 +814,11 @@ feature-detect it.
 `media.proxyUrl()` returns the original URL when the proxy is unavailable or the
 URL is not HTTP(S). Use it for direct image, audio, and video sources, not for
 iframe embeds.
+
+`notifications.show()` sends a native system notification through the desktop
+bridge. Check `notifications.isAvailable()` first. The main process validates
+the title, body, tag, and TTL before displaying anything. Desktop builds do not
+use Web Push.
 
 `secrets.*` is desktop-only and intended for profile credential handling. Never
 log, display, or include returned secrets in plugin diagnostics. Profile bundles

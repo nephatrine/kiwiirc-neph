@@ -391,6 +391,35 @@ describe('AppSettings channel defaults', () => {
         expect(s.setting('nicklistGroupAway')).toBe(true);
     });
 
+    it('loads and saves desktop close-to-tray settings', async() => {
+        window.kiwiDesktop = {
+            tray: {
+                isAvailable: () => true,
+                getSettings: jest.fn(() => Promise.resolve({
+                    closeToTray: false,
+                })),
+                setSettings: jest.fn(() => Promise.resolve({
+                    closeToTray: true,
+                })),
+            },
+        };
+        const ctx = {
+            desktopTrayAvailable: true,
+            desktopCloseToTray: true,
+        };
+
+        await AppSettings.methods.loadDesktopTraySettings.call(ctx);
+        expect(ctx.desktopCloseToTray).toBe(false);
+
+        ctx.desktopCloseToTray = true;
+        await AppSettings.methods.saveDesktopCloseToTray.call(ctx);
+
+        expect(window.kiwiDesktop.tray.setSettings).toHaveBeenCalledWith({
+            closeToTray: true,
+        });
+        expect(ctx.desktopCloseToTray).toBe(true);
+    });
+
     it('defaults grouped nicklists off and binds the setting', () => {
         expect(s.setting('nicklistGrouped')).toBe(false);
         expect(getComputed('settingNicklistGrouped')).toBe(false);
