@@ -27,6 +27,7 @@
             </div>
         </div>
         <RecycleScroller
+            v-if="!groupedNicklists"
             :items="sortedUsers"
             :item-size="shouldShowAvatars ? 38 : 26"
             :key-field="'id'"
@@ -36,6 +37,36 @@
                 <nicklist-user :key="item.id" :user="item" :nicklist="self" :network="network" />
             </template>
         </RecycleScroller>
+        <DynamicScroller
+            v-else
+            :items="groupedNicklistItems"
+            :min-item-size="shouldShowAvatars ? 38 : 26"
+            class="kiwi-nicklist-users"
+        >
+            <template #default="{ item, index, active }">
+                <DynamicScrollerItem
+                    :item="item"
+                    :active="active"
+                    :data-index="index"
+                >
+                    <div
+                        v-if="item.type === 'heading'"
+                        class="kiwi-nicklist-group-heading"
+                        role="heading"
+                        aria-level="3"
+                    >
+                        {{ $t(item.labelKey) }}
+                    </div>
+                    <nicklist-user
+                        v-else
+                        :key="item.user.id"
+                        :user="item.user"
+                        :nicklist="self"
+                        :network="network"
+                    />
+                </DynamicScrollerItem>
+            </template>
+        </DynamicScroller>
     </div>
 </template>
 
@@ -44,6 +75,7 @@
 
 import Logger from '@/libs/Logger';
 import * as Misc from '@/helpers/Misc';
+import { buildNicklistGroups } from '@/helpers/NicklistGroups';
 
 import NicklistUser from './NicklistUser';
 
@@ -153,6 +185,16 @@ export default {
                 // Prefixes are the same, resort to comparing text
                 return Misc.strCompare(nickMap[a.nick], nickMap[b.nick]);
             });
+        },
+        groupedNicklists() {
+            return this.$state.setting('nicklistGrouped');
+        },
+        groupedNicklistItems() {
+            return buildNicklistGroups(
+                this.buffer,
+                this.sortedUsers,
+                this.$state.setting('nicklistGroupAway')
+            );
         },
         allUsersCount() {
             return Object.keys(this.buffer.users).length;
@@ -273,6 +315,21 @@ export default {
         height: 0;
         visibility: hidden;
     }
+}
+
+.kiwi-nicklist-group-heading {
+    box-sizing: border-box;
+    padding: 9px 10px 2px;
+    overflow: hidden;
+    font-size: 0.72em;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.06em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+    opacity: 0.55;
+    user-select: none;
 }
 
 .kiwi-nicklist-users {

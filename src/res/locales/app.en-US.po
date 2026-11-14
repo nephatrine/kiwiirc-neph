@@ -498,6 +498,10 @@ msgstr "Monospace"
 msgid "settings_use_monospace"
 msgstr "Monospaced Font"
 
+#: Group nicklist users by channel privilege
+msgid "settings_grouped_nicklists"
+msgstr "Grouped Nicklists"
+
 #: Use Kiwi as my default IRC client
 msgid "settings_default_handler"
 msgstr "Set as Default IRC Client"
@@ -1350,6 +1354,34 @@ msgstr "{{count}} Users Here"
 #: Filter users in channel
 msgid "filter_users"
 msgstr "Filter Users"
+
+#: Nicklist group for channel owners
+msgid "nicklist_group_owner"
+msgstr "Owner"
+
+#: Nicklist group for channel operators
+msgid "nicklist_group_operator"
+msgstr "Operator"
+
+#: Nicklist group for channel half-operators
+msgid "nicklist_group_halfop"
+msgstr "Half-Op"
+
+#: Nicklist group for voiced users
+msgid "nicklist_group_voiced"
+msgstr "Voiced"
+
+#: Nicklist group for users without a channel privilege
+msgid "nicklist_group_users"
+msgstr "Users"
+
+#: Nicklist group for online users without a channel privilege
+msgid "nicklist_group_online"
+msgstr "Online"
+
+#: Nicklist group for away users without a channel privilege
+msgid "nicklist_group_offline"
+msgstr "Away"
 
 #: Reconnect to join {{channel}}
 msgid "reconnect_channel"

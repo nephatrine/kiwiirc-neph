@@ -73,6 +73,10 @@
                                 <span>{{ $t('settings_use_monospace') }} </span>
                                 <input v-model="settingUseMonospace" type="checkbox">
                             </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_grouped_nicklists') }} </span>
+                                <input v-model="settingNicklistGrouped" type="checkbox">
+                            </label>
                             <div
                                 v-if="desktopThemesAvailable"
                                 class="kiwi-appsettings-installed-themes"
@@ -1065,6 +1069,7 @@ export default {
         settingEmojiPickerMaxVersion: bindSetting('emojiPickerMaxVersion'),
         settingAutoReconnect: bindSetting('autoReconnect'),
         settingUseMonospace: bindSetting('useMonospace'),
+        settingNicklistGrouped: bindSetting('nicklistGrouped'),
         settingShowPresetSwitcher: bindSetting('showPresetSwitcher'),
         settingHighlights: bindSetting('highlights'),
         settingShowEmojiPicker: bindSetting('showEmojiPicker'),

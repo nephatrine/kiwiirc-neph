@@ -25,7 +25,7 @@ import getState from '@/libs/state';
 const avatarPositions = [45, 135, 225, 315];
 export function getAvatarTransform() {
     const position = getState().setting('avatars.away_status_position');
-    const angle = avatarPositions[position - 1] || 45;
+    const angle = avatarPositions[position - 1] || 135;
     return `rotate(${angle} 50 50)`;
 }
 

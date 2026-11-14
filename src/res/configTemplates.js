@@ -146,7 +146,7 @@ export const configTemplates = {
             lenient_rerouting: true,
         },
         avatars: {
-            away_status_position: 1,
+            away_status_position: 2,
             initials_length: 1,
             show_image_background: true,
             show_without_user: false,
@@ -183,6 +183,7 @@ export const configTemplates = {
         allowRegisterProtocolHandler: false,
         noticeActiveBuffer: true,
         nicklistGroupAway: true,
+        nicklistGrouped: false,
         showChanlistModes: false,
         showAutocomplete: true,
         autocompleteTokens: ['/', '#', '@'],

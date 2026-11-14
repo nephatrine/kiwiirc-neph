@@ -387,8 +387,18 @@ describe('AppSettings channel defaults', () => {
             .toBe(true);
     });
 
-    it('groups away users in the nicklist by default', () => {
+    it('sorts away users in the nicklist by default', () => {
         expect(s.setting('nicklistGroupAway')).toBe(true);
+    });
+
+    it('defaults grouped nicklists off and binds the setting', () => {
+        expect(s.setting('nicklistGrouped')).toBe(false);
+        expect(getComputed('settingNicklistGrouped')).toBe(false);
+
+        setComputed('settingNicklistGrouped', true);
+
+        expect(s.setting('nicklistGrouped')).toBe(true);
+        expect(getComputed('settingNicklistGrouped')).toBe(true);
     });
 
     it.each(bindings)('binds %s to buffers.%s', (computedName, key, value) => {
@@ -404,7 +414,7 @@ describe('AppSettings channel defaults', () => {
         expect(getComputed('settingAvatarFallbackStyle')).toBe(LOCAL_IDENTICON);
         expect(getComputed('settingAvatarFallbackUrl')).toBe('');
         expect(getComputed('settingAvatarShowImageBackground')).toBe(true);
-        expect(getComputed('settingAvatarAwayStatusPosition')).toBe(1);
+        expect(getComputed('settingAvatarAwayStatusPosition')).toBe(2);
 
         setComputed('settingAvatarFallbackUrl', 'https://example.com/{nickname}');
         setComputed('settingAvatarShowImageBackground', false);
