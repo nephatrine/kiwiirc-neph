@@ -45,7 +45,9 @@ const { createProfileStore, MAX_STORAGE_BYTES } = require('./profile-store');
 const { createSecretStore } = require('./secrets');
 const { createNotificationService } = require('./notifications');
 const { createDesktopSettingsStore } = require('./desktop-settings');
+const { createAutoLaunchService } = require('./auto-launch');
 const { createTrayService } = require('./tray');
+const { buildEditableContextMenuTemplate } = require('./spellcheck-menu');
 const { createChatLogStore } = require('./chat-log-store');
 const { addEmbedReferer } = require('./embed-referer');
 const { addAppFrameAncestor } = require('./twitch-embed-policy');
@@ -130,6 +132,7 @@ let profileStore = null;
 let secretStore = null;
 let notificationService = null;
 let desktopSettingsStore = null;
+let autoLaunchService = null;
 let trayService = null;
 let chatLogStore = null;
 let availablePresets = [];
@@ -158,6 +161,19 @@ if (!app.requestSingleInstanceLock()) {
         secretStore = createSecretStore({ userDataDir, safeStorage });
         desktopSettingsStore = createDesktopSettingsStore(userDataDir);
         await desktopSettingsStore.load();
+        autoLaunchService = createAutoLaunchService({
+            app,
+            platform: process.platform,
+            execPath: process.execPath,
+            env: process.env,
+            isPackaged: app.isPackaged,
+        });
+        try {
+            await autoLaunchService.apply(desktopSettingsStore.get().autoLaunch);
+        } catch (err) {
+            console.error('Failed to apply auto-launch settings:', err);
+        }
+        configureSpellchecker(desktopSettingsStore.get());
         notificationService = createNotificationService({
             Notification,
             getWindow: () => mainWindow,
@@ -180,6 +196,8 @@ if (!app.requestSingleInstanceLock()) {
         registerNetworkIconIpc();
         registerPresetIpc();
         registerNotificationIpc();
+        registerDesktopSettingsIpc();
+        registerAutoLaunchIpc();
         trayService = createTrayService({
             app,
             Tray,
@@ -188,8 +206,10 @@ if (!app.requestSingleInstanceLock()) {
             getWindow: () => mainWindow,
             getSettings: () => desktopSettingsStore.get(),
             onChangeCloseToTray: (enabled) => {
-                saveCloseToTray(enabled).catch((err) => {
-                    console.error('Failed to update tray settings:', err);
+                saveDesktopSettings({
+                    closeToTray: enabled,
+                }).catch((err) => {
+                    console.error('Failed to update desktop settings:', err);
                 });
             },
             onQuit: quitFromTray,
@@ -209,7 +229,11 @@ if (!app.requestSingleInstanceLock()) {
         registerMediaProtocol();
         registerEmbedRequestHeaders();
         registerTwitchFramePolicy();
-        createWindow();
+        const startHidden = !isDev &&
+            process.argv.includes('--hidden') &&
+            trayService.isAvailable() &&
+            desktopSettingsStore.get().closeToTray;
+        createWindow(startHidden);
         if (trayService) {
             trayService.updateMenu();
         }
@@ -559,22 +583,34 @@ function registerNotificationIpc() {
     ));
 }
 
+function registerDesktopSettingsIpc() {
+    ipcMain.handle('kiwi:desktop-settings', () => (
+        desktopSettingsStore ?
+            desktopSettingsStore.get() :
+            {}
+    ));
+    ipcMain.handle('kiwi:desktop-settings-set', (event, patch) => {
+        if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+            throw new Error('invalid desktop settings');
+        }
+
+        const next = {};
+        ['closeToTray', 'spellcheck'].forEach((key) => {
+            if (typeof patch[key] === 'boolean') {
+                next[key] = patch[key];
+            }
+        });
+        if (!Object.keys(next).length) {
+            throw new Error('invalid desktop settings');
+        }
+
+        return saveDesktopSettings(next);
+    });
+}
+
 function registerTrayIpc() {
     ipcMain.on('kiwi:tray-supported', (event) => {
         event.returnValue = !!(trayService && trayService.isAvailable());
-    });
-    ipcMain.handle('kiwi:tray-settings', () => (
-        desktopSettingsStore ?
-            desktopSettingsStore.get() :
-            { closeToTray: false }
-    ));
-    ipcMain.handle('kiwi:tray-settings-set', (event, patch) => {
-        if (!patch || typeof patch !== 'object' ||
-            typeof patch.closeToTray !== 'boolean'
-        ) {
-            throw new Error('invalid tray settings');
-        }
-        return saveCloseToTray(patch.closeToTray);
     });
     ipcMain.on('kiwi:tray-badge', (event, summary) => {
         if (trayService) {
@@ -583,18 +619,71 @@ function registerTrayIpc() {
     });
 }
 
-async function saveCloseToTray(enabled) {
+function registerAutoLaunchIpc() {
+    ipcMain.handle('kiwi:auto-launch-get', async() => {
+        if (!autoLaunchService || !autoLaunchService.isSupported()) {
+            return {
+                supported: false,
+                enabled: false,
+            };
+        }
+        return {
+            supported: true,
+            enabled: await autoLaunchService.isEnabled(),
+        };
+    });
+    ipcMain.handle('kiwi:auto-launch-set', async(event, enabled) => {
+        if (typeof enabled !== 'boolean') {
+            throw new Error('invalid auto-launch setting');
+        }
+        if (!autoLaunchService || !autoLaunchService.isSupported()) {
+            return {
+                supported: false,
+                enabled: false,
+            };
+        }
+
+        await autoLaunchService.setEnabled(enabled);
+        await desktopSettingsStore.set({
+            autoLaunch: enabled,
+        });
+        return {
+            supported: true,
+            enabled: await autoLaunchService.isEnabled(),
+        };
+    });
+}
+
+function configureSpellchecker(settings) {
+    try {
+        const defaultSession = session.defaultSession;
+        defaultSession.setSpellCheckerEnabled(!!settings.spellcheck);
+
+        const available = defaultSession.availableSpellCheckerLanguages || [];
+        const preferred = (app.getPreferredSystemLanguages() || [])
+            .map((language) => String(language).replace(/_/g, '-'))
+            .filter((language) => available.includes(language));
+        if (preferred.length) {
+            defaultSession.setSpellCheckerLanguages(preferred);
+        }
+    } catch (err) {
+        console.error('Failed to configure spellcheck:', err);
+    }
+}
+
+async function saveDesktopSettings(patch) {
     if (!desktopSettingsStore) {
-        return { closeToTray: !!enabled };
+        return {};
     }
 
-    const settings = await desktopSettingsStore.set({
-        closeToTray: !!enabled,
-    });
-    if (trayService) {
+    const settings = await desktopSettingsStore.set(patch);
+    if (Object.prototype.hasOwnProperty.call(patch, 'closeToTray') && trayService) {
         trayService.setCloseToTray(settings.closeToTray);
     }
-    sendToRenderer('kiwi:tray-settings-changed', settings);
+    if (Object.prototype.hasOwnProperty.call(patch, 'spellcheck')) {
+        configureSpellchecker(settings);
+    }
+    sendToRenderer('kiwi:desktop-settings-changed', settings);
     return settings;
 }
 
@@ -956,7 +1045,7 @@ function registerMediaProtocol() {
     ));
 }
 
-function createWindow() {
+function createWindow(startHidden = false) {
     const userDataDir = app.getPath('userData');
     const savedState = loadWindowState(userDataDir);
     const bounds = restoreWindowState(
@@ -979,6 +1068,7 @@ function createWindow() {
             sandbox: true,
             nodeIntegration: false,
             webSecurity: true,
+            spellcheck: true,
             // IRC needs keepalives and reconnect timers to keep running while
             // the window is minimized or behind another application.
             backgroundThrottling: false,
@@ -1042,11 +1132,13 @@ function createWindow() {
         }
     });
     window.on('show', () => {
+        sendToRenderer('kiwi:window-visibility', true);
         if (trayService) {
             trayService.updateMenu();
         }
     });
     window.on('hide', () => {
+        sendToRenderer('kiwi:window-visibility', false);
         if (trayService) {
             trayService.updateMenu();
         }
@@ -1055,7 +1147,25 @@ function createWindow() {
         if (savedState && savedState.maximized) {
             window.maximize();
         }
-        window.show();
+        if (!startHidden) {
+            window.show();
+        }
+    });
+    window.webContents.on('did-finish-load', () => {
+        sendToRenderer('kiwi:window-visibility', window.isVisible());
+    });
+    window.webContents.on('context-menu', (event, params) => {
+        if (!params.isEditable) {
+            return;
+        }
+
+        const template = buildEditableContextMenuTemplate(params, {
+            replaceMisspelling: (word) => window.webContents.replaceMisspelling(word),
+            addToDictionary: (word) => (
+                window.webContents.session.addWordToSpellCheckerDictionary(word)
+            ),
+        });
+        Menu.buildFromTemplate(template).popup({ window });
     });
     window.on('closed', () => {
         if (stateTimer) {

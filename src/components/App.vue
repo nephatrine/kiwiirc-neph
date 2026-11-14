@@ -97,6 +97,7 @@ import MediaLightbox from '@/components/MediaLightbox';
 import { State as SidebarState } from '@/components/Sidebar';
 import GlobalApi from '@/libs/GlobalApi';
 import desktop from '@/libs/desktop';
+import * as DesktopWindowVisibility from '@/libs/desktop/WindowVisibility';
 import ThemeManager from '@/libs/ThemeManager';
 import * as Notifications from '@/libs/Notifications';
 import { listenForUnread } from '@/libs/DesktopBadge';
@@ -163,6 +164,10 @@ export default {
         this.initMediaviewer();
         this.configureFavicon();
         listenForUnread(this.$state);
+        DesktopWindowVisibility.onChange((visible) => {
+            this.$state.ui.app_has_focus = visible;
+            this.applyVisibility(visible);
+        });
 
         this.listen(document, 'visibilitychange', this.onVisibilityChange);
         this.listen(document, 'keydown', (event) => this.onKeyDown(event));

@@ -736,6 +736,22 @@ msgstr "Close to Tray"
 msgid "settings_close_to_tray_hint"
 msgstr "Keep Kiwi IRC running in the system tray when the window is closed."
 
+#: Launch at login
+msgid "settings_launch_at_login"
+msgstr "Launch at Login"
+
+#: Launch-at-login hint
+msgid "settings_launch_at_login_hint"
+msgstr "Start Kiwi IRC when you sign in."
+
+#: Spellcheck
+msgid "settings_spellcheck"
+msgstr "Spellcheck"
+
+#: Spellcheck hint
+msgid "settings_spellcheck_hint"
+msgstr "Underline misspelled words in the message input."
+
 #: Messages in scrollback
 msgid "settings_scrollback"
 msgstr "Scrollback Messages"

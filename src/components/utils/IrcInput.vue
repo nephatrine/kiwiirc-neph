@@ -26,6 +26,7 @@
 'kiwi public';
 
 import Vue from 'vue';
+import { filesFromClipboard } from '@/helpers/ClipboardFiles';
 import * as Colours from '@/helpers/Colours';
 import { htmlToIrc } from '@/helpers/HtmlToIrc';
 import * as EmojiProvider from '@/libs/EmojiProvider';
@@ -68,9 +69,15 @@ export default Vue.component('irc-input', {
         onPaste(event) {
             event.preventDefault();
             if (typeof event.clipboardData !== 'undefined') {
-                let ignoreThisPaste = false;
                 let clpData = event.clipboardData;
-                clpData.types.forEach((type) => {
+                const files = filesFromClipboard(clpData);
+                if (files.length) {
+                    this.$emit('files', files);
+                    return;
+                }
+
+                let ignoreThisPaste = false;
+                Array.from(clpData.types || []).forEach((type) => {
                     let ignoreTypes = ['Files', 'image'];
                     ignoreTypes.forEach((ig) => {
                         if (type.indexOf(ig) > -1) {
@@ -80,9 +87,6 @@ export default Vue.component('irc-input', {
                 });
 
                 if (ignoreThisPaste) {
-                    if (clpData.files && clpData.files.length) {
-                        this.$emit('files', clpData.files);
-                    }
                     return;
                 }
 

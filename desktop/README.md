@@ -248,8 +248,35 @@ window then hides it instead of disconnecting IRC sessions. Disable it from
 cannot be created, close-to-tray is disabled for the session and the window
 closes normally.
 
-The preference is stored in `<userData>/desktop-settings.json` and is not part
-of profile export/import.
+Close to Tray, Launch at Login, and Spellcheck preferences are stored in
+`<userData>/desktop-settings.json` and are not part of profile export/import.
+
+## Auto-Launch
+
+**Settings → General → Launch at Login** starts Kiwi IRC when the user signs in.
+It is available only in packaged builds and defaults off.
+
+Windows and macOS use the Electron login-item API. Linux writes an XDG autostart
+entry under `$XDG_CONFIG_HOME/autostart/kiwiirc-desktop.desktop`, using
+`APPIMAGE` when running as an AppImage.
+
+When the app starts with `--hidden`, it stays hidden only if the tray is
+available and Close to Tray is enabled. Otherwise the window opens normally.
+
+## Spellcheck
+
+Electron spellcheck is enabled for editable fields and uses the system
+languages. Right-clicking a misspelled word shows suggestions and an **Add to
+Dictionary** action, followed by the normal edit actions.
+
+**Settings → General → Spellcheck** toggles the checker. A language picker is
+not yet available.
+
+## Clipboard Image Paste
+
+Pasting an image from the clipboard sends it through the same upload queue as
+the file picker and drag-and-drop. The existing upload service, size limits, and
+error messages apply. Clipboard text paste is unchanged.
 
 ## Window State
 

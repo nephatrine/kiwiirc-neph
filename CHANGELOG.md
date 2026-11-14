@@ -15,6 +15,9 @@ and this project adheres to
   suppression.
 - **Desktop Tray**: Added a system tray icon with show/hide, unread badges,
   highlight tooltips, close-to-tray, and an explicit Quit action.
+- **Desktop Integrations**: Added launch-at-login support on Linux and Windows,
+  native spellcheck suggestions with Add to Dictionary, and clipboard image
+  paste through the existing upload services.
 - **Nicklist**: Added an optional Grouped Nicklists setting that shows Owner,
   Operator, Half-Op, Voiced, Users/Online, and Offline headings based on each
   user's highest channel privilege.

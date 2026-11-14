@@ -6,14 +6,23 @@ const SETTINGS_VERSION = 1;
 const DEFAULT_SETTINGS = Object.freeze({
     version: SETTINGS_VERSION,
     closeToTray: true,
+    autoLaunch: false,
+    spellcheck: true,
 });
 
 function normalizeSettings(value) {
+    const source = value && typeof value === 'object' ? value : {};
     return {
         version: SETTINGS_VERSION,
-        closeToTray: value && typeof value.closeToTray === 'boolean' ?
-            value.closeToTray :
+        closeToTray: typeof source.closeToTray === 'boolean' ?
+            source.closeToTray :
             DEFAULT_SETTINGS.closeToTray,
+        autoLaunch: typeof source.autoLaunch === 'boolean' ?
+            source.autoLaunch :
+            DEFAULT_SETTINGS.autoLaunch,
+        spellcheck: typeof source.spellcheck === 'boolean' ?
+            source.spellcheck :
+            DEFAULT_SETTINGS.spellcheck,
     };
 }
 

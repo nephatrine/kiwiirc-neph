@@ -3,7 +3,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 const EMBED_ERROR_CHANNEL = 'kiwi:embed-error';
 const NOTIFICATION_CLICK_CHANNEL = 'kiwi:notification-click';
 const NOTIFICATION_CLOSED_CHANNEL = 'kiwi:notification-closed';
-const TRAY_SETTINGS_CHANGED_CHANNEL = 'kiwi:tray-settings-changed';
+const DESKTOP_SETTINGS_CHANGED_CHANNEL = 'kiwi:desktop-settings-changed';
+const WINDOW_VISIBILITY_CHANNEL = 'kiwi:window-visibility';
 const embedErrorHandlers = new Set();
 let embedErrorListening = false;
 let cachedConfig = null;
@@ -47,7 +48,7 @@ function notificationEventHandler(channel) {
 const onNotificationClick = notificationEventHandler(NOTIFICATION_CLICK_CHANNEL);
 const onNotificationClosed = notificationEventHandler(NOTIFICATION_CLOSED_CHANNEL);
 
-function traySettingsEventHandler() {
+function valueEventHandler(channel) {
     const handlers = new Set();
     let listening = false;
 
@@ -56,12 +57,12 @@ function traySettingsEventHandler() {
             return;
         }
         listening = true;
-        ipcRenderer.on(TRAY_SETTINGS_CHANGED_CHANNEL, (event, settings) => {
+        ipcRenderer.on(channel, (event, value) => {
             handlers.forEach((handler) => {
                 try {
-                    handler(settings);
+                    handler(value);
                 } catch (err) {
-                    // One tray handler must not block the others.
+                    // One handler must not block the others.
                 }
             });
         });
@@ -79,7 +80,8 @@ function traySettingsEventHandler() {
     };
 }
 
-const onTraySettingsChanged = traySettingsEventHandler();
+const onDesktopSettingsChanged = valueEventHandler(DESKTOP_SETTINGS_CHANGED_CHANNEL);
+const onWindowVisibilityChange = valueEventHandler(WINDOW_VISIBILITY_CHANNEL);
 
 function listenForEmbedErrors() {
     if (embedErrorListening) {
@@ -205,12 +207,21 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
         onClick: onNotificationClick,
         onClose: onNotificationClosed,
     },
+    settings: {
+        get: () => ipcRenderer.invoke('kiwi:desktop-settings'),
+        set: (patch) => ipcRenderer.invoke('kiwi:desktop-settings-set', patch),
+        onChanged: onDesktopSettingsChanged,
+    },
+    autoLaunch: {
+        get: () => ipcRenderer.invoke('kiwi:auto-launch-get'),
+        set: (enabled) => ipcRenderer.invoke('kiwi:auto-launch-set', enabled),
+    },
+    windowVisibility: {
+        onChange: onWindowVisibilityChange,
+    },
     tray: {
         isAvailable: () => traySupported,
-        getSettings: () => ipcRenderer.invoke('kiwi:tray-settings'),
-        setSettings: (settings) => ipcRenderer.invoke('kiwi:tray-settings-set', settings),
         setBadge: (summary) => ipcRenderer.send('kiwi:tray-badge', summary),
-        onSettingsChanged: onTraySettingsChanged,
     },
     presets: {
         onApply: (handler) => {

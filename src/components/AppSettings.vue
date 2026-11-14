@@ -44,6 +44,40 @@
                             <p v-if="desktopTrayAvailable" class="kiwi-appsettings-hint">
                                 {{ $t('settings_close_to_tray_hint') }}
                             </p>
+                            <label
+                                v-if="desktopAutoLaunchAvailable"
+                                class="u-checkbox-wrapper"
+                            >
+                                <span>{{ $t('settings_launch_at_login') }} </span>
+                                <input
+                                    v-model="desktopAutoLaunch"
+                                    type="checkbox"
+                                    @change="saveDesktopAutoLaunch"
+                                >
+                            </label>
+                            <p
+                                v-if="desktopAutoLaunchAvailable"
+                                class="kiwi-appsettings-hint"
+                            >
+                                {{ $t('settings_launch_at_login_hint') }}
+                            </p>
+                            <label
+                                v-if="desktopSettingsAvailable"
+                                class="u-checkbox-wrapper"
+                            >
+                                <span>{{ $t('settings_spellcheck') }} </span>
+                                <input
+                                    v-model="desktopSpellcheck"
+                                    type="checkbox"
+                                    @change="saveDesktopSpellcheck"
+                                >
+                            </label>
+                            <p
+                                v-if="desktopSettingsAvailable"
+                                class="kiwi-appsettings-hint"
+                            >
+                                {{ $t('settings_spellcheck_hint') }}
+                            </p>
                             <div
                                 v-if="canRegisterProtocolHandler"
                                 style="margin-top: 10px; text-align: center;"
@@ -859,6 +893,8 @@ import {
     serviceFromId
 } from '@/libs/fileupload';
 import desktop from '@/libs/desktop';
+import * as DesktopAutoLaunch from '@/libs/desktop/AutoLaunch';
+import * as DesktopSettings from '@/libs/desktop/Settings';
 import * as DesktopTray from '@/libs/desktop/Tray';
 import { getInstalledEmojiPackages, refreshLocalEmojiPacks } from '@/libs/LocalEmojiPacks';
 import { loadEmojiPacksSettings } from '@/libs/LazyLoad';
@@ -921,7 +957,11 @@ export default {
             emojiPackInstallBusy: false,
             emojiPackError: '',
             desktopTrayAvailable: false,
+            desktopSettingsAvailable: false,
             desktopCloseToTray: false,
+            desktopAutoLaunchAvailable: false,
+            desktopAutoLaunch: false,
+            desktopSpellcheck: true,
             pluginUiElements: GlobalApi.singleton().appSettingsPlugins,
             generalSettingsBlocks: GlobalApi.singleton().generalSettingsBlocks,
             networkSettingsBlocks: GlobalApi.singleton().networkSettingsBlocks,
@@ -1230,41 +1270,82 @@ export default {
         this.listenForThemeSettings();
 
         this.desktopTrayAvailable = DesktopTray.isAvailable();
-        if (this.desktopTrayAvailable) {
-            this.loadDesktopTraySettings();
-            const removeTrayListener = DesktopTray.onSettingsChanged((settings) => {
-                if (settings && typeof settings.closeToTray === 'boolean') {
+        this.desktopSettingsAvailable = DesktopSettings.isAvailable();
+        if (this.desktopSettingsAvailable) {
+            const removeSettingsListener = DesktopSettings.onChanged((settings) => {
+                if (!settings) {
+                    return;
+                }
+                if (typeof settings.closeToTray === 'boolean') {
                     this.desktopCloseToTray = settings.closeToTray;
                 }
+                if (typeof settings.spellcheck === 'boolean') {
+                    this.desktopSpellcheck = settings.spellcheck;
+                }
             });
-            this.$once('hook:destroyed', removeTrayListener);
+            this.$once('hook:destroyed', removeSettingsListener);
         }
+        this.loadDesktopSettings();
 
         this.listen(this.$state, 'settings.tab.show', (tabName) => {
             this.showTab(tabName);
         });
     },
     methods: {
-        async loadDesktopTraySettings() {
+        async loadDesktopSettings() {
             try {
-                const settings = await DesktopTray.getSettings();
-                if (settings && typeof settings.closeToTray === 'boolean') {
-                    this.desktopCloseToTray = settings.closeToTray;
+                const settings = await DesktopSettings.get();
+                if (settings) {
+                    if (typeof settings.closeToTray === 'boolean') {
+                        this.desktopCloseToTray = settings.closeToTray;
+                    }
+                    if (typeof settings.spellcheck === 'boolean') {
+                        this.desktopSpellcheck = settings.spellcheck;
+                    }
                 }
             } catch (err) {
-                // Tray settings are optional.
+                // Desktop settings are optional.
+            }
+
+            try {
+                const autoLaunch = await DesktopAutoLaunch.get();
+                this.desktopAutoLaunchAvailable = !!autoLaunch.supported;
+                this.desktopAutoLaunch = !!autoLaunch.enabled;
+            } catch (err) {
+                // Auto-launch is optional.
             }
         },
         async saveDesktopCloseToTray() {
             try {
-                const settings = await DesktopTray.setSettings({
+                const settings = await DesktopSettings.set({
                     closeToTray: this.desktopCloseToTray,
                 });
                 if (settings && typeof settings.closeToTray === 'boolean') {
                     this.desktopCloseToTray = settings.closeToTray;
                 }
             } catch (err) {
-                // Tray settings are optional.
+                // Desktop settings are optional.
+            }
+        },
+        async saveDesktopSpellcheck() {
+            try {
+                const settings = await DesktopSettings.set({
+                    spellcheck: this.desktopSpellcheck,
+                });
+                if (settings && typeof settings.spellcheck === 'boolean') {
+                    this.desktopSpellcheck = settings.spellcheck;
+                }
+            } catch (err) {
+                // Desktop settings are optional.
+            }
+        },
+        async saveDesktopAutoLaunch() {
+            try {
+                const autoLaunch = await DesktopAutoLaunch.set(this.desktopAutoLaunch);
+                this.desktopAutoLaunchAvailable = !!autoLaunch.supported;
+                this.desktopAutoLaunch = !!autoLaunch.enabled;
+            } catch (err) {
+                // Auto-launch is optional.
             }
         },
         closeSettings() {

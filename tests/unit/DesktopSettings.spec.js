@@ -18,26 +18,36 @@ describe('desktop settings', () => {
         await fs.rm(userDataDir, { recursive: true, force: true });
     });
 
-    it('defaults close-to-tray on', async() => {
+    it('defaults close-to-tray on and spellcheck on', async() => {
         const store = createDesktopSettingsStore(userDataDir);
 
         expect(await store.load()).toEqual(DEFAULT_SETTINGS);
         expect(store.get()).toEqual(DEFAULT_SETTINGS);
+        expect(DEFAULT_SETTINGS.autoLaunch).toBe(false);
+        expect(DEFAULT_SETTINGS.spellcheck).toBe(true);
     });
 
-    it('persists a close-to-tray change', async() => {
+    it('persists desktop setting changes', async() => {
         const store = createDesktopSettingsStore(userDataDir);
         await store.load();
 
-        expect(await store.set({ closeToTray: false })).toEqual({
+        expect(await store.set({
+            closeToTray: false,
+            autoLaunch: true,
+            spellcheck: false,
+        })).toEqual({
             version: 1,
             closeToTray: false,
+            autoLaunch: true,
+            spellcheck: false,
         });
 
         const restored = createDesktopSettingsStore(userDataDir);
         expect(await restored.load()).toEqual({
             version: 1,
             closeToTray: false,
+            autoLaunch: true,
+            spellcheck: false,
         });
     });
 
@@ -53,9 +63,15 @@ describe('desktop settings', () => {
     });
 
     it('normalizes invalid values', () => {
-        expect(normalizeSettings({ closeToTray: 'yes' })).toEqual({
+        expect(normalizeSettings({
+            closeToTray: 'yes',
+            autoLaunch: 'no',
+            spellcheck: 1,
+        })).toEqual({
             version: 1,
             closeToTray: true,
+            autoLaunch: false,
+            spellcheck: true,
         });
     });
 });

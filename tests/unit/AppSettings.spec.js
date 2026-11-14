@@ -391,33 +391,61 @@ describe('AppSettings channel defaults', () => {
         expect(s.setting('nicklistGroupAway')).toBe(true);
     });
 
-    it('loads and saves desktop close-to-tray settings', async() => {
+    it('loads and saves desktop settings', async() => {
         window.kiwiDesktop = {
-            tray: {
-                isAvailable: () => true,
-                getSettings: jest.fn(() => Promise.resolve({
+            settings: {
+                get: jest.fn(() => Promise.resolve({
                     closeToTray: false,
+                    spellcheck: false,
                 })),
-                setSettings: jest.fn(() => Promise.resolve({
+                set: jest.fn((patch) => Promise.resolve({
                     closeToTray: true,
+                    spellcheck: true,
+                    ...patch,
+                })),
+            },
+            autoLaunch: {
+                get: jest.fn(() => Promise.resolve({
+                    supported: true,
+                    enabled: false,
+                })),
+                set: jest.fn(() => Promise.resolve({
+                    supported: true,
+                    enabled: true,
                 })),
             },
         };
         const ctx = {
             desktopTrayAvailable: true,
+            desktopSettingsAvailable: true,
             desktopCloseToTray: true,
+            desktopSpellcheck: true,
+            desktopAutoLaunchAvailable: false,
+            desktopAutoLaunch: false,
         };
 
-        await AppSettings.methods.loadDesktopTraySettings.call(ctx);
+        await AppSettings.methods.loadDesktopSettings.call(ctx);
         expect(ctx.desktopCloseToTray).toBe(false);
+        expect(ctx.desktopSpellcheck).toBe(false);
+        expect(ctx.desktopAutoLaunchAvailable).toBe(true);
+        expect(ctx.desktopAutoLaunch).toBe(false);
 
         ctx.desktopCloseToTray = true;
         await AppSettings.methods.saveDesktopCloseToTray.call(ctx);
-
-        expect(window.kiwiDesktop.tray.setSettings).toHaveBeenCalledWith({
+        expect(window.kiwiDesktop.settings.set).toHaveBeenCalledWith({
             closeToTray: true,
         });
-        expect(ctx.desktopCloseToTray).toBe(true);
+
+        ctx.desktopSpellcheck = true;
+        await AppSettings.methods.saveDesktopSpellcheck.call(ctx);
+        expect(window.kiwiDesktop.settings.set).toHaveBeenCalledWith({
+            spellcheck: true,
+        });
+
+        ctx.desktopAutoLaunch = true;
+        await AppSettings.methods.saveDesktopAutoLaunch.call(ctx);
+        expect(window.kiwiDesktop.autoLaunch.set).toHaveBeenCalledWith(true);
+        expect(ctx.desktopAutoLaunch).toBe(true);
     });
 
     it('defaults grouped nicklists off and binds the setting', () => {
