@@ -1,28 +1,102 @@
 'kiwi public';
 
 import { throttle } from '@/helpers/Async';
+import { isDesktop } from '@/libs/desktop/Http';
+import * as DesktopNotifications from '@/libs/desktop/Notifications';
 import IPC from '@/libs/IPC';
 
-let isEnabled = (global.Notification && Notification.permission === 'granted');
+function browserNotificationPermission() {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+        return '';
+    }
+    return window.Notification.permission;
+}
+
+let isEnabled = DesktopNotifications.isAvailable() ||
+    browserNotificationPermission() === 'granted';
 let hasRegistered = false;
 let webpushClicksRegistered = false;
+let nativeListenersRegistered = false;
+let nextNotificationId = 0;
+const nativeCallbacks = new Map();
+
+function ensureNativeListeners() {
+    if (nativeListenersRegistered) {
+        return;
+    }
+    nativeListenersRegistered = true;
+
+    DesktopNotifications.onClick((id) => {
+        const callback = nativeCallbacks.get(id);
+        nativeCallbacks.delete(id);
+        if (typeof callback === 'function') {
+            callback();
+        }
+    });
+    DesktopNotifications.onClose((id) => {
+        nativeCallbacks.delete(id);
+    });
+}
+
+function showNativeNotification(title, body, opts) {
+    ensureNativeListeners();
+
+    const id = `kiwi-${Date.now()}-${++nextNotificationId}`;
+    if (typeof opts.onclick === 'function') {
+        nativeCallbacks.set(id, opts.onclick);
+    }
+
+    let result = null;
+    try {
+        result = DesktopNotifications.show({
+            id,
+            title,
+            body,
+            tag: opts.tag || '',
+            ttl: opts.ttl,
+        });
+    } catch (err) {
+        nativeCallbacks.delete(id);
+        return false;
+    }
+
+    if (result && typeof result.then === 'function') {
+        result.then((response) => {
+            if (!response || !response.shown) {
+                nativeCallbacks.delete(id);
+            }
+        }).catch(() => {
+            nativeCallbacks.delete(id);
+        });
+    } else if (!result || !result.shown) {
+        nativeCallbacks.delete(id);
+    }
+
+    return true;
+}
 
 export function requestPermission(state) {
+    if (DesktopNotifications.isAvailable()) {
+        isEnabled = true;
+        state.$emit('notification.enabled');
+        return;
+    }
+
     // Do we support notifications?
-    if (!('Notification' in window)) {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
         isEnabled = false;
         return;
     }
 
     // Permissions already been granted?
-    if (Notification.permission === 'granted') {
+    if (window.Notification.permission === 'granted') {
         state.$emit('notification.enabled');
         isEnabled = true;
         return;
     }
 
-    if (Notification.permission !== 'denied') {
-        Notification.requestPermission((permission) => {
+    if (window.Notification.permission !== 'denied') {
+        window.Notification.requestPermission((permission) => {
             if (permission === 'granted') {
                 state.$emit('notification.enabled');
                 isEnabled = true;
@@ -33,19 +107,35 @@ export function requestPermission(state) {
     }
 }
 
-export function show(title, body, opts) {
+export function show(title, body, opts = {}) {
     if (!isEnabled) {
         return false;
     }
 
-    let notify = new Notification(title, {
+    if (DesktopNotifications.isAvailable()) {
+        return showNativeNotification(title, body, opts);
+    }
+
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+        return false;
+    }
+
+    let notify = new window.Notification(title, {
         body: body,
         icon: opts.icon,
         tag: opts.tag,
     });
 
+    if (typeof opts.onclick === 'function') {
+        notify.onclick = opts.onclick;
+    }
+
     if (opts.ttl) {
-        setTimeout(notify.close.bind(notify), opts.ttl);
+        setTimeout(() => {
+            if (notify && typeof notify.close === 'function') {
+                notify.close();
+            }
+        }, opts.ttl);
     }
 
     return notify;
@@ -78,19 +168,17 @@ export function listenForNewMessages(state) {
             return;
         }
 
-        let notification = throttledShow(opts.title, opts.message, {
+        throttledShow(opts.title, opts.message, {
+            icon: opts.icon,
             ttl: opts.ttl,
             tag: opts.tag,
+            onclick: opts.onclick,
         });
-
-        if (notification && typeof opts.onclick === 'function') {
-            notification.onclick = opts.onclick;
-        }
     });
 }
 
 export function listenForWebpushClicks(state) {
-    if (webpushClicksRegistered) {
+    if (isDesktop() || webpushClicksRegistered) {
         return;
     }
     webpushClicksRegistered = true;

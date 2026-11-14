@@ -10,6 +10,12 @@ and this project adheres to
 
 ### Added
 
+- **Desktop Notifications**: Added native system notifications with
+  click-to-open behavior, tag replacement, TTL handling, and focused-window
+  suppression.
+- **Nicklist**: Added an optional Grouped Nicklists setting that shows Owner,
+  Operator, Half-Op, Voiced, Users/Online, and Offline headings based on each
+  user's highest channel privilege.
 - **Chat Logs**: Added an Open Channel Logs action when server chathistory is
   unavailable or exhausted, with the desktop log search filtered to the current
   network and buffer.
@@ -164,6 +170,9 @@ and this project adheres to
 
 ### Changed
 
+- **Desktop Web Push**: Desktop builds now use native notifications and no
+  longer negotiate or expose browser Web Push.
+- **Avatars**: The default away-status indicator position is now bottom-right.
 - **Presets**: The browser header preset switcher is now optional through a
   default-on Show Preset Switcher setting in Appearance. The Electron app keeps
   its native Presets menu independent of that setting, and both menus list only
@@ -314,11 +323,11 @@ and this project adheres to
   instead of a theme's generic link colour.
 - **Traditional Layout**: Timestamp, action-button, and status-icon offsets now
   follow separate narrow, wide, and timestamps-disabled spacing, so longer
-  `AM`/`PM` times no longer collide with the `...` button or icons. The
-  nickname column now starts at `2px` and is `116px` wide, keeping its right
-  edge aligned with the message body. Mobile rows now contain their floated
-  nickname and body, fixing collapsed rows, missing timestamps, and overlapping
-  messages on narrow screens.
+  `AM`/`PM` times no longer collide with the `...` button or icons. The nickname
+  column now starts at `2px` and is `116px` wide, keeping its right edge aligned
+  with the message body. Mobile rows now contain their floated nickname and
+  body, fixing collapsed rows, missing timestamps, and overlapping messages on
+  narrow screens.
 - **Cyberdeck Layout**: 12-hour and custom timestamps now widen the avatar
   gutter and remain on one line instead of wrapping `AM`/`PM`.
 - **Avatars**: Constrained SVG intrinsic sizing and avatar wrappers so avatars

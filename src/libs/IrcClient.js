@@ -37,6 +37,7 @@ import * as RelayMeta from './RelayMeta';
 import { BRIDGE_CARD_TAG, parseBridgeCard } from '@/helpers/BridgeCard';
 import { IRC_WEBSOCKET_PROTOCOL } from './WebSocketProtocol';
 import { addAdvertisedCaps, dropCap, foldPreferredCap, preferredCap } from './CapNegotiation';
+import { isDesktop } from '@/libs/desktop/Http';
 
 const CONNECT_TIMEOUT = 90000;
 const CTCP_CLIENTINFO = 'ACTION CLIENTINFO FINGER PING SOURCE TIME USERINFO VERSION';
@@ -828,8 +829,9 @@ function clientMiddleware(state, network) {
             }
 
             // Webpush caps are negotiated by preference, never both.
-            // Only request one if none is enabled yet.
-            if (!network.webpushCap()) {
+            // Only request one if none is enabled yet. Desktop builds use
+            // native notifications instead of browser push.
+            if (!isDesktop() && !network.webpushCap()) {
                 const advertisedWebpush = Object.keys(event.capabilities).map((c) => (
                     c.toLowerCase()
                 ));
@@ -1060,6 +1062,7 @@ function clientMiddleware(state, network) {
             event &&
             event.params &&
             event.params[1] === 'LS' &&
+            !isDesktop() &&
             !network.webpushCap()
         ) {
             const preferredWebpush = preferredCap(advertisedLsCaps, WEBPUSH_CAPS);

@@ -1,4 +1,5 @@
 import { filehostSupported as networkFilehostSupported } from '@/libs/fileupload';
+import { isDesktop } from '@/libs/desktop/Http';
 
 function bindNetworkSetting(settingName, fallback) {
     return {
@@ -61,6 +62,10 @@ export default {
             return network && network.persistencePreferenceAvailable();
         },
         webpushAvailable() {
+            if (isDesktop()) {
+                return false;
+            }
+
             const network = this.networkPreferencesTarget();
             return network && network.webpushAvailable() &&
                 typeof window !== 'undefined' &&

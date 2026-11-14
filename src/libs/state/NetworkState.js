@@ -5,6 +5,7 @@ import * as Misc from '@/helpers/Misc';
 import { stripAccountSuffix } from '@/helpers/LoginFields';
 import { isTwitchHost, twitchUserModes } from '@/helpers/Twitch';
 import { parseAccountRegistrationCap } from '@/libs/accountRegistration';
+import { isDesktop } from '@/libs/desktop/Http';
 import { def } from './common';
 import * as IrcClient from '../IrcClient';
 
@@ -781,6 +782,10 @@ export default class NetworkState {
     // to the connection that negotiated it; the bouncer is responsible for
     // filtering what it advertises to bound networks.
     webpushAvailable() {
+        if (isDesktop()) {
+            return false;
+        }
+
         const cap = this.webpushCap();
         if (!cap) {
             return false;

@@ -224,6 +224,17 @@ downgraded while the keyring is temporarily unavailable.
 Existing `app://` localStorage state is migrated into the default profile on
 first desktop launch when no profile state exists.
 
+## Notifications
+
+Desktop builds use native system notifications instead of browser Web Push.
+Notifications are shown when the app is unfocused and **Show Notifications** is
+enabled. Clicking a notification restores the window and opens the relevant
+buffer or message.
+
+The Web Push setting is hidden in desktop builds, and the desktop client does
+not negotiate `draft/webpush` or `soju.im/webpush`. Web builds keep the existing
+browser notification and Web Push behavior.
+
 ## Window State
 
 Window size, position, and maximized state are stored in `window-state.json`

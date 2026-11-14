@@ -328,7 +328,8 @@ and provides a VAPID key.
 | `sidebarDefault`           | `nicklist`                       | Sidebar shown at startup: `nicklist`, `settings`, `about`, `user`, or empty. |
 | `showRaw`                  | `false`                          | Show raw server buffers globally.                                            |
 | `showChanlistModes`        | `false`                          | Show channel modes in the channel list.                                      |
-| `nicklistGroupAway`        | `true`                           | Group away users in the nicklist.                                            |
+| `nicklistGroupAway`        | `true`                           | Sort away users after online users in the nicklist.                          |
+| `nicklistGrouped`          | `false`                          | Show privilege-based group headings in the nicklist.                         |
 | `noticeActiveBuffer`       | `true`                           | Route server notices to the active buffer when possible.                     |
 | `skipHiddenMessages`       | `false`                          | Skip hidden join/part/nick/mode events entirely.                             |
 | `useBufferHistory`         | `true`                           | Remember recently viewed buffers and reopen the last one.                    |
@@ -464,7 +465,7 @@ overrides them.
 | ------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `avatars.fallback_avatar_url`   | `""`                | Fallback avatar URL. `{nickname}` is replaced with the URL-encoded lowercase nick. An empty URL uses the selected local style. |
 | `avatars.fallback_style`        | `"local-identicon"` | `local-initials`, `local-identicon`, DiceBear, or `custom`.                                                                    |
-| `avatars.away_status_position`  | `1`                 | Away-dot corner: `1` top-right, `2` bottom-right, `3` bottom-left, `4` top-left.                                               |
+| `avatars.away_status_position`  | `2`                 | Away-dot corner: `1` top-right, `2` bottom-right, `3` bottom-left, `4` top-left.                                               |
 | `avatars.initials_length`       | `1`                 | Initials shown in local fallback avatars: `1` or `2`.                                                                          |
 | `avatars.show_image_background` | `true`              | Show the colour background behind avatars. When disabled, local initials and identicons use the nickname colour.               |
 | `avatars.show_without_user`     | `false`             | Show avatars for messages without a known user.                                                                                |

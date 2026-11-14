@@ -128,6 +128,7 @@ function makeHarness({
 
 afterEach(() => {
     delete window.Notification;
+    delete window.kiwiDesktop;
 });
 
 describe('webpush registration', () => {
@@ -244,6 +245,18 @@ describe('webpush registration', () => {
                 setTimeout(resolve, 0);
             });
             expect(h.registers()).toHaveLength(2);
+        });
+
+        it('is unavailable and inert in desktop builds', () => {
+            window.kiwiDesktop = {};
+            const h = makeHarness();
+
+            expect(h.network.webpushAvailable()).toBe(false);
+            expect(h.network.setWebpushEnabled).toBeUndefined();
+            expect(h.network.resetWebpush).toBeUndefined();
+            expect(NetworkPreferencesMixin.computed.webpushAvailable.call({
+                networkPreferencesTarget: () => h.network,
+            })).toBe(false);
         });
 
         it('suspends only the active network without clearing opt-ins', async() => {

@@ -2,6 +2,7 @@ const {
     app,
     BrowserWindow,
     Menu,
+    Notification,
     dialog,
     ipcMain,
     protocol,
@@ -40,6 +41,7 @@ const { handleMediaRequest } = require('./media');
 const { MEDIA_SCHEME } = require('./media-url');
 const { createProfileStore, MAX_STORAGE_BYTES } = require('./profile-store');
 const { createSecretStore } = require('./secrets');
+const { createNotificationService } = require('./notifications');
 const { createChatLogStore } = require('./chat-log-store');
 const { addEmbedReferer } = require('./embed-referer');
 const { addAppFrameAncestor } = require('./twitch-embed-policy');
@@ -57,6 +59,9 @@ const APP_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
 const DEV_ORIGIN = 'http://localhost:8080';
 const isDev = process.argv.includes('--dev');
 app.setName('KiwiIRC');
+if (process.platform === 'win32') {
+    app.setAppUserModelId('net.nephatrine.kiwiirc');
+}
 const distPath = app.isPackaged ?
     path.join(process.resourcesPath, 'dist') :
     path.resolve(__dirname, '../../dist');
@@ -119,6 +124,7 @@ let desktopConfig = null;
 let desktopConfigPath = null;
 let profileStore = null;
 let secretStore = null;
+let notificationService = null;
 let chatLogStore = null;
 let availablePresets = [];
 let allowUnload = false;
@@ -147,6 +153,17 @@ if (!app.requestSingleInstanceLock()) {
         const userDataDir = app.getPath('userData');
         profileStore = createProfileStore(userDataDir);
         secretStore = createSecretStore({ userDataDir, safeStorage });
+        notificationService = createNotificationService({
+            Notification,
+            getWindow: () => mainWindow,
+            onActivate: (id) => sendToRenderer('kiwi:notification-click', id),
+            onClose: (id, reason) => {
+                if (reason === 'click' || reason === 'shutdown') {
+                    return;
+                }
+                sendToRenderer('kiwi:notification-closed', id, reason);
+            },
+        });
         try {
             chatLogStore = createChatLogStore(userDataDir);
         } catch (err) {
@@ -157,6 +174,7 @@ if (!app.requestSingleInstanceLock()) {
         registerEmojiPackIpc();
         registerNetworkIconIpc();
         registerPresetIpc();
+        registerNotificationIpc();
         buildApplicationMenu();
         await registerAppProtocol();
         registerThemeProtocol();
@@ -179,6 +197,11 @@ if (!app.requestSingleInstanceLock()) {
     });
 
     app.on('before-quit', () => {
+        if (notificationService) {
+            notificationService.closeAll();
+            notificationService = null;
+        }
+
         if (!chatLogStore) {
             return;
         }
@@ -484,11 +507,33 @@ function registerPresetIpc() {
     });
 }
 
-function sendLayoutPreset(id) {
-    if (!mainWindow || mainWindow.isDestroyed()) {
+function registerNotificationIpc() {
+    ipcMain.on('kiwi:notification-supported', (event) => {
+        event.returnValue = !!(
+            notificationService && notificationService.isSupported()
+        );
+    });
+    ipcMain.handle('kiwi:notification-show', (event, payload) => (
+        notificationService ?
+            notificationService.show(payload) :
+            { shown: false, reason: 'unavailable' }
+    ));
+    ipcMain.handle('kiwi:notification-close', (event, id) => (
+        notificationService ? notificationService.close(id) : false
+    ));
+}
+
+function sendToRenderer(channel, ...args) {
+    if (!mainWindow || mainWindow.isDestroyed() ||
+        !mainWindow.webContents || mainWindow.webContents.isDestroyed()
+    ) {
         return;
     }
-    mainWindow.webContents.send('kiwi:apply-preset', id);
+    mainWindow.webContents.send(channel, ...args);
+}
+
+function sendLayoutPreset(id) {
+    sendToRenderer('kiwi:apply-preset', id);
 }
 
 function buildApplicationMenu() {
@@ -577,6 +622,9 @@ function reloadWindow(ignoreCache) {
         return;
     }
 
+    if (notificationService) {
+        notificationService.closeAll();
+    }
     allowUnload = true;
     mainWindow.webContents.once('did-finish-load', () => {
         allowUnload = false;
@@ -892,6 +940,9 @@ function createWindow() {
         if (stateTimer) {
             clearTimeout(stateTimer);
             stateTimer = null;
+        }
+        if (notificationService) {
+            notificationService.closeAll();
         }
         if (mainWindow === window) {
             mainWindow = null;

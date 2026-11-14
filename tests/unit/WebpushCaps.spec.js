@@ -30,6 +30,7 @@ describe('webpush capabilities', () => {
     });
 
     afterEach(() => {
+        delete window.kiwiDesktop;
         jest.useRealTimers();
     });
 
@@ -144,5 +145,30 @@ describe('webpush capabilities', () => {
         expect(requestSpy).not.toHaveBeenCalledWith('draft/webpush');
         expect(requestSpy).not.toHaveBeenCalledWith('soju.im/webpush');
         requestSpy.mockRestore();
+    });
+
+    it('does not request webpush caps in desktop builds', async() => {
+        window.kiwiDesktop = {};
+        // eslint-disable-next-line no-unused-vars
+        const client = network.ircClient;
+        const requestSpy = jest.spyOn(network.ircClient, 'requestCap').mockImplementation(() => {});
+        const rawSpy = jest.spyOn(network.ircClient, 'raw').mockImplementation(() => {});
+
+        network.ircClient.emit('cap new', {
+            capabilities: {
+                'draft/webpush': '',
+                'soju.im/webpush': '',
+            },
+        });
+        await emitRawLs(network.ircClient, ['*', 'LS', 'draft/webpush']);
+
+        expect(requestSpy).not.toHaveBeenCalledWith('draft/webpush');
+        expect(requestSpy).not.toHaveBeenCalledWith('soju.im/webpush');
+        expect(network.ircClient.request_extra_caps).not.toContain('draft/webpush');
+        expect(network.ircClient.request_extra_caps).not.toContain('soju.im/webpush');
+        expect(webpushReqs(rawSpy)).toHaveLength(0);
+
+        requestSpy.mockRestore();
+        rawSpy.mockRestore();
     });
 });

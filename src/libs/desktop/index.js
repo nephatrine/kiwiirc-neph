@@ -39,6 +39,13 @@ import {
     list as listEmojiPacks,
     uninstall as uninstallEmojiPack
 } from './EmojiPacks';
+import {
+    close as closeNotification,
+    isAvailable as isNativeNotificationAvailable,
+    onClose as onNotificationClose,
+    onClick as onNotificationClick,
+    show as showNotification
+} from './Notifications';
 
 const desktop = {
     isDesktop,
@@ -81,6 +88,13 @@ const desktop = {
         install: installEmojiPack,
         uninstall: uninstallEmojiPack,
         isAvailable: isEmojiPackInstallAvailable,
+    },
+    notifications: {
+        show: showNotification,
+        close: closeNotification,
+        onClick: onNotificationClick,
+        onClose: onNotificationClose,
+        isAvailable: isNativeNotificationAvailable,
     },
 };
 

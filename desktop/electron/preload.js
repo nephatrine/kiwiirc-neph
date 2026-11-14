@@ -1,9 +1,49 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 const EMBED_ERROR_CHANNEL = 'kiwi:embed-error';
+const NOTIFICATION_CLICK_CHANNEL = 'kiwi:notification-click';
+const NOTIFICATION_CLOSED_CHANNEL = 'kiwi:notification-closed';
 const embedErrorHandlers = new Set();
 let embedErrorListening = false;
 let cachedConfig = null;
+const notificationSupported = ipcRenderer.sendSync(
+    'kiwi:notification-supported'
+) === true;
+
+function notificationEventHandler(channel) {
+    const handlers = new Set();
+    let listening = false;
+
+    function listen() {
+        if (listening) {
+            return;
+        }
+        listening = true;
+        ipcRenderer.on(channel, (event, id, reason) => {
+            handlers.forEach((handler) => {
+                try {
+                    handler(id, reason);
+                } catch (err) {
+                    // One notification handler must not block the others.
+                }
+            });
+        });
+    }
+
+    return function on(handler) {
+        if (typeof handler !== 'function') {
+            return () => {};
+        }
+        listen();
+        handlers.add(handler);
+        return () => {
+            handlers.delete(handler);
+        };
+    };
+}
+
+const onNotificationClick = notificationEventHandler(NOTIFICATION_CLICK_CHANNEL);
+const onNotificationClosed = notificationEventHandler(NOTIFICATION_CLOSED_CHANNEL);
 
 function listenForEmbedErrors() {
     if (embedErrorListening) {
@@ -60,6 +100,7 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
         themes: true,
         emojiPacks: true,
         networkIcons: true,
+        nativeNotifications: notificationSupported,
         dcc: false,
     },
     http: {
@@ -119,6 +160,13 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
     },
     media: {
         proxyUrl: (url) => `kiwi-media://media/${encodeURIComponent(url)}`,
+    },
+    notifications: {
+        isAvailable: () => notificationSupported,
+        show: (payload) => ipcRenderer.invoke('kiwi:notification-show', payload),
+        close: (id) => ipcRenderer.invoke('kiwi:notification-close', id),
+        onClick: onNotificationClick,
+        onClose: onNotificationClosed,
     },
     presets: {
         onApply: (handler) => {

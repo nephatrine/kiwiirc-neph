@@ -1,4 +1,5 @@
 import * as TextFormatting from '@/helpers/TextFormatting';
+import { isDesktop } from '@/libs/desktop/Http';
 import IPC from './IPC';
 import * as WebpushUtils from './WebpushUtils';
 
@@ -7,6 +8,11 @@ import * as WebpushUtils from './WebpushUtils';
 const RENEW_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 export default function webpushMiddleware(network, deps = {}) {
+    // Desktop builds use native notifications and never negotiate browser push.
+    if (isDesktop()) {
+        return function desktopWebpushMiddleware() {};
+    }
+
     // Injectable for tests; defaults to the real browser PushManager flow.
     const subscriptionProvider = deps.subscriptionProvider ||
         WebpushUtils.defaultBrowserSubscriptionProvider;
