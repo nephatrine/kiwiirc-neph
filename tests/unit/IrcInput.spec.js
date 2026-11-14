@@ -29,6 +29,40 @@ describe('IrcInput paste handling', () => {
         expect(event.preventDefault).toHaveBeenCalled();
         expect(context.$emit).toHaveBeenCalledWith('files', [image]);
     });
+
+    test('does not emit duplicate pasted images from files and items', () => {
+        const image = {
+            name: 'image.png',
+            type: 'image/png',
+            size: 10,
+            lastModified: 1,
+        };
+        const duplicate = {
+            name: 'image.png',
+            type: 'image/png',
+            size: 10,
+            lastModified: 2,
+        };
+        const context = {
+            $emit: jest.fn(),
+        };
+        const event = {
+            preventDefault: jest.fn(),
+            clipboardData: {
+                files: [image],
+                items: [{
+                    kind: 'file',
+                    getAsFile: () => duplicate,
+                }],
+                types: ['image/png'],
+            },
+        };
+
+        const methods = (IrcInput.options || IrcInput).methods;
+        methods.onPaste.call(context, event);
+
+        expect(context.$emit).toHaveBeenCalledWith('files', [image]);
+    });
 });
 
 describe('IrcInput non-breaking spaces', () => {

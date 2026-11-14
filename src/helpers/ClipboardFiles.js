@@ -1,39 +1,33 @@
-function fileKey(file) {
-    return [
-        file.name || '',
-        file.size || 0,
-        file.type || '',
-        file.lastModified || 0,
-    ].join(':');
-}
-
 export function filesFromClipboard(clipboardData) {
-    const files = [];
-    const seen = new Set();
-
-    function add(file) {
-        if (!file) {
-            return;
-        }
-        const key = fileKey(file);
-        if (seen.has(key)) {
-            return;
-        }
-        seen.add(key);
-        files.push(file);
+    if (!clipboardData) {
+        return [];
     }
 
-    if (clipboardData && clipboardData.files) {
-        Array.from(clipboardData.files).forEach(add);
+    const files = Array.from(clipboardData.files || []);
+    if (files.length) {
+        return files;
     }
 
-    if (clipboardData && clipboardData.items) {
-        Array.from(clipboardData.items).forEach((item) => {
-            if (item && item.kind === 'file' && typeof item.getAsFile === 'function') {
-                add(item.getAsFile());
-            }
-        });
+    const items = Array.from(clipboardData.items || [])
+        .filter((item) => (
+            item &&
+            item.kind === 'file' &&
+            typeof item.getAsFile === 'function'
+        ))
+        .map((item) => item.getAsFile())
+        .filter(Boolean);
+
+    const images = items.filter((file) => (
+        typeof file.type === 'string' &&
+        file.type.indexOf('image/') === 0
+    ));
+    if (images.length) {
+        const nonImages = items.filter((file) => (
+            typeof file.type !== 'string' ||
+            file.type.indexOf('image/') !== 0
+        ));
+        return [images[0], ...nonImages];
     }
 
-    return files;
+    return items;
 }

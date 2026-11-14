@@ -300,6 +300,9 @@ and this project adheres to
 
 ### Fixed
 
+- **Clipboard Images**: Prefer `clipboardData.files` and use file items only as
+  a fallback, so a pasted image is uploaded once instead of once per clipboard
+  representation.
 - **Raw Log**: Internal buffers such as `*raw`, the server buffer, and special
   buffers now trim immediately instead of waiting for the history grace period.
   Their rendered rows are capped to the configured scrollback, and the message
