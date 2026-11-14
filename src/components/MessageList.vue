@@ -212,7 +212,10 @@
 
 import Vue from 'vue';
 import * as Misc from '@/helpers/Misc';
-import { formatTimestamp } from '@/helpers/TimestampFormat';
+import {
+    formatTimestamp,
+    usesWideTimestampFormat
+} from '@/helpers/TimestampFormat';
 import { createNickColour } from '@/helpers/TextFormatting';
 import Logger from '@/libs/Logger';
 import * as bufferTools from '@/libs/bufferTools';
@@ -624,6 +627,11 @@ export default {
             return formatTimestamp(
                 this.buffer.setting('timestamp_format') || '%T',
                 new Date(time)
+            );
+        },
+        usesWideTimestamp() {
+            return usesWideTimestampFormat(
+                this.buffer.setting('timestamp_format')
             );
         },
         formatTimeFull(time) {

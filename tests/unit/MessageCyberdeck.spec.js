@@ -25,7 +25,7 @@ function createMessage() {
     };
 }
 
-function createMl(message, repeat) {
+function createMl(message, repeat, wideTimestamp = false) {
     const network = {
         hasCap: () => false,
         resolveMessage: () => null,
@@ -60,6 +60,7 @@ function createMl(message, repeat) {
         formatTimeFull: () => '22:41:00',
         displayNickFor: (msg) => msg.nick,
         userColourFor: () => '#fff',
+        usesWideTimestamp: () => wideTimestamp,
         maybeScrollToId: jest.fn(),
         onMessageClick: jest.fn(),
         onMessageAuxClick: jest.fn(),
@@ -111,9 +112,9 @@ const UserAvatarStub = {
     },
 };
 
-function mountLayout(repeat = false) {
+function mountLayout(repeat = false, wideTimestamp = false) {
     const message = createMessage();
-    const ml = createMl(message, repeat);
+    const ml = createMl(message, repeat, wideTimestamp);
     const methods = createMethods(message, repeat);
     const vm = new Vue({
         provide: {
@@ -146,6 +147,8 @@ describe('MessageListMessageCyberdeck', () => {
             .toBe(true);
         expect(vm.$el.classList.contains('kiwi-messagelist-message--authorfirst'))
             .toBe(true);
+        expect(vm.$el.classList.contains('kiwi-messagelist-message--wide-timestamp'))
+            .toBe(false);
         expect(vm.$el.querySelector('.avatar-stub')).not.toBeNull();
         expect(vm.$el.querySelector('.avatar-stub').getAttribute('data-shape'))
             .toBe('square');
@@ -169,6 +172,15 @@ describe('MessageListMessageCyberdeck', () => {
             .toContain('22:41');
         expect(vm.$el.querySelector('.kiwi-messagelist-body').innerHTML)
             .toContain('Hello from the deck');
+
+        vm.$destroy();
+    });
+
+    it('uses the wider avatar gutter for 12-hour and custom timestamps', () => {
+        const { vm } = mountLayout(false, true);
+
+        expect(vm.$el.classList.contains('kiwi-messagelist-message--wide-timestamp'))
+            .toBe(true);
 
         vm.$destroy();
     });

@@ -31,6 +31,14 @@ export function formatForTimeSystem(system) {
     return TIME_SYSTEM_FORMATS[system] || '';
 }
 
+export function usesWideTimestampFormat(format) {
+    if (!format) {
+        return false;
+    }
+    const system = timeSystemForFormat(format);
+    return system === TIME_SYSTEM_12H || system === null;
+}
+
 function pad2(value) {
     return String(value).padStart(2, '0');
 }

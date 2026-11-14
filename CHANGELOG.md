@@ -304,8 +304,23 @@ and this project adheres to
 - **Presets**: Switching presets now refreshes the message list so theme and
   layout changes do not leave stale nickname colors, timestamps, or avatar
   sizing behind.
-- **Inline Layout**: Timestamps no longer overlap message action buttons with
-  long or 12-hour time formats.
+- **Inline Layout**: Message actions now sit before the timestamp with a small
+  fixed gap. Timestamps size to their content without extra padding or minimum
+  width, and the hover reserve is 110px for default/decimal formats, 130px for
+  12-hour/custom formats, and 40px when timestamps are disabled. Traffic and
+  mode timestamps stay inside that group instead of using the legacy absolute
+  traffic-timestamp positioning.
+- **Inline Layout**: Nicknames now use the same nickname colour as the nicklist
+  instead of a theme's generic link colour.
+- **Traditional Layout**: Timestamp, action-button, and status-icon offsets now
+  follow separate narrow, wide, and timestamps-disabled spacing, so longer
+  `AM`/`PM` times no longer collide with the `...` button or icons. The
+  nickname column now starts at `2px` and is `116px` wide, keeping its right
+  edge aligned with the message body. Mobile rows now contain their floated
+  nickname and body, fixing collapsed rows, missing timestamps, and overlapping
+  messages on narrow screens.
+- **Cyberdeck Layout**: 12-hour and custom timestamps now widen the avatar
+  gutter and remain on one line instead of wrapping `AM`/`PM`.
 - **Avatars**: Constrained SVG intrinsic sizing and avatar wrappers so avatars
   cannot expand to fill the message list during theme or preset changes.
 - **Bongo Companion**: Popup action and icon-button text now follows the theme

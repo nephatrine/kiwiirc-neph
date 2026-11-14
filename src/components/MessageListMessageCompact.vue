@@ -41,6 +41,9 @@
             !props.ml.bufferSetting('show_timestamps')
                 ? 'kiwi-messagelist-message--no-timestamps'
                 : '',
+            props.ml.bufferSetting('show_timestamps') && props.ml.usesWideTimestamp()
+                ? 'kiwi-messagelist-message--wide-timestamp'
+                : '',
             data.staticClass,
         ]"
         :data-message-id="props.message.id"
@@ -275,10 +278,10 @@ export default {
 }
 
 .kiwi-messagelist-message--compact .kiwi-messagelist-nick {
-    width: 110px;
-    min-width: 110px;
+    width: 116px;
+    min-width: 116px;
     display: inline-block;
-    left: 8px;
+    left: 2px;
     top: -1px;
     position: absolute;
     white-space: nowrap;
@@ -288,26 +291,55 @@ export default {
     width: auto;
 }
 
-.kiwi-messagelist-nick-bot,
-.kiwi-messagelist-nick-oper,
-.kiwi-messagelist-nick-rerouted {
+.kiwi-messagelist-message--compact .kiwi-messagelist-nick-bot,
+.kiwi-messagelist-message--compact .kiwi-messagelist-nick-oper,
+.kiwi-messagelist-message--compact .kiwi-messagelist-nick-rerouted {
     position: absolute;
-    right: 72px;
+    right: 78px;
     top: 2px;
     font-size: 1.1em;
 }
 
-.kiwi-messagelist-nick-rerouted {
-    right: 90px;
+.kiwi-messagelist-message--compact .kiwi-messagelist-nick-bot:not(:last-child),
+.kiwi-messagelist-message--compact .kiwi-messagelist-nick-oper:not(:last-child) {
+    right: 72px;
 }
 
-.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-nick-bot,
-.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-nick-oper {
-    right: 10px;
+.kiwi-messagelist-message--compact .kiwi-messagelist-nick-bot ~ .kiwi-messagelist-nick-rerouted,
+.kiwi-messagelist-message--compact .kiwi-messagelist-nick-oper ~ .kiwi-messagelist-nick-rerouted {
+    right: 84px;
 }
 
-.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-nick-rerouted {
-    right: 28px;
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--wide-timestamp .kiwi-messagelist-nick-bot,
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--wide-timestamp .kiwi-messagelist-nick-oper,
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--wide-timestamp .kiwi-messagelist-nick-rerouted {
+    right: 98px;
+}
+
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--wide-timestamp .kiwi-messagelist-nick-bot:not(:last-child),
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--wide-timestamp .kiwi-messagelist-nick-oper:not(:last-child) {
+    right: 92px;
+}
+
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--wide-timestamp .kiwi-messagelist-nick-bot ~ .kiwi-messagelist-nick-rerouted,
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--wide-timestamp .kiwi-messagelist-nick-oper ~ .kiwi-messagelist-nick-rerouted {
+    right: 104px;
+}
+
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-nick-bot,
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-nick-oper,
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-nick-rerouted {
+    right: 8px;
+}
+
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-nick-bot:not(:last-child),
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-nick-oper:not(:last-child) {
+    right: 2px;
+}
+
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-nick-bot ~ .kiwi-messagelist-nick-rerouted,
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-nick-oper ~ .kiwi-messagelist-nick-rerouted {
+    right: 14px;
 }
 
 .kiwi-messagelist-message--compact:hover .kiwi-messagelist-nick-bot,
@@ -319,7 +351,7 @@ export default {
 .kiwi-messagelist-message--compact .kiwi-messagelist-time {
     display: inline-block;
     position: absolute;
-    right: 10px;
+    right: 2px;
     top: 2px;
     font-size: 12px;
     opacity: 0.8;
@@ -331,8 +363,12 @@ export default {
     padding-right: 90px;
 }
 
-.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-body-container {
-    padding-right: 45px;
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-body-container {
+    padding-right: 20px;
+}
+
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--wide-timestamp .kiwi-messagelist-body-container {
+    padding-right: 110px;
 }
 
 .kiwi-messagelist-message--compact .kiwi-messagelist-body {
@@ -377,15 +413,19 @@ export default {
     }
 }
 
-.kiwi-messagelist-actions {
+.kiwi-messagelist-message--compact .kiwi-messagelist-actions {
     display: none;
     position: absolute;
     right: 72px;
     top: 2px;
 }
 
-.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-actions {
-    right: 10px;
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--wide-timestamp .kiwi-messagelist-actions {
+    right: 92px;
+}
+
+.kiwi-messagelist-message--compact.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-actions {
+    right: 2px;
 }
 
 .kiwi-messagelist-message--compact:hover {
@@ -437,6 +477,7 @@ export default {
 // Mobile layout (matches this.$state.ui.is_narrow)
 @media screen and (max-width: 769px) {
     .kiwi-messagelist-message--compact {
+        display: flow-root;
         padding: 5px;
     }
 
@@ -461,8 +502,12 @@ export default {
         padding-right: 130px;
     }
 
-    .kiwi-messagelist-message--no-timestamps .kiwi-messagelist-body-container {
-        padding-right: 60px;
+    .kiwi-messagelist-message--compact.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-body-container {
+        padding-right: 20px;
+    }
+
+    .kiwi-messagelist-message--compact.kiwi-messagelist-message--wide-timestamp .kiwi-messagelist-body-container {
+        padding-right: 150px;
     }
 
     .kiwi-messagelist-message--compact.kiwi-messagelist-message--unread .kiwi-messagelist-body-container {

@@ -41,6 +41,11 @@
             (props.message.user && props.m().userMode(props.message.user))
                 ? `kiwi-messagelist-message--user-mode-${props.m().userMode(props.message.user)}`
                 : '',
+            props.m().isMessage(props.message)
+                && props.ml.bufferSetting('show_timestamps')
+                && props.ml.usesWideTimestamp()
+                ? 'kiwi-messagelist-message--wide-timestamp'
+                : '',
             data.staticClass,
         ]"
         :data-message-id="props.message.id"
@@ -394,6 +399,10 @@ export default {
     transition: border-color 0.2s, background-color 0.2s;
 }
 
+.kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message--wide-timestamp {
+    --kiwi-cyberdeck-gutter: 80px;
+}
+
 .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message--authorfirst {
     padding-top: 9px;
     padding-bottom: 4px;
@@ -434,6 +443,7 @@ export default {
     line-height: 1.2;
     opacity: 0.68;
     padding: 0 2px;
+    white-space: nowrap;
 }
 
 .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message--authorrepeat .kiwi-messagelist-cyberdeck-time {
@@ -674,6 +684,10 @@ export default {
         --kiwi-cyberdeck-gap: 0;
 
         padding-right: 6px;
+    }
+
+    .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message--wide-timestamp {
+        --kiwi-cyberdeck-gutter: 66px;
     }
 
     .kiwi-messagelist-cyberdeck-time {

@@ -8,7 +8,8 @@ import {
     formatDecimalTime,
     formatForTimeSystem,
     formatTimestamp,
-    timeSystemForFormat
+    timeSystemForFormat,
+    usesWideTimestampFormat
 } from '@/helpers/TimestampFormat';
 
 describe('timestamp formats', () => {
@@ -21,6 +22,14 @@ describe('timestamp formats', () => {
         expect(formatForTimeSystem(TIME_SYSTEM_24H)).toBe(FORMAT_24H);
         expect(formatForTimeSystem(TIME_SYSTEM_DECIMAL)).toBe(FORMAT_DECIMAL);
         expect(formatForTimeSystem('unknown')).toBe('');
+    });
+
+    test('reserves wider timestamp space only for 12-hour and custom formats', () => {
+        expect(usesWideTimestampFormat(FORMAT_24H)).toBe(false);
+        expect(usesWideTimestampFormat(FORMAT_DECIMAL)).toBe(false);
+        expect(usesWideTimestampFormat('')).toBe(false);
+        expect(usesWideTimestampFormat(FORMAT_12H)).toBe(true);
+        expect(usesWideTimestampFormat('%Y-%m-%d %H:%M')).toBe(true);
     });
 
     test('formats conventional timestamps through strftime', () => {

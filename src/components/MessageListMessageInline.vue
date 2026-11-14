@@ -38,6 +38,9 @@
             !props.ml.bufferSetting('show_timestamps')
                 ? 'kiwi-messagelist-message--no-timestamps'
                 : '',
+            props.ml.bufferSetting('show_timestamps') && props.ml.usesWideTimestamp()
+                ? 'kiwi-messagelist-message--wide-timestamp'
+                : '',
             data.staticClass,
         ]"
         :data-message-id="props.message.id"
@@ -64,12 +67,22 @@
                     {{ props.message.reply }}
                 </span>
             </div>
-            <span
-                v-if="props.ml.bufferSetting('show_timestamps')"
-                class="kiwi-messagelist-time"
-            >
-                {{ props.ml.formatTime(props.message.time) }}
-            </span>
+            <div class="kiwi-messagelist-inline-meta">
+                <component
+                    :is="injections.components.MessageActions"
+                    v-if="props.m().canReply(props.message) && props.message.irc_id && props.m().getNetwork() && props.m().getNetwork().hasCap('message-tags') && !props.message.is_redacted"
+                    :message="props.message"
+                    :buffer="props.ml.buffer"
+                    layout="inline"
+                    class="kiwi-messagelist-actions"
+                />
+                <span
+                    v-if="props.ml.bufferSetting('show_timestamps')"
+                    class="kiwi-messagelist-time"
+                >
+                    {{ props.ml.formatTime(props.message.time) }}
+                </span>
+            </div>
             <span v-if="props.message.is_bot" :title="props.ml.$t('bot')" class="kiwi-messagelist-nick-bot"><i class="bx bx-bot" aria-hidden="true" /></span>
             <span
                 v-if="props.message.is_oper && !props.message.is_bot"
@@ -97,7 +110,16 @@
                 @mouseover="props.ml.hover_nick = props.message.nick.toLowerCase();"
                 @mouseout="props.ml.hover_nick = '';"
             >
-                <span v-if="!props.message.bridged_nick" class="kiwi-messagelist-nick--prefix">{{ props.message.user ? props.m().userModePrefix(props.message.user) : '' }}</span><a :data-nick="(props.message.nick || '').toLowerCase()"><emoji-text :text="props.m().displayNick()" /></a>
+                <span
+                    v-if="!props.message.bridged_nick"
+                    class="kiwi-messagelist-nick--prefix"
+                >{{ props.message.user
+                    ? props.m().userModePrefix(props.message.user)
+                    : '' }}</span><a
+                    :style="{ color: props.ml.userColourFor(props.message) }"
+                    :data-nick="(props.message.nick || '').toLowerCase()"
+                    class="kiwi-messagelist-nick-link"
+                ><emoji-text :text="props.m().displayNick()" /></a>
             </span>
             <div
                 v-if="props.message.bodyTemplate
@@ -125,14 +147,6 @@
                 :is="injections.components.MessageReactions"
                 :message="props.message"
                 :buffer="props.ml.buffer"
-            />
-            <component
-                :is="injections.components.MessageActions"
-                v-if="props.m().canReply(props.message) && props.message.irc_id && props.m().getNetwork() && props.m().getNetwork().hasCap('message-tags') && !props.message.is_redacted"
-                :message="props.message"
-                :buffer="props.ml.buffer"
-                layout="inline"
-                class="kiwi-messagelist-actions"
             />
             <div v-if="props.message.embed.payload && props.ml.shouldAutoEmbed" class="kiwi-messagelist-embed">
                 <component
@@ -248,20 +262,31 @@ export default {
     padding-right: 15px;
 }
 
-//Hide the timestamp unless the user hovers over the message in question
-.kiwi-messagelist-message--text .kiwi-messagelist-time {
+// Keep the action button and timestamp together at the right edge.
+.kiwi-messagelist-inline-meta {
+    display: none;
     position: absolute;
     top: 0;
-    right: 44px;
-    padding: 0 10px;
-    display: none;
-    opacity: 0.8;
+    right: 0;
+    align-items: center;
+    gap: 6px;
 }
 
-//display timestamp when hovering over the message
-.kiwi-messagelist-message--text:hover .kiwi-messagelist-time {
-    display: block;
-    border-radius: 5px 0 0 5px;
+.kiwi-messagelist-message--text:hover .kiwi-messagelist-inline-meta {
+    display: flex;
+}
+
+.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-inline-meta {
+    right: 10px;
+}
+
+.kiwi-messagelist-message--text .kiwi-messagelist-time {
+    position: static;
+    top: auto;
+    right: auto;
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.8;
 }
 
 // Hide the unread message seperator
@@ -279,6 +304,11 @@ export default {
 .kiwi-messagelist-message--text .kiwi-messagelist-nick:hover {
     max-width: none;
     width: auto;
+}
+
+.kiwi-messagelist-message--text .kiwi-messagelist-nick-link {
+    color: inherit;
+    text-decoration: none;
 }
 
 .kiwi-messagelist-nick-bot,
@@ -330,30 +360,23 @@ export default {
 }
 
 .kiwi-messagelist-actions {
-    display: none;
-    position: absolute;
-    right: 10px;
-    top: 2px;
-}
-
-.kiwi-messagelist-message--no-timestamps .kiwi-messagelist-actions {
-    right: 10px;
+    flex: 0 0 auto;
 }
 
 .kiwi-messagelist-message--text:hover {
     z-index: 100;
 }
 
-.kiwi-messagelist-message--text:hover .kiwi-messagelist-actions {
-    display: block;
+.kiwi-messagelist-message--text:hover {
+    padding-right: 110px;
 }
 
-.kiwi-messagelist-message--text:hover {
-    padding-right: 140px;
+.kiwi-messagelist-message--text.kiwi-messagelist-message--wide-timestamp:hover {
+    padding-right: 130px;
 }
 
 .kiwi-messagelist-message--no-timestamps.kiwi-messagelist-message--text:hover {
-    padding-right: 45px;
+    padding-right: 40px;
 }
 
 .kiwi-messagelist-message--text .kiwi-messagelist-body a {
