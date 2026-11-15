@@ -50,6 +50,7 @@ describe('Desktop chat log store', () => {
         expect(result.rows).toHaveLength(1);
         expect(result.rows[0].message).toBe('hello world');
         expect(result.rows[0].network_name).toBe('TestNet');
+        expect(store.searchMode()).toBe('fts5');
         expect(fs.existsSync(databasePath(userDataDir))).toBe(true);
     });
 

@@ -48,6 +48,7 @@ const { createDesktopSettingsStore } = require('./desktop-settings');
 const { createAutoLaunchService } = require('./auto-launch');
 const { createTrayService } = require('./tray');
 const { buildEditableContextMenuTemplate } = require('./spellcheck-menu');
+const { createMainLog } = require('./main-log');
 const { createChatLogStore } = require('./chat-log-store');
 const { addEmbedReferer } = require('./embed-referer');
 const { addAppFrameAncestor } = require('./twitch-embed-policy');
@@ -64,6 +65,11 @@ const APP_HOST = 'kiwi';
 const APP_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
 const DEV_ORIGIN = 'http://localhost:8080';
 const isDev = process.argv.includes('--dev');
+const isVerbose = process.argv.includes('--verbose');
+if (!isDev && !isVerbose) {
+    app.commandLine.appendSwitch('log-level', '3');
+    app.commandLine.appendSwitch('v', '0');
+}
 app.setName('KiwiIRC');
 if (process.platform === 'win32') {
     app.setAppUserModelId('net.nephatrine.kiwiirc');
@@ -134,10 +140,48 @@ let notificationService = null;
 let desktopSettingsStore = null;
 let autoLaunchService = null;
 let trayService = null;
+let mainLog = null;
 let chatLogStore = null;
+let chatLogError = '';
 let availablePresets = [];
 let allowUnload = false;
 let isQuitting = false;
+
+function logInfo(...args) {
+    if (mainLog) {
+        mainLog.info(...args);
+    }
+}
+
+function logWarn(...args) {
+    if (mainLog) {
+        mainLog.warn(...args);
+    }
+    console.warn(...args);
+}
+
+function logError(...args) {
+    if (mainLog) {
+        mainLog.error(...args);
+    }
+    console.error(...args);
+}
+
+process.on('uncaughtException', (err) => {
+    logError('Uncaught exception', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+    logError('Unhandled rejection', reason);
+});
+
+app.on('render-process-gone', (event, webContents, details) => {
+    logError('Renderer process gone', details);
+});
+
+app.on('child-process-gone', (event, details) => {
+    logError('Child process gone', details);
+});
 
 if (!app.requestSingleInstanceLock()) {
     app.quit();
@@ -155,6 +199,17 @@ if (!app.requestSingleInstanceLock()) {
     });
 
     app.whenReady().then(async() => {
+        app.setAppLogsPath();
+        try {
+            mainLog = createMainLog({ logDir: app.getPath('logs') });
+        } catch (err) {
+            console.error('Failed to initialize main log:', err);
+        }
+        logInfo('Desktop starting', {
+            version: app.getVersion(),
+            platform: process.platform,
+            packaged: app.isPackaged,
+        });
         loadDesktopConfiguration();
         const userDataDir = app.getPath('userData');
         profileStore = createProfileStore(userDataDir);
@@ -171,7 +226,7 @@ if (!app.requestSingleInstanceLock()) {
         try {
             await autoLaunchService.apply(desktopSettingsStore.get().autoLaunch);
         } catch (err) {
-            console.error('Failed to apply auto-launch settings:', err);
+            logError('Failed to apply auto-launch settings', err);
         }
         configureSpellchecker(desktopSettingsStore.get());
         notificationService = createNotificationService({
@@ -187,8 +242,10 @@ if (!app.requestSingleInstanceLock()) {
         });
         try {
             chatLogStore = createChatLogStore(userDataDir);
+            chatLogError = '';
         } catch (err) {
-            console.error('Failed to initialize chat log store:', err);
+            chatLogError = err.message || String(err);
+            logError('Failed to initialize chat log store', err);
         }
         registerDesktopConfigIpc();
         registerThemeIpc();
@@ -209,7 +266,7 @@ if (!app.requestSingleInstanceLock()) {
                 saveDesktopSettings({
                     closeToTray: enabled,
                 }).catch((err) => {
-                    console.error('Failed to update desktop settings:', err);
+                    logError('Failed to update desktop settings', err);
                 });
             },
             onQuit: quitFromTray,
@@ -218,7 +275,7 @@ if (!app.requestSingleInstanceLock()) {
             platform: process.platform,
         });
         if (!trayService.create()) {
-            console.warn('System tray unavailable; close-to-tray is disabled.');
+            logWarn('System tray unavailable; close-to-tray is disabled.');
         }
         registerTrayIpc();
         buildApplicationMenu();
@@ -239,7 +296,7 @@ if (!app.requestSingleInstanceLock()) {
         }
         registerEmbedErrorForwarding();
     }).catch((err) => {
-        console.error('Failed to start desktop shell:', err);
+        logError('Failed to start desktop shell', err);
         app.quit();
     });
 
@@ -251,27 +308,34 @@ if (!app.requestSingleInstanceLock()) {
 
     app.on('before-quit', () => {
         isQuitting = true;
+        logInfo('Quit requested');
+    });
 
-        if (trayService) {
-            trayService.destroy();
-            trayService = null;
-        }
+    app.on('will-quit', () => {
+        logInfo('Quitting');
+        cleanupDesktopServices();
+    });
+}
 
-        if (notificationService) {
-            notificationService.closeAll();
-            notificationService = null;
-        }
+function cleanupDesktopServices() {
+    if (trayService) {
+        trayService.destroy();
+        trayService = null;
+    }
 
-        if (!chatLogStore) {
-            return;
-        }
+    if (notificationService) {
+        notificationService.closeAll();
+        notificationService = null;
+    }
+
+    if (chatLogStore) {
         try {
             chatLogStore.close();
         } catch (err) {
             // The database may already be closed.
         }
         chatLogStore = null;
-    });
+    }
 }
 
 function loadDesktopConfiguration() {
@@ -280,7 +344,7 @@ function loadDesktopConfiguration() {
     try {
         desktopConfigPath = ensureUserConfig(userDataDir);
     } catch (err) {
-        console.error('Failed to initialize desktop configuration:', err);
+        logError('Failed to initialize desktop configuration', err);
         desktopConfigPath = path.join(userDataDir, 'config.json5');
     }
 
@@ -371,28 +435,48 @@ function registerDesktopConfigIpc() {
         }
     });
 
+    ipcMain.on('kiwi:logs-supported', (event) => {
+        event.returnValue = !!chatLogStore;
+    });
     ipcMain.handle('kiwi:logs-append', (event, entries) => (
-        requireChatLogStore().append(entries)
+        safeChatLog((store) => store.append(entries), 0)
     ));
     ipcMain.handle('kiwi:logs-search', (event, options) => (
-        requireChatLogStore().search(options)
+        safeChatLog(
+            (store) => store.search(options),
+            { rows: [], hasMore: false }
+        )
     ));
     ipcMain.handle('kiwi:logs-context', (event, options) => (
-        requireChatLogStore().context(options)
+        safeChatLog(
+            (store) => store.context(options),
+            { rows: [], hasOlder: false, hasNewer: false }
+        )
     ));
     ipcMain.handle('kiwi:logs-redact', (event, options) => (
-        requireChatLogStore().redact(options)
+        safeChatLog((store) => store.redact(options), 0)
     ));
     ipcMain.handle('kiwi:logs-confirm', (event, options) => (
-        requireChatLogStore().confirm(options)
+        safeChatLog((store) => store.confirm(options), 0)
     ));
     ipcMain.handle('kiwi:logs-prune', (event, retentionDays) => (
-        requireChatLogStore().prune(retentionDays)
+        safeChatLog((store) => store.prune(retentionDays), 0)
     ));
-    ipcMain.handle('kiwi:logs-clear', () => requireChatLogStore().clear());
-    ipcMain.handle('kiwi:logs-stats', () => requireChatLogStore().stats());
+    ipcMain.handle('kiwi:logs-clear', () => (
+        safeChatLog((store) => store.clear(), undefined)
+    ));
+    ipcMain.handle('kiwi:logs-stats', () => (
+        safeChatLog(
+            (store) => store.stats(),
+            { count: 0, oldest: 0, newest: 0, size: 0 }
+        )
+    ));
     ipcMain.handle('kiwi:logs-status', () => ({
         available: !!chatLogStore,
+        error: chatLogError,
+        searchMode: chatLogStore && typeof chatLogStore.searchMode === 'function' ?
+            chatLogStore.searchMode() :
+            '',
     }));
 
     ipcMain.handle('kiwi:http-request', (event, options) => {
@@ -515,11 +599,18 @@ function registerNetworkIconIpc() {
     });
 }
 
-function requireChatLogStore() {
+function safeChatLog(callback, fallback) {
     if (!chatLogStore) {
-        throw new Error('chat logging is unavailable');
+        return fallback;
     }
-    return chatLogStore;
+
+    try {
+        return callback(chatLogStore);
+    } catch (err) {
+        chatLogError = err.message || String(err);
+        logError('Chat log operation failed', err);
+        return fallback;
+    }
 }
 
 function positiveInteger(value, fallback) {
@@ -667,7 +758,7 @@ function configureSpellchecker(settings) {
             defaultSession.setSpellCheckerLanguages(preferred);
         }
     } catch (err) {
-        console.error('Failed to configure spellcheck:', err);
+        logError('Failed to configure spellcheck', err);
     }
 }
 
@@ -748,6 +839,12 @@ function buildApplicationMenu() {
             label: 'Reload Desktop Configuration',
             click: () => {
                 reloadDesktopConfiguration();
+            },
+        },
+        {
+            label: 'Open Log Folder',
+            click: () => {
+                openLogFolder();
             },
         },
     ];
@@ -840,6 +937,18 @@ async function openDesktopConfigurationFolder() {
         }
     } catch (err) {
         dialog.showErrorBox('Unable to Open Configuration Folder', err.message);
+    }
+}
+
+async function openLogFolder() {
+    try {
+        const logDir = mainLog ? path.dirname(mainLog.path()) : app.getPath('logs');
+        const error = await shell.openPath(logDir);
+        if (error) {
+            dialog.showErrorBox('Unable to Open Log Folder', error);
+        }
+    } catch (err) {
+        dialog.showErrorBox('Unable to Open Log Folder', err.message);
     }
 }
 
@@ -1201,7 +1310,11 @@ function createWindow(startHidden = false) {
         });
 
         if (choice === 0) {
+            logInfo('Quit confirmed');
             event.preventDefault();
+        } else {
+            isQuitting = false;
+            logInfo('Quit canceled');
         }
     });
 

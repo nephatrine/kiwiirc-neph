@@ -5,11 +5,19 @@ function desktopLogs() {
     return window.kiwiDesktop.logs || null;
 }
 
-export function isAvailable() {
+export function isBridgeAvailable() {
     const logs = desktopLogs();
     return !!logs &&
         typeof logs.append === 'function' &&
         typeof logs.search === 'function';
+}
+
+export function isAvailable() {
+    const logs = desktopLogs();
+    if (!isBridgeAvailable()) {
+        return false;
+    }
+    return typeof logs.isAvailable !== 'function' || logs.isAvailable();
 }
 
 export function append(entries) {

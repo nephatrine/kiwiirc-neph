@@ -41,6 +41,11 @@ jest.mock('electron', () => ({
 require('../../desktop/electron/preload');
 
 describe('Desktop settings bridge', () => {
+    it('reports desktop log support', () => {
+        expect(mockDesktopApi.logs.isAvailable()).toBe(true);
+        expect(mockIpcRenderer.sendSync).toHaveBeenCalledWith('kiwi:logs-supported');
+    });
+
     it('reads and writes desktop settings', async() => {
         await expect(mockDesktopApi.settings.get()).resolves.toEqual({
             channel: 'kiwi:desktop-settings',

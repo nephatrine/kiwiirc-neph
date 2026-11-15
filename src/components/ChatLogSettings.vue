@@ -8,27 +8,29 @@
             <div class="kiwi-chatlogs-note">
                 {{ $t('chatlogs_redaction_note') }}
             </div>
-            <label class="kiwi-chatlogs-retention">
-                <span>{{ $t('chatlogs_retention') }}</span>
-                <select v-model.number="retentionDays" class="u-input" @change="applyRetention">
-                    <option :value="1">{{ $t('chatlogs_retention_1') }}</option>
-                    <option :value="7">{{ $t('chatlogs_retention_7') }}</option>
-                    <option :value="30">{{ $t('chatlogs_retention_30') }}</option>
-                    <option :value="90">{{ $t('chatlogs_retention_90') }}</option>
-                    <option :value="0">{{ $t('chatlogs_retention_forever') }}</option>
-                </select>
-            </label>
-            <div class="kiwi-chatlogs-stats">
-                {{ $t('chatlogs_stats', { count: stats.count, size: formattedSize }) }}
-            </div>
-            <div class="kiwi-chatlogs-actions">
-                <button type="button" class="u-button u-button-primary" @click="openSearch">
-                    {{ $t('chatlogs_search_button') }}
-                </button>
-                <button type="button" class="u-button u-button-warning" @click="clearLogs">
-                    {{ $t('chatlogs_clear') }}
-                </button>
-            </div>
+            <template v-if="available">
+                <label class="kiwi-chatlogs-retention">
+                    <span>{{ $t('chatlogs_retention') }}</span>
+                    <select v-model.number="retentionDays" class="u-input" @change="applyRetention">
+                        <option :value="1">{{ $t('chatlogs_retention_1') }}</option>
+                        <option :value="7">{{ $t('chatlogs_retention_7') }}</option>
+                        <option :value="30">{{ $t('chatlogs_retention_30') }}</option>
+                        <option :value="90">{{ $t('chatlogs_retention_90') }}</option>
+                        <option :value="0">{{ $t('chatlogs_retention_forever') }}</option>
+                    </select>
+                </label>
+                <div class="kiwi-chatlogs-stats">
+                    {{ $t('chatlogs_stats', { count: stats.count, size: formattedSize }) }}
+                </div>
+                <div class="kiwi-chatlogs-actions">
+                    <button type="button" class="u-button u-button-primary" @click="openSearch">
+                        {{ $t('chatlogs_search_button') }}
+                    </button>
+                    <button type="button" class="u-button u-button-warning" @click="clearLogs">
+                        {{ $t('chatlogs_clear') }}
+                    </button>
+                </div>
+            </template>
             <div v-if="status" class="kiwi-chatlogs-status">
                 {{ status }}
             </div>
@@ -45,6 +47,7 @@ import * as ChatLogs from '@/libs/desktop/ChatLogs';
 export default {
     data() {
         return {
+            available: true,
             retentionDays: 7,
             stats: {
                 count: 0,
@@ -55,7 +58,7 @@ export default {
     },
     computed: {
         isDesktop() {
-            return desktop.isDesktop() && ChatLogs.isAvailable();
+            return desktop.isDesktop() && ChatLogs.isBridgeAvailable();
         },
         formattedSize() {
             const bytes = Number(this.stats.size) || 0;
@@ -74,9 +77,27 @@ export default {
         }
         const configured = Number(this.$state.setting('chatLogRetentionDays'));
         this.retentionDays = Number.isFinite(configured) ? configured : 7;
-        this.loadStats();
+        this.loadStatus();
     },
     methods: {
+        async loadStatus() {
+            try {
+                const status = await ChatLogs.status();
+                this.available = !!(status && status.available);
+                if (!this.available) {
+                    this.status = this.$t('chatlogs_unavailable', {
+                        reason: (status && status.error) || 'unknown',
+                    });
+                    return;
+                }
+                await this.loadStats();
+            } catch (err) {
+                this.available = false;
+                this.status = this.$t('chatlogs_unavailable', {
+                    reason: err.message || String(err),
+                });
+            }
+        },
         async loadStats() {
             try {
                 this.stats = await ChatLogs.stats();

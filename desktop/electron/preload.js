@@ -12,6 +12,7 @@ const notificationSupported = ipcRenderer.sendSync(
     'kiwi:notification-supported'
 ) === true;
 const traySupported = ipcRenderer.sendSync('kiwi:tray-supported') === true;
+const logsSupported = ipcRenderer.sendSync('kiwi:logs-supported') === true;
 
 function notificationEventHandler(channel) {
     const handlers = new Set();
@@ -182,6 +183,7 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
         ),
     },
     logs: {
+        isAvailable: () => logsSupported,
         append: (entries) => ipcRenderer.invoke('kiwi:logs-append', entries),
         search: (options) => ipcRenderer.invoke('kiwi:logs-search', options),
         context: (options) => ipcRenderer.invoke('kiwi:logs-context', options),

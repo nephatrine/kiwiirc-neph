@@ -641,6 +641,7 @@ function createChatLogStore(userDataDir) {
         prune,
         redact,
         search,
+        searchMode: () => 'fts5',
         stats,
     };
 }

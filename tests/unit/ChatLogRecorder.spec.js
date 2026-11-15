@@ -1,5 +1,6 @@
 import state from '@/libs/state';
 import {
+    initChatLogs,
     isLoggableMessage,
     toLogEntry
 } from '@/libs/ChatLogRecorder';
@@ -15,6 +16,27 @@ function makeBuffer() {
 }
 
 describe('Chat log recorder', () => {
+    afterEach(() => {
+        delete window.kiwiDesktop;
+    });
+
+    it('does not subscribe when the desktop log store is unavailable', () => {
+        window.kiwiDesktop = {
+            logs: {
+                isAvailable: () => false,
+                append: () => Promise.resolve(0),
+                search: () => Promise.resolve({ rows: [], hasMore: false }),
+            },
+        };
+        const fakeState = {
+            $on: jest.fn(),
+        };
+
+        initChatLogs(fakeState);
+
+        expect(fakeState.$on).not.toHaveBeenCalled();
+    });
+
     it('builds a log entry for channel chat messages', () => {
         const { buffer } = makeBuffer();
         const message = {
