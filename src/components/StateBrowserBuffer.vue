@@ -104,7 +104,8 @@ export default {
             return this.network && this.network.hasCap('away-notify');
         },
         showMessageCounts() {
-            return !this.buffer.setting('hide_message_counts');
+            return this.$state.setting('unreadBadges') &&
+                !this.buffer.setting('hide_message_counts');
         },
         maybePromptClose() {
             if (this.buffer.contextOnly) {

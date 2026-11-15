@@ -1035,9 +1035,11 @@ function createNewState() {
                 buffer.addMessage(bufferMessage);
 
                 // Increment the unread counter if this buffer is not active
+                const trafficAsActivity = state.setting('buffers.traffic_as_activity');
+                const serverAsActivity = state.setting('buffers.server_as_activity');
                 let includeAsActivity = false;
                 let typesForActivty = ['privmsg', 'action', 'notice', 'wallops'];
-                if (buffer.setting('traffic_as_activity') && message.type === 'traffic') {
+                if (trafficAsActivity && message.type === 'traffic') {
                     typesForActivty.push('traffic');
                 }
 
@@ -1046,7 +1048,7 @@ function createNewState() {
                 }
 
                 if (
-                    buffer.setting('server_as_activity') &&
+                    serverAsActivity &&
                     buffer.isServer() &&
                     message.type !== 'ctcp'
                 ) {
@@ -1078,7 +1080,12 @@ function createNewState() {
                     });
                 }
 
-                if (!isSelf && !buffer.isRaw() && state.setting('teamHighlights')) {
+                if (
+                    !isSelf &&
+                    !buffer.isRaw() &&
+                    network &&
+                    network.setting('highlightGroupMentions')
+                ) {
                     let m = bufferMessage.message;
                     if (
                         Misc.mentionsWord(m, '@everyone') ||
@@ -1087,7 +1094,31 @@ function createNewState() {
                         isHighlight = true;
                     }
 
-                    if (Misc.mentionsWord(m, '@here') && network && !network.away) {
+                    if (Misc.mentionsWord(m, '@here') && !network.away) {
+                        isHighlight = true;
+                    }
+                }
+
+                if (
+                    !isHighlight &&
+                    !isSelf &&
+                    !buffer.isRaw() &&
+                    network &&
+                    network.setting('highlightReplies') &&
+                    bufferMessage.reply &&
+                    typeof network.resolveMessage === 'function'
+                ) {
+                    const replied = network.resolveMessage(
+                        bufferMessage.reply,
+                        buffer,
+                        bufferMessage.nick
+                    );
+                    if (
+                        replied &&
+                        replied.message &&
+                        replied.message.nick &&
+                        network.caseCompare(replied.message.nick, network.nick)
+                    ) {
                         isHighlight = true;
                     }
                 }
@@ -1116,17 +1147,18 @@ function createNewState() {
 
                 // Handle any notifications
                 let settingAlertOn = buffer.setting('alert_on');
-                let showNotifications = buffer.setting('show_notifications');
+                let showNotifications = state.setting('buffers.show_notifications');
+                const pertinentMessage = includeAsActivity ||
+                    message.type === 'error' ||
+                    message.type === 'invite';
+                const notificationBufferAllowed = !buffer.isSpecial() ||
+                    (buffer.isServer() && serverAsActivity);
                 if (
                     isNewMessage &&
                     showNotifications &&
                     settingAlertOn !== 'never' &&
-                    message.type !== 'nick' &&
-                    message.type !== 'mode' &&
-                    message.type !== 'traffic' &&
-                    message.type !== 'ctcp' &&
-                    message.type !== 'info' &&
-                    !buffer.isSpecial() &&
+                    pertinentMessage &&
+                    notificationBufferAllowed &&
                     !bufferMessage.ignore &&
                     !isSelf
                 ) {

@@ -92,7 +92,10 @@ export default class NetworkState {
             // Settings whose availability depends on the network live here
             // instead of in the global user settings. New networks start from
             // the admin config defaults; old user values are not migrated.
-            show_notifications: bufferDefault('show_notifications', true),
+            alert_on: bufferDefault('alert_on', 'highlight'),
+            reactionNotifications: 'all',
+            highlightReplies: true,
+            highlightGroupMentions: true,
             persistencePreference: typeof config.persistencePreference === 'undefined' ?
                 'keep' :
                 config.persistencePreference,
@@ -1072,11 +1075,9 @@ export default class NetworkState {
             persistent = this.persistence_status.effective === 'ON';
         }
 
-        // Push extends desktop notifications; never offer it alone.
         return !!this.sasl_account &&
             !!vapid &&
-            persistent &&
-            !!this.setting('show_notifications');
+            persistent;
     }
 
     // Parsed draft/account-registration capability tokens. Returns null when

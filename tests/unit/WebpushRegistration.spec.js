@@ -1,6 +1,5 @@
 import state from '@/libs/state';
 import webpushMiddleware from '@/libs/WebpushMiddleware';
-import NetworkPreferencesMixin from '@/components/NetworkPreferencesMixin';
 
 jest.mock('@/helpers/TextFormatting', () => ({
     ...jest.requireActual('@/helpers/TextFormatting'),
@@ -22,7 +21,6 @@ function makeHarness({
     const network = s.addNetwork(name, nick, {});
     network.state = 'connected';
     network.setting('webpushEnabled', enabled);
-    network.setting('show_notifications', true);
     network.enabled_caps = ['draft/webpush'];
     network.sasl_account = 'TestAccount';
     network.isupport.VAPID = 'test-vapid-key';
@@ -215,36 +213,11 @@ describe('webpush registration', () => {
         });
     });
 
-    describe('desktop gating', () => {
-        it('hides when desktop notifications are disabled', () => {
+    describe('desktop notification independence', () => {
+        it('does not depend on global desktop notifications', () => {
             const h = makeHarness();
-            h.network.setting('show_notifications', false);
-            expect(h.network.webpushAvailable()).toBe(false);
-        });
-
-        it('disabling desktop notifications unregisters push', async() => {
-            const h = makeHarness();
-            await h.emitConnected();
-            expect(h.registers()).toHaveLength(1);
-            h.emitWebpush(['REGISTER', ENDPOINT]);
-            expect(h.network.webpush_registered).toBe(true);
-            h.network.setting('show_notifications', false);
-            const ctx = {
-                networkPreferencesTarget: () => h.network,
-            };
-            NetworkPreferencesMixin.methods.applyDesktopNotifications.call(ctx);
-            expect(h.network.setting('webpushEnabled')).toBe(true);
-            expect(h.unregisters()).toHaveLength(1);
-            expect(h.network.webpush_registered).toBe(false);
-
-            // Re-enabling desktop notifications resumes the existing
-            // per-network opt-in.
-            h.network.setting('show_notifications', true);
-            NetworkPreferencesMixin.methods.applyDesktopNotifications.call(ctx);
-            await new Promise((resolve) => {
-                setTimeout(resolve, 0);
-            });
-            expect(h.registers()).toHaveLength(2);
+            h.s.setting('buffers.show_notifications', false);
+            expect(h.network.webpushAvailable()).toBe(true);
         });
 
         it('is unavailable and inert in desktop builds', () => {
@@ -254,45 +227,6 @@ describe('webpush registration', () => {
             expect(h.network.webpushAvailable()).toBe(false);
             expect(h.network.setWebpushEnabled).toBeUndefined();
             expect(h.network.resetWebpush).toBeUndefined();
-            expect(NetworkPreferencesMixin.computed.webpushAvailable.call({
-                networkPreferencesTarget: () => h.network,
-            })).toBe(false);
-        });
-
-        it('suspends only the active network without clearing opt-ins', async() => {
-            const first = makeHarness({
-                name: 'FirstNetwork',
-                nick: 'FirstNick',
-            });
-            const second = makeHarness({
-                appState: first.s,
-                name: 'SecondNetwork',
-                nick: 'SecondNick',
-            });
-            await first.emitConnected();
-            await second.emitConnected();
-            first.emitWebpush(['REGISTER', ENDPOINT]);
-            second.emitWebpush(['REGISTER', ENDPOINT]);
-            expect(first.network.webpush_registered).toBe(true);
-            expect(second.network.webpush_registered).toBe(true);
-
-            const ctx = {
-                networkPreferencesTarget: () => first.network,
-            };
-            first.network.setting('show_notifications', false);
-            NetworkPreferencesMixin.methods.applyDesktopNotifications.call(ctx);
-            expect(first.unregisters()).toHaveLength(1);
-            expect(second.unregisters()).toHaveLength(0);
-            expect(first.network.setting('webpushEnabled')).toBe(true);
-            expect(second.network.setting('webpushEnabled')).toBe(true);
-
-            first.network.setting('show_notifications', true);
-            NetworkPreferencesMixin.methods.applyDesktopNotifications.call(ctx);
-            await new Promise((resolve) => {
-                setTimeout(resolve, 0);
-            });
-            expect(first.registers()).toHaveLength(2);
-            expect(second.registers()).toHaveLength(1);
         });
     });
 

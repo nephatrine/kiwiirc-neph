@@ -102,6 +102,51 @@
                     </div>
 
                     <div class="kiwi-appsettings-block">
+                        <h3>{{ $t('notifications') }}</h3>
+                        <div class="kiwi-appsettings-section kiwi-appsettings-notifications">
+                            <label class="kiwi-appsettings-messagelistDisplay">
+                                <span>{{ $t('settings_flash_title') }} </span>
+                                <select v-model="settingBufferFlashTitle">
+                                    <option value="off">{{ $t('settings_flash_title_off') }}</option>
+                                    <option value="message">
+                                        {{ $t('settings_flash_title_messages') }}
+                                    </option>
+                                    <option value="highlight">
+                                        {{ $t('settings_flash_title_highlights') }}
+                                    </option>
+                                </select>
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_show_notifications') }} </span>
+                                <input v-model="settingBufferShowNotifications" type="checkbox">
+                            </label>
+                            <label class="kiwi-appsettings-full">
+                                <span>{{ $t('settings_highlight') }} </span>
+                                <input v-model="settingHighlights" type="text" class="u-input">
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_notification_sounds') }} </span>
+                                <input v-model="settingNotificationSounds" type="checkbox">
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_unread_badges') }} </span>
+                                <input v-model="settingUnreadBadges" type="checkbox">
+                            </label>
+                            <div class="kiwi-appsettings-subsection">
+                                <h4>{{ $t('settings_pertinent_messages') }}</h4>
+                                <label class="u-checkbox-wrapper kiwi-appsettings-indented">
+                                    <span>{{ $t('settings_show_joinpart') }} </span>
+                                    <input v-model="settingBufferTrafficAsActivity" type="checkbox">
+                                </label>
+                                <label class="u-checkbox-wrapper kiwi-appsettings-indented">
+                                    <span>{{ $t('settings_server_as_activity') }} </span>
+                                    <input v-model="settingBufferServerAsActivity" type="checkbox">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="kiwi-appsettings-block">
                         <h3>{{ $t('settings_appearance') }}</h3>
                         <div class="kiwi-appsettings-section kiwi-appsettings-appearance">
                             <label class="kiwi-appsettings-setting-theme">
@@ -595,61 +640,11 @@
                     </div>
 
                     <div class="kiwi-appsettings-block">
-                        <h3>{{ $t('notifications') }}</h3>
-                        <div class="kiwi-appsettings-section kiwi-appsettings-notifications">
-                            <label class="kiwi-appsettings-messagelistDisplay">
-                                <span>{{ $t('settings_flash_title') }} </span>
-                                <select v-model="settingBufferFlashTitle">
-                                    <option value="off">{{ $t('settings_flash_title_off') }}</option>
-                                    <option value="message">
-                                        {{ $t('settings_flash_title_messages') }}
-                                    </option>
-                                    <option value="highlight">
-                                        {{ $t('settings_flash_title_highlights') }}
-                                    </option>
-                                </select>
-                            </label>
-                            <label class="kiwi-appsettings-setting-showjoinpart u-checkbox-wrapper">
-                                <span>{{ $t('settings_show_joinpart') }} </span>
-                                <input v-model="settingBufferTrafficAsActivity" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_server_as_activity') }} </span>
-                                <input v-model="settingBufferServerAsActivity" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span :title="$t('settings_team_highlights_hint')">
-                                    {{ $t('settings_team_highlights') }}
-                                </span>
-                                <input v-model="settingTeamHighlights" type="checkbox">
-                            </label>
-                            <label class="kiwi-appsettings-full">
-                                <span>{{ $t('settings_highlight') }} </span>
-                                <input v-model="settingHighlights" type="text" class="u-input">
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="kiwi-appsettings-block">
                         <h3>{{ $t('settings_channel_defaults') }}</h3>
                         <div class="kiwi-appsettings-section">
                             <p class="kiwi-appsettings-hint">
                                 {{ $t('settings_channel_defaults_hint') }}
                             </p>
-                            <label class="kiwi-appsettings-messagelistDisplay">
-                                <span>{{ $t('settings_alert_on') }} </span>
-                                <select v-model="settingBufferAlertOn">
-                                    <option value="message">
-                                        {{ $t('settings_notify_all') }}
-                                    </option>
-                                    <option value="highlight">
-                                        {{ $t('settings_notify_mentioned') }}
-                                    </option>
-                                    <option value="never">
-                                        {{ $t('settings_notify_never') }}
-                                    </option>
-                                </select>
-                            </label>
                             <label class="u-checkbox-wrapper">
                                 <span>{{ $t('side_colours') }} </span>
                                 <input v-model="settingBufferColouredNicklist" type="checkbox">
@@ -661,14 +656,6 @@
                             <label class="u-checkbox-wrapper">
                                 <span>{{ $t('side_mode_changes') }} </span>
                                 <input v-model="settingBufferShowModeChanges" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_show_message_counts') }} </span>
-                                <input v-model="settingBufferHideMessageCounts" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_mute_sound') }} </span>
-                                <input v-model="settingBufferMuteSound" type="checkbox">
                             </label>
                             <label class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_formatting') }} </span>
@@ -772,6 +759,79 @@
                     <network-messaging-permissions :network="activeNetwork" />
 
                     <div class="kiwi-appsettings-block">
+                        <h3>{{ $t('notifications') }}</h3>
+                        <div class="kiwi-appsettings-section">
+                            <label class="kiwi-appsettings-messagelistDisplay">
+                                <span>{{ $t('settings_message_notifications') }} </span>
+                                <select v-model="settingNetworkAlertOn">
+                                    <option value="message">
+                                        {{ $t('settings_notify_all') }}
+                                    </option>
+                                    <option value="highlight">
+                                        {{ $t('settings_notify_highlights') }}
+                                    </option>
+                                    <option value="never">
+                                        {{ $t('settings_notify_nothing') }}
+                                    </option>
+                                </select>
+                            </label>
+                            <label
+                                v-if="reactionNotificationsAvailable"
+                                class="kiwi-appsettings-messagelistDisplay"
+                            >
+                                <span>{{ $t('settings_reaction_notifications') }} </span>
+                                <select v-model="settingReactionNotifications">
+                                    <option value="all">
+                                        {{ $t('settings_notify_all') }}
+                                    </option>
+                                    <option value="direct">
+                                        {{ $t('settings_reaction_notifications_direct') }}
+                                    </option>
+                                    <option value="none">
+                                        {{ $t('settings_notify_nothing') }}
+                                    </option>
+                                </select>
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_highlight_replies') }} </span>
+                                <input v-model="settingHighlightReplies" type="checkbox">
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_highlight_group_mentions') }} </span>
+                                <input v-model="settingHighlightGroupMentions" type="checkbox">
+                            </label>
+                            <p class="kiwi-appsettings-hint">
+                                {{ $t('settings_highlight_group_mentions_hint') }}
+                            </p>
+                            <label
+                                v-if="webpushAvailable"
+                                class="u-checkbox-wrapper kiwi-appsettings-webpush"
+                            >
+                                <span>{{ $t('settings_webpush') }} </span>
+                                <input
+                                    v-model="settingWebpushEnabled"
+                                    type="checkbox"
+                                    @change="applyWebpushEnabled"
+                                >
+                            </label>
+                            <div
+                                v-if="webpushError"
+                                class="kiwi-appsettings-webpush-error"
+                            >
+                                {{ $t('webpush_failed', { reason: webpushError }) }}
+                            </div>
+                            <button
+                                v-if="webpushError"
+                                type="button"
+                                class="u-button u-button-warning kiwi-appsettings-webpush-reset"
+                                @click="resetWebpush"
+                            >
+                                {{ $t('webpush_reset') }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="kiwi-appsettings-block">
                         <h3>{{ $t('settings_messages_title') }}</h3>
                         <div class="kiwi-appsettings-section">
                             <label
@@ -809,45 +869,6 @@
                         v-if="hasEmojiPacks && settingRemoteEmojiPacks !== false"
                         :network="activeNetwork"
                     />
-
-                    <div class="kiwi-appsettings-block">
-                        <h3>{{ $t('notifications') }}</h3>
-                        <div class="kiwi-appsettings-section">
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_show_notifications') }} </span>
-                                <input
-                                    v-model="settingBufferShowNotifications"
-                                    type="checkbox"
-                                    @change="applyDesktopNotifications"
-                                >
-                            </label>
-                            <label
-                                v-if="webpushAvailable"
-                                class="u-checkbox-wrapper kiwi-appsettings-webpush"
-                            >
-                                <span>{{ $t('settings_webpush') }} </span>
-                                <input
-                                    v-model="settingWebpushEnabled"
-                                    type="checkbox"
-                                    @change="applyWebpushEnabled"
-                                >
-                            </label>
-                            <div
-                                v-if="webpushError"
-                                class="kiwi-appsettings-webpush-error"
-                            >
-                                {{ $t('webpush_failed', { reason: webpushError }) }}
-                            </div>
-                            <button
-                                v-if="webpushError"
-                                type="button"
-                                class="u-button u-button-warning kiwi-appsettings-webpush-reset"
-                                @click="resetWebpush"
-                            >
-                                {{ $t('webpush_reset') }}
-                            </button>
-                        </div>
-                    </div>
 
                     <plugin-settings-block
                         v-for="block in networkSettingsBlocks"
@@ -1139,9 +1160,11 @@ export default {
         settingNicklistGrouped: bindSetting('nicklistGrouped'),
         settingShowPresetSwitcher: bindSetting('showPresetSwitcher'),
         settingHighlights: bindSetting('highlights'),
+        settingNotificationSounds: bindSetting('notificationSounds'),
+        settingUnreadBadges: bindSetting('unreadBadges'),
+        settingBufferShowNotifications: bindSetting('buffers.show_notifications'),
         settingShowEmojiPicker: bindSetting('showEmojiPicker'),
         settingShowColorPicker: bindSetting('showColorPicker'),
-        settingTeamHighlights: bindSetting('teamHighlights'),
         settingBufferColourNicknames: bindSetting('buffers.colour_nicknames_in_messages'),
         settingBufferShowTimestamps: bindSetting('buffers.show_timestamps'),
         settingBufferEmojiConvertIncoming: bindSetting('buffers.emoji_convert_incoming'),
@@ -1157,7 +1180,6 @@ export default {
         settingBufferScrollbackSize: bindSetting('buffers.scrollback_size'),
         settingBufferExtraFormatting: bindSetting('buffers.extra_formatting'),
         settingBufferTrafficAsActivity: bindSetting('buffers.traffic_as_activity'),
-        settingBufferMuteSound: bindSetting('buffers.mute_sound'),
         settingDefaultBanMask: bindSetting('buffers.default_ban_mask'),
         settingDefaultKickReason: bindSetting('buffers.default_kick_reason'),
         settingBufferInlineLinkPreviews: {
@@ -1172,13 +1194,11 @@ export default {
         },
         settingBufferHidePreviewCards: bindSetting('buffers.hide_preview_cards'),
         settingBufferGenericLinkPreviews: bindSetting('buffers.generic_link_previews'),
-        settingBufferAlertOn: bindSetting('buffers.alert_on'),
         settingBufferShowJoinParts: bindSetting('buffers.show_joinparts'),
         settingBufferShowTopics: bindSetting('buffers.show_topics'),
         settingBufferShowNickChanges: bindSetting('buffers.show_nick_changes'),
         settingBufferShowModeChanges: bindSetting('buffers.show_mode_changes'),
         settingBufferColouredNicklist: bindSetting('buffers.coloured_nicklist'),
-        settingBufferHideMessageCounts: bindSetting('buffers.hide_message_counts'),
         settingBufferShowRealNames: bindSetting('buffers.show_realnames'),
         settingBufferShowTopicInHeader: bindSetting('buffers.show_topic_in_header'),
         settingBufferShowPresenceChanges: bindSetting('buffers.show_presence_changes'),
@@ -1685,6 +1705,18 @@ export default {
     margin: 0 0 10px 2px;
     font-size: 0.9em;
     opacity: 0.8;
+}
+
+.kiwi-appsettings-subsection {
+    margin-top: 1em;
+}
+
+.kiwi-appsettings-subsection h4 {
+    margin: 0 0 8px 2px;
+}
+
+.kiwi-appsettings-indented {
+    padding-left: 1.5em;
 }
 
 .kiwi-appsettings-block label {

@@ -44,15 +44,13 @@ describe('AppSettings channel defaults', () => {
     }
 
     const bindings = [
-        ['settingBufferAlertOn', 'alert_on', 'never'],
+        ['settingBufferShowNotifications', 'show_notifications', false],
         ['settingBufferShowJoinParts', 'show_joinparts', false],
         ['settingBufferShowTopics', 'show_topics', false],
         ['settingBufferShowNickChanges', 'show_nick_changes', false],
         ['settingBufferShowModeChanges', 'show_mode_changes', false],
         ['settingBufferExtraFormatting', 'extra_formatting', false],
         ['settingBufferColouredNicklist', 'coloured_nicklist', false],
-        ['settingBufferMuteSound', 'mute_sound', true],
-        ['settingBufferHideMessageCounts', 'hide_message_counts', true],
         ['settingBufferShowRealNames', 'show_realnames', true],
         ['settingBufferShowTopicInHeader', 'show_topic_in_header', true],
         ['settingBufferShowPresenceChanges', 'show_presence_changes', false],
@@ -361,18 +359,21 @@ describe('AppSettings channel defaults', () => {
         expect(getComputed('timestampTimeSystem')).toBeNull();
     });
 
-    it('binds picker and team highlight settings', () => {
+    it('binds picker and global notification settings', () => {
         expect(getComputed('settingShowEmojiPicker')).toBe(true);
         expect(getComputed('settingShowColorPicker')).toBe(true);
-        expect(getComputed('settingTeamHighlights')).toBe(true);
+        expect(getComputed('settingNotificationSounds')).toBe(true);
+        expect(getComputed('settingUnreadBadges')).toBe(true);
 
         setComputed('settingShowEmojiPicker', false);
         setComputed('settingShowColorPicker', false);
-        setComputed('settingTeamHighlights', false);
+        setComputed('settingNotificationSounds', false);
+        setComputed('settingUnreadBadges', false);
 
         expect(s.setting('showEmojiPicker')).toBe(false);
         expect(s.setting('showColorPicker')).toBe(false);
-        expect(s.setting('teamHighlights')).toBe(false);
+        expect(s.setting('notificationSounds')).toBe(false);
+        expect(s.setting('unreadBadges')).toBe(false);
     });
 
     it('shows request history only when chathistory is available', () => {

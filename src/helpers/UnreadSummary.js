@@ -7,6 +7,13 @@ export function unreadSummary(state) {
         return { unread, highlights, errors };
     }
 
+    const badgesEnabled = typeof state.setting === 'function' ?
+        state.setting('unreadBadges') :
+        true;
+    if (!badgesEnabled) {
+        return { unread, highlights, errors };
+    }
+
     state.networks.forEach((network) => {
         if (!network || !Array.isArray(network.buffers)) {
             return;

@@ -472,6 +472,7 @@ export default {
             }
         },
         activityFromBuffers(buffers) {
+            const showUnread = this.$state.setting('unreadBadges');
             let totalUnread = 0;
             let highlight = false;
             let error = false;
@@ -479,7 +480,9 @@ export default {
                 if (buffer.isSpecial() || buffer.setting('hide_message_counts')) {
                     return;
                 }
-                totalUnread += buffer.flags.unread;
+                if (showUnread) {
+                    totalUnread += buffer.flags.unread;
+                }
                 if (buffer.flags.highlight) {
                     highlight = true;
                 }
@@ -554,7 +557,8 @@ export default {
             }, 200);
         },
         showMessageCounts(buffer) {
-            return !buffer.setting('hide_message_counts');
+            return this.$state.setting('unreadBadges') &&
+                !buffer.setting('hide_message_counts');
         },
         setActiveBuffer(buffer) {
             // Clear any active component to show the buffer again

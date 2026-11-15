@@ -45,7 +45,7 @@ export class AudioManager {
     watchForMessages(state) {
         state.$on('message.new', (event) => {
             let { message, buffer } = event;
-            if (buffer.setting('mute_sound')) {
+            if (!state.setting('notificationSounds') || buffer.setting('mute_sound')) {
                 return;
             }
 

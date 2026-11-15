@@ -33,12 +33,6 @@ export default {
                 network.setPersistencePreference();
             }
         },
-        applyDesktopNotifications() {
-            const network = this.networkPreferencesTarget();
-            if (network && network.setWebpushEnabled) {
-                network.setWebpushEnabled();
-            }
-        },
         applyWebpushEnabled() {
             const network = this.networkPreferencesTarget();
             if (network && network.setWebpushEnabled) {
@@ -96,10 +90,17 @@ export default {
         filehostSupported() {
             return networkFilehostSupported(this.networkPreferencesTarget());
         },
+        reactionNotificationsAvailable() {
+            const network = this.networkPreferencesTarget();
+            return network && network.supportsTag('+draft/react');
+        },
+        settingNetworkAlertOn: bindNetworkSetting('alert_on', 'highlight'),
+        settingReactionNotifications: bindNetworkSetting('reactionNotifications', 'all'),
+        settingHighlightReplies: bindNetworkSetting('highlightReplies', true),
+        settingHighlightGroupMentions: bindNetworkSetting('highlightGroupMentions', true),
         settingUseFilehost: bindNetworkSetting('useFilehost', true),
         settingPersistencePreference: bindNetworkSetting('persistencePreference', 'keep'),
         settingWebpushEnabled: bindNetworkSetting('webpushEnabled', false),
-        settingBufferShowNotifications: bindNetworkSetting('show_notifications', true),
         settingBufferShareTyping: bindNetworkSetting('share_typing', true),
         settingBufferIgnoreBots: bindNetworkSetting('ignore_bots', false),
         settingBufferLenientRerouting: bindNetworkSetting('lenient_rerouting', true),

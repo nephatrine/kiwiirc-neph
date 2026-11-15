@@ -125,6 +125,95 @@ describe('ReactionMiddleware', () => {
         // No error should occur
     });
 
+    function addOwnMessage(msgId) {
+        const msg = new Message({
+            nick: 'TestNick',
+            message: 'hello',
+            tags: { msgid: msgId },
+        });
+        buffer.addMessage(msg);
+        return msg;
+    }
+
+    function addReaction(msgId, {
+        nick = 'reactor',
+        emoji = '👍',
+        params = ['#test'],
+        unreact = false,
+    } = {}) {
+        const tags = {
+            '+reply': msgId,
+        };
+        tags[unreact ? '+draft/unreact' : '+draft/react'] = emoji;
+        theMiddleware(network, 'TAGMSG', {
+            nick,
+            params,
+            tags,
+        }, network.ircClient, () => {});
+    }
+
+    it('notifies for a reaction to our own message', () => {
+        const notifications = jest.fn();
+        s.$on('notification.show', notifications);
+        addOwnMessage('own-msg');
+
+        addReaction('own-msg');
+
+        expect(notifications).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not notify for reactions to other users or for unreacts', () => {
+        const notifications = jest.fn();
+        s.$on('notification.show', notifications);
+        const msg = new Message({
+            nick: 'OtherUser',
+            message: 'hello',
+            tags: { msgid: 'other-msg' },
+        });
+        buffer.addMessage(msg);
+
+        addReaction('other-msg');
+        addOwnMessage('own-msg');
+        addReaction('own-msg', { unreact: true });
+
+        expect(notifications).not.toHaveBeenCalled();
+    });
+
+    it('supports Direct Messages and Nothing reaction policies', () => {
+        const notifications = jest.fn();
+        s.$on('notification.show', notifications);
+        addOwnMessage('channel-msg');
+        const query = s.addBuffer(network.id, 'reactor');
+        const queryMessage = new Message({
+            nick: 'TestNick',
+            message: 'query hello',
+            tags: { msgid: 'query-msg' },
+        });
+        query.addMessage(queryMessage);
+
+        network.setting('reactionNotifications', 'direct');
+        addReaction('channel-msg');
+        expect(notifications).not.toHaveBeenCalled();
+
+        addReaction('query-msg', { params: [network.nick] });
+        expect(notifications).toHaveBeenCalledTimes(1);
+
+        network.setting('reactionNotifications', 'none');
+        addReaction('query-msg', { params: [network.nick] });
+        expect(notifications).toHaveBeenCalledTimes(1);
+    });
+
+    it('respects global desktop notifications', () => {
+        const notifications = jest.fn();
+        s.$on('notification.show', notifications);
+        s.setting('buffers.show_notifications', false);
+        addOwnMessage('own-msg');
+
+        addReaction('own-msg');
+
+        expect(notifications).not.toHaveBeenCalled();
+    });
+
     it('should correlate message echoes and update local IDs', () => {
         const text = 'test message';
         const msgId = 'server-id-456';

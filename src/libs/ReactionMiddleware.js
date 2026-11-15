@@ -1,6 +1,62 @@
 'kiwi public';
 
 import * as Reactions from '@/helpers/Reactions';
+import * as TextFormatting from '@/helpers/TextFormatting';
+
+function notifyReaction(network, client, targetMessage, buffer, targetNick, emoji, message) {
+    if (!network || !client || !targetMessage || !buffer) {
+        return;
+    }
+    if (!network.supportsTag('+draft/react')) {
+        return;
+    }
+    if (!client.caseCompare(targetMessage.nick, client.user.nick)) {
+        return;
+    }
+    if (client.caseCompare(targetNick, client.user.nick)) {
+        return;
+    }
+    if (network.isIgnoredIdentity({
+        nick: targetNick,
+        account: message.account || '',
+    })) {
+        return;
+    }
+    if (!network.appState.setting('buffers.show_notifications')) {
+        return;
+    }
+
+    const policy = network.setting('reactionNotifications') || 'all';
+    if (policy === 'none') {
+        return;
+    }
+    if (policy === 'direct' && !buffer.isQuery()) {
+        return;
+    }
+
+    network.appState.$emit('notification.show', TextFormatting.t('notification_reaction', {
+        nick: targetNick,
+        emoji,
+    }), {
+        title: TextFormatting.t('notification_reaction_title', {
+            channel: buffer.name,
+        }),
+        onclick: () => {
+            network.appState.setActiveBuffer(buffer.networkid, buffer.name);
+            network.appState.$nextTick(() => {
+                if (typeof buffer.scrollToMessage === 'function') {
+                    buffer.scrollToMessage(targetMessage.id);
+                }
+            });
+            if (parent && parent.focus) {
+                parent.focus();
+            }
+            if (window.focus) {
+                window.focus();
+            }
+        },
+    });
+}
 
 /**
  * Adds the +draft/react IRCv3 spec to irc-framework
@@ -127,6 +183,10 @@ export function theMiddleware(network, command, message, client, next) {
         message: targetMessage,
         buffer: buffer,
     });
+
+    if (isReacting) {
+        notifyReaction(network, client, targetMessage, buffer, targetNick, emoji, message);
+    }
 
     // If it's a TAGMSG, we've handled it completely
     if (effectiveCommand === 'TAGMSG') {

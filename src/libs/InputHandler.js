@@ -1231,7 +1231,7 @@ inputCommands.beep = function inputCommandBeep(event, command, line, context) {
 
 inputCommands.notify = function inputCommandNotify(event, command, line, context) {
     event.handled = true;
-    if (context.network && !context.network.setting('show_notifications')) {
+    if (!this.state.setting('buffers.show_notifications')) {
         return;
     }
     this.state.$emit('notification.show', line || 'Test Notification', { force: true });

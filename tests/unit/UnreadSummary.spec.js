@@ -20,6 +20,7 @@ function buffer({ name = '#chan', unread = 0, highlight = false, error = false, 
 describe('unread summary', () => {
     it('sums unread messages and counts highlights and errors', () => {
         const state = {
+            setting: () => true,
             networks: [{
                 buffers: [
                     buffer({ unread: 2, highlight: true }),
@@ -35,6 +36,24 @@ describe('unread summary', () => {
             unread: 6,
             highlights: 1,
             errors: 1,
+        });
+    });
+
+    it('returns no unread badges when globally disabled', () => {
+        const state = {
+            setting: (key) => key !== 'unreadBadges',
+            networks: [{
+                buffers: [
+                    buffer({ unread: 2, highlight: true }),
+                    buffer({ unread: 3 }),
+                ],
+            }],
+        };
+
+        expect(unreadSummary(state)).toEqual({
+            unread: 0,
+            highlights: 0,
+            errors: 0,
         });
     });
 

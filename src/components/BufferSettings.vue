@@ -18,18 +18,6 @@
                 </label>
             </form>
 
-            <h3>{{ $t('settings') }}</h3>
-            <hr>
-            <form class="u-form">
-                <label class="u-checkbox-wrapper">
-                    <span>{{ $t('settings_notify_mute') }}</span>
-                    <input v-model="settingMuteSound" :disabled="settingAlertOn === 'never'" type="checkbox">
-                </label>
-                <label class="u-checkbox-wrapper">
-                    <span>{{ $t('settings_show_message_counts') }}</span>
-                    <input v-model="settingHideMessageCount" type="checkbox">
-                </label>
-            </form>
         </div>
     </div>
 </template>
@@ -54,27 +42,9 @@ export default {
                     );
                 }
 
-                if (val === 'never') {
-                    this.buffer.setting('mute_sound', true);
-                }
+                this.buffer.setting('mute_sound', val === 'never');
 
                 return this.buffer.setting('alert_on', val);
-            },
-        },
-        settingMuteSound: {
-            get: function getsettingMuteSound() {
-                return this.buffer.setting('mute_sound');
-            },
-            set: function setsettingMuteSound(val) {
-                return this.buffer.setting('mute_sound', val);
-            },
-        },
-        settingHideMessageCount: {
-            get: function getsettingHideMessageCount() {
-                return this.buffer.setting('hide_message_counts');
-            },
-            set: function setsettingHideMessageCount(val) {
-                return this.buffer.setting('hide_message_counts', val);
             },
         },
     },

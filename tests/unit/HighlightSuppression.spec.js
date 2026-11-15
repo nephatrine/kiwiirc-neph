@@ -26,7 +26,7 @@ describe('HighlightSuppression', () => {
 
         // Set up highlights in state
         s.setSetting('user_settings.highlights', 'secret-word apple');
-        s.setSetting('user_settings.teamHighlights', true);
+        network.setting('highlightGroupMentions', true);
     });
 
     it('should NOT highlight when current user mentions their own nick', () => {
@@ -187,6 +187,17 @@ describe('HighlightSuppression', () => {
             nick: 'OtherDevice',
             message: '@channel!',
             tags: { account: 'TestNick' },
+            time: Date.now(),
+        });
+        expect(msg.isHighlight).toBe(false);
+    });
+
+    it('does not highlight group mentions when disabled per network', () => {
+        network.setting('highlightGroupMentions', false);
+
+        const msg = s.addMessage(buffer, {
+            nick: 'OtherUser',
+            message: '@channel check this out',
             time: Date.now(),
         });
         expect(msg.isHighlight).toBe(false);

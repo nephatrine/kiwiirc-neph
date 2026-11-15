@@ -15,7 +15,7 @@ describe('CTCP notifications', () => {
         buffer = network.serverBuffer();
         buffer.setting('alert_on', 'message');
         buffer.setting('flash_title', 'message');
-        buffer.setting('server_as_activity', true);
+        s.setting('buffers.server_as_activity', true);
         s.ui.app_has_focus = false;
 
         notifications = [];

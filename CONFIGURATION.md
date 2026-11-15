@@ -292,13 +292,16 @@ is used when a URL fragment supplies multiple connections.
 Several buffer defaults are copied into each new network and then owned by that
 network:
 
-- Desktop notifications (`buffers.show_notifications`)
 - Persistence preference (`persistencePreference`)
 - Typing sharing (`buffers.share_typing`)
 - Lenient rerouting (`buffers.lenient_rerouting`)
 - Ignore bots (`buffers.ignore_bots`)
 - Redaction display (`buffers.show_redactions`)
 - Direct message policy (`blockDirectMessages`)
+- Message notifications (`alert_on`)
+- Reaction notifications (`reactionNotifications`)
+- Highlight replies (`highlightReplies`)
+- Highlight group mentions (`highlightGroupMentions`)
 - File upload service and retention
 
 Changing these in Network Settings affects only that network. Changing the
@@ -306,7 +309,10 @@ config default affects networks created afterward.
 
 `blockDirectMessages` is `default`, `block`, `allow`, or `friends`. `default`
 uses the global `buffers.block_pms` value. `friends` currently blocks all new
-direct messages until a friends list exists.
+direct messages until a friends list exists. `alert_on` is the network default
+for buffers without a per-buffer override. `reactionNotifications` is `all`,
+`direct`, or `none`. `highlightReplies` and `highlightGroupMentions` default to
+`true`.
 
 Web Push is not configured in `config.json`. It is a per-network opt-in shown
 only after login when the server negotiates `draft/webpush` or `soju.im/webpush`
@@ -340,7 +346,8 @@ and provides a VAPID key.
 | `useBufferHistory`         | `true`                           | Remember recently viewed buffers and reopen the last one.                    |
 | `changeNickOnCollision`    | `true`                           | Automatically try a new nick during registration if needed.                  |
 | `highlights`               | `""`                             | Space-separated extra highlight words.                                       |
-| `teamHighlights`           | `true`                           | Enable `@here`, `@channel`, and `@everyone` highlights.                      |
+| `notificationSounds`       | `true`                           | Play message and reaction notification sounds.                               |
+| `unreadBadges`             | `true`                           | Show unread counts and badges.                                               |
 
 `themes` entries support `name`, `url`, `mode` (`light` or `dark`), and
 `google_fonts`. A theme URL is a base path; Kiwi loads `<url>/theme.css`. If
@@ -413,7 +420,7 @@ overrides them.
 | `coloured_nicklist`            | `true`        | Colour nicknames in the nicklist.                                                                                                                       |
 | `colour_nicknames_in_messages` | `true`        | Colour nicknames in messages.                                                                                                                           |
 | `nicklist_avatars`             | `true`        | Show avatars in the nicklist.                                                                                                                           |
-| `hide_message_counts`          | `false`       | Hide unread message counts.                                                                                                                             |
+| `hide_message_counts`          | `false`       | Legacy per-buffer hidden count; global `unreadBadges` controls display.                                                                                 |
 | `show_message_info`            | `true`        | Show the message info action.                                                                                                                           |
 | `extra_formatting`             | `true`        | Enable Markdown-style and extra formatting.                                                                                                             |
 | `emoji_convert_as_typed`       | `false`       | Convert emoji shortcodes while typing.                                                                                                                  |
@@ -435,14 +442,14 @@ overrides them.
 
 ### Notifications and Sounds
 
-| Key                   | Default     | Description                                           |
-| --------------------- | ----------- | ----------------------------------------------------- |
-| `alert_on`            | `highlight` | Alert on `message`, `highlight`, or `never`.          |
-| `flash_title`         | `message`   | Flash the title on `message`, `highlight`, or `off`.  |
-| `mute_sound`          | `false`     | Mute notification sounds for the buffer.              |
-| `show_notifications`  | `true`      | Show desktop notifications while the page is running. |
-| `traffic_as_activity` | `false`     | Treat join/part traffic as activity.                  |
-| `server_as_activity`  | `true`      | Treat server messages as activity.                    |
+| Key                   | Default     | Description                                                      |
+| --------------------- | ----------- | ---------------------------------------------------------------- |
+| `alert_on`            | `highlight` | Fallback for buffers without a network or per-buffer value.      |
+| `flash_title`         | `message`   | Taskbar flashing on `message`, `highlight`, or `off`.            |
+| `mute_sound`          | `false`     | Internal/legacy per-buffer mute; `notificationSounds` is global. |
+| `show_notifications`  | `true`      | Global desktop notifications.                                    |
+| `traffic_as_activity` | `false`     | Treat JOIN/PART traffic as activity globally.                    |
+| `server_as_activity`  | `true`      | Treat server messages as activity globally.                      |
 
 ### Link Previews and Media
 

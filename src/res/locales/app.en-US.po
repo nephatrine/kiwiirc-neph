@@ -686,13 +686,13 @@ msgstr "Send as Message"
 msgid "command_accidental_edit"
 msgstr "Edit"
 
-#: Flash window title
+#: Taskbar flashing
 msgid "settings_flash_title"
-msgstr "Flash Window Title"
+msgstr "Taskbar Flashing"
 
-#: Flash title off
+#: Flash title never
 msgid "settings_flash_title_off"
-msgstr "Off"
+msgstr "Never"
 
 #: Flash title on messages
 msgid "settings_flash_title_messages"
@@ -702,9 +702,9 @@ msgstr "On Messages"
 msgid "settings_flash_title_highlights"
 msgstr "On Highlights"
 
-#: Count server messages
+#: Server messages
 msgid "settings_server_as_activity"
-msgstr "Count Server Messages"
+msgstr "Server Messages"
 
 #: Show timestamps
 msgid "settings_timestamps"
@@ -858,29 +858,53 @@ msgstr "Limnoria Plugins"
 msgid "settings_limnoria_plugins_hint"
 msgstr "Comma or space separated plugin names."
 
-#: Count JOIN/PART messages
+#: JOIN/PART messages
 msgid "settings_show_joinpart"
-msgstr "Count JOIN/PART Messages"
-
-#: Mute notifications
-msgid "settings_mute_sound"
-msgstr "Mute Notifications"
+msgstr "JOIN/PART Messages"
 
 #: Desktop notifications
 msgid "settings_show_notifications"
 msgstr "Desktop Notifications"
 
+#: Notification sounds
+msgid "settings_notification_sounds"
+msgstr "Notification Sounds"
+
+#: Unread badges
+msgid "settings_unread_badges"
+msgstr "Unread Badges"
+
+#: Pertinent messages
+msgid "settings_pertinent_messages"
+msgstr "Pertinent Messages..."
+
 #: Highlight on words (space separated)
 msgid "settings_highlight"
 msgstr "Word Highlights (Space-Delimited)"
 
-#: Receive group mentions
-msgid "settings_team_highlights"
-msgstr "Receive Group Mentions"
+#: Message notifications
+msgid "settings_message_notifications"
+msgstr "Message Notifications"
 
-#: Team highlights hint
-msgid "settings_team_highlights_hint"
-msgstr "Highlight @here, @channel, and @everyone."
+#: Reaction notifications
+msgid "settings_reaction_notifications"
+msgstr "Reaction Notifications"
+
+#: Direct messages
+msgid "settings_reaction_notifications_direct"
+msgstr "Direct Messages"
+
+#: Highlight replies
+msgid "settings_highlight_replies"
+msgstr "Highlight Replies"
+
+#: Highlight group mentions
+msgid "settings_highlight_group_mentions"
+msgstr "Highlight Group Mentions"
+
+#: Highlight group mentions hint
+msgid "settings_highlight_group_mentions_hint"
+msgstr "(i.e. @everyone, @channel, and @here)"
 
 #: Aliases
 msgid "settings_aliases"
@@ -914,17 +938,17 @@ msgstr "All Messages"
 msgid "settings_notify_mentioned"
 msgstr "Mentions Only"
 
+#: Only highlights
+msgid "settings_notify_highlights"
+msgstr "Only Highlights"
+
 #: Never
 msgid "settings_notify_never"
 msgstr "Never"
 
-#: Mute sounds
-msgid "settings_notify_mute"
-msgstr "Mute Sounds"
-
-#: Hide unread message count
-msgid "settings_show_message_counts"
-msgstr "Hide Unread Count"
+#: Nothing
+msgid "settings_notify_nothing"
+msgstr "Nothing"
 
 #: Operator tools
 msgid "operator_tools"
@@ -2187,6 +2211,14 @@ msgstr "Timed out waiting for server confirmation."
 #: You were mentioned in {{channel}}
 msgid "notification_mentioned"
 msgstr "You were mentioned in {{channel}}."
+
+#: Reaction in {{channel}}
+msgid "notification_reaction_title"
+msgstr "Reaction in {{channel}}"
+
+#: {{nick}} reacted with {{emoji}}
+msgid "notification_reaction"
+msgstr "{{nick}} reacted with {{emoji}}"
 
 #: Redacted messages
 msgid "settings_show_redactions"

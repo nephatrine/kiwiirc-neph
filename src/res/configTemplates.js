@@ -199,7 +199,8 @@ export const configTemplates = {
         changeNickOnCollision: true,
         hideSettings: null,
         highlights: '',
-        teamHighlights: true,
+        notificationSounds: true,
+        unreadBadges: true,
         aliases: `
 # General aliases
 /p /part $1+
@@ -340,7 +341,6 @@ export const configTemplates = {
 
     // Config template for working as part of a team
     team: {
-        teamHighlights: true,
         buffers: {
             messageLayout: 'modern',
             show_joinparts: false,

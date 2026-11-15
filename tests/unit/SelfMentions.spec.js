@@ -22,9 +22,9 @@ describe('self mention notifications', () => {
         network.nick = 'TestNick';
         buffer = s.addBuffer(network.id, '#test');
         buffer.setting('alert_on', 'message');
-        buffer.setting('show_notifications', true);
         buffer.setting('flash_title', 'message');
-        s.setSetting('user_settings.teamHighlights', true);
+        network.setting('highlightGroupMentions', true);
+        s.setting('buffers.show_notifications', true);
         s.ui.app_has_focus = false;
 
         notifications = [];
@@ -53,12 +53,13 @@ describe('self mention notifications', () => {
             nick: 'BridgeBot',
             message: '<TestNick> @channel!',
             tags: { bot: true },
+            type: 'privmsg',
             time: Date.now(),
         });
 
         expect(msg.isHighlight).toBe(true);
         expect(msg.is_new).toBe(true);
-        expect(buffer.setting('show_notifications')).toBe(true);
+        expect(s.setting('buffers.show_notifications')).toBe(true);
         expect(buffer.setting('alert_on')).toBe('message');
         expect(notifications).toHaveLength(1);
         expect(flashes).toHaveLength(1);
@@ -69,6 +70,7 @@ describe('self mention notifications', () => {
             nick: 'TestNick/bridged',
             message: '@channel!',
             tags: { 'draft/relaymsg': 'TestNick' },
+            type: 'privmsg',
             time: Date.now(),
         });
 

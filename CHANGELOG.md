@@ -23,6 +23,10 @@ and this project adheres to
   Accounts management with nickname suggestions, account-first matching, and
   new-query blocking. Ignored messages remain visible in an explicitly opened
   query.
+- **Notifications**: Added global Desktop Notifications, Notification Sounds,
+  and Unread Badges settings. Added per-network Message Notifications, Reaction
+  Notifications, Highlight Replies, and Highlight Group Mentions settings.
+  Reaction notifications only cover reactions to your own messages.
 - **Desktop Releases**: Tag and manual releases now build the web bundle and
   Linux/Windows desktop installers, validate the tag against both package
   versions, and attach the artifacts with a combined `SHA256SUMS`. Added a
@@ -195,6 +199,11 @@ and this project adheres to
   than only messages from unknown users. The per-network dropdown overrides the
   global default. The internal friends list is stored for the future Friends
   Only policy; it has no add/remove UI yet.
+- **Notifications**: Desktop Notifications are global rather than per-network.
+  JOIN/PART and Server activity counting are global. Group mentions moved from a
+  global setting to per-network Highlight Group Mentions. Per-buffer Mute
+  Notifications and Hide Unread Count controls were removed; the per-buffer
+  Notify level remains as an override.
 - **Presets**: The browser header preset switcher is now optional through a
   default-on Show Preset Switcher setting in Appearance. The Electron app keeps
   its native Presets menu independent of that setting, and both menus list only

@@ -128,6 +128,7 @@ describe('webpush notification clicks', () => {
         s.addMessage(buffer, {
             nick: 'nick',
             message: 'mynick: hello',
+            type: 'privmsg',
             irc_id: 'abc2',
             time: Date.now(),
         });
