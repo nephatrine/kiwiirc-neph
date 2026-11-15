@@ -728,6 +728,54 @@ msgstr "All"
 msgid "settings_block_private"
 msgstr "Block Direct Messages"
 
+msgid "settings_messaging_permissions"
+msgstr "Messaging Permissions"
+
+msgid "settings_block_private_hint"
+msgstr "Block DMs from other network members. You can override this on a per-network basis."
+
+msgid "settings_block_private_default"
+msgstr "Default"
+
+msgid "settings_block_private_block"
+msgstr "Block"
+
+msgid "settings_block_private_allow"
+msgstr "Allow"
+
+msgid "settings_block_private_friends"
+msgstr "Friends Only"
+
+msgid "settings_ignored_accounts"
+msgstr "Ignored Accounts"
+
+msgid "settings_ignored_accounts_hint"
+msgstr "Messages from these users are hidden in channels and do not open new query buffers."
+
+msgid "settings_ignored_accounts_placeholder"
+msgstr "Nickname"
+
+msgid "settings_ignored_accounts_add"
+msgstr "Add"
+
+msgid "settings_ignored_accounts_remove"
+msgstr "Remove"
+
+msgid "settings_ignored_accounts_empty"
+msgstr "No ignored accounts."
+
+msgid "settings_ignored_accounts_self"
+msgstr "You cannot ignore yourself."
+
+msgid "settings_ignored_accounts_duplicate"
+msgstr "That account is already ignored."
+
+msgid "settings_ignored_accounts_not_connected"
+msgstr "That user is not connected to this network."
+
+msgid "settings_ignored_accounts_soju_hint"
+msgstr "On Soju, only connected users can be added or removed."
+
 #: Close the window to the system tray
 msgid "settings_close_to_tray"
 msgstr "Close to Tray"
@@ -1916,6 +1964,9 @@ msgstr "Search Messages"
 
 msgid "chatlogs_local_unavailable"
 msgstr "Local chat logs are only available in the desktop app."
+
+msgid "chatlogs_unavailable"
+msgstr "Local chat logging is unavailable: {{reason}}"
 
 msgid "chatlogs_settings"
 msgstr "Chat Logs"

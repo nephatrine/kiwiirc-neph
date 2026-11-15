@@ -172,7 +172,7 @@ export default {
             return this.buffer.getMessages()
                 .filter((m) => {
                     const isIgnored = m.user ? m.user.ignore : m.ignore;
-                    return m.isHighlight && !isIgnored;
+                    return m.isHighlight && (!isIgnored || this.buffer.isQuery());
                 })
                 .filter((m) => m.type !== 'traffic')
                 .filter((m) => m.type !== 'topic')

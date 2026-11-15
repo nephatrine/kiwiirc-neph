@@ -298,10 +298,15 @@ network:
 - Lenient rerouting (`buffers.lenient_rerouting`)
 - Ignore bots (`buffers.ignore_bots`)
 - Redaction display (`buffers.show_redactions`)
+- Direct message policy (`blockDirectMessages`)
 - File upload service and retention
 
 Changing these in Network Settings affects only that network. Changing the
 config default affects networks created afterward.
+
+`blockDirectMessages` is `default`, `block`, `allow`, or `friends`. `default`
+uses the global `buffers.block_pms` value. `friends` currently blocks all new
+direct messages until a friends list exists.
 
 Web Push is not configured in `config.json`. It is a per-network opt-in shown
 only after login when the server negotiates `draft/webpush` or `soju.im/webpush`
@@ -425,7 +430,7 @@ overrides them.
 | `prompt_leave`          | `channels` | Prompt before leaving `all`, `channels`, `queries`, or `none`.                                                                     |
 | `who_loop`              | `true`     | Refresh away status with WHO every three minutes when `away-notify` is unavailable. Channels with more than 100 users are skipped. |
 | `shared_input`          | `false`    | Share input across buffers.                                                                                                        |
-| `block_pms`             | `false`    | Block private messages from unknown users.                                                                                         |
+| `block_pms`             | `false`    | Default for blocking new direct messages. Per-network `blockDirectMessages` overrides it.                                          |
 | `warn_expected_command` | `true`     | Warn when a slash command is preceded by whitespace.                                                                               |
 
 ### Notifications and Sounds

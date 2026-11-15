@@ -1020,7 +1020,13 @@ function createNewState() {
                     }, 60000);
                 }
 
-                if (user && user.ignore) {
+                if (
+                    network &&
+                    typeof network.isIgnoredIdentity === 'function' &&
+                    network.isIgnoredIdentity(user || message.nick)
+                ) {
+                    bufferMessage.ignore = true;
+                } else if (user && user.ignore) {
                     bufferMessage.ignore = true;
                 }
 
@@ -1262,6 +1268,9 @@ function createNewState() {
                     });
                 }
 
+                if (typeof network.applyIgnoredIdentity === 'function') {
+                    network.applyIgnoredIdentity(userObj);
+                }
                 MetadataCache.paintUser(network, userObj);
                 return userObj;
             },
@@ -1387,6 +1396,10 @@ function createNewState() {
                 let user = state.getUser(network.id, oldNick);
                 if (!user) {
                     return;
+                }
+
+                if (typeof network.renameIgnoredIdentity === 'function') {
+                    network.renameIgnoredIdentity(oldNick, newNick);
                 }
 
                 let normalisedNew = network.caseUpper(newNick);

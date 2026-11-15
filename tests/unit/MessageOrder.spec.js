@@ -2,7 +2,8 @@ import state from '@/libs/state';
 import {
     compareMessages,
     insertMessageInOrder,
-    messageNeedsSort
+    messageNeedsSort,
+    orderedMessages
 } from '@/libs/bufferTools';
 
 describe('message ordering', () => {
@@ -78,6 +79,33 @@ describe('message ordering', () => {
             'third',
             'fourth',
         ]);
+        s.$destroy();
+    });
+
+    test('shows ignored users in queries but hides them in channels', () => {
+        const s = state.create();
+        const network = s.addNetwork('TestNetwork', 'TestNick', {});
+        const alice = s.addUser(network.id, { nick: 'Alice' });
+        alice.ignore = true;
+        const channel = s.addBuffer(network.id, '#channel');
+        const query = s.addBuffer(network.id, 'Alice');
+
+        s.addMessage(channel, {
+            time: 100,
+            nick: 'Alice',
+            message: 'channel message',
+            type: 'privmsg',
+        });
+        s.addMessage(query, {
+            time: 200,
+            nick: 'Alice',
+            message: 'query message',
+            type: 'privmsg',
+        });
+
+        expect(orderedMessages(channel)).toEqual([]);
+        expect(orderedMessages(query).map((message) => message.message))
+            .toEqual(['query message']);
         s.$destroy();
     });
 });

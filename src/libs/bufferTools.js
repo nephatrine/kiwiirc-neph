@@ -152,6 +152,7 @@ export function orderedMessages(buffer, opts = {}) {
         message.type_extra.endsWith('_self');
 
     let settingShowTopicInHeader = buffer.setting('show_topic_in_header');
+    let isQueryBuffer = typeof buffer.isQuery === 'function' && buffer.isQuery();
 
     let list = [];
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -161,10 +162,11 @@ export function orderedMessages(buffer, opts = {}) {
         }
 
         // Ignored users have the ignore flag set. Prefer the current user state
-        // if available to allow for dynamic hiding/showing of messages.
+        // if available to allow for dynamic hiding/showing of messages. An
+        // explicitly opened query keeps showing that user's messages.
         const user = messages[i].user;
         const isIgnored = user ? user.ignore : messages[i].ignore;
-        if (isIgnored) {
+        if (isIgnored && !isQueryBuffer) {
             continue;
         }
 

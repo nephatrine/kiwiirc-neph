@@ -9,6 +9,22 @@ import { isDesktop } from '@/libs/desktop/Http';
 import { def } from './common';
 import * as IrcClient from '../IrcClient';
 
+function normalizeIdentityEntry(entry) {
+    if (typeof entry === 'string') {
+        return { nick: entry, account: '' };
+    }
+    if (!entry || typeof entry !== 'object') {
+        return null;
+    }
+
+    const nick = String(entry.nick || '').trim();
+    const account = String(entry.account || '').trim();
+    if (!nick && !account) {
+        return null;
+    }
+    return { nick, account };
+}
+
 /** The IRC network instance */
 export default class NetworkState {
     constructor(id, appState, userDict, bufferDict) {
@@ -84,6 +100,11 @@ export default class NetworkState {
             lenient_rerouting: bufferDefault('lenient_rerouting', true),
             ignore_bots: bufferDefault('ignore_bots', false),
             show_redactions: bufferDefault('show_redactions', 'placeholder'),
+            // default uses the global buffers.block_pms value.
+            blockDirectMessages: 'default',
+            // Account-first, nick-fallback identities. Friends has no UI yet.
+            ignoredUsers: [],
+            friends: [],
             // Prefer FILEHOST over the global upload service when available.
             useFilehost: fileuploadDefault('use_filehost', true) !== false,
             // channel -> emoji pack load policy entry
@@ -588,24 +609,278 @@ export default class NetworkState {
         return '';
     }
 
+    isSojuMetadataBacked() {
+        return this.isSoju() && !!this.metadataCap();
+    }
+
+    identityMatches(entry, user) {
+        if (!entry || !user) {
+            return false;
+        }
+
+        const entryNick = String(entry.nick || '').trim();
+        const userNick = String(user.nick || '').trim();
+        const entryAccount = String(entry.account || '').trim();
+        const userAccount = String(user.account || '').trim();
+
+        if (entryAccount && userAccount) {
+            return this.caseCompare(entryAccount, userAccount);
+        }
+
+        return !!entryNick && !!userNick && this.caseCompare(entryNick, userNick);
+    }
+
+    identityEntries(name) {
+        const entries = this.setting(name);
+        if (!Array.isArray(entries)) {
+            return [];
+        }
+        return entries.map(normalizeIdentityEntry).filter(Boolean);
+    }
+
+    ignoredEntries() {
+        if (this.isSojuMetadataBacked()) {
+            return Object.values(this.users)
+                .filter((user) => user && user.ignore)
+                .map((user) => ({
+                    nick: user.nick,
+                    account: user.account || '',
+                    online: true,
+                }));
+        }
+
+        return this.identityEntries('ignoredUsers');
+    }
+
+    friendsEntries() {
+        return this.identityEntries('friends');
+    }
+
+    isFriend(user) {
+        if (!user) {
+            return false;
+        }
+
+        return this.friendsEntries().some((entry) => (
+            this.identityMatches(entry, user)
+        ));
+    }
+
+    isIgnoredIdentity(userOrNick) {
+        if (!userOrNick) {
+            return false;
+        }
+
+        const user = typeof userOrNick === 'string' ?
+            this.userByName(userOrNick) :
+            userOrNick;
+        if (user && user.ignore) {
+            return true;
+        }
+
+        if (this.isSojuMetadataBacked()) {
+            return false;
+        }
+
+        const identity = user || { nick: String(userOrNick), account: '' };
+        return this.ignoredEntries().some((entry) => (
+            this.identityMatches(entry, identity)
+        ));
+    }
+
+    isIgnoredNick(nick) {
+        return this.isIgnoredIdentity(nick);
+    }
+
+    directMessagePolicy() {
+        const configured = this.setting('blockDirectMessages');
+        if (configured === 'block' || configured === 'allow' || configured === 'friends') {
+            return configured;
+        }
+        if (configured === true) {
+            return 'block';
+        }
+
+        return this.appState.setting('buffers.block_pms') ? 'block' : 'allow';
+    }
+
+    findUserByIdentity(identity) {
+        if (!identity) {
+            return null;
+        }
+
+        const account = String(identity.account || '').trim();
+        if (account) {
+            const byAccount = Object.values(this.users).find((user) => (
+                user && user.account && this.caseCompare(user.account, account)
+            ));
+            if (byAccount) {
+                return byAccount;
+            }
+        }
+
+        const nick = String(identity.nick || '').trim();
+        return nick ? this.userByName(nick) : null;
+    }
+
+    updateLocalIgnoredEntry(user, ignored) {
+        const entries = this.identityEntries('ignoredUsers');
+        const index = entries.findIndex((entry) => this.identityMatches(entry, user));
+
+        if (ignored) {
+            if (index === -1) {
+                entries.push({
+                    nick: user.nick,
+                    account: user.account || '',
+                });
+            } else {
+                entries[index].nick = user.nick;
+                if (!entries[index].account && user.account) {
+                    entries[index].account = user.account;
+                }
+            }
+        } else if (index > -1) {
+            entries.splice(index, 1);
+        }
+
+        this.setting('ignoredUsers', entries);
+    }
+
+    rememberIgnoredIdentity(user) {
+        if (!user || !user.account || this.isSojuMetadataBacked()) {
+            return;
+        }
+
+        const entries = this.identityEntries('ignoredUsers');
+        let changed = false;
+        entries.forEach((entry) => {
+            if (!entry.account && this.caseCompare(entry.nick, user.nick)) {
+                entry.account = user.account;
+                changed = true;
+            }
+        });
+        if (changed) {
+            this.setting('ignoredUsers', entries);
+        }
+    }
+
+    applyIgnoredIdentity(user) {
+        if (!user || this.isSojuMetadataBacked()) {
+            return;
+        }
+
+        this.rememberIgnoredIdentity(user);
+        user.ignore = this.isIgnoredIdentity(user);
+    }
+
+    addIgnoredNick(nick) {
+        const trimmed = String(nick || '').trim();
+        if (!trimmed) {
+            return { ok: false, reason: 'empty' };
+        }
+
+        const selfNick = this.nick || this.connection.nick;
+        if (selfNick && this.caseCompare(trimmed, selfNick)) {
+            return { ok: false, reason: 'self' };
+        }
+
+        const user = this.userByName(trimmed);
+        if (user && user.ignore) {
+            return { ok: false, reason: 'duplicate' };
+        }
+
+        if (this.isSojuMetadataBacked()) {
+            if (!user) {
+                return { ok: false, reason: 'not-connected' };
+            }
+            this.setUserIgnored(user, true);
+            return { ok: true };
+        }
+
+        if (user) {
+            this.setUserIgnored(user, true);
+            return { ok: true };
+        }
+
+        const entries = this.identityEntries('ignoredUsers');
+        const identity = { nick: trimmed, account: '' };
+        if (entries.some((entry) => this.identityMatches(entry, identity))) {
+            return { ok: false, reason: 'duplicate' };
+        }
+
+        entries.push(identity);
+        this.setting('ignoredUsers', entries);
+        return { ok: true };
+    }
+
+    removeIgnoredEntry(entry) {
+        const normalized = normalizeIdentityEntry(entry);
+        if (!normalized) {
+            return { ok: false, reason: 'unknown' };
+        }
+
+        const user = this.findUserByIdentity(normalized);
+        if (this.isSojuMetadataBacked()) {
+            if (!user) {
+                return { ok: false, reason: 'not-connected' };
+            }
+            this.setUserIgnored(user, false);
+            return { ok: true };
+        }
+
+        const entries = this.identityEntries('ignoredUsers');
+        const next = entries.filter((item) => !this.identityMatches(item, normalized));
+        if (next.length === entries.length) {
+            return { ok: false, reason: 'unknown' };
+        }
+
+        this.setting('ignoredUsers', next);
+        if (user && this.identityMatches(normalized, user)) {
+            user.ignore = false;
+        }
+        return { ok: true };
+    }
+
+    renameIgnoredIdentity(oldNick, newNick) {
+        if (this.isSojuMetadataBacked()) {
+            return;
+        }
+
+        ['ignoredUsers', 'friends'].forEach((name) => {
+            const entries = this.identityEntries(name);
+            let changed = false;
+            entries.forEach((entry) => {
+                if (this.caseCompare(entry.nick, oldNick)) {
+                    entry.nick = newNick;
+                    changed = true;
+                }
+            });
+            if (changed) {
+                this.setting(name, entries);
+            }
+        });
+    }
+
     // Apply an ignore locally and keep Soju's user metadata in sync. Incoming
     // soju.im/blocked metadata sets user.ignore directly, never through here,
     // so the two directions cannot echo each other.
     setUserIgnored(user, ignored) {
         if (!user) {
-            return;
+            return { ok: false, reason: 'unknown' };
         }
 
         user.ignore = !!ignored;
-        if (!this.isSoju() || !this.metadataCap() || typeof this.setMetadata !== 'function') {
-            return;
+        if (!this.isSojuMetadataBacked() || typeof this.setMetadata !== 'function') {
+            this.updateLocalIgnoredEntry(user, !!ignored);
+            return { ok: true };
         }
 
         const value = ignored ? '1' : '0';
         if (user.metadata['soju.im/blocked'] === value) {
-            return;
+            return { ok: true };
         }
         this.setMetadata(user.nick, 'soju.im/blocked', value);
+        return { ok: true };
     }
 
     // Negotiated webpush capability, preferring the draft name over soju's

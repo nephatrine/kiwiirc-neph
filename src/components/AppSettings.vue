@@ -29,10 +29,6 @@
                                 <span>{{ $t('settings_auto_reconnect') }} </span>
                                 <input v-model="settingAutoReconnect" type="checkbox">
                             </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_block_private') }} </span>
-                                <input v-model="settingBufferBlockPms" type="checkbox">
-                            </label>
                             <label v-if="desktopTrayAvailable" class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_close_to_tray') }} </span>
                                 <input
@@ -89,6 +85,19 @@
                                     <i>{{ $t('settings_default_handler') }}</i>
                                 </a>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="kiwi-appsettings-block">
+                        <h3>{{ $t('settings_messaging_permissions') }}</h3>
+                        <div class="kiwi-appsettings-section">
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_block_private') }} </span>
+                                <input v-model="settingBufferBlockPms" type="checkbox">
+                            </label>
+                            <p class="kiwi-appsettings-hint">
+                                {{ $t('settings_block_private_hint') }}
+                            </p>
                         </div>
                     </div>
 
@@ -760,6 +769,8 @@
                         </div>
                     </div>
 
+                    <network-messaging-permissions :network="activeNetwork" />
+
                     <div class="kiwi-appsettings-block">
                         <h3>{{ $t('settings_messages_title') }}</h3>
                         <div class="kiwi-appsettings-section">
@@ -918,6 +929,7 @@ import SettingsAdvanced from './SettingsAdvanced';
 import ChatLogSettings from './ChatLogSettings';
 import ProfileSettings from './ProfileSettings';
 import PluginSettingsBlock from './utils/PluginSettingsBlock';
+import NetworkMessagingPermissions from './NetworkMessagingPermissions';
 import NetworkPreferencesMixin from './NetworkPreferencesMixin';
 
 const EmojiPacks = (resolve, reject) => {
@@ -946,6 +958,7 @@ export default {
         ChatLogSettings,
         ProfileSettings,
         PluginSettingsBlock,
+        NetworkMessagingPermissions,
         EmojiPacks,
     },
     mixins: [NetworkPreferencesMixin],

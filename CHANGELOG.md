@@ -18,6 +18,15 @@ and this project adheres to
 - **Desktop Integrations**: Added launch-at-login support on Linux and Windows,
   native spellcheck suggestions with Add to Dictionary, and clipboard image
   paste through the existing upload services.
+- **Messaging Permissions**: Added a global Block Direct Messages setting and a
+  per-network Default/Block/Allow/Friends Only policy. Added per-network Ignored
+  Accounts management with nickname suggestions, account-first matching, and
+  new-query blocking. Ignored messages remain visible in an explicitly opened
+  query.
+- **Desktop Releases**: Tag and manual releases now build the web bundle and
+  Linux/Windows desktop installers, validate the tag against both package
+  versions, and attach the artifacts with a combined `SHA256SUMS`. Added a
+  manual Desktop Build workflow for unsigned packaging smoke tests.
 - **Nicklist**: Added an optional Grouped Nicklists setting that shows Owner,
   Operator, Half-Op, Voiced, Users/Online, and Offline headings based on each
   user's highest channel privilege.
@@ -181,6 +190,11 @@ and this project adheres to
   default when the tray is available, keeping IRC connections alive. The General
   settings page and tray menu provide a Close to Tray toggle.
 - **Avatars**: The default away-status indicator position is now bottom-right.
+- **Messaging Permissions**: Block Direct Messages now applies to all new direct
+  messages except the existing channel-op and network-oper exemptions, rather
+  than only messages from unknown users. The per-network dropdown overrides the
+  global default. The internal friends list is stored for the future Friends
+  Only policy; it has no add/remove UI yet.
 - **Presets**: The browser header preset switcher is now optional through a
   default-on Show Preset Switcher setting in Appearance. The Electron app keeps
   its native Presets menu independent of that setting, and both menus list only
@@ -300,6 +314,10 @@ and this project adheres to
 
 ### Fixed
 
+- **Desktop Lifecycle**: Canceling the quit warning no longer closes the tray,
+  notifications, or local chat logs. Added a rotating main-process log under the
+  app logs directory and suppressed Chromium verbose media logging in packaged
+  builds.
 - **Clipboard Images**: Prefer `clipboardData.files` and use file items only as
   a fallback, so a pasted image is uploaded once instead of once per clipboard
   representation.

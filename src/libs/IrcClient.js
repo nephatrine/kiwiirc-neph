@@ -1657,8 +1657,14 @@ function clientMiddleware(state, network) {
             const PM_BLOCK_REQUIRES_CHECK = null;
 
             let pmBlock = network.isNickExemptFromPmBlocks(event.nick);
-            let blockNewPms = state.setting('buffers.block_pms');
+            let dmPolicy = network.directMessagePolicy();
             let buffer = state.getBufferByName(networkid, bufferName);
+
+            // An ignored sender never opens a new query buffer. If one already
+            // exists, the message is still added so an opened query stays usable.
+            if (isPrivateMessage && !buffer && network.isIgnoredNick(event.nick)) {
+                return;
+            }
 
             let textFormatType = 'privmsg';
             if (event.type === 'action') {
@@ -1744,8 +1750,20 @@ function clientMiddleware(state, network) {
                 return;
             }
 
+            const senderIdentity = messageUser || {
+                nick: event.nick,
+                account: event.account || '',
+            };
+            const shouldBlockFriendPm = dmPolicy === 'friends' &&
+                isPrivateMessage &&
+                !buffer &&
+                !network.isFriend(senderIdentity);
+            if (shouldBlockFriendPm) {
+                return;
+            }
+
             // If this is a new PM and the sending user is not exempt from blocks, ignore it
-            const shouldBlockPm = blockNewPms &&
+            const shouldBlockPm = dmPolicy === 'block' &&
                 isPrivateMessage &&
                 !buffer &&
                 pmBlock === PM_BLOCK_BLOCKED;
@@ -1756,7 +1774,7 @@ function clientMiddleware(state, network) {
             // If we need to manually check if this user is blocked..
             // PM_BLOCK_REQUIRES_CHECK means we should whois the user to get their oper status. We
             // allways allow messages from opers.
-            const shouldCheckPm = blockNewPms &&
+            const shouldCheckPm = dmPolicy === 'block' &&
                 isPrivateMessage &&
                 !buffer &&
                 pmBlock === PM_BLOCK_REQUIRES_CHECK;
@@ -1773,7 +1791,9 @@ function clientMiddleware(state, network) {
                 network.ircClient.whois(event.nick, event.nick, (whoisData) => {
                     network.pendingPms.forEach((pm, idx, obj) => {
                         if (network.caseCompare(pm.message.nick, whoisData.nick)) {
-                            if (whoisData.operator) {
+                            if (whoisData.operator &&
+                                !network.isIgnoredNick(pm.message.nick)
+                            ) {
                                 buffer = state.getOrAddBufferByName(network.id, pm.bufferName);
                                 state.addMessage(buffer, pm.message);
                             }
