@@ -1,0 +1,8 @@
+.git
+node_modules
+desktop/node_modules
+dist
+desktop/release
+tests/coverage
+static_live
+*.log

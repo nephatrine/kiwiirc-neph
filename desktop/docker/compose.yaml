@@ -1,0 +1,26 @@
+name: kiwiirc-desktop
+
+services:
+  builder:
+    build:
+      context: ../..
+      dockerfile: desktop/docker/Dockerfile
+    image: kiwiirc-builder:local
+    working_dir: /workspace
+    init: true
+    user: "${HOST_UID:-1000}:${HOST_GID:-100}"
+    environment:
+      HOME: /tmp/kiwi-home
+      XDG_CACHE_HOME: /cache
+      WINEPREFIX: /cache/wine
+      WINEDEBUG: -all
+      WINEDLLOVERRIDES: "winemenubuilder.exe=d;mscoree=d;mshtml=d"
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      npm_config_cache: /cache/npm
+    volumes:
+      - ../..:/workspace
+      - ${HOME}/.cache/kiwiirc-builder:/cache
+      - ${HOME}/.cache/kiwiirc-builder/node_modules:/workspace/node_modules
+      - ${HOME}/.cache/kiwiirc-builder/desktop-node_modules:/workspace/desktop/node_modules
+    command: ["bash", "desktop/docker/build.sh"]

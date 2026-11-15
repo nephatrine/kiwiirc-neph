@@ -303,6 +303,19 @@ local logs outlast server history, an exhausted gap can open that local context
 view without changing the live channel. Chat logs are not included in profile
 export/import.
 
+## Main Logs
+
+Desktop main-process errors are written to `main.log` in Electron's app logs
+directory. On Windows this is normally
+`%APPDATA%\KiwiIRC\logs\main.log`. The file rotates to `main.log.1` when it
+grows beyond 1 MiB.
+
+Use **File → Open Log Folder** to open it. Chat-log initialization failures,
+auto-launch errors, renderer crashes, and canceled quits are recorded there.
+
+Chromium verbose logging is suppressed in packaged builds. Run with `--verbose`
+to restore it when troubleshooting.
+
 ## Profile Transfer
 
 The **Profile Transfer** section in App Settings exports and imports a portable
@@ -366,3 +379,25 @@ not replaced.
 
 The first build initializes Wine and downloads the Electron runtimes for both
 platforms, so it takes longer than later builds.
+
+## Release Automation
+
+Pushing a `v*` tag, or running the manual release workflow, builds the web bundle
+and both desktop platforms in CI. The tag version must match both
+`package.json` and `desktop/package.json`.
+
+The release includes:
+
+- the web release tarball
+- Linux AppImage and `.deb`
+- Windows NSIS installer and portable executable
+- the NSIS blockmap
+- a combined `SHA256SUMS`
+
+The **Desktop Build** workflow can be run manually to build and upload the same
+assets without creating a release. It is intended for packaging smoke tests.
+The shared build path is `scripts/release-build.sh`, with desktop packaging in
+`desktop/scripts/build-artifacts.sh`.
+
+Windows and macOS artifacts are currently unsigned. Code signing and
+notarization remain pending certificates.
