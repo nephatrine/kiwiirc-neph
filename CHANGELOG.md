@@ -372,6 +372,8 @@ and this project adheres to
 
 ### Fixed
 
+- **Desktop Icons**: Strip timestamp metadata from the generated badge PNG so
+  repeated icon builds produce byte-identical files.
 - **Fallback Avatars**: Shared fallback avatar load state across buffers and
   components, deduplicated in-flight requests, and limited concurrent fallback
   preloads through the image queue. Failed fallback URLs are remembered for ten

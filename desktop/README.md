@@ -336,7 +336,9 @@ npm run icons
 This writes a multi-resolution `build/icon.ico` for Windows, PNG sizes under
 `build/icons/` for Linux, and the runtime tray and overlay assets under
 `assets/`. The generated files are committed so packaging does not need SVG
-tooling. Regenerating requires `rsvg-convert` and ImageMagick.
+tooling. Regenerating requires `rsvg-convert` and ImageMagick. Timestamp
+metadata is stripped so repeated builds from the same sources are
+byte-identical.
 
 ## Packaging
 

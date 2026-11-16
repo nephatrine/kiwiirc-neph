@@ -67,6 +67,7 @@ run(magick, [
     'xc:none',
     '-fill', '#b32d2d',
     '-draw', 'circle 8,8 8,2',
+    '-strip',
     badgePath,
 ]);
 
