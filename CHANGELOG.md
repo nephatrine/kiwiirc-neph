@@ -372,6 +372,10 @@ and this project adheres to
 
 ### Fixed
 
+- **Fallback Avatars**: Shared fallback avatar load state across buffers and
+  components, deduplicated in-flight requests, and limited concurrent fallback
+  preloads through the image queue. Failed fallback URLs are remembered for ten
+  minutes instead of being retried on every channel switch.
 - **Desktop HTTP**: Native HTTP failures now log to `main.log` with a sanitized
   URL, request purpose, and error code. Preview requests reject non-2xx and
   non-HTML responses before reading the body, use a shorter timeout, and run at

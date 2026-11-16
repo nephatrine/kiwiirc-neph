@@ -71,7 +71,7 @@
 <script>
 'kiwi public';
 
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 
 import getState from '@/libs/state';
 import * as TextFormatting from '@/helpers/TextFormatting';
@@ -81,6 +81,11 @@ import {
     getLocalIdenticon,
     getLocalInitials
 } from '@/helpers/AvatarFallback';
+import {
+    avatarLoadState,
+    markAvatarFailed,
+    requestAvatarLoad
+} from '@/libs/AvatarCache';
 import { getAvatarTransform } from './UserAvatarCommon';
 
 </script>
@@ -119,8 +124,6 @@ const props = defineProps({
     },
 });
 
-const failedUnknownAvatarUrl = ref('');
-
 const clipId = computed(() => (
     props.shape === 'square' ? 'kiwi-avatar-clip-square' : 'kiwi-avatar-clip'
 ));
@@ -134,10 +137,14 @@ const getSizeObj = (size) => ({
     setFailed: () => {
         const avatar = props.user.avatar;
         const failedAvatar = avatar[size];
+        const source = String(avatar.avatarSource || '');
         avatar[size] = '';
         if (avatar.avatarSource) {
             avatar.small = '';
             avatar.large = '';
+        }
+        if (source.startsWith('fallback:')) {
+            markAvatarFailed(failedAvatar);
         }
         if (!avatar.small && !avatar.large) {
             state.$emit('user.avatar.failed', {
@@ -198,15 +205,25 @@ const avatar = computed(() => {
     const bridgedNick = props.message?.bridged_nick || '';
     const nick = bridgedNick || props.message?.nick || props.user?.nick || 'User';
     const overrideUrl = props.message?.bridged_avatar || '';
+    const userAvatar = props.user ? props.user.avatar : null;
+    const userAvatarSource = userAvatar ? String(userAvatar.avatarSource || '') : '';
+    const userFallbackUrl = userAvatarSource.startsWith('fallback:') ?
+        (userAvatar.small || userAvatar.large) :
+        '';
     const unknownFallbackUrl = props.user ?
         '' :
         getConfiguredAvatarFallbackUrl(nick, state);
-    const unknownFallback = unknownFallbackUrl &&
-        failedUnknownAvatarUrl.value !== unknownFallbackUrl ?
-        unknownFallbackUrl :
-        '';
-    const hasImage = !!overrideUrl || !!unknownFallback ||
-        !!(props.user && (props.user.avatar.small || props.user.avatar.large));
+    const fallbackUrl = unknownFallbackUrl || userFallbackUrl;
+    const fallbackState = fallbackUrl ? avatarLoadState(fallbackUrl) : 'none';
+
+    if (fallbackUrl && fallbackState === 'idle') {
+        requestAvatarLoad(fallbackUrl);
+    }
+
+    const fallbackReady = fallbackState === 'loaded';
+    const userImageReady = !!userAvatar && !userFallbackUrl &&
+        !!(userAvatar.small || userAvatar.large);
+    const hasImage = !!overrideUrl || fallbackReady || userImageReady;
 
     const showBackground = state.setting('avatars.show_image_background') !== false;
     const backgroundStyle = {};
@@ -243,15 +260,15 @@ const avatar = computed(() => {
     }
 
     if (!props.user) {
-        if (unknownFallback) {
+        if (fallbackReady) {
             const fallbackObj = {
-                url: unknownFallback,
+                url: unknownFallbackUrl,
                 vbind: {
-                    'href': unknownFallback,
-                    'xlink:href': unknownFallback,
+                    'href': unknownFallbackUrl,
+                    'xlink:href': unknownFallbackUrl,
                 },
                 setFailed: () => {
-                    failedUnknownAvatarUrl.value = unknownFallback;
+                    markAvatarFailed(unknownFallbackUrl);
                 },
             };
             avatars.small = fallbackObj;
@@ -262,19 +279,21 @@ const avatar = computed(() => {
         return avatars;
     }
 
-    if (props.user.avatar.small) {
-        avatars.small = getSizeObj('small');
-        avatars.sizeKey.small = 'small';
-        if (!props.user.avatar.large) {
-            avatars.sizeKey.large = 'small';
+    if (userImageReady || fallbackReady) {
+        if (props.user.avatar.small) {
+            avatars.small = getSizeObj('small');
+            avatars.sizeKey.small = 'small';
+            if (!props.user.avatar.large) {
+                avatars.sizeKey.large = 'small';
+            }
         }
-    }
 
-    if (props.user.avatar.large) {
-        avatars.large = getSizeObj('large');
-        avatars.sizeKey.large = 'large';
-        if (!props.user.avatar.small) {
-            avatars.sizeKey.small = 'large';
+        if (props.user.avatar.large) {
+            avatars.large = getSizeObj('large');
+            avatars.sizeKey.large = 'large';
+            if (!props.user.avatar.small) {
+                avatars.sizeKey.small = 'large';
+            }
         }
     }
 
