@@ -372,6 +372,11 @@ and this project adheres to
 
 ### Fixed
 
+- **Desktop HTTP**: Native HTTP failures now log to `main.log` with a sanitized
+  URL, request purpose, and error code. Preview requests reject non-2xx and
+  non-HTML responses before reading the body, use a shorter timeout, and run at
+  most four at a time. Malformed or prematurely closed responses now settle
+  cleanly instead of leaving pending requests.
 - **Unknown Avatars**: No longer generates avatars for server notices without a
   sender nick, and uses the configured fallback avatar URL for unknown senders
   instead of always using the local identicon.

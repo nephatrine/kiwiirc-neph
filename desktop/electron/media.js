@@ -3,6 +3,7 @@ const { validateHttpUrl } = require('./http-policy');
 const { decodeMediaUrl } = require('./media-url');
 
 const MEDIA_TYPES = ['image/', 'audio/', 'video/'];
+const MEDIA_CONTENT_TYPES = ['image/*', 'audio/*', 'video/*', 'application/octet-stream'];
 const FORWARD_HEADERS = [
     'accept-ranges',
     'cache-control',
@@ -105,6 +106,8 @@ async function handleMediaRequest(request, policy, allowedOrigins = []) {
             method: 'GET',
             headers,
             maxResponseBytes: policy.maxMediaBytes || policy.maxDownloadBytes,
+            acceptContentTypes: MEDIA_CONTENT_TYPES,
+            failOnHttpError: true,
         }, policy);
 
         if (response.status !== 200 && response.status !== 206) {

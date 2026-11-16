@@ -1,4 +1,5 @@
 import http from 'node:http';
+import net from 'node:net';
 import { request } from '../../desktop/electron/http';
 
 function policy(overrides = {}) {
@@ -21,6 +22,21 @@ describe('Desktop native HTTP transport', () => {
             if (req.url === '/redirect') {
                 res.writeHead(302, { Location: '/ok' });
                 res.end();
+                return;
+            }
+            if (req.url === '/bad-status') {
+                res.writeHead(400, { 'Content-Type': 'text/plain' });
+                res.end('bad request');
+                return;
+            }
+            if (req.url === '/audio') {
+                res.writeHead(200, { 'Content-Type': 'audio/mpeg' });
+                res.end('audio');
+                return;
+            }
+            if (req.url === '/vendor-json') {
+                res.writeHead(200, { 'Content-Type': 'application/vnd.api+json' });
+                res.end('{}');
                 return;
             }
             res.writeHead(200, {
@@ -65,5 +81,54 @@ describe('Desktop native HTTP transport', () => {
         await expect(request({ url: `${baseUrl}/ok` }, policy({
             maxResponseBytes: 1,
         }))).rejects.toThrow('response is too large');
+    });
+
+    it('rejects HTTP error statuses before reading the body', async() => {
+        await expect(request({
+            url: `${baseUrl}/bad-status`,
+            failOnHttpError: true,
+        }, policy())).rejects.toMatchObject({
+            statusCode: 400,
+        });
+    });
+
+    it('rejects unexpected content types before reading the body', async() => {
+        await expect(request({
+            url: `${baseUrl}/audio`,
+            acceptContentTypes: ['text/html'],
+        }, policy())).rejects.toMatchObject({
+            code: 'ERR_UNEXPECTED_CONTENT_TYPE',
+        });
+    });
+
+    it('accepts structured JSON content types', async() => {
+        const response = await request({
+            url: `${baseUrl}/vendor-json`,
+            acceptContentTypes: ['application/*+json'],
+        }, policy());
+
+        expect(response.status).toBe(200);
+        expect(response.body.toString()).toBe('{}');
+    });
+
+    it('rejects when the connection closes before a response', async() => {
+        const closingServer = net.createServer((socket) => {
+            socket.destroy();
+        });
+        await new Promise((resolve) => {
+            closingServer.listen(0, '127.0.0.1', resolve);
+        });
+        const port = closingServer.address().port;
+
+        try {
+            await expect(request({
+                url: `http://127.0.0.1:${port}/`,
+                timeoutMs: 1000,
+            }, policy())).rejects.toBeDefined();
+        } finally {
+            await new Promise((resolve) => {
+                closingServer.close(resolve);
+            });
+        }
     });
 });

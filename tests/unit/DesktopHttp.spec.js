@@ -82,6 +82,60 @@ describe('Desktop HTTP adapter', () => {
         expect(isDesktop()).toBe(true);
     });
 
+    it('passes preview policy options through the bridge', async() => {
+        const request = jest.fn().mockResolvedValue(nativeResult());
+        window.kiwiDesktop = { http: { request } };
+
+        await desktopFetch('https://example.com/preview', {
+            purpose: 'page-preview',
+            timeoutMs: 8000,
+            maxResponseBytes: 2048,
+            acceptContentTypes: ['text/html'],
+            failOnHttpError: true,
+        });
+
+        expect(request).toHaveBeenCalledWith({
+            url: 'https://example.com/preview',
+            method: 'GET',
+            headers: {},
+            body: undefined,
+            maxResponseBytes: 2048,
+            timeoutMs: 8000,
+            purpose: 'page-preview',
+            acceptContentTypes: ['text/html'],
+            failOnHttpError: true,
+        });
+    });
+
+    it('limits concurrent preview requests', async() => {
+        const pending = [];
+        const request = jest.fn(() => new Promise((resolve) => {
+            pending.push(resolve);
+        }));
+        window.kiwiDesktop = { http: { request } };
+
+        const calls = [];
+        for (let i = 0; i < 5; i++) {
+            calls.push(desktopFetch(`https://example.com/${i}`, {
+                purpose: 'page-preview',
+            }));
+        }
+
+        await new Promise((resolve) => {
+            setTimeout(resolve, 0);
+        });
+        expect(request).toHaveBeenCalledTimes(4);
+
+        pending.splice(0).forEach((resolve) => resolve(nativeResult()));
+        await new Promise((resolve) => {
+            setTimeout(resolve, 0);
+        });
+        expect(request).toHaveBeenCalledTimes(5);
+
+        pending.splice(0).forEach((resolve) => resolve(nativeResult()));
+        await Promise.all(calls);
+    });
+
     it('exposes the final native response URL after redirects', async() => {
         const request = jest.fn().mockResolvedValue(Object.assign(nativeResult(), {
             url: 'https://example.com/final',
@@ -111,6 +165,7 @@ describe('Desktop HTTP adapter', () => {
             method: 'POST',
             headers: { Authorization: 'Basic test' },
             body: new Uint8Array([1, 2, 3]),
+            purpose: 'upload',
         });
         expect(response.status).toBe(200);
     });
@@ -135,6 +190,7 @@ describe('Desktop HTTP adapter', () => {
             method: 'POST',
             headers: {},
             fields: { reqtype: 'fileupload', time: '72h' },
+            purpose: 'upload',
             file: {
                 name: 'test.txt',
                 type: 'text/plain',

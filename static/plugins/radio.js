@@ -115,18 +115,19 @@ kiwi.plugin('radio', (kiwi, log) => {
 
     function radioFetch(url, options) {
         let target = absoluteUrl(url);
+        let requestOptions = Object.assign({ purpose: 'radio' }, options);
         if (desktopHttpAvailable() && /^https?:\/\//i.test(target)) {
             try {
                 let parsed = new URL(target);
                 let page = new URL(window.location.href);
                 if (parsed.origin !== page.origin) {
-                    return kiwi.desktop.http.fetch(target, options);
+                    return kiwi.desktop.http.fetch(target, requestOptions);
                 }
             } catch (err) {
                 // Fall through to the browser fetch.
             }
         }
-        return fetch(url, options);
+        return fetch(url, requestOptions);
     }
 
     function pageProtocol(pageHref) {

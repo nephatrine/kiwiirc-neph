@@ -106,6 +106,39 @@ function responseHeaders(headers) {
     return result;
 }
 
+function contentTypeMatches(contentType, acceptedTypes) {
+    if (!Array.isArray(acceptedTypes) || !acceptedTypes.length) {
+        return true;
+    }
+
+    const actual = String(contentType || '').split(';')[0].trim().toLowerCase();
+    if (!actual) {
+        return false;
+    }
+
+    return acceptedTypes.some((type) => {
+        const expected = String(type || '').trim().toLowerCase();
+        if (!expected) {
+            return false;
+        }
+        if (expected === actual) {
+            return true;
+        }
+        if (expected.endsWith('/*')) {
+            return actual.startsWith(expected.slice(0, -1));
+        }
+
+        const suffixIndex = expected.indexOf('/*+');
+        if (suffixIndex !== -1) {
+            const prefix = expected.slice(0, suffixIndex + 1);
+            const suffix = expected.slice(suffixIndex + 3);
+            return actual.startsWith(prefix) && actual.endsWith('+' + suffix);
+        }
+
+        return false;
+    });
+}
+
 function requestOnce(target, options, policy) {
     return new Promise((resolve, reject) => {
         const isHttps = target.url.protocol === 'https:';
@@ -113,6 +146,7 @@ function requestOnce(target, options, policy) {
         const headers = normalizeHeaders(options.headers);
         const body = options.body || null;
         const maxResponseBytes = toInteger(options.maxResponseBytes, policy.maxResponseBytes);
+        const timeoutMs = toInteger(options.timeoutMs, policy.timeoutMs);
 
         if (body && !Object.keys(headers).some((key) => key.toLowerCase() === 'content-length')) {
             headers['Content-Length'] = String(body.length);
@@ -132,6 +166,9 @@ function requestOnce(target, options, policy) {
             agent: false,
         };
 
+        if (timeoutMs > 0) {
+            requestOptions.timeout = timeoutMs;
+        }
         if (isHttps) {
             requestOptions.servername = target.hostname;
         }
@@ -145,7 +182,48 @@ function requestOnce(target, options, policy) {
             fn(value);
         };
 
+        const fail = (err, response) => {
+            finish(reject, err);
+            if (response && typeof response.destroy === 'function') {
+                response.destroy();
+            }
+            clientRequest.destroy();
+        };
+
         const clientRequest = transport.request(requestOptions, (response) => {
+            const status = response.statusCode || 0;
+
+            response.on('aborted', () => {
+                const err = new Error('response aborted');
+                err.code = 'ERR_RESPONSE_ABORTED';
+                finish(reject, err);
+            });
+            response.on('close', () => {
+                if (!settled) {
+                    const err = new Error('response closed before completion');
+                    err.code = 'ERR_RESPONSE_CLOSED';
+                    finish(reject, err);
+                }
+            });
+            response.on('error', (err) => finish(reject, err));
+
+            if (options.failOnHttpError && status >= 400) {
+                const err = new Error(`request failed (${status})`);
+                err.statusCode = status;
+                fail(err, response);
+                return;
+            }
+
+            if (options.acceptContentTypes &&
+                !contentTypeMatches(response.headers['content-type'], options.acceptContentTypes)
+            ) {
+                const err = new Error('unexpected response content type');
+                err.code = 'ERR_UNEXPECTED_CONTENT_TYPE';
+                err.contentType = String(response.headers['content-type'] || '');
+                fail(err, response);
+                return;
+            }
+
             const chunks = [];
             let total = 0;
 
@@ -153,8 +231,8 @@ function requestOnce(target, options, policy) {
                 total += chunk.length;
                 if (total > maxResponseBytes) {
                     const err = new Error('response is too large');
-                    finish(reject, err);
-                    clientRequest.destroy(err);
+                    err.code = 'ERR_RESPONSE_TOO_LARGE';
+                    fail(err, response);
                     return;
                 }
                 chunks.push(chunk);
@@ -162,21 +240,30 @@ function requestOnce(target, options, policy) {
 
             response.on('end', () => {
                 finish(resolve, {
-                    status: response.statusCode || 0,
+                    status,
                     statusText: response.statusMessage || '',
                     headers: responseHeaders(response.headers),
                     body: Buffer.concat(chunks),
                 });
             });
-
-            response.on('error', (err) => finish(reject, err));
         });
 
-        clientRequest.setTimeout(toInteger(options.timeoutMs, policy.timeoutMs), () => {
-            clientRequest.destroy(new Error('request timed out'));
-        });
+        if (timeoutMs > 0) {
+            clientRequest.setTimeout(timeoutMs, () => {
+                const err = new Error('request timed out');
+                err.code = 'ERR_REQUEST_TIMEOUT';
+                fail(err);
+            });
+        }
 
         clientRequest.on('error', (err) => finish(reject, err));
+        clientRequest.on('close', () => {
+            if (!settled) {
+                const err = new Error('request closed before completion');
+                err.code = 'ERR_REQUEST_CLOSED';
+                finish(reject, err);
+            }
+        });
 
         if (body && requestOptions.method !== 'GET' && requestOptions.method !== 'HEAD') {
             clientRequest.write(body);
@@ -205,6 +292,8 @@ async function request(options, policy) {
             body: currentBody,
             timeoutMs: options.timeoutMs,
             maxResponseBytes: options.maxResponseBytes,
+            acceptContentTypes: options.acceptContentTypes,
+            failOnHttpError: options.failOnHttpError,
         }, policy);
         response.url = target.url.href;
 

@@ -6,6 +6,10 @@ const FAILURE_TTL_MS = 5 * 60 * 1000;
 const MAX_HTML_BYTES = 2 * 1024 * 1024;
 const MAX_OEMBED_BYTES = 256 * 1024;
 const MAX_JSON_LD_BYTES = 200 * 1024;
+const PREVIEW_TIMEOUT_MS = 8000;
+const HTML_TYPES = ['text/html', 'application/xhtml+xml'];
+const JSON_TYPES = ['application/json', 'text/json', 'application/*+json'];
+const XML_TYPES = ['application/xml', 'text/xml', 'application/*+xml'];
 const WEB_GENERIC_HOSTS = new Set([
     'npr.org',
     'foxnews.com',
@@ -327,6 +331,10 @@ function fetchOEmbed(discovery, originalUrl) {
             Accept: accept,
         },
         maxResponseBytes: MAX_OEMBED_BYTES,
+        timeoutMs: PREVIEW_TIMEOUT_MS,
+        purpose: 'page-preview',
+        acceptContentTypes: discovery.format === 'xml' ? XML_TYPES : JSON_TYPES,
+        failOnHttpError: true,
     }).then(async(response) => {
         if (!response || !response.ok) {
             throw new Error('oEmbed request failed');
@@ -971,6 +979,10 @@ function fetchJson(url) {
         headers: {
             Accept: 'application/json',
         },
+        timeoutMs: PREVIEW_TIMEOUT_MS,
+        purpose: 'page-preview',
+        acceptContentTypes: JSON_TYPES,
+        failOnHttpError: true,
     }).then(async(response) => {
         if (!response || !response.ok) {
             throw new Error('page preview request failed');
@@ -1034,6 +1046,10 @@ function fetchHtml(url) {
             Accept: 'text/html,application/xhtml+xml',
         },
         maxResponseBytes: MAX_HTML_BYTES,
+        timeoutMs: PREVIEW_TIMEOUT_MS,
+        purpose: 'page-preview',
+        acceptContentTypes: HTML_TYPES,
+        failOnHttpError: true,
     }).then(async(response) => {
         if (!response || !response.ok) {
             throw new Error('page preview request failed');

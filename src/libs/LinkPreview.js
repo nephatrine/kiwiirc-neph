@@ -11,6 +11,8 @@ import { isWebGenericHost, resolvePagePreview } from './PagePreview';
 const CACHE_LIMIT = 100;
 const FAILURE_CACHE_LIMIT = 100;
 const FAILURE_TTL_MS = 5 * 60 * 1000;
+const PREVIEW_TIMEOUT_MS = 8000;
+const JSON_TYPES = ['application/json', 'text/json', 'application/*+json'];
 const cache = new Map();
 const failures = new Map();
 const inFlight = new Map();
@@ -176,6 +178,10 @@ function fetchPreviewJson(endpoint) {
         headers: {
             Accept: 'application/json',
         },
+        timeoutMs: PREVIEW_TIMEOUT_MS,
+        purpose: 'link-preview',
+        acceptContentTypes: JSON_TYPES,
+        failOnHttpError: true,
     }).then(async(response) => {
         if (!response || !response.ok) {
             throw new Error('link preview request failed');

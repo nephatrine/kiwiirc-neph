@@ -201,6 +201,8 @@ async function fetchPackDocument(url) {
             referrerPolicy: 'no-referrer',
             cache: 'no-cache',
             signal: controller ? controller.signal : undefined,
+            timeoutMs: FETCH_TIMEOUT,
+            purpose: 'emoji-pack',
         });
         if (!response.ok) {
             throw new Error(`emoji pack request failed (${response.status})`);

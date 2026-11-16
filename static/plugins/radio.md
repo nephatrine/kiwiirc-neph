@@ -162,9 +162,9 @@ shifts keep the effect tied to the music. A 2D canvas fallback mirrors the same
 layers when WebGL is unavailable.
 
 The overlay keeps the current station and track visible and provides play/pause,
-previous/next, back to stations, and fullscreen controls. The browser header also
-shows a Stations toggle while the visualizer is open. The overlay action remains
-available in fullscreen, where the browser header is hidden. Esc exits
+previous/next, back to stations, and fullscreen controls. The browser header
+also shows a Stations toggle while the visualizer is open. The overlay action
+remains available in fullscreen, where the browser header is hidden. Esc exits
 fullscreen without closing the visualizer. An idle station shows an ambient
 animation instead of auto-playing.
 

@@ -479,25 +479,41 @@ function registerDesktopConfigIpc() {
             '',
     }));
 
-    ipcMain.handle('kiwi:http-request', (event, options) => {
+    ipcMain.handle('kiwi:http-request', async(event, options) => {
         const policy = desktopHttpPolicy();
-        const requestedMax = Number(options.maxResponseBytes);
+        const request = options && typeof options === 'object' ? options : {};
+        const requestedMax = Number(request.maxResponseBytes);
         const maxResponseBytes = Number.isFinite(requestedMax) && requestedMax > 0 ?
             Math.min(policy.maxResponseBytes, Math.floor(requestedMax)) :
             policy.maxResponseBytes;
-        return httpService.request(Object.assign({}, options, {
+        const requestOptions = Object.assign({}, request, {
             maxResponseBytes,
-            timeoutMs: policy.timeoutMs,
-        }), policy);
+            timeoutMs: requestTimeoutMs(request, policy),
+        });
+
+        try {
+            return await httpService.request(requestOptions, policy);
+        } catch (err) {
+            logHttpFailure('request', requestOptions, err);
+            throw err;
+        }
     });
 
-    ipcMain.handle('kiwi:http-upload', (event, options) => {
+    ipcMain.handle('kiwi:http-upload', async(event, options) => {
         const policy = desktopHttpPolicy();
-        return httpService.upload(Object.assign({}, options, {
+        const request = options && typeof options === 'object' ? options : {};
+        const uploadOptions = Object.assign({}, request, {
             maxResponseBytes: policy.maxResponseBytes,
             maxUploadBytes: policy.maxUploadBytes,
-            timeoutMs: policy.timeoutMs,
-        }), policy);
+            timeoutMs: requestTimeoutMs(request, policy),
+        });
+
+        try {
+            return await httpService.upload(uploadOptions, policy);
+        } catch (err) {
+            logHttpFailure('upload', uploadOptions, err);
+            throw err;
+        }
     });
 
     ipcMain.handle('kiwi:save-url', async(event, url) => {
@@ -513,10 +529,18 @@ function registerDesktopConfigIpc() {
             return { saved: false };
         }
 
-        const response = await httpService.request({
-            url,
-            maxResponseBytes: policy.maxDownloadBytes,
-        }, policy);
+        let response;
+        try {
+            response = await httpService.request({
+                url,
+                purpose: 'download',
+                maxResponseBytes: policy.maxDownloadBytes,
+                timeoutMs: policy.timeoutMs,
+            }, policy);
+        } catch (err) {
+            logHttpFailure('download', { url, purpose: 'download' }, err);
+            throw err;
+        }
         if (response.status < 200 || response.status >= 300) {
             throw new Error(`download failed (${response.status})`);
         }
@@ -630,6 +654,39 @@ function desktopHttpPolicy() {
         maxUploadBytes: positiveInteger(settings.maxUploadBytes, 256 * 1024 * 1024),
         maxRedirects: positiveInteger(settings.maxRedirects, 5),
     };
+}
+
+function safeRequestUrl(rawUrl) {
+    try {
+        const url = new URL(String(rawUrl || ''));
+        url.username = '';
+        url.password = '';
+        url.search = '';
+        url.hash = '';
+        return url.toString();
+    } catch (err) {
+        return '';
+    }
+}
+
+function logHttpFailure(kind, options, err) {
+    const request = options && typeof options === 'object' ? options : {};
+    logWarn(`Native HTTP ${kind} failed`, {
+        method: String(request.method || 'GET').toUpperCase(),
+        url: safeRequestUrl(request.url),
+        purpose: typeof request.purpose === 'string' ? request.purpose : '',
+        code: err && err.code ? String(err.code) : '',
+        status: err && Number.isInteger(err.statusCode) ? err.statusCode : undefined,
+        message: err && err.message ? err.message : String(err),
+    });
+}
+
+function requestTimeoutMs(options, policy) {
+    const requested = positiveInteger(
+        options && options.timeoutMs,
+        policy.timeoutMs
+    );
+    return Math.min(policy.timeoutMs, requested);
 }
 
 function suggestedDownloadName(url) {
@@ -1149,9 +1206,20 @@ function registerEmbedErrorForwarding() {
 
 function registerMediaProtocol() {
     const allowedOrigins = isDev ? [APP_ORIGIN, DEV_ORIGIN] : [APP_ORIGIN];
-    protocol.handle(MEDIA_SCHEME, async(request) => (
-        handleMediaRequest(request, desktopHttpPolicy(), allowedOrigins)
-    ));
+    protocol.handle(MEDIA_SCHEME, async(request) => {
+        const response = await handleMediaRequest(
+            request,
+            desktopHttpPolicy(),
+            allowedOrigins
+        );
+        if (response.status >= 500) {
+            logWarn('Native media proxy failed', {
+                url: safeRequestUrl(request.url),
+                status: response.status,
+            });
+        }
+        return response;
+    });
 }
 
 function createWindow(startHidden = false) {
