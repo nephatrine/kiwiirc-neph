@@ -27,12 +27,15 @@ jobs:
               uses: https://code.nephatrine.net/NephHub/gitea-upload-artifact@v4
               with:
                   name: kiwiirc-desktop-artifacts
-                  path: release-assets/
+                  path: |
+                      desktop/release/*.AppImage
+                      desktop/release/*.exe
+                      desktop/release/SHA256SUMS
                   if-no-files-found: error
                   compression-level: 0
             - name: Notify Discord
               uses: https://code.nephatrine.net/NephHub/actions-status-discord@v1
               if: failure()
               with:
-                  title: "FAIL: desktop build"
+                  title: "FAIL: desktop-build"
                   webhook: ${{ secrets.DISCORD_WH_PROJECTS }}

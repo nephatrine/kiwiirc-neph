@@ -8,6 +8,7 @@ on:
     workflow_dispatch:
 permissions:
     contents: read
+    actions: write
 jobs:
     test:
         runs-on: nephnet-fast
@@ -22,6 +23,17 @@ jobs:
               uses: https://code.nephatrine.net/NephHub/checkout@v6
             - name: Run Tests
               run: cd "${{ gitea.workspace }}" && npm ci && npm run lint && npm test && npm run build:release
+            - name: Build Web Archives
+              run: cd "${{ gitea.workspace }}" && bash scripts/build-web-archives.sh both
+            - name: Upload Web Build
+              uses: https://code.nephatrine.net/NephHub/gitea-upload-artifact@v4
+              with:
+                  name: kiwiirc-web-build
+                  path: |
+                      kiwiirc-release.zip
+                      kiwiirc-release.tar.gz
+                  if-no-files-found: error
+                  retention-days: 7
             - name: Notify Discord
               uses: https://code.nephatrine.net/NephHub/actions-status-discord@v1
               if: failure()

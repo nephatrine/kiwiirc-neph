@@ -27,19 +27,10 @@ win:
   executableName: KiwiIRC
   icon: build/icon.ico
   target:
-    - nsis
     - portable
 appImage:
   artifactName: KiwiIRC-${version}.${ext}
 deb:
-  artifactName: kiwiirc-desktop_${version}_${arch}.${ext}
-nsis:
-  artifactName: KiwiIRC-Setup-${version}.${ext}
-  include: build/installer.nsh
-  installerIcon: build/icon.ico
-  menuCategory: KiwiIRC
-  shortcutName: KiwiIRC
-  uninstallDisplayName: Kiwi IRC ${version}
-  uninstallerIcon: build/icon.ico
+  artifactName: ${name}_${version}_${arch}.${ext}
 portable:
   artifactName: KiwiIRC-${version}-portable.${ext}

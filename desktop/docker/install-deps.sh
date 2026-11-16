@@ -17,5 +17,6 @@ apt-get install -y --no-install-recommends \
     wine64 \
     xauth \
     xvfb \
-    xz-utils
+    xz-utils \
+    zip
 rm -rf /var/lib/apt/lists/*

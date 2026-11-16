@@ -35,26 +35,23 @@ if [ "$version" != "$root_version" ]; then
 fi
 
 rm -rf dist release-assets
-rm -f kiwiirc-release.tar.gz
+rm -f kiwiirc-release.tar.gz kiwiirc-release.zip
 
 npm ci
 npm run lint
 npm test
 npm run build:release
-tar -C dist --exclude='*.map' -czf "$repo_root/kiwiirc-release.tar.gz" .
+bash scripts/build-web-archives.sh both
 
 bash desktop/scripts/build-artifacts.sh
 
 mkdir -p release-assets
-cp kiwiirc-release.tar.gz release-assets/
+cp kiwiirc-release.tar.gz kiwiirc-release.zip release-assets/
 
 shopt -s nullglob
 for file in \
     desktop/release/*.AppImage \
-    desktop/release/*.deb \
-    desktop/release/*.exe \
-    desktop/release/*.blockmap \
-    desktop/release/latest*.yml
+    desktop/release/*.exe
 do
     if [ -f "$file" ]; then
         cp "$file" release-assets/
@@ -69,8 +66,9 @@ require_file() {
 }
 
 require_file release-assets/kiwiirc-release.tar.gz
+require_file release-assets/kiwiirc-release.zip
 
-for pattern in '*.AppImage' '*.deb' '*-Setup-*.exe' '*-portable.exe'; do
+for pattern in '*.AppImage' '*-portable.exe'; do
     if ! compgen -G "release-assets/$pattern" > /dev/null; then
         echo "Missing release asset matching $pattern" >&2
         exit 1

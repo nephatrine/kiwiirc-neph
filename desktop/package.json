@@ -15,8 +15,9 @@
         "dev": "electron . --dev",
         "icons": "node scripts/build-icons.js",
         "pack": "electron-builder --dir",
-        "dist:linux": "electron-builder --linux AppImage deb",
-        "dist:win": "electron-builder --win nsis portable",
+        "dist:linux": "electron-builder --linux AppImage",
+        "dist:linux:deb": "electron-builder --linux deb",
+        "dist:win": "electron-builder --win portable",
         "dist:all": "npm run dist:linux && npm run dist:win"
     },
     "dependencies": {

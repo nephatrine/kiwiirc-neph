@@ -342,13 +342,19 @@ byte-identical.
 
 ## Packaging
 
-Linux:
+Linux AppImage:
 
 ```sh
 npm run dist:linux
 ```
 
-Windows:
+Debian package:
+
+```sh
+npm run dist:linux:deb
+```
+
+Windows portable:
 
 ```sh
 npm run dist:win
@@ -363,6 +369,33 @@ npm run dist:all
 Artifacts are written to `desktop/release/`. Windows packaging requires Wine on
 Linux.
 
+## Debian Package Registry
+
+The `.deb` package is built only by the **Package Debian** workflow and
+published to the Gitea Debian registry. Release and desktop-build workflows do
+not produce `.deb` files.
+
+Release commits publish `kiwiirc-desktop` at the release version. On-demand
+builds publish `kiwiirc-desktop-git` with a commit-based version, and release
+commits also publish that git package.
+
+To install from the registry:
+
+```sh
+sudo curl \
+    https://code.nephatrine.net/api/packages/nephatrine/debian/repository.key \
+    -o /etc/apt/keyrings/gitea-nephatrine.asc
+
+echo "deb [signed-by=/etc/apt/keyrings/gitea-nephatrine.asc] \
+https://code.nephatrine.net/api/packages/nephatrine/debian stable main" \
+    | sudo tee /etc/apt/sources.list.d/kiwiirc.list
+
+sudo apt update
+sudo apt install kiwiirc-desktop
+```
+
+Use `kiwiirc-desktop-git` to track packaged commits instead of releases.
+
 ## Container Build
 
 The local Docker builder produces Linux and Windows artifacts without installing
@@ -375,9 +408,9 @@ plugin:
 
 The repository is mounted at `/workspace`; generated files are written back to
 `dist/` and `desktop/release/`. The release directory includes a `SHA256SUMS`
-file covering the installers. Node modules, Wine, and package-manager caches are
-kept in `~/.cache/kiwiirc-builder`, so the host `node_modules` directories are
-not replaced.
+file covering the desktop artifacts. Node modules, Wine, and package-manager
+caches are kept in `~/.cache/kiwiirc-builder`, so the host `node_modules`
+directories are not replaced.
 
 The first build initializes Wine and downloads the Electron runtimes for both
 platforms, so it takes longer than later builds.
@@ -390,15 +423,17 @@ bundle and both desktop platforms in CI. The tag version must match both
 
 The release includes:
 
-- the web release tarball
-- Linux AppImage and `.deb`
-- Windows NSIS installer and portable executable
-- the NSIS blockmap
+- the web release ZIP and TGZ
+- Linux AppImage
+- Windows portable executable
 - a combined `SHA256SUMS`
 
-The **Desktop Build** workflow can be run manually to build and upload the same
-assets without creating a release. It is intended for packaging smoke tests. The
-shared build path is `scripts/release-build.sh`, with desktop packaging in
+Debian packages are published separately to the package registry.
+
+The **Desktop Build** workflow can be run manually to build and upload the
+desktop AppImage and portable executable without creating a release. It is
+intended for packaging smoke tests. The shared build path is
+`scripts/release-build.sh`, with desktop packaging in
 `desktop/scripts/build-artifacts.sh`.
 
 Windows and macOS artifacts are currently unsigned. Code signing and

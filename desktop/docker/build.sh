@@ -21,4 +21,4 @@ bash desktop/scripts/build-artifacts.sh
 
 echo
 echo "Build artifacts:"
-ls -lh desktop/release/*.AppImage desktop/release/*.deb desktop/release/*.exe desktop/release/SHA256SUMS
+ls -lh desktop/release/*.AppImage desktop/release/*.exe desktop/release/SHA256SUMS

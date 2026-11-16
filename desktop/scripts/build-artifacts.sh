@@ -33,10 +33,17 @@ wineserver -w
 
 cd desktop/release
 shopt -s nullglob
-artifacts=( *.AppImage *.deb *.exe *.blockmap )
+artifacts=( *.AppImage *.exe )
 if [ ${#artifacts[@]} -eq 0 ]; then
     echo "No desktop artifacts were produced." >&2
     exit 1
 fi
+
+for pattern in '*.AppImage' '*-portable.exe'; do
+    if ! compgen -G "$pattern" > /dev/null; then
+        echo "Missing desktop artifact matching $pattern" >&2
+        exit 1
+    fi
+done
 
 sha256sum "${artifacts[@]}" > SHA256SUMS
