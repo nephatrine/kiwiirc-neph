@@ -160,7 +160,11 @@ export function listenForNewMessages(state) {
             force: false,
         }, _opts);
 
-        if (!isEnabled || (state.ui.app_has_focus && !opts.force)) {
+        if (
+            !isEnabled ||
+            state.ui.notifications_enabled === false ||
+            (state.ui.app_has_focus && !opts.force)
+        ) {
             return;
         }
 
@@ -192,6 +196,20 @@ export function listenForWebpushClicks(state) {
         }
     };
 
+    const handleNotificationStateRequest = (event) => {
+        const data = event && event.data;
+        if (!data || data.type !== 'kiwi-notifications-state-request') {
+            return;
+        }
+        const port = event.ports && event.ports[0];
+        if (!port || typeof port.postMessage !== 'function') {
+            return;
+        }
+        port.postMessage({
+            notificationsEnabled: state.ui.notifications_enabled !== false,
+        });
+    };
+
     IPC.on('message', (msg) => {
         handle(msg && msg.data);
     });
@@ -203,6 +221,7 @@ export function listenForWebpushClicks(state) {
     ) {
         navigator.serviceWorker.addEventListener('message', (event) => {
             handle(event && event.data);
+            handleNotificationStateRequest(event);
         });
     }
 }

@@ -94,7 +94,8 @@ export default class Message {
             this.bodyTemplateProps = { card: this.bridge_card };
         }
         this.isHighlight = false;
-        this.is_bot = !!(message.tags && typeof message.tags.bot !== 'undefined');
+        this.is_bot = !!(message.tags && typeof message.tags.bot !== 'undefined') ||
+            !!(user && (user.is_bot || (user.metadata && user.metadata.bot)));
         this.is_oper = !!(
             message.tags &&
             typeof message.tags['draft/oper'] !== 'undefined'

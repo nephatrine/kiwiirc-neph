@@ -5,15 +5,25 @@
             <hr>
             <form class="u-form">
                 <label class="u-checkbox-wrapper">
+                    <input v-model="settingAlertOn" type="radio" name="alert_on" value="default">
+                    <span>{{ $t('settings_default') }}</span>
+                </label>
+                <label class="u-checkbox-wrapper">
                     <input v-model="settingAlertOn" type="radio" name="alert_on" value="message">
                     <span>{{ $t('settings_notify_all') }}</span>
                 </label>
                 <label class="u-checkbox-wrapper">
                     <input v-model="settingAlertOn" type="radio" name="alert_on" value="highlight">
-                    <span>{{ $t('settings_notify_mentioned') }}</span>
+                    <span>{{ $t('settings_notify_highlights') }}</span>
                 </label>
                 <label class="u-checkbox-wrapper">
-                    <input v-model="settingAlertOn" type="radio" name="alert_on" value="never">
+                    <input
+                        v-model="settingAlertOn"
+                        type="radio"
+                        name="alert_on"
+                        value="never"
+                        :disabled="buffer.setting('favorite')"
+                    >
                     <span>{{ $t('settings_notify_never') }}</span>
                 </label>
             </form>
@@ -30,19 +40,26 @@ export default {
     computed: {
         settingAlertOn: {
             get: function getSettingAlertOn() {
-                return this.buffer.setting('alert_on');
+                return this.buffer.settings.alert_on || 'default';
             },
             set: function setSettingAlertOn(val) {
                 let network = this.buffer.getNetwork();
-                let netId = network.connection.bncnetid;
-                if (netId) {
+                let netId = network && network.connection && network.connection.bncnetid;
+                if (netId && network.ircClient) {
                     // If this buffer is on a BOUNCER account, update the setting there too
                     network.ircClient.raw(
                         `BOUNCER changebuffer ${netId} ${this.buffer.name} notify=${val}`
                     );
                 }
 
-                this.buffer.setting('mute_sound', val === 'never');
+                if (val === 'default') {
+                    this.$delete(this.buffer.settings, 'alert_on');
+                    return 'default';
+                }
+
+                if (val === 'never' && this.buffer.setting('favorite')) {
+                    this.buffer.setting('favorite', false);
+                }
 
                 return this.buffer.setting('alert_on', val);
             },

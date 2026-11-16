@@ -1,9 +1,96 @@
 <template>
-    <div v-if="remoteEnabled && channels.length > 0" class="kiwi-appsettings-block kiwi-emojipacks">
+    <div
+        v-if="networkPackSupported || channels.length > 0"
+        class="kiwi-appsettings-block kiwi-emojipacks"
+    >
         <h3>{{ $t('settings_emoji_packs') }}</h3>
         <div class="kiwi-appsettings-section">
             <div class="kiwi-emojipacks-warning">
                 {{ $t('settings_emoji_packs_warning') }}
+            </div>
+
+            <div
+                v-if="networkPackSupported"
+                class="kiwi-emojipacks-channel kiwi-emojipacks-network"
+            >
+                <div class="kiwi-emojipacks-channel-header">
+                    <strong>{{ network.name }}</strong>
+                    <button
+                        v-if="networkPolicy !== 'never'"
+                        type="button"
+                        class="u-button u-button-secondary kiwi-emojipacks-load"
+                        :disabled="!networkPacksEnabled ||
+                            networkPackState.status === 'loading'"
+                        @click="loadNetwork"
+                    >
+                        {{ networkPackState.packs.length ?
+                            $t('settings_emoji_packs_refresh') :
+                            $t('settings_emoji_packs_load')
+                        }}
+                    </button>
+                    <label class="kiwi-emojipacks-policy">
+                        <span>{{ $t('settings_emoji_packs_policy') }}</span>
+                        <select
+                            class="u-input"
+                            :value="networkPolicy"
+                            @change="changeNetworkPolicy($event.target.value)"
+                        >
+                            <option value="default">{{ $t('settings_default') }}</option>
+                            <option value="always">{{ $t('settings_emoji_packs_policy_always') }}</option>
+                            <option value="never">{{ $t('settings_emoji_packs_policy_never') }}</option>
+                        </select>
+                    </label>
+                </div>
+                <div v-if="networkPolicy === 'default'" class="kiwi-emojipacks-status">
+                    {{ networkPacksEnabled ?
+                        $t('settings_emoji_packs_policy_default_hint') :
+                        $t('settings_emoji_packs_remote_disabled')
+                    }}
+                </div>
+                <div
+                    v-if="networkPacksEnabled && networkPackState.status === 'loading'"
+                    class="kiwi-emojipacks-status"
+                >
+                    {{ $t('settings_emoji_packs_loading') }}
+                </div>
+                <div
+                    v-else-if="networkPacksEnabled && networkPackState.error"
+                    class="kiwi-emojipacks-error"
+                >
+                    {{ $t('settings_emoji_packs_error') }}
+                    <span>{{ networkPackState.error }}</span>
+                </div>
+                <div
+                    v-else-if="networkPacksEnabled && networkPackState.packs.length === 0"
+                    class="kiwi-emojipacks-status"
+                >
+                    {{ $t('settings_emoji_packs_empty') }}
+                </div>
+                <div v-else-if="networkPacksEnabled" class="kiwi-emojipacks-list">
+                    <div
+                        v-for="(pack, index) in networkPackState.packs"
+                        :key="pack.id + '-' + index"
+                        class="kiwi-emojipacks-pack"
+                    >
+                        <span class="kiwi-emojipacks-pack-info">
+                            <span class="kiwi-emojipacks-pack-name">{{ pack.name }}</span>
+                            <span class="kiwi-emojipacks-pack-id">{{ pack.id }}</span>
+                            <span v-if="pack.description" class="kiwi-emojipacks-pack-description">
+                                {{ pack.description }}
+                            </span>
+                            <span v-if="!pack.supported" class="kiwi-emojipacks-pack-unsupported">
+                                {{ $t('settings_emoji_packs_unsupported') }}
+                            </span>
+                            <a
+                                v-if="pack.homepage"
+                                :href="pack.homepage"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="kiwi-emojipacks-pack-homepage"
+                            >{{ $t('settings_emoji_packs_homepage') }}</a>
+                        </span>
+                    </div>
+                </div>
             </div>
 
             <div
@@ -43,7 +130,10 @@
                 </div>
 
                 <div v-if="policyOf(channel.name) === 'prompt'" class="kiwi-emojipacks-status">
-                    {{ $t('settings_emoji_packs_policy_prompt_hint') }}
+                    {{ remoteEnabled ?
+                        $t('settings_emoji_packs_policy_prompt_hint') :
+                        $t('settings_emoji_packs_remote_disabled')
+                    }}
                 </div>
                 <div v-else-if="policyOf(channel.name) === 'always'" class="kiwi-emojipacks-status">
                     <div v-if="!statusOf(channel.name).url">
@@ -98,8 +188,13 @@ import {
     channelPolicy,
     ensureChannelMetadata,
     ensureChannelPackByName,
+    ensureServerPack,
     getChannelPolicyEntries,
-    setChannelPolicy
+    networkPackEnabled,
+    networkPackPolicy,
+    serverPackState,
+    setChannelPolicy,
+    setNetworkPackPolicy
 } from '@/libs/EmojiPackStore';
 
 export default {
@@ -107,6 +202,24 @@ export default {
     computed: {
         remoteEnabled() {
             return this.$state.setting('remoteEmojiPacks') !== false;
+        },
+        networkPackSupported() {
+            return typeof this.network.supports === 'function' &&
+                !!this.network.supports('draft/EMOJI');
+        },
+        networkPolicy() {
+            return networkPackPolicy(this.network);
+        },
+        networkPacksEnabled() {
+            return networkPackEnabled(this.network);
+        },
+        networkPackState() {
+            return serverPackState(this.network) || {
+                url: '',
+                status: '',
+                error: '',
+                packs: [],
+            };
         },
         channels() {
             const rows = [];
@@ -137,6 +250,7 @@ export default {
         },
     },
     mounted() {
+        ensureServerPack(this.network).catch(() => undefined);
         this.channels.forEach((channel) => {
             if (this.policyOf(channel.name) === 'always') {
                 ensureChannelMetadata(this.network, channel.name);
@@ -157,6 +271,12 @@ export default {
         },
         changePolicy(channelName, policy) {
             setChannelPolicy(this.network, channelName, policy);
+        },
+        changeNetworkPolicy(policy) {
+            setNetworkPackPolicy(this.network, policy);
+        },
+        loadNetwork() {
+            ensureServerPack(this.network, true).catch(() => undefined);
         },
         load(channelName) {
             const status = this.statusOf(channelName);

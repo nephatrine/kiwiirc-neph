@@ -101,8 +101,14 @@ export default class NetworkState {
                 config.persistencePreference,
             share_typing: bufferDefault('share_typing', true),
             lenient_rerouting: bufferDefault('lenient_rerouting', true),
-            ignore_bots: bufferDefault('ignore_bots', false),
-            show_redactions: bufferDefault('show_redactions', 'placeholder'),
+            show_redactions: 'default',
+            showBotMessages: 'default',
+            show_joinparts: 'default',
+            show_topics: 'default',
+            show_nick_changes: 'default',
+            show_mode_changes: 'default',
+            show_presence_changes: 'default',
+            auto_request_history: 'all',
             // default uses the global buffers.block_pms value.
             blockDirectMessages: 'default',
             // Account-first, nick-fallback identities. Friends has no UI yet.
@@ -112,6 +118,7 @@ export default class NetworkState {
             useFilehost: fileuploadDefault('use_filehost', true) !== false,
             // channel -> emoji pack load policy entry
             emojiChannelPolicies: {},
+            emojiNetworkPolicy: 'default',
             emojiChannelPoliciesMigrated: false,
             // channel -> selected channel emoji pack ids
             emojiPackSelections: {},
@@ -705,6 +712,18 @@ export default class NetworkState {
         }
 
         return this.appState.setting('buffers.block_pms') ? 'block' : 'allow';
+    }
+
+    showBotMessages() {
+        const configured = this.setting('showBotMessages');
+        if (configured === 'yes') {
+            return true;
+        }
+        if (configured === 'no') {
+            return false;
+        }
+
+        return this.appState.setting('showBotMessages') !== false;
     }
 
     findUserByIdentity(identity) {

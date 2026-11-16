@@ -31,6 +31,35 @@ function remoteEnabled() {
     return typeof value === 'undefined' ? true : !!value;
 }
 
+export function networkPackPolicy(network) {
+    if (!network) {
+        return 'default';
+    }
+    return network.setting('emojiNetworkPolicy') || 'default';
+}
+
+export function networkPackEnabled(network) {
+    const policy = networkPackPolicy(network);
+    if (policy === 'never') {
+        return false;
+    }
+    if (policy === 'always') {
+        return true;
+    }
+    return remoteEnabled();
+}
+
+export function channelPackEnabled(network, channelName) {
+    const policy = channelPolicy(network, channelName);
+    if (policy === 'never') {
+        return false;
+    }
+    if (policy === 'always') {
+        return true;
+    }
+    return remoteEnabled();
+}
+
 function packPreference() {
     return getState().setting('emojiPackPreference') === 'remote' ?
         'remote' :
@@ -355,10 +384,12 @@ export function setChannelPolicy(network, channelName, policy) {
     promptedChannels.delete(promptKey(network, channelName));
     removePromptForChannel(network, channelName);
 
-    if (policy === 'prompt' && !network.bufferByName(channelName)) {
-        const channels = emojiPackState.channels[network.id];
-        if (channels) {
-            Vue.delete(channels, key);
+    if (policy === 'prompt') {
+        if (!remoteEnabled() || !network.bufferByName(channelName)) {
+            const channels = emojiPackState.channels[network.id];
+            if (channels) {
+                Vue.delete(channels, key);
+            }
         }
     } else if (policy === 'always') {
         const entry = channelEntryByName(network, channelName);
@@ -366,6 +397,11 @@ export function setChannelPolicy(network, channelName, policy) {
             selectAllChannelPacks(network, channelName, entry.packs);
         } else {
             ensureChannelMetadata(network, channelName);
+        }
+    } else if (policy === 'never') {
+        const channels = emojiPackState.channels[network.id];
+        if (channels) {
+            Vue.delete(channels, key);
         }
     }
 
@@ -598,7 +634,7 @@ function removePromptForChannel(network, channelName) {
 }
 
 function queuePackPrompt(network, channelName, packId, token) {
-    if (channelPolicy(network, channelName) !== 'prompt') {
+    if (channelPolicy(network, channelName) !== 'prompt' || !remoteEnabled()) {
         return;
     }
 
@@ -666,6 +702,18 @@ function clearNetworkPrompts(network) {
     }
 }
 
+export function setNetworkPackPolicy(network, policy) {
+    if (!network) {
+        return;
+    }
+    network.setting('emojiNetworkPolicy', policy);
+    if (!networkPackEnabled(network)) {
+        Vue.delete(emojiPackState.server, network.id);
+        return;
+    }
+    ensureServerPack(network, true);
+}
+
 export function serverPackState(network) {
     return serverEntry(network);
 }
@@ -683,7 +731,8 @@ export function selectedChannelPackIds(network, buffer) {
 }
 
 export function ensureServerPack(network, force = false) {
-    if (!remoteEnabled()) {
+    if (!networkPackEnabled(network)) {
+        Vue.delete(emojiPackState.server, network.id);
         return Promise.resolve();
     }
 
@@ -742,7 +791,7 @@ function channelUrl(network, channelName) {
 }
 
 export function noteChannelMetadata(network, channelName, value) {
-    if (!network || !channelName || !remoteEnabled()) {
+    if (!network || !channelName || !channelPackEnabled(network, channelName)) {
         return;
     }
 
@@ -798,10 +847,13 @@ export function noteChannelPack(network, buffer) {
 }
 
 export function ensureChannelMetadata(network, channelName) {
-    if (!remoteEnabled() || !network || !channelName) {
+    if (!network || !channelName) {
         return Promise.resolve();
     }
     if (channelPolicy(network, channelName) !== 'always') {
+        return Promise.resolve();
+    }
+    if (!channelPackEnabled(network, channelName)) {
         return Promise.resolve();
     }
 
@@ -829,7 +881,7 @@ export function ensureChannelMetadata(network, channelName) {
 }
 
 export function ensureChannelPackByName(network, channelName, force = false) {
-    if (!remoteEnabled() || !network || !channelName) {
+    if (!network || !channelName || !channelPackEnabled(network, channelName)) {
         return Promise.resolve();
     }
 
@@ -1200,14 +1252,29 @@ export function parseEmojiValues(word) {
     return tokens;
 }
 
-function refreshAll() {
-    if (!remoteEnabled()) {
+function clearDisabledChannelEntries(network) {
+    const channels = emojiPackState.channels[network.id];
+    if (!channels) {
         return;
     }
 
+    Object.keys(channels).forEach((key) => {
+        const entry = channels[key];
+        if (!entry || !entry.bufferName) {
+            return;
+        }
+        if (!channelPackEnabled(network, entry.bufferName)) {
+            Vue.delete(channels, key);
+            clearSelectedPackIds(network, entry.bufferName);
+        }
+    });
+}
+
+function refreshAll() {
     const state = getState();
     state.networks.forEach((network) => {
         ensureServerPack(network);
+        clearDisabledChannelEntries(network);
         network.buffers.forEach((buffer) => {
             if (buffer.isChannel()) {
                 noteChannelPack(network, buffer);
@@ -1251,7 +1318,6 @@ export function initEmojiPacks(state) {
             emojiPackState.prompt = null;
             promptQueue.length = 0;
             promptedChannels.clear();
-            return;
         }
         refreshAll();
     });

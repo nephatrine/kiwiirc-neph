@@ -222,6 +222,10 @@
         return (clients || []).some((client) => client && client.focused);
     }
 
+    function anyNotificationsDisabled(states) {
+        return (states || []).some((enabled) => enabled === false);
+    }
+
     return {
         parseIrcMessage: parseIrcMessage,
         buildNotification: buildNotification,
@@ -230,5 +234,6 @@
         appRootFromScope: appRootFromScope,
         notificationTag: notificationTag,
         shouldSuppressPush: shouldSuppressPush,
+        anyNotificationsDisabled: anyNotificationsDisabled,
     };
 }));

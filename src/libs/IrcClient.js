@@ -1730,9 +1730,9 @@ function clientMiddleware(state, network) {
                 bridge_card: bridgeCard,
             };
 
-            // If ignore_bots is enabled and the user is a known bot or the message has a bot tag,
-            // ignore the message
-            const ignoreBots = network.setting('ignore_bots');
+            // If bot messages are disabled and the user is a known bot or the
+            // message has a bot tag, ignore the message.
+            const showBotMessages = network.showBotMessages();
             let messageUser = state.getUser(network.id, event.nick);
             if (isTwitch && isTwitchUserMessage(event)) {
                 messageUser = network.ensureTwitchUser(
@@ -1744,9 +1744,11 @@ function clientMiddleware(state, network) {
             } else if (messageUser && isTwitch) {
                 network.applyTwitchUserTags(messageUser, message.tags);
             }
-            const isBot = (messageUser && messageUser.is_bot) ||
-                (event.tags && typeof event.tags.bot !== 'undefined');
-            if (ignoreBots && isBot) {
+            const isBot = (messageUser && (
+                messageUser.is_bot ||
+                !!(messageUser.metadata && messageUser.metadata.bot)
+            )) || (event.tags && typeof event.tags.bot !== 'undefined');
+            if (!showBotMessages && isBot) {
                 return;
             }
 

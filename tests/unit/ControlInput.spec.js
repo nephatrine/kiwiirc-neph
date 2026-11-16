@@ -70,6 +70,19 @@ describe('ControlInput autocomplete', () => {
         return { context, network, input };
     }
 
+    it('uses the global style picker setting', () => {
+        expect(ControlInput.computed.shouldShowStylePicker.call({
+            $state: { setting: () => true },
+        })).toBe(true);
+        expect(ControlInput.computed.shouldShowStylePicker.call({
+            $state: { setting: () => false },
+        })).toBe(false);
+        expect(ControlInput.computed.shouldShowStylingTools.call({
+            shouldShowColorPicker: false,
+            shouldShowStylePicker: true,
+        })).toBe(true);
+    });
+
     it('sends an autocomplete request for /auto text', () => {
         const { context, network } = makeContext();
 

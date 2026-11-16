@@ -50,13 +50,12 @@ describe('AppSettings channel defaults', () => {
         ['settingBufferShowNickChanges', 'show_nick_changes', false],
         ['settingBufferShowModeChanges', 'show_mode_changes', false],
         ['settingBufferExtraFormatting', 'extra_formatting', false],
-        ['settingBufferColouredNicklist', 'coloured_nicklist', false],
         ['settingBufferShowRealNames', 'show_realnames', true],
+        ['settingBufferShowHostnames', 'show_hostnames', true],
         ['settingBufferShowTopicInHeader', 'show_topic_in_header', true],
         ['settingBufferShowPresenceChanges', 'show_presence_changes', false],
         ['settingBufferShowMessageInfo', 'show_message_info', false],
         ['settingBufferShowLinkPreviews', 'show_link_previews', false],
-        ['settingBufferAutoRequestHistory', 'auto_request_history', 'channels'],
         ['settingBufferNicklistAvatars', 'nicklist_avatars', true],
         ['settingBufferSharedInput', 'shared_input', true],
         ['settingBufferWarnExpectedCommand', 'warn_expected_command', false],
@@ -73,6 +72,11 @@ describe('AppSettings channel defaults', () => {
         expect(s.setting('buffers.emoji_convert_as_typed')).toBe(false);
         expect(s.setting('buffers.show_topic_in_header')).toBe(false);
         expect(s.setting('buffers.show_presence_changes')).toBe(false);
+        expect(s.setting('buffers.show_joinparts')).toBe(false);
+        expect(s.setting('buffers.show_nick_changes')).toBe(false);
+        expect(s.setting('buffers.show_topics')).toBe(true);
+        expect(s.setting('buffers.show_mode_changes')).toBe(true);
+        expect(s.setting('buffers.extra_formatting')).toBe(true);
         expect(s.setting('emojiPackPreference')).toBe('local');
     });
 
@@ -113,6 +117,22 @@ describe('AppSettings channel defaults', () => {
             settingMessageLayout: 'modern',
         })).toBe(true);
         expect(AppSettings.computed.messageLayoutUsesRealNames.call({
+            settingMessageLayout: 'inline',
+        })).toBe(false);
+
+        expect(AppSettings.computed.messageLayoutUsesAvatars.call({
+            settingMessageLayout: 'corporate',
+        })).toBe(true);
+        expect(AppSettings.computed.messageLayoutUsesAvatars.call({
+            settingMessageLayout: 'cyberdeck',
+        })).toBe(true);
+        expect(AppSettings.computed.messageLayoutUsesAvatars.call({
+            settingMessageLayout: 'modern',
+        })).toBe(true);
+        expect(AppSettings.computed.messageLayoutUsesAvatars.call({
+            settingMessageLayout: 'traditional',
+        })).toBe(false);
+        expect(AppSettings.computed.messageLayoutUsesAvatars.call({
             settingMessageLayout: 'inline',
         })).toBe(false);
     });
@@ -459,6 +479,43 @@ describe('AppSettings channel defaults', () => {
         expect(getComputed('settingNicklistGrouped')).toBe(true);
     });
 
+    it('binds global users display settings', () => {
+        expect(getComputed('settingHideIgnored')).toBe(true);
+        expect(getComputed('settingShowColors')).toBe(true);
+        expect(getComputed('settingShowPrefix')).toBe(true);
+
+        setComputed('settingHideIgnored', false);
+        setComputed('settingShowColors', false);
+        setComputed('settingShowPrefix', false);
+
+        expect(s.setting('hideIgnored')).toBe(false);
+        expect(s.setting('showColors')).toBe(false);
+        expect(s.setting('showPrefix')).toBe(false);
+    });
+
+    it('binds global message settings', () => {
+        expect(getComputed('settingGlobalShowBotMessages')).toBe(true);
+        expect(getComputed('settingGlobalShowRedactions'))
+            .toBe(s.setting('buffers.show_redactions'));
+
+        setComputed('settingGlobalShowBotMessages', false);
+        setComputed('settingGlobalShowRedactions', 'hidden');
+
+        expect(s.setting('showBotMessages')).toBe(false);
+        expect(s.setting('buffers.show_redactions')).toBe('hidden');
+    });
+
+    it('binds chat box and export settings', () => {
+        expect(getComputed('settingShowStylePicker')).toBe(true);
+        expect(getComputed('settingShowExportButton')).toBe(false);
+
+        setComputed('settingShowStylePicker', false);
+        setComputed('settingShowExportButton', true);
+
+        expect(s.setting('showStylePicker')).toBe(false);
+        expect(s.setting('showExportButton')).toBe(true);
+    });
+
     it.each(bindings)('binds %s to buffers.%s', (computedName, key, value) => {
         expect(getComputed(computedName)).toBe(s.setting('buffers.' + key));
 
@@ -472,15 +529,18 @@ describe('AppSettings channel defaults', () => {
         expect(getComputed('settingAvatarFallbackStyle')).toBe(LOCAL_IDENTICON);
         expect(getComputed('settingAvatarFallbackUrl')).toBe('');
         expect(getComputed('settingAvatarShowImageBackground')).toBe(true);
+        expect(getComputed('settingAvatarShowWithoutUser')).toBe(true);
         expect(getComputed('settingAvatarAwayStatusPosition')).toBe(2);
 
         setComputed('settingAvatarFallbackUrl', 'https://example.com/{nickname}');
         setComputed('settingAvatarShowImageBackground', false);
+        setComputed('settingAvatarShowWithoutUser', false);
         setComputed('settingAvatarAwayStatusPosition', 3);
 
         expect(s.setting('avatars.fallback_avatar_url'))
             .toBe('https://example.com/{nickname}');
         expect(s.setting('avatars.show_image_background')).toBe(false);
+        expect(s.setting('avatars.show_without_user')).toBe(false);
         expect(s.setting('avatars.away_status_position')).toBe(3);
     });
 

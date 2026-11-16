@@ -154,7 +154,7 @@
                         class="kiwi-controlinput-tools-container"
                     >
                         <div
-                            v-if="shouldShowColorPicker && isWideEnough"
+                            v-if="shouldShowStylingTools && isWideEnough"
                             :title="$t('styling_tools')"
                             class="kiwi-controlinput-button"
                             @click.prevent="onToolClickStyling"
@@ -162,8 +162,9 @@
                         >
                             <i class="bx bx-font" aria-hidden="true" />
                         </div>
-                        <template v-if="shouldShowColorPicker && !isWideEnough">
+                        <template v-if="shouldShowStylingTools && !isWideEnough">
                             <div
+                                v-if="shouldShowColorPicker"
                                 :title="`${$t('color_picker')} (${$t('color_shift_hint')})`"
                                 class="kiwi-controlinput-button"
                                 @click.prevent="onToolClickTextStyle"
@@ -172,6 +173,7 @@
                                 <i class="bx bx-adjust" aria-hidden="true" />
                             </div>
                             <div
+                                v-if="shouldShowStylePicker"
                                 :title="$t('formatting_tools')"
                                 class="kiwi-controlinput-button"
                                 @click.prevent="onToolClickFormatting"
@@ -427,6 +429,12 @@ export default {
         shouldShowColorPicker() {
             return this.$state.setting('showColorPicker');
         },
+        shouldShowStylePicker() {
+            return this.$state.setting('showStylePicker');
+        },
+        shouldShowStylingTools() {
+            return this.shouldShowColorPicker || this.shouldShowStylePicker;
+        },
         fileUploadNetwork() {
             let buffer = this.buffer;
             if (buffer && typeof buffer.getNetwork === 'function') {
@@ -441,7 +449,7 @@ export default {
             if (
                 this.pluginUiElements.length ||
                 this.shouldShowEmojiPicker ||
-                this.shouldShowColorPicker ||
+                this.shouldShowStylingTools ||
                 this.shouldShowFileUpload
             ) {
                 return true;
@@ -453,8 +461,17 @@ export default {
             if (this.shouldShowEmojiPicker) {
                 toolCount++;
             }
-            if (this.shouldShowColorPicker) {
-                toolCount += (this.isWideEnough ? 1 : 2);
+            if (this.shouldShowStylingTools) {
+                if (this.isWideEnough) {
+                    toolCount++;
+                } else {
+                    if (this.shouldShowColorPicker) {
+                        toolCount++;
+                    }
+                    if (this.shouldShowStylePicker) {
+                        toolCount++;
+                    }
+                }
             }
             if (this.shouldShowFileUpload) {
                 toolCount++;
@@ -660,14 +677,30 @@ export default {
             this.toggleInputTool(ToolFormatting);
         },
         onToolClickStyling() {
-            if (this.active_tool === 'styling') {
+            if (this.active_tool === 'styling' ||
+                this.active_tool === ToolTextStyle ||
+                this.active_tool === ToolFormatting
+            ) {
                 this.active_tool = null;
-            } else {
+                return;
+            }
+
+            if (this.shouldShowColorPicker && this.shouldShowStylePicker) {
                 this.active_tool_props = {
                     buffer: this.buffer,
                     ircinput: this.$refs.input,
                 };
                 this.active_tool = 'styling';
+                return;
+            }
+
+            if (this.shouldShowColorPicker) {
+                this.onToolClickTextStyle();
+                return;
+            }
+
+            if (this.shouldShowStylePicker) {
+                this.onToolClickFormatting();
             }
         },
         onToolClickEmoji() {

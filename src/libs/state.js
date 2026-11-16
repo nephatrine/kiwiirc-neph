@@ -37,6 +37,7 @@ function createNewState() {
             last_active_buffers: [],
             app_has_focus: true,
             app_is_visible: true,
+            notifications_enabled: true,
             app_width: 0,
             app_height: 0,
             is_touch: false,
@@ -245,7 +246,7 @@ function createNewState() {
                             let latestMessages = impBuffer.latest_messages || [];
                             latestMessages.forEach((msg) => {
                                 let m = new Message(msg);
-                                m.toBlocks(buffer, buffer.setting('extra_formatting'));
+                                m.toBlocks(buffer, this.setting('buffers.extra_formatting'));
                                 buffer.latest_messages.push(m);
                             });
 
@@ -1030,7 +1031,7 @@ function createNewState() {
                     bufferMessage.ignore = true;
                 }
 
-                bufferMessage.toBlocks(buffer, buffer.setting('extra_formatting'));
+                bufferMessage.toBlocks(buffer, state.setting('buffers.extra_formatting'));
 
                 buffer.addMessage(bufferMessage);
 

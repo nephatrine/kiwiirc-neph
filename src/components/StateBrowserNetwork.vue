@@ -311,6 +311,7 @@
 
 import * as Misc from '@/helpers/Misc';
 import * as bufferTools from '@/libs/bufferTools';
+import { unreadBadgePolicy, unreadBadgesEnabled } from '@/helpers/UnreadBadge';
 import AutoComplete from './AutoComplete';
 import BufferSettings from './BufferSettings';
 import StateBrowserBuffer from './StateBrowserBuffer';
@@ -477,10 +478,11 @@ export default {
             let highlight = false;
             let error = false;
             buffers.forEach((buffer) => {
-                if (buffer.isSpecial() || buffer.setting('hide_message_counts')) {
+                const policy = unreadBadgePolicy(buffer);
+                if (buffer.isSpecial() || policy === 'hide') {
                     return;
                 }
-                if (showUnread) {
+                if (showUnread || policy === 'show') {
                     totalUnread += buffer.flags.unread;
                 }
                 if (buffer.flags.highlight) {
@@ -557,8 +559,7 @@ export default {
             }, 200);
         },
         showMessageCounts(buffer) {
-            return this.$state.setting('unreadBadges') &&
-                !buffer.setting('hide_message_counts');
+            return unreadBadgesEnabled(buffer, this.$state);
         },
         setActiveBuffer(buffer) {
             // Clear any active component to show the buffer again

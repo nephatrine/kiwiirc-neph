@@ -1,7 +1,65 @@
 <template>
     <div class="kiwi-sidebar-buffersettings" @click.stop="">
         <tabbed-view ref="tabs">
-            <tabbed-tab :header="$t('settings')" :focus="true" name="settings">
+            <tabbed-tab :header="$t('preferences')" :focus="true" name="preferences">
+                <div class="kiwi-sidebar-settings">
+                    <h3>{{ $t('side_settings') }}</h3>
+                    <hr>
+                    <form
+                        class="u-form"
+                        :class="{ 'kiwi-sidebar-settings-disabled': notificationNever }"
+                    >
+                        <label class="kiwi-sidebar-settings-inline">
+                            <span>{{ $t('settings_unread_badge') }}</span>
+                            <select v-model="settingUnreadBadge">
+                                <option value="default">{{ $t('settings_default') }}</option>
+                                <option value="hide">{{ $t('settings_hide') }}</option>
+                                <option value="show">{{ $t('settings_show') }}</option>
+                            </select>
+                        </label>
+                        <label class="u-checkbox-wrapper">
+                            <span>{{ $t('favorite_channel') }}</span>
+                            <input
+                                v-model="settingFavorite"
+                                type="checkbox"
+                                :disabled="notificationNever"
+                            >
+                        </label>
+                    </form>
+                </div>
+                <div class="kiwi-sidebar-settings">
+                    <buffer-settings :buffer="buffer" />
+                </div>
+            </tabbed-tab>
+            <tabbed-tab :header="$t('access')" name="access">
+                <div class="kiwi-sidebar-settings">
+                    <a
+                        :class="{
+                            'kiwi-sidebar-accesstab--active': accessTab === 'banlist',
+                        }"
+                        class="u-link kiwi-sidebar-accesstab"
+                        @click="accessTab = 'banlist'"
+                    >
+                        {{ $t('banned') }}
+                    </a>
+                    <a
+                        :class="{
+                            'kiwi-sidebar-accesstab--active': accessTab === 'invitelist',
+                        }"
+                        class="u-link kiwi-sidebar-accesstab"
+                        @click="accessTab = 'invitelist'"
+                    >
+                        {{ $t('invited') }}
+                    </a>
+                    <channel-banlist v-if="accessTab === 'banlist'" :buffer="buffer" />
+                    <channel-invitelist v-if="accessTab === 'invitelist'" :buffer="buffer" />
+                </div>
+            </tabbed-tab>
+            <tabbed-tab
+                v-if="channelSettingsVisible"
+                :header="$t('settings')"
+                name="settings"
+            >
                 <div
                     v-if="buffer.isChannel() && areWeAnOp"
                     class="kiwi-sidebar-settings"
@@ -66,74 +124,6 @@
                         </label>
                     </form>
                 </div>
-
-                <div class="kiwi-sidebar-settings">
-                    <h3>{{ $t('side_settings') }}</h3>
-                    <hr>
-                    <form class="u-form">
-                        <label class="u-checkbox-wrapper">
-                            <span>{{ $t('favorite_channel') }}</span>
-                            <input v-model="settingFavorite" type="checkbox">
-                        </label>
-                        <label class="u-checkbox-wrapper">
-                            <span>{{ $t('side_joins') }}</span>
-                            <input v-model="settingShowJoinParts" type="checkbox">
-                        </label>
-                        <label class="u-checkbox-wrapper">
-                            <span>{{ $t('side_topics') }}</span>
-                            <input v-model="settingShowTopics" type="checkbox">
-                        </label>
-                        <label class="u-checkbox-wrapper">
-                            <span>{{ $t('side_nick_changes') }}</span>
-                            <input v-model="settingShowNickChanges" type="checkbox">
-                        </label>
-                        <label class="u-checkbox-wrapper">
-                            <span>{{ $t('side_mode_changes') }}</span>
-                            <input v-model="settingShowModeChanges" type="checkbox">
-                        </label>
-                        <label class="u-checkbox-wrapper">
-                            <span>{{ $t('side_formatting') }}</span>
-                            <input v-model="settingExtraFormatting" type="checkbox">
-                        </label>
-                        <label class="u-checkbox-wrapper">
-                            <span>{{ $t('side_colours') }}</span>
-                            <input v-model="settingColouredNicklist" type="checkbox">
-                        </label>
-                        <label v-if="typingSupported" class="u-checkbox-wrapper">
-                            <span>{{ $t('settings_share_typing') }}</span>
-                            <input v-model="settingShareTyping" type="checkbox">
-                        </label>
-                    </form>
-                </div>
-            </tabbed-tab>
-            <tabbed-tab :header="$t('access')" name="access">
-                <div class="kiwi-sidebar-settings">
-                    <a
-                        :class="{
-                            'kiwi-sidebar-accesstab--active': accessTab === 'banlist',
-                        }"
-                        class="u-link kiwi-sidebar-accesstab"
-                        @click="accessTab = 'banlist'"
-                    >
-                        {{ $t('banned') }}
-                    </a>
-                    <a
-                        :class="{
-                            'kiwi-sidebar-accesstab--active': accessTab === 'invitelist',
-                        }"
-                        class="u-link kiwi-sidebar-accesstab"
-                        @click="accessTab = 'invitelist'"
-                    >
-                        {{ $t('invited') }}
-                    </a>
-                    <channel-banlist v-if="accessTab === 'banlist'" :buffer="buffer" />
-                    <channel-invitelist v-if="accessTab === 'invitelist'" :buffer="buffer" />
-                </div>
-            </tabbed-tab>
-            <tabbed-tab :header="$t('notifications')" name="notifications">
-                <div class="kiwi-sidebar-settings">
-                    <buffer-settings :buffer="buffer" />
-                </div>
             </tabbed-tab>
             <tabbed-tab
                 v-for="item in pluginUiElements"
@@ -157,6 +147,7 @@
 'kiwi public';
 
 import GlobalApi from '@/libs/GlobalApi';
+import { unreadBadgePolicy } from '@/helpers/UnreadBadge';
 
 import ChannelBanlist from './ChannelBanlist';
 import ChannelInvitelist from './ChannelInvitelist';
@@ -195,18 +186,6 @@ function generateComputedModeWithParam(mode) {
     };
 }
 
-// Helper to generate Vue's computed methods for getting/setting settings.
-function generateComputedSetting(setting) {
-    return {
-        get() {
-            return this.buffer.setting(setting);
-        },
-        set(newVal) {
-            return this.buffer.setting(setting, newVal);
-        },
-    };
-}
-
 export default {
     components: {
         ChannelBanlist,
@@ -221,22 +200,39 @@ export default {
         };
     },
     computed: {
-        settingShowJoinParts: generateComputedSetting('show_joinparts'),
-        settingShowTopics: generateComputedSetting('show_topics'),
-        settingShowNickChanges: generateComputedSetting('show_nick_changes'),
-        settingShowModeChanges: generateComputedSetting('show_mode_changes'),
-        settingColouredNicklist: generateComputedSetting('coloured_nicklist'),
-        settingExtraFormatting: generateComputedSetting('extra_formatting'),
-        settingShareTyping: generateComputedSetting('share_typing'),
-        settingFavorite: generateComputedSetting('favorite'),
-        typingSupported() {
-            let network = this.buffer.getNetwork();
-            return network &&
-                network.hasCap('message-tags') &&
-                network.supportsTag('+typing');
+        settingUnreadBadge: {
+            get() {
+                return unreadBadgePolicy(this.buffer);
+            },
+            set(value) {
+                if (value === 'default') {
+                    this.$delete(this.buffer.settings, 'unread_badge');
+                    return;
+                }
+                if (value === 'hide' || value === 'show') {
+                    this.buffer.setting('unread_badge', value);
+                }
+            },
+        },
+        settingFavorite: {
+            get() {
+                return this.buffer.setting('favorite');
+            },
+            set(value) {
+                if (value && this.buffer.settings.alert_on === 'never') {
+                    this.$delete(this.buffer.settings, 'alert_on');
+                }
+                this.buffer.setting('favorite', value);
+            },
+        },
+        notificationNever() {
+            return this.buffer.settings.alert_on === 'never';
         },
         areWeAnOp() {
             return this.buffer.isUserAnOp(this.buffer.getNetwork().nick);
+        },
+        channelSettingsVisible() {
+            return this.buffer.isChannel() && this.areWeAnOp;
         },
         hasMetadata() {
             return this.buffer.getNetwork().metadataCap();
@@ -347,8 +343,25 @@ export default {
         }
     }
 
+    label.kiwi-sidebar-settings-inline {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        span {
+            display: inline-block;
+            margin-bottom: 0;
+        }
+
+        select {
+            width: auto;
+            margin-left: auto;
+        }
+    }
+
     textarea,
-    input[type='text'] {
+    input[type='text'],
+    select {
         width: 100%;
         box-sizing: border-box;
     }

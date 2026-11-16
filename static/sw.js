@@ -5,7 +5,7 @@
    coexist. The tiny parser lives in sw-utils.js so it stays testable. */
 
 // Bump this version when sw-utils.js changes so browsers install a new worker.
-importScripts('sw-utils.js?v=3');
+importScripts('sw-utils.js?v=4');
 
 const utils = self.KiwiSwUtils;
 const stateKey = utils.stateKeyFromScope(self.registration.scope);
@@ -41,6 +41,53 @@ function notifyApp(message) {
             }
         });
     }).catch(() => {});
+}
+
+// Do Not Disturb lives in the page, so ask open clients before showing.
+function clientNotificationsEnabled(client) {
+    return new Promise((resolve) => {
+        if (
+            !client ||
+            typeof client.postMessage !== 'function' ||
+            typeof MessageChannel === 'undefined'
+        ) {
+            resolve(true);
+            return;
+        }
+
+        const channel = new MessageChannel();
+        let settled = false;
+        let timer = null;
+        const finish = (enabled) => {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            if (timer) {
+                clearTimeout(timer);
+            }
+            resolve(enabled);
+        };
+
+        timer = setTimeout(() => finish(true), 1000);
+        channel.port1.onmessage = (event) => {
+            const data = event && event.data;
+            finish(!data || data.notificationsEnabled !== false);
+        };
+
+        try {
+            client.postMessage({
+                type: 'kiwi-notifications-state-request',
+            }, [channel.port2]);
+        } catch (err) {
+            finish(true);
+        }
+    });
+}
+
+function anyClientNotificationsDisabled(clients) {
+    return Promise.all((clients || []).map(clientNotificationsEnabled))
+        .then((states) => utils.anyNotificationsDisabled(states));
 }
 
 function showNotification(note) {
@@ -92,6 +139,10 @@ self.addEventListener('push', (event) => {
         });
 
         if (utils.shouldSuppressPush(clients)) {
+            return;
+        }
+
+        if (await anyClientNotificationsDisabled(clients)) {
             return;
         }
 

@@ -90,6 +90,13 @@ describe('StateBrowser search availability', () => {
         expect(StateBrowser.computed.searchVisible.call(context)).toBe(false);
     });
 
+    test('hides search while the user menu is open', () => {
+        const context = makeVisibilityContext();
+        context.usermenuOpen = true;
+
+        expect(StateBrowser.computed.searchVisible.call(context)).toBe(false);
+    });
+
     test('does not open search when it is unavailable', () => {
         const context = makeContext(false, false);
 

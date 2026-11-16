@@ -6,6 +6,7 @@ import {
     LOCAL_INITIALS,
     avatarFallbackStyleFromUrl,
     getAvatarFallbackUrl,
+    getConfiguredAvatarFallbackUrl,
     getLocalIdenticon,
     getLocalInitials,
     isDiceBearFallbackStyle
@@ -53,6 +54,27 @@ describe('avatar fallback styles', () => {
         expect(getAvatarFallbackUrl(LOCAL_INITIALS)).toBe('');
         expect(isDiceBearFallbackStyle(LOCAL_INITIALS)).toBe(false);
         expect(isDiceBearFallbackStyle(CUSTOM_AVATAR_STYLE)).toBe(false);
+    });
+
+    test('builds the configured fallback URL for a nick', () => {
+        const state = (settings) => ({
+            setting: (key) => settings[key],
+        });
+
+        expect(getConfiguredAvatarFallbackUrl('Alice Smith', state({
+            'avatars.fallback_style': CUSTOM_AVATAR_STYLE,
+            'avatars.fallback_avatar_url': 'https://example.com/{nickname}.png',
+        }))).toBe('https://example.com/alice%20smith.png');
+
+        expect(getConfiguredAvatarFallbackUrl('Alice', state({
+            'avatars.fallback_style': LOCAL_INITIALS,
+            'avatars.fallback_avatar_url': 'https://example.com/{nickname}.png',
+        }))).toBe('');
+
+        expect(getConfiguredAvatarFallbackUrl('Alice', state({
+            'avatars.fallback_style': CUSTOM_AVATAR_STYLE,
+            'avatars.fallback_avatar_url': '',
+        }))).toBe('');
     });
 
     test('generates local initials from the nickname', () => {

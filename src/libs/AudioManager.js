@@ -30,12 +30,9 @@ export class AudioManager {
             this.play('notification');
         });
 
-        state.$on('audio.play', (type, network) => {
-            if (type === 'startup' && network) {
-                const serverBuffer = network.serverBuffer();
-                if (serverBuffer && serverBuffer.setting('mute_sound')) {
-                    return;
-                }
+        state.$on('audio.play', (type) => {
+            if (!state.setting('notificationSounds')) {
+                return;
             }
             this.play(type);
         });
@@ -45,7 +42,11 @@ export class AudioManager {
     watchForMessages(state) {
         state.$on('message.new', (event) => {
             let { message, buffer } = event;
-            if (!state.setting('notificationSounds') || buffer.setting('mute_sound')) {
+            if (
+                state.ui.notifications_enabled === false ||
+                !state.setting('notificationSounds') ||
+                buffer.setting('alert_on') === 'never'
+            ) {
                 return;
             }
 

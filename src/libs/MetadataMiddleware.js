@@ -2,6 +2,7 @@ import Irc from 'irc-framework';
 import * as Misc from '@/helpers/Misc';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import * as MetadataCache from '@/libs/MetadataCache';
+import { isBufferMuted } from '@/helpers/UnreadBadge';
 
 function alertUnknownVisibility(network, target, key, visibility, visCache) {
     if (visibility && visibility !== '*') {
@@ -541,13 +542,20 @@ function queueMetadataSync(network, target, retryVal) {
 function applySojuBufferMetadata(buffer, key, value) {
     if (key === 'soju.im/pinned') {
         buffer.setting('favorite', value === '1');
+        if (value === '1' && buffer.settings.alert_on === 'never') {
+            buffer.state.$delete(buffer.settings, 'alert_on');
+        }
     } else if (key === 'soju.im/muted') {
         if (value === '1') {
+            buffer.setting('favorite', false);
             buffer.setting('alert_on', 'never');
-            buffer.setting('mute_sound', true);
-        } else if (buffer.setting('alert_on') === 'never' && buffer.setting('mute_sound')) {
-            buffer.setting('alert_on', 'highlight');
-            buffer.setting('mute_sound', false);
+            buffer.setting('unread_badge', 'hide');
+        } else if (
+            buffer.settings.alert_on === 'never' &&
+            buffer.settings.unread_badge === 'hide'
+        ) {
+            buffer.state.$delete(buffer.settings, 'alert_on');
+            buffer.state.$delete(buffer.settings, 'unread_badge');
         }
     }
 }
@@ -563,9 +571,8 @@ function watchSojuBufferSettings(network, buffer) {
     let pinnedQueued = false;
     let mutedQueued = false;
 
-    // Coalesce changes made in the same tick (ticking both notification
-    // settings counts as one muted change) and never echo a value the server
-    // just gave us.
+    // Coalesce changes made in the same tick and never echo a value the
+    // server just gave us.
     const flushPinned = () => {
         pinnedQueued = false;
         if (!network.isSoju() || !network.metadataCap()) {
@@ -586,9 +593,7 @@ function watchSojuBufferSettings(network, buffer) {
             return;
         }
 
-        const muted = buffer.setting('alert_on') === 'never' && buffer.setting('mute_sound') ?
-            '1' :
-            '0';
+        const muted = isBufferMuted(buffer) ? '1' : '0';
         if (buffer.metadata['soju.im/muted'] === muted || lastMuted === muted) {
             return;
         }
@@ -613,8 +618,7 @@ function watchSojuBufferSettings(network, buffer) {
     };
 
     network.appState.$watch(() => buffer.setting('favorite'), queuePinned);
-    network.appState.$watch(() => buffer.setting('alert_on'), queueMuted);
-    network.appState.$watch(() => buffer.setting('mute_sound'), queueMuted);
+    network.appState.$watch(() => isBufferMuted(buffer), queueMuted);
 }
 
 function updateMetadataState(network, target, key, value, event, isAuth) {

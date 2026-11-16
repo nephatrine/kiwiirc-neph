@@ -68,6 +68,8 @@
 
 <script>
 
+import { isBufferMuted, unreadBadgesEnabled } from '@/helpers/UnreadBadge';
+
 import AwayStatusIndicator from './AwayStatusIndicator';
 
 export default {
@@ -80,11 +82,7 @@ export default {
             return this.buffer.getNetwork();
         },
         isMuted() {
-            return (
-                this.buffer.setting('alert_on') === 'never' &&
-                this.buffer.setting('hide_message_counts') &&
-                !this.buffer.setting('favorite')
-            );
+            return isBufferMuted(this.buffer);
         },
         showPromptClose() {
             return (this.activePrompt &&
@@ -104,8 +102,7 @@ export default {
             return this.network && this.network.hasCap('away-notify');
         },
         showMessageCounts() {
-            return this.$state.setting('unreadBadges') &&
-                !this.buffer.setting('hide_message_counts');
+            return unreadBadgesEnabled(this.buffer, this.$state);
         },
         maybePromptClose() {
             if (this.buffer.contextOnly) {

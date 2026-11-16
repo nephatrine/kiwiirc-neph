@@ -100,6 +100,21 @@ describe('desktop notifications', () => {
         expect(onclick).toHaveBeenCalledTimes(1);
     });
 
+    it('suppresses notifications while do not disturb is enabled', () => {
+        const bridge = makeNativeBridge();
+        const Notifications = loadNotifications();
+        const state = makeState();
+        state.ui.notifications_enabled = false;
+
+        Notifications.listenForNewMessages(state);
+        notificationHandler(state)('hello', {
+            title: 'Title',
+            force: true,
+        });
+
+        expect(bridge.show).not.toHaveBeenCalled();
+    });
+
     it('drops native click callbacks when a notification closes', () => {
         const bridge = makeNativeBridge();
         const Notifications = loadNotifications();
@@ -133,6 +148,61 @@ describe('desktop notifications', () => {
 
         expect(window.Notification.requestPermission).not.toHaveBeenCalled();
         expect(state.$emit).toHaveBeenCalledWith('notification.enabled');
+    });
+
+    it('answers service worker notification state requests', () => {
+        const originalServiceWorker = Object.getOwnPropertyDescriptor(
+            navigator,
+            'serviceWorker'
+        );
+        const listeners = [];
+        Object.defineProperty(navigator, 'serviceWorker', {
+            configurable: true,
+            value: {
+                addEventListener: (type, handler) => {
+                    if (type === 'message') {
+                        listeners.push(handler);
+                    }
+                },
+            },
+        });
+
+        try {
+            const Notifications = loadNotifications();
+            const state = makeState();
+            state.ui.notifications_enabled = false;
+
+            Notifications.listenForWebpushClicks(state);
+
+            const mutedPort = { postMessage: jest.fn() };
+            listeners[0]({
+                data: { type: 'kiwi-notifications-state-request' },
+                ports: [mutedPort],
+            });
+            expect(mutedPort.postMessage).toHaveBeenCalledWith({
+                notificationsEnabled: false,
+            });
+
+            state.ui.notifications_enabled = true;
+            const enabledPort = { postMessage: jest.fn() };
+            listeners[0]({
+                data: { type: 'kiwi-notifications-state-request' },
+                ports: [enabledPort],
+            });
+            expect(enabledPort.postMessage).toHaveBeenCalledWith({
+                notificationsEnabled: true,
+            });
+        } finally {
+            if (originalServiceWorker) {
+                Object.defineProperty(
+                    navigator,
+                    'serviceWorker',
+                    originalServiceWorker
+                );
+            } else {
+                delete navigator.serviceWorker;
+            }
+        }
     });
 
     it('falls back to browser notifications and attaches onclick', () => {

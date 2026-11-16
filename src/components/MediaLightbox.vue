@@ -6,13 +6,15 @@
             @click.self="close"
         >
             <div class="kiwi-lightbox-controls">
-                <a
+                <button
+                    type="button"
                     :title="$t('close')"
-                    class="u-button u-button-warning kiwi-lightbox-close"
+                    :aria-label="$t('close')"
+                    class="kiwi-lightbox-close"
                     @click="close"
                 >
                     <i class="bx bx-x" aria-hidden="true" />
-                </a>
+                </button>
             </div>
             <div class="kiwi-lightbox-content" @click.self="close">
                 <img :src="displayUrl" alt="" class="kiwi-lightbox-image" @click.stop />
@@ -65,14 +67,31 @@ export default {
 }
 
 .kiwi-lightbox-close {
-    padding: 10px 15px;
-    font-size: 1.5em;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    box-sizing: border-box;
+    border: 1px solid rgb(255 255 255 / 25%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    background: rgb(0 0 0 / 55%);
+    color: #fff;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.kiwi-lightbox-close:hover {
+    background: rgb(0 0 0 / 75%);
+    border-color: rgb(255 255 255 / 45%);
+}
+
+.kiwi-lightbox-close:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
 }
 
 .kiwi-lightbox-content {

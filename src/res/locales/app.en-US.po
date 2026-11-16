@@ -83,6 +83,14 @@ msgstr "Settings"
 msgid "kiwi_settings"
 msgstr "Kiwi Settings"
 
+#: Notifications Enabled
+msgid "notifications_enabled"
+msgstr "Notifications Enabled"
+
+#: Do Not Disturb
+msgid "notifications_disabled"
+msgstr "Do Not Disturb"
+
 #: Channels
 msgid "channels"
 msgstr "Channels"
@@ -102,6 +110,10 @@ msgstr "Invited Users"
 #: Notifications
 msgid "notifications"
 msgstr "Notifications"
+
+#: Preferences
+msgid "preferences"
+msgstr "Preferences"
 
 #: Username
 msgid "username"
@@ -458,6 +470,15 @@ msgstr "Language"
 msgid "settings_theme"
 msgstr "Theme"
 
+msgid "settings_previews"
+msgstr "Previews"
+
+msgid "settings_channels_title"
+msgstr "Channels"
+
+msgid "settings_users"
+msgstr "Users"
+
 #: Refresh Theme
 msgid "refresh_theme"
 msgstr "Refresh Theme"
@@ -500,7 +521,16 @@ msgstr "Monospaced Font"
 
 #: Group nicklist users by channel privilege
 msgid "settings_grouped_nicklists"
-msgstr "Grouped Nicklists"
+msgstr "Group Users"
+
+msgid "settings_hide_ignored"
+msgstr "Hide Ignored"
+
+msgid "settings_show_colors"
+msgstr "Show Colors"
+
+msgid "settings_show_prefix"
+msgstr "Show Prefix"
 
 #: Use Kiwi as my default IRC client
 msgid "settings_default_handler"
@@ -508,19 +538,11 @@ msgstr "Set as Default IRC Client"
 
 #: Show auto-suggestions
 msgid "settings_show_autocomplete"
-msgstr "Show Auto-Suggestions"
+msgstr "Automatic Suggestion Lists"
 
 #: Chat Messages
-msgid "settings_messages_title"
-msgstr "Chat Messages"
-
-#: Channel defaults
-msgid "settings_channel_defaults"
-msgstr "Channel Defaults"
-
-#: Channel defaults hint
-msgid "settings_channel_defaults_hint"
-msgstr "These defaults apply to channels without their own override."
+msgid "settings_messages_block"
+msgstr "Messages"
 
 #: Initial channel list for a network
 msgid "settings_channels"
@@ -534,25 +556,47 @@ msgstr "Default Notifications"
 msgid "settings_show_realnames"
 msgstr "Show Real Names"
 
+#: Show host names
+msgid "settings_show_hostnames"
+msgstr "Show Host Names"
+
 #: Topic in channel header
 msgid "settings_show_topic_in_header"
-msgstr "Topic in Header"
+msgstr "Header Topic"
+
+msgid "settings_show_export_button"
+msgstr "Export Button"
 
 #: Show presence changes
 msgid "settings_show_presence_changes"
-msgstr "Show Presence Changes"
+msgstr "Presence Changes"
+
+msgid "settings_show_messages"
+msgstr "Show Messages..."
+
+msgid "settings_show_bot_messages"
+msgstr "Bot Messages"
+
+msgid "settings_default"
+msgstr "Default"
+
+msgid "settings_no"
+msgstr "No"
+
+msgid "settings_yes"
+msgstr "Yes"
 
 #: Message info on touch devices
 msgid "settings_show_message_info"
-msgstr "Message Info on Touch"
+msgstr "Touch Info"
 
 #: Show preset switcher
 msgid "settings_show_preset_switcher"
-msgstr "Show Preset Switcher"
+msgstr "Preset Switcher"
 
 #: Show preview handles
 msgid "settings_show_link_previews"
-msgstr "Show Preview Handles"
+msgstr "URL Handles"
 
 #: Request history
 msgid "settings_auto_request_history"
@@ -580,7 +624,7 @@ msgstr "Avatars"
 
 #: Show nicklist avatars
 msgid "settings_nicklist_avatars"
-msgstr "Show Nicklist Avatars"
+msgstr "Show Avatars"
 
 #: Fallback avatar style
 msgid "settings_avatar_fallback_style"
@@ -628,7 +672,11 @@ msgstr "Use {nickname} for the URL-encoded nickname. An empty URL uses the selec
 
 #: Show avatar background
 msgid "settings_avatar_show_image_background"
-msgstr "Show Avatar Background"
+msgstr "Avatar Backgrounds"
+
+#: Show avatars for messages without a known user
+msgid "settings_unknown_avatars"
+msgstr "Unknown Avatars"
 
 #: Away status position
 msgid "settings_avatar_away_status_position"
@@ -651,12 +699,15 @@ msgid "settings_avatar_position_top_left"
 msgstr "Top Left"
 
 #: Chat input
-msgid "settings_chat_input"
-msgstr "Chat Input"
+msgid "settings_chat_box"
+msgstr "Chat Box"
 
 #: Show emoji picker
 msgid "settings_show_emoji_picker"
 msgstr "Show Emoji Picker"
+
+msgid "settings_show_style_picker"
+msgstr "Show Style Picker"
 
 #: Show color picker
 msgid "settings_show_color_picker"
@@ -668,7 +719,7 @@ msgstr "Shared Input History"
 
 #: Command as message warning
 msgid "settings_warn_expected_command"
-msgstr "Command As Message Warning"
+msgstr "Accidental Message Protection"
 
 #: Space-prefixed command warning title
 msgid "command_accidental_title"
@@ -728,7 +779,7 @@ msgstr "Decimal Time"
 
 #: Maximum emoji Unicode version shown in the picker
 msgid "settings_emoji_picker_max_version"
-msgstr "Emoji Picker Version"
+msgstr "Emoji Version"
 
 #: Show all emoji versions
 msgid "settings_emoji_version_all"
@@ -874,6 +925,18 @@ msgstr "Notification Sounds"
 msgid "settings_unread_badges"
 msgstr "Unread Badges"
 
+#: Per-buffer unread badge override
+msgid "settings_unread_badge"
+msgstr "Unread Badge"
+
+#: Hide
+msgid "settings_hide"
+msgstr "Hide"
+
+#: Show
+msgid "settings_show"
+msgstr "Show"
+
 #: Pertinent messages
 msgid "settings_pertinent_messages"
 msgstr "Pertinent Messages..."
@@ -933,10 +996,6 @@ msgstr "Send Notify For..."
 #: All messages
 msgid "settings_notify_all"
 msgstr "All Messages"
-
-#: I am mentioned
-msgid "settings_notify_mentioned"
-msgstr "Mentions Only"
 
 #: Only highlights
 msgid "settings_notify_highlights"
@@ -1542,10 +1601,6 @@ msgstr "User Nickname Changes"
 #: Channel mode changes
 msgid "side_mode_changes"
 msgstr "Channel Mode Changes"
-
-#: Extra message formatting
-msgid "side_formatting"
-msgstr "Simple Markdown Formatting"
 
 #: Color nicklist
 msgid "side_colours"
@@ -2384,13 +2439,9 @@ msgstr "You are now an IRC operator."
 msgid "rerouted"
 msgstr "Rerouted Message"
 
-#: Hide all bot messages
-msgid "settings_ignore_bots"
-msgstr "Hide Bot Messages"
-
 #: Lenient message rerouting
 msgid "settings_lenient_rerouting"
-msgstr "Lax Message Rerouting"
+msgstr "Permissive Rerouting"
 
 #: Lenient message rerouting hint
 msgid "settings_lenient_rerouting_hint"
@@ -2430,11 +2481,11 @@ msgstr "SASL Mechanism"
 
 #: Convert emoji codes
 msgid "settings_emoji_convert_incoming"
-msgstr "Convert Emoji Codes"
+msgstr "Show Emoji"
 
 #: Convert emoji shortcodes
 msgid "settings_emoji_convert_as_typed"
-msgstr "Convert Emoji Shortcodes"
+msgstr "Automatic Emoji Conversion"
 
 #: Emoji pack preference
 msgid "settings_emoji_pack_preference"
@@ -2461,6 +2512,9 @@ msgid "settings_emoji_packs"
 msgstr "Emoji Packs"
 
 #: Channel emoji pack warning
+msgid "settings_emoji_packs_network"
+msgstr "Network Packs"
+
 msgid "settings_emoji_packs_warning"
 msgstr "You should only load channel packs you trust."
 
@@ -2470,7 +2524,7 @@ msgstr "Load Packs"
 
 #: Channel emoji pack policy option
 msgid "settings_emoji_packs_policy_prompt"
-msgstr "Prompt"
+msgstr "Default"
 
 #: Channel emoji pack policy option
 msgid "settings_emoji_packs_policy_always"
@@ -2482,7 +2536,13 @@ msgstr "Never"
 
 #: Channel emoji pack prompt policy hint
 msgid "settings_emoji_packs_policy_prompt_hint"
-msgstr "Pack files load only when an emoji from this channel is used."
+msgstr "Pack files load when an emoji from this channel is used, if remote emoji packs are enabled."
+
+msgid "settings_emoji_packs_policy_default_hint"
+msgstr "Uses the global Load Remote Emoji setting."
+
+msgid "settings_emoji_packs_remote_disabled"
+msgstr "Remote emoji packs are disabled globally."
 
 #: Channel not joined label
 msgid "settings_emoji_packs_not_joined"

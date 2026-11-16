@@ -80,6 +80,8 @@ function createMethods(message, repeat) {
         userModePrefix: () => '',
         showRealName: () => false,
         realnameHtml: () => '',
+        showHostName: () => false,
+        hostName: () => '',
         onRealnameClick: jest.fn(),
         getNetwork: () => ({ hasCap: () => false }),
         getReplyMessage: () => null,

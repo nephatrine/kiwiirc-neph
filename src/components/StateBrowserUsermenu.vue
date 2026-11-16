@@ -77,6 +77,16 @@ export default {
             return this.network && this.network.state === 'connected';
         },
     },
+    watch: {
+        is_usermenu_open(value) {
+            this.$emit('toggle', value);
+        },
+    },
+    beforeDestroy() {
+        if (this.is_usermenu_open) {
+            this.$emit('toggle', false);
+        }
+    },
     methods: {
         clickLogout() {
             this.$state.logout();

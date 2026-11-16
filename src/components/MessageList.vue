@@ -290,8 +290,8 @@ export default {
             return this.buffer.setting('messageLayout') || this.$state.setting('messageLayout');
         },
         useExtraFormatting() {
-            // Enables simple markdown formatting
-            return this.buffer.setting('extra_formatting');
+            // Enables simple markdown formatting globally
+            return this.$state.setting('buffers.extra_formatting');
         },
         shouldShowChathistoryTools() {
             // Only show it if we're connected
@@ -691,7 +691,7 @@ export default {
             return message.isHighlight;
         },
         userColour(user) {
-            if (user && this.bufferSetting('colour_nicknames_in_messages')) {
+            if (user && this.$state.setting('showColors')) {
                 return user.getColour();
             }
             return '';
@@ -704,7 +704,7 @@ export default {
         },
         userColourFor(message) {
             if (message.bridged_nick) {
-                if (this.bufferSetting('colour_nicknames_in_messages')) {
+                if (this.$state.setting('showColors')) {
                     return createNickColour(message.bridged_nick);
                 }
                 return '';

@@ -58,14 +58,14 @@ describe('channel defaults', () => {
         const network = s.addNetwork('TestNetwork', 'TestNick', {});
         const channel = s.addBuffer(network.id, '#chan');
 
-        expect(channel.setting('show_joinparts')).toBe(true);
-
-        s.setting('buffers.show_joinparts', false);
         expect(channel.setting('show_joinparts')).toBe(false);
 
-        channel.setting('show_joinparts', true);
+        s.setting('buffers.show_joinparts', true);
         expect(channel.setting('show_joinparts')).toBe(true);
-        expect(s.setting('buffers.show_joinparts')).toBe(false);
+
+        channel.setting('show_joinparts', false);
+        expect(channel.setting('show_joinparts')).toBe(false);
+        expect(s.setting('buffers.show_joinparts')).toBe(true);
     });
 });
 
@@ -94,6 +94,25 @@ describe('user prefixes', () => {
         expect(buffer.userMode(user)).toBe('q');
         expect(buffer.isUserAnOp('alice')).toBe(false);
         expect(buffer.users[user.nick]).toBeUndefined();
+    });
+
+    it('hides all user prefixes when showPrefix is disabled', () => {
+        let s = state.create();
+        let network = s.addNetwork('Twitch', 'nick', {
+            server: 'irc.chat.twitch.tv',
+        });
+        network.isupport.PREFIX = [
+            { symbol: '@', mode: 'o' },
+            { symbol: '+', mode: 'v' },
+        ];
+        let buffer = s.addBuffer(network.id, '#alice');
+        let user = network.ensureTwitchUser('alice', 'alice', 'alice.tmi.twitch.tv', {});
+
+        network.applyTwitchUserModes(buffer, user, { vip: '1' });
+        expect(buffer.userModePrefix(user)).toBe('~%');
+
+        s.setting('showPrefix', false);
+        expect(buffer.userModePrefix(user)).toBe('');
     });
 
     it('marks a Twitch channel owner as founder when they join without NAMES', () => {

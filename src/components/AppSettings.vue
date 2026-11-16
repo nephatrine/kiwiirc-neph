@@ -120,10 +120,6 @@
                                 <span>{{ $t('settings_show_notifications') }} </span>
                                 <input v-model="settingBufferShowNotifications" type="checkbox">
                             </label>
-                            <label class="kiwi-appsettings-full">
-                                <span>{{ $t('settings_highlight') }} </span>
-                                <input v-model="settingHighlights" type="text" class="u-input">
-                            </label>
                             <label class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_notification_sounds') }} </span>
                                 <input v-model="settingNotificationSounds" type="checkbox">
@@ -131,6 +127,10 @@
                             <label class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_unread_badges') }} </span>
                                 <input v-model="settingUnreadBadges" type="checkbox">
+                            </label>
+                            <label class="kiwi-appsettings-full">
+                                <span>{{ $t('settings_highlight') }} </span>
+                                <input v-model="settingHighlights" type="text" class="u-input">
                             </label>
                             <div class="kiwi-appsettings-subsection">
                                 <h4>{{ $t('settings_pertinent_messages') }}</h4>
@@ -147,7 +147,7 @@
                     </div>
 
                     <div class="kiwi-appsettings-block">
-                        <h3>{{ $t('settings_appearance') }}</h3>
+                        <h3>{{ $t('settings_theme') }}</h3>
                         <div class="kiwi-appsettings-section kiwi-appsettings-appearance">
                             <label class="kiwi-appsettings-setting-theme">
                                 <span>{{ $t('settings_theme') }} </span>
@@ -172,9 +172,12 @@
                                 <span>{{ $t('settings_use_monospace') }} </span>
                                 <input v-model="settingUseMonospace" type="checkbox">
                             </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_grouped_nicklists') }} </span>
-                                <input v-model="settingNicklistGrouped" type="checkbox">
+                            <label
+                                v-if="presetSwitcherOptionVisible"
+                                class="u-checkbox-wrapper"
+                            >
+                                <span>{{ $t('settings_show_preset_switcher') }} </span>
+                                <input v-model="settingShowPresetSwitcher" type="checkbox">
                             </label>
                             <div
                                 v-if="desktopThemesAvailable"
@@ -230,26 +233,228 @@
                                     {{ $t('settings_no_installed_themes') }}
                                 </p>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="kiwi-appsettings-block">
+                        <h3>{{ $t('settings_messages_block') }}</h3>
+                        <div class="kiwi-appsettings-section kiwi-appsettings-messages">
+                            <label class="kiwi-appsettings-messagelistDisplay">
+                                <span>{{ $t('settings_messagelayout') }} </span>
+                                <select v-model="settingMessageLayout">
+                                    <option value="traditional">
+                                        {{ $t('settings_messagelayout_traditional') }}
+                                    </option>
+                                    <option value="modern">
+                                        {{ $t('settings_messagelayout_modern') }}
+                                    </option>
+                                    <option value="corporate">
+                                        {{ $t('settings_messagelayout_corporate') }}
+                                    </option>
+                                    <option value="inline">
+                                        {{ $t('settings_messagelayout_inline') }}
+                                    </option>
+                                    <option value="cyberdeck">
+                                        {{ $t('settings_messagelayout_cyberdeck') }}
+                                    </option>
+                                </select>
+                            </label>
                             <label
-                                v-if="presetSwitcherOptionVisible"
+                                v-if="timestampTimeSystem && settingBufferShowTimestamps"
+                                class="kiwi-appsettings-messagelistDisplay"
+                            >
+                                <span>{{ $t('settings_time_system') }} </span>
+                                <select v-model="timestampTimeSystem">
+                                    <option value="12h">
+                                        {{ $t('settings_time_system_12h') }}
+                                    </option>
+                                    <option value="24h">
+                                        {{ $t('settings_time_system_24h') }}
+                                    </option>
+                                    <option value="decimal">
+                                        {{ $t('settings_time_system_decimal') }}
+                                    </option>
+                                </select>
+                            </label>
+                            <label class="kiwi-appsettings-messagelistDisplay">
+                                <span>{{ $t('settings_show_redactions') }} </span>
+                                <select v-model="settingGlobalShowRedactions">
+                                    <option value="hidden">
+                                        {{ $t('settings_show_redactions_hidden') }}
+                                    </option>
+                                    <option value="placeholder">
+                                        {{ $t('settings_show_redactions_placeholder') }}
+                                    </option>
+                                    <option value="revealed">
+                                        {{ $t('settings_show_redactions_revealed') }}
+                                    </option>
+                                </select>
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_formatting') }} </span>
+                                <input v-model="settingBufferExtraFormatting" type="checkbox">
+                            </label>
+                            <label v-if="touchSupported" class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_show_message_info') }} </span>
+                                <input v-model="settingBufferShowMessageInfo" type="checkbox">
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_emoji_convert_incoming') }} </span>
+                                <input v-model="settingBufferEmojiConvertIncoming" type="checkbox">
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_show_hostnames') }} </span>
+                                <input v-model="settingBufferShowHostnames" type="checkbox">
+                            </label>
+                            <label
+                                v-if="messageLayoutUsesRealNames"
                                 class="u-checkbox-wrapper"
                             >
-                                <span>{{ $t('settings_show_preset_switcher') }} </span>
-                                <input v-model="settingShowPresetSwitcher" type="checkbox">
+                                <span>{{ $t('settings_show_realnames') }} </span>
+                                <input v-model="settingBufferShowRealNames" type="checkbox">
                             </label>
                             <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_show_link_previews') }} </span>
-                                <input v-model="settingBufferShowLinkPreviews" type="checkbox">
+                                <span>{{ $t('settings_timestamps') }} </span>
+                                <input v-model="settingBufferShowTimestamps" type="checkbox">
+                            </label>
+                            <label
+                                v-if="messageLayoutUsesAvatars"
+                                class="u-checkbox-wrapper"
+                            >
+                                <span>{{ $t('settings_unknown_avatars') }} </span>
+                                <input v-model="settingAvatarShowWithoutUser" type="checkbox">
+                            </label>
+                            <label
+                                class="kiwi-appsettings-full kiwi-appsettings-setting-scrollback"
+                            >
+                                <input
+                                    v-model="settingBufferScrollbackSize"
+                                    type="number"
+                                    class="u-input"
+                                >
+                                <span>{{ $t('settings_scrollback') }} </span>
+                            </label>
+                            <div class="kiwi-appsettings-subsection">
+                                <h4>{{ $t('settings_show_messages') }}</h4>
+                                <label class="u-checkbox-wrapper kiwi-appsettings-indented">
+                                    <span>{{ $t('settings_show_bot_messages') }} </span>
+                                    <input v-model="settingGlobalShowBotMessages" type="checkbox">
+                                </label>
+                                <label class="u-checkbox-wrapper kiwi-appsettings-indented">
+                                    <span>{{ $t('side_mode_changes') }} </span>
+                                    <input v-model="settingBufferShowModeChanges" type="checkbox">
+                                </label>
+                                <label class="u-checkbox-wrapper kiwi-appsettings-indented">
+                                    <span>{{ $t('side_nick_changes') }} </span>
+                                    <input v-model="settingBufferShowNickChanges" type="checkbox">
+                                </label>
+                                <label class="u-checkbox-wrapper kiwi-appsettings-indented">
+                                    <span>{{ $t('settings_show_presence_changes') }} </span>
+                                    <input v-model="settingBufferShowPresenceChanges" type="checkbox">
+                                </label>
+                                <label class="u-checkbox-wrapper kiwi-appsettings-indented">
+                                    <span>{{ $t('side_topics') }} </span>
+                                    <input v-model="settingBufferShowTopics" type="checkbox">
+                                </label>
+                                <label class="u-checkbox-wrapper kiwi-appsettings-indented">
+                                    <span>{{ $t('side_joins') }} </span>
+                                    <input v-model="settingBufferShowJoinParts" type="checkbox">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="kiwi-appsettings-block">
+                        <h3>{{ $t('settings_chat_box') }}</h3>
+                        <div class="kiwi-appsettings-section">
+                            <label class="kiwi-appsettings-messagelistDisplay">
+                                <span>{{ $t('settings_emoji_picker_max_version') }} </span>
+                                <select v-model.number="settingEmojiPickerMaxVersion">
+                                    <option :value="0">{{ $t('settings_emoji_version_all') }}</option>
+                                    <option
+                                        v-for="version in emojiVersions"
+                                        :key="version"
+                                        :value="version"
+                                    >
+                                        Unicode {{ version.toFixed(1) }}
+                                    </option>
+                                </select>
                             </label>
                             <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_show_topic_in_header') }} </span>
-                                <input v-model="settingBufferShowTopicInHeader" type="checkbox">
+                                <span>{{ $t('settings_warn_expected_command') }} </span>
+                                <input
+                                    v-model="settingBufferWarnExpectedCommand"
+                                    type="checkbox"
+                                >
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_show_autocomplete') }} </span>
+                                <input v-model="settingShowAutoComplete" type="checkbox">
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_emoji_convert_as_typed') }} </span>
+                                <input v-model="settingBufferEmojiConvertAsTyped" type="checkbox">
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_shared_input') }} </span>
+                                <input v-model="settingBufferSharedInput" type="checkbox">
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_show_color_picker') }} </span>
+                                <input v-model="settingShowColorPicker" type="checkbox">
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_show_emoji_picker') }} </span>
+                                <input v-model="settingShowEmojiPicker" type="checkbox">
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_show_style_picker') }} </span>
+                                <input v-model="settingShowStylePicker" type="checkbox">
                             </label>
                         </div>
                     </div>
 
                     <div class="kiwi-appsettings-block">
-                        <h3>{{ $t('settings_avatars') }}</h3>
+                        <h3>{{ $t('settings_previews') }}</h3>
+                        <div class="kiwi-appsettings-section">
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_show_inline_previews') }} </span>
+                                <input v-model="settingBufferInlineLinkPreviews" type="checkbox">
+                            </label>
+                            <label
+                                v-if="settingBufferInlineLinkPreviews"
+                                class="u-checkbox-wrapper"
+                            >
+                                <span>{{ $t('settings_generic_link_previews') }} </span>
+                                <input v-model="settingBufferGenericLinkPreviews" type="checkbox">
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_hide_preview_cards') }} </span>
+                                <input v-model="settingBufferHidePreviewCards" type="checkbox">
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_show_link_previews') }} </span>
+                                <input v-model="settingBufferShowLinkPreviews" type="checkbox">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="kiwi-appsettings-block">
+                        <h3>{{ $t('settings_channels_title') }}</h3>
+                        <div class="kiwi-appsettings-section">
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_show_topic_in_header') }} </span>
+                                <input v-model="settingBufferShowTopicInHeader" type="checkbox">
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_show_export_button') }} </span>
+                                <input v-model="settingShowExportButton" type="checkbox">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="kiwi-appsettings-block">
+                        <h3>{{ $t('settings_users') }}</h3>
                         <div class="kiwi-appsettings-section">
                             <label class="kiwi-appsettings-messagelistDisplay">
                                 <span>{{ $t('settings_avatar_away_status_position') }} </span>
@@ -304,169 +509,29 @@
                                 >
                             </label>
                             <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_grouped_nicklists') }} </span>
+                                <input v-model="settingNicklistGrouped" type="checkbox">
+                            </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_hide_ignored') }} </span>
+                                <input v-model="settingHideIgnored" type="checkbox">
+                            </label>
+                            <label class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_nicklist_avatars') }} </span>
                                 <input v-model="settingBufferNicklistAvatars" type="checkbox">
                             </label>
-                        </div>
-                    </div>
-
-                    <div class="kiwi-appsettings-block">
-                        <h3>{{ $t('settings_chat_input') }}</h3>
-                        <div class="kiwi-appsettings-section">
-                            <label
-                                v-if="emojiPickerEnabled"
-                                class="kiwi-appsettings-messagelistDisplay"
-                            >
-                                <span>{{ $t('settings_emoji_picker_max_version') }} </span>
-                                <select v-model.number="settingEmojiPickerMaxVersion">
-                                    <option :value="0">{{ $t('settings_emoji_version_all') }}</option>
-                                    <option
-                                        v-for="version in emojiVersions"
-                                        :key="version"
-                                        :value="version"
-                                    >
-                                        Unicode {{ version.toFixed(1) }}
-                                    </option>
-                                </select>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_show_colors') }} </span>
+                                <input v-model="settingShowColors" type="checkbox">
                             </label>
                             <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_warn_expected_command') }} </span>
-                                <input
-                                    v-model="settingBufferWarnExpectedCommand"
-                                    type="checkbox"
-                                >
-                            </label>
-                            <label v-if="activeNetworkIsUtf8" class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_emoji_convert_as_typed') }} </span>
-                                <input v-model="settingBufferEmojiConvertAsTyped" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_shared_input') }} </span>
-                                <input v-model="settingBufferSharedInput" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_show_autocomplete') }} </span>
-                                <input v-model="settingShowAutoComplete" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_show_color_picker') }} </span>
-                                <input v-model="settingShowColorPicker" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_show_emoji_picker') }} </span>
-                                <input v-model="settingShowEmojiPicker" type="checkbox">
+                                <span>{{ $t('settings_show_prefix') }} </span>
+                                <input v-model="settingShowPrefix" type="checkbox">
                             </label>
                         </div>
                     </div>
 
                     <chat-log-settings />
-
-                    <div class="kiwi-appsettings-block">
-                        <h3>{{ $t('settings_messages_title') }}</h3>
-                        <div class="kiwi-appsettings-section kiwi-appsettings-messages">
-                            <label class="kiwi-appsettings-messagelistDisplay">
-                                <span>{{ $t('settings_messagelayout') }} </span>
-                                <select v-model="settingMessageLayout">
-                                    <option value="traditional">
-                                        {{ $t('settings_messagelayout_traditional') }}
-                                    </option>
-                                    <option value="modern">
-                                        {{ $t('settings_messagelayout_modern') }}
-                                    </option>
-                                    <option value="corporate">
-                                        {{ $t('settings_messagelayout_corporate') }}
-                                    </option>
-                                    <option value="inline">
-                                        {{ $t('settings_messagelayout_inline') }}
-                                    </option>
-                                    <option value="cyberdeck">
-                                        {{ $t('settings_messagelayout_cyberdeck') }}
-                                    </option>
-                                </select>
-                            </label>
-                            <label
-                                v-if="chathistorySupported"
-                                class="kiwi-appsettings-messagelistDisplay"
-                            >
-                                <span>{{ $t('settings_auto_request_history') }} </span>
-                                <select v-model="settingBufferAutoRequestHistory">
-                                    <option value="all">{{ $t('settings_scope_all') }}</option>
-                                    <option value="channels">{{ $t('settings_scope_channels') }}</option>
-                                    <option value="queries">{{ $t('settings_scope_queries') }}</option>
-                                    <option value="none">{{ $t('settings_scope_never') }}</option>
-                                </select>
-                            </label>
-                            <label
-                                v-if="timestampTimeSystem && settingBufferShowTimestamps"
-                                class="kiwi-appsettings-messagelistDisplay"
-                            >
-                                <span>{{ $t('settings_time_system') }} </span>
-                                <select v-model="timestampTimeSystem">
-                                    <option value="12h">
-                                        {{ $t('settings_time_system_12h') }}
-                                    </option>
-                                    <option value="24h">
-                                        {{ $t('settings_time_system_24h') }}
-                                    </option>
-                                    <option value="decimal">
-                                        {{ $t('settings_time_system_decimal') }}
-                                    </option>
-                                </select>
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_show_inline_previews') }} </span>
-                                <input v-model="settingBufferInlineLinkPreviews" type="checkbox">
-                            </label>
-                            <label
-                                v-if="settingBufferInlineLinkPreviews"
-                                class="u-checkbox-wrapper"
-                            >
-                                <span>{{ $t('settings_generic_link_previews') }} </span>
-                                <input v-model="settingBufferGenericLinkPreviews" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_nick_colouring') }} </span>
-                                <input v-model="settingBufferColourNicknames" type="checkbox">
-                            </label>
-                            <label v-if="activeNetworkIsUtf8" class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_emoji_convert_incoming') }} </span>
-                                <input v-model="settingBufferEmojiConvertIncoming" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_hide_preview_cards') }} </span>
-                                <input v-model="settingBufferHidePreviewCards" type="checkbox">
-                            </label>
-                            <label v-if="touchSupported" class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_show_message_info') }} </span>
-                                <input v-model="settingBufferShowMessageInfo" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_show_presence_changes') }} </span>
-                                <input v-model="settingBufferShowPresenceChanges" type="checkbox">
-                            </label>
-                            <label
-                                v-if="messageLayoutUsesRealNames"
-                                class="u-checkbox-wrapper"
-                            >
-                                <span>{{ $t('settings_show_realnames') }} </span>
-                                <input v-model="settingBufferShowRealNames" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_timestamps') }} </span>
-                                <input v-model="settingBufferShowTimestamps" type="checkbox">
-                            </label>
-                            <label
-                                class="kiwi-appsettings-full kiwi-appsettings-setting-scrollback"
-                            >
-                                <input
-                                    v-model="settingBufferScrollbackSize"
-                                    type="number"
-                                    class="u-input"
-                                >
-                                <span>{{ $t('settings_scrollback') }} </span>
-                            </label>
-                        </div>
-                    </div>
 
                     <div class="kiwi-appsettings-block">
                         <h3>{{ $t('settings_emoji_packs') }}</h3>
@@ -640,39 +705,6 @@
                     </div>
 
                     <div class="kiwi-appsettings-block">
-                        <h3>{{ $t('settings_channel_defaults') }}</h3>
-                        <div class="kiwi-appsettings-section">
-                            <p class="kiwi-appsettings-hint">
-                                {{ $t('settings_channel_defaults_hint') }}
-                            </p>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('side_colours') }} </span>
-                                <input v-model="settingBufferColouredNicklist" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('side_topics') }} </span>
-                                <input v-model="settingBufferShowTopics" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('side_mode_changes') }} </span>
-                                <input v-model="settingBufferShowModeChanges" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_formatting') }} </span>
-                                <input v-model="settingBufferExtraFormatting" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('side_joins') }} </span>
-                                <input v-model="settingBufferShowJoinParts" type="checkbox">
-                            </label>
-                            <label class="u-checkbox-wrapper">
-                                <span>{{ $t('side_nick_changes') }} </span>
-                                <input v-model="settingBufferShowNickChanges" type="checkbox">
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="kiwi-appsettings-block">
                         <h3>{{ $t('operator_tools') }}</h3>
                         <div class="kiwi-appsettings-section kiwi-appsettings-operator-tools">
                             <label>
@@ -719,7 +751,11 @@
                     :header="activeNetwork.name"
                     name="network"
                 >
-                    <div class="kiwi-appsettings-block">
+                    <div
+                        v-if="persistencePreferenceAvailable ||
+                            typingSupported || filehostSupported"
+                        class="kiwi-appsettings-block"
+                    >
                         <h3>{{ $t('settings_general') }}</h3>
                         <div class="kiwi-appsettings-section">
                             <label
@@ -792,7 +828,7 @@
                                     </option>
                                 </select>
                             </label>
-                            <label class="u-checkbox-wrapper">
+                            <label v-if="replySupported" class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_highlight_replies') }} </span>
                                 <input v-model="settingHighlightReplies" type="checkbox">
                             </label>
@@ -832,7 +868,7 @@
                     </div>
 
                     <div class="kiwi-appsettings-block">
-                        <h3>{{ $t('settings_messages_title') }}</h3>
+                        <h3>{{ $t('settings_messages_block') }}</h3>
                         <div class="kiwi-appsettings-section">
                             <label
                                 v-if="redactionsSupported"
@@ -840,6 +876,9 @@
                             >
                                 <span>{{ $t('settings_show_redactions') }} </span>
                                 <select v-model="settingBufferShowRedactions">
+                                    <option value="default">
+                                        {{ $t('settings_default') }}
+                                    </option>
                                     <option value="hidden">
                                         {{ $t('settings_show_redactions_hidden') }}
                                     </option>
@@ -851,10 +890,6 @@
                                     </option>
                                 </select>
                             </label>
-                            <label v-if="botSupportFound" class="u-checkbox-wrapper">
-                                <span>{{ $t('settings_ignore_bots') }} </span>
-                                <input v-model="settingBufferIgnoreBots" type="checkbox">
-                            </label>
                             <label v-if="messageTagsSupported" class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_lenient_rerouting') }} </span>
                                 <input v-model="settingBufferLenientRerouting" type="checkbox">
@@ -862,11 +897,90 @@
                             <p v-if="messageTagsSupported" class="kiwi-appsettings-hint">
                                 {{ $t('settings_lenient_rerouting_hint') }}
                             </p>
+                            <div class="kiwi-appsettings-subsection">
+                                <h4>{{ $t('settings_show_messages') }}</h4>
+                                <label
+                                    v-if="botSupportFound"
+                                    class="kiwi-appsettings-messagelistDisplay kiwi-appsettings-indented"
+                                >
+                                    <span>{{ $t('settings_show_bot_messages') }} </span>
+                                    <select v-model="settingShowBotMessages">
+                                        <option value="default">{{ $t('settings_default') }}</option>
+                                        <option value="no">{{ $t('settings_no') }}</option>
+                                        <option value="yes">{{ $t('settings_yes') }}</option>
+                                    </select>
+                                </label>
+                                <label
+                                    class="kiwi-appsettings-messagelistDisplay kiwi-appsettings-indented"
+                                >
+                                    <span>{{ $t('side_mode_changes') }} </span>
+                                    <select v-model="settingShowModeChanges">
+                                        <option value="default">{{ $t('settings_default') }}</option>
+                                        <option value="no">{{ $t('settings_no') }}</option>
+                                        <option value="yes">{{ $t('settings_yes') }}</option>
+                                    </select>
+                                </label>
+                                <label
+                                    class="kiwi-appsettings-messagelistDisplay kiwi-appsettings-indented"
+                                >
+                                    <span>{{ $t('side_nick_changes') }} </span>
+                                    <select v-model="settingShowNickChanges">
+                                        <option value="default">{{ $t('settings_default') }}</option>
+                                        <option value="no">{{ $t('settings_no') }}</option>
+                                        <option value="yes">{{ $t('settings_yes') }}</option>
+                                    </select>
+                                </label>
+                                <label
+                                    class="kiwi-appsettings-messagelistDisplay kiwi-appsettings-indented"
+                                >
+                                    <span>{{ $t('settings_show_presence_changes') }} </span>
+                                    <select v-model="settingShowPresenceChanges">
+                                        <option value="default">{{ $t('settings_default') }}</option>
+                                        <option value="no">{{ $t('settings_no') }}</option>
+                                        <option value="yes">{{ $t('settings_yes') }}</option>
+                                    </select>
+                                </label>
+                                <label
+                                    class="kiwi-appsettings-messagelistDisplay kiwi-appsettings-indented"
+                                >
+                                    <span>{{ $t('side_topics') }} </span>
+                                    <select v-model="settingShowTopics">
+                                        <option value="default">{{ $t('settings_default') }}</option>
+                                        <option value="no">{{ $t('settings_no') }}</option>
+                                        <option value="yes">{{ $t('settings_yes') }}</option>
+                                    </select>
+                                </label>
+                                <label
+                                    class="kiwi-appsettings-messagelistDisplay kiwi-appsettings-indented"
+                                >
+                                    <span>{{ $t('side_joins') }} </span>
+                                    <select v-model="settingShowJoinParts">
+                                        <option value="default">{{ $t('settings_default') }}</option>
+                                        <option value="no">{{ $t('settings_no') }}</option>
+                                        <option value="yes">{{ $t('settings_yes') }}</option>
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="chathistorySupported" class="kiwi-appsettings-block">
+                        <h3>{{ $t('settings_channels_title') }}</h3>
+                        <div class="kiwi-appsettings-section">
+                            <label class="kiwi-appsettings-messagelistDisplay">
+                                <span>{{ $t('settings_auto_request_history') }} </span>
+                                <select v-model="settingBufferAutoRequestHistory">
+                                    <option value="all">{{ $t('settings_scope_all') }}</option>
+                                    <option value="channels">{{ $t('settings_scope_channels') }}</option>
+                                    <option value="queries">{{ $t('settings_scope_queries') }}</option>
+                                    <option value="none">{{ $t('settings_scope_never') }}</option>
+                                </select>
+                            </label>
                         </div>
                     </div>
 
                     <emoji-packs
-                        v-if="hasEmojiPacks && settingRemoteEmojiPacks !== false"
+                        v-if="hasEmojiPacks"
                         :network="activeNetwork"
                     />
 
@@ -1019,10 +1133,6 @@ export default {
             return document.location.protocol === 'http:' ||
                 document.location.protocol === 'https:';
         },
-        activeNetworkIsUtf8() {
-            let activeNetwork = this.$state.getActiveNetwork();
-            return !activeNetwork || activeNetwork.isUtf8;
-        },
         chathistorySupported() {
             const network = this.$state.getActiveNetwork();
             return !!network &&
@@ -1034,12 +1144,6 @@ export default {
                 return false;
             }
             return navigator.maxTouchPoints > 0 || 'ontouchstart' in window;
-        },
-        emojiPickerEnabled() {
-            return this.activeNetworkIsUtf8 && (
-                !!this.$state.setting('forceShowEmojiPicker') ||
-                !!this.$state.setting('showEmojiPicker')
-            );
         },
         emojiVersions() {
             return emojiVersionList;
@@ -1137,6 +1241,12 @@ export default {
                 return false;
             }
 
+            if (typeof network.supports === 'function' &&
+                network.supports('draft/EMOJI')
+            ) {
+                return true;
+            }
+
             const policies = network.setting('emojiChannelPolicies') || {};
             if (Object.keys(policies).length > 0) {
                 return true;
@@ -1158,6 +1268,13 @@ export default {
         settingAutoReconnect: bindSetting('autoReconnect'),
         settingUseMonospace: bindSetting('useMonospace'),
         settingNicklistGrouped: bindSetting('nicklistGrouped'),
+        settingHideIgnored: bindSetting('hideIgnored'),
+        settingShowColors: bindSetting('showColors'),
+        settingShowPrefix: bindSetting('showPrefix'),
+        settingShowStylePicker: bindSetting('showStylePicker'),
+        settingGlobalShowBotMessages: bindSetting('showBotMessages'),
+        settingGlobalShowRedactions: bindSetting('buffers.show_redactions'),
+        settingShowExportButton: bindSetting('showExportButton'),
         settingShowPresetSwitcher: bindSetting('showPresetSwitcher'),
         settingHighlights: bindSetting('highlights'),
         settingNotificationSounds: bindSetting('notificationSounds'),
@@ -1165,7 +1282,6 @@ export default {
         settingBufferShowNotifications: bindSetting('buffers.show_notifications'),
         settingShowEmojiPicker: bindSetting('showEmojiPicker'),
         settingShowColorPicker: bindSetting('showColorPicker'),
-        settingBufferColourNicknames: bindSetting('buffers.colour_nicknames_in_messages'),
         settingBufferShowTimestamps: bindSetting('buffers.show_timestamps'),
         settingBufferEmojiConvertIncoming: bindSetting('buffers.emoji_convert_incoming'),
         settingBufferEmojiConvertAsTyped: bindSetting('buffers.emoji_convert_as_typed'),
@@ -1198,13 +1314,12 @@ export default {
         settingBufferShowTopics: bindSetting('buffers.show_topics'),
         settingBufferShowNickChanges: bindSetting('buffers.show_nick_changes'),
         settingBufferShowModeChanges: bindSetting('buffers.show_mode_changes'),
-        settingBufferColouredNicklist: bindSetting('buffers.coloured_nicklist'),
         settingBufferShowRealNames: bindSetting('buffers.show_realnames'),
+        settingBufferShowHostnames: bindSetting('buffers.show_hostnames'),
         settingBufferShowTopicInHeader: bindSetting('buffers.show_topic_in_header'),
         settingBufferShowPresenceChanges: bindSetting('buffers.show_presence_changes'),
         settingBufferShowMessageInfo: bindSetting('buffers.show_message_info'),
         settingBufferShowLinkPreviews: bindSetting('buffers.show_link_previews'),
-        settingBufferAutoRequestHistory: bindSetting('buffers.auto_request_history'),
         settingBufferNicklistAvatars: bindSetting('buffers.nicklist_avatars'),
         avatarFallbackStyles() {
             return AVATAR_FALLBACK_STYLES;
@@ -1239,6 +1354,7 @@ export default {
         },
         settingAvatarFallbackUrl: bindSetting('avatars.fallback_avatar_url'),
         settingAvatarShowImageBackground: bindSetting('avatars.show_image_background'),
+        settingAvatarShowWithoutUser: bindSetting('avatars.show_without_user'),
         settingAvatarAwayStatusPosition: bindSetting('avatars.away_status_position'),
         settingBufferSharedInput: bindSetting('buffers.shared_input'),
         settingBufferWarnExpectedCommand: bindSetting('buffers.warn_expected_command'),
@@ -1268,6 +1384,11 @@ export default {
                 inline: 'inline',
                 cyberdeck: 'cyberdeck',
             };
+        },
+        messageLayoutUsesAvatars() {
+            return this.settingMessageLayout === 'modern' ||
+                this.settingMessageLayout === 'corporate' ||
+                this.settingMessageLayout === 'cyberdeck';
         },
         messageLayoutUsesRealNames() {
             return this.settingMessageLayout === 'modern' ||
@@ -1716,7 +1837,8 @@ export default {
 }
 
 .kiwi-appsettings-indented {
-    padding-left: 1.5em;
+    margin-left: 1.5em;
+    margin-bottom: 6px;
 }
 
 .kiwi-appsettings-block label {

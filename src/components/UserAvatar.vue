@@ -71,12 +71,13 @@
 <script>
 'kiwi public';
 
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 import getState from '@/libs/state';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import {
     LOCAL_INITIALS,
+    getConfiguredAvatarFallbackUrl,
     getLocalIdenticon,
     getLocalInitials
 } from '@/helpers/AvatarFallback';
@@ -117,6 +118,8 @@ const props = defineProps({
         default: false,
     },
 });
+
+const failedUnknownAvatarUrl = ref('');
 
 const clipId = computed(() => (
     props.shape === 'square' ? 'kiwi-avatar-clip-square' : 'kiwi-avatar-clip'
@@ -195,7 +198,14 @@ const avatar = computed(() => {
     const bridgedNick = props.message?.bridged_nick || '';
     const nick = bridgedNick || props.message?.nick || props.user?.nick || 'User';
     const overrideUrl = props.message?.bridged_avatar || '';
-    const hasImage = !!overrideUrl ||
+    const unknownFallbackUrl = props.user ?
+        '' :
+        getConfiguredAvatarFallbackUrl(nick, state);
+    const unknownFallback = unknownFallbackUrl &&
+        failedUnknownAvatarUrl.value !== unknownFallbackUrl ?
+        unknownFallbackUrl :
+        '';
+    const hasImage = !!overrideUrl || !!unknownFallback ||
         !!(props.user && (props.user.avatar.small || props.user.avatar.large));
 
     const showBackground = state.setting('avatars.show_image_background') !== false;
@@ -233,6 +243,22 @@ const avatar = computed(() => {
     }
 
     if (!props.user) {
+        if (unknownFallback) {
+            const fallbackObj = {
+                url: unknownFallback,
+                vbind: {
+                    'href': unknownFallback,
+                    'xlink:href': unknownFallback,
+                },
+                setFailed: () => {
+                    failedUnknownAvatarUrl.value = unknownFallback;
+                },
+            };
+            avatars.small = fallbackObj;
+            avatars.sizeKey.small = 'small';
+            avatars.large = fallbackObj;
+            avatars.sizeKey.large = 'large';
+        }
         return avatars;
     }
 

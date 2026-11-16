@@ -50,6 +50,19 @@ describe('locale files', () => {
         expect(dev).not.toHaveProperty('histserv_cheatsheet_title');
     });
 
+    it('does not contain orphaned settings strings', () => {
+        [
+            'settings_ignore_bots',
+            'settings_notify_mentioned',
+            'side_formatting',
+            'settings_channel_defaults',
+            'settings_channel_defaults_hint',
+        ].forEach((key) => {
+            expect(en).not.toHaveProperty(key);
+            expect(dev).not.toHaveProperty(key);
+        });
+    });
+
     it('keeps autocomplete command labels translated', () => {
         autocompleteCommands.forEach((command) => {
             if (command.description.indexOf('locale_id_') !== 0) {

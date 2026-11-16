@@ -37,7 +37,7 @@ export default {
     },
     methods: {
         userColour(user) {
-            return user && this.buffer.setting('colour_nicknames_in_messages') ? user.getColour() : '';
+            return user && this.$state.setting('showColors') ? user.getColour() : '';
         },
     },
 };

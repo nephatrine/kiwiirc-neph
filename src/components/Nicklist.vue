@@ -111,9 +111,13 @@ export default {
             const users = [];
             const bufferUsers = this.buffer.users;
             const nickFilter = this.userFilter.toUpperCase();
+            const hideIgnored = this.$state.setting('hideIgnored');
 
             Object.entries(bufferUsers).forEach(([uppercaseNick, user]) => {
                 nickMap[user.nick] = uppercaseNick;
+                if (hideIgnored && user.ignore) {
+                    return;
+                }
                 if (!nickFilter || uppercaseNick.indexOf(nickFilter) !== -1) {
                     users.push(user);
                 }
@@ -197,13 +201,16 @@ export default {
             );
         },
         allUsersCount() {
-            return Object.keys(this.buffer.users).length;
+            const hideIgnored = this.$state.setting('hideIgnored');
+            return Object.values(this.buffer.users)
+                .filter((user) => !hideIgnored || !user.ignore)
+                .length;
         },
         shouldShowAvatars() {
             return this.buffer.setting('nicklist_avatars');
         },
         useColouredNicks() {
-            return this.buffer.setting('coloured_nicklist');
+            return this.$state.setting('showColors');
         },
     },
     methods: {

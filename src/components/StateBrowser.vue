@@ -11,6 +11,20 @@
         </div>
 
         <div
+            :title="notificationsEnabled ?
+                $t('notifications_enabled') : $t('notifications_disabled')"
+            :class="{ 'kiwi-statebrowser-notifications--disabled': !notificationsEnabled }"
+            class="kiwi-statebrowser-notifications"
+            @click="toggleNotifications"
+        >
+            <i
+                class="bx"
+                :class="notificationsEnabled ? 'bxs-bell-ring' : 'bxs-bell-off'"
+                aria-hidden="true"
+            />
+        </div>
+
+        <div
             v-if="!isPersonalMode"
             :title="$t('logout')"
             class="kiwi-statebrowser-logout"
@@ -34,6 +48,7 @@
         <state-browser-usermenu
             v-if="isPersistingState"
             :network="getNetwork"
+            @toggle="usermenuOpen = $event"
         />
 
         <div class="kiwi-statebrowser-tools">
@@ -97,6 +112,7 @@ export default {
                 type: undefined,
                 value: undefined,
             },
+            usermenuOpen: false,
         };
     },
     computed: {
@@ -127,8 +143,12 @@ export default {
         },
         searchVisible() {
             return !this.$state.ui.is_narrow &&
+                !this.usermenuOpen &&
                 this.activeBufferIsSpecial &&
                 !this.searchHidden;
+        },
+        notificationsEnabled() {
+            return this.$state.ui.notifications_enabled !== false;
         },
     },
     created() {
@@ -179,6 +199,9 @@ export default {
         clickLogout: function clickLogout() {
             this.$state.logout();
         },
+        toggleNotifications: function toggleNotifications() {
+            this.$state.ui.notifications_enabled = !this.notificationsEnabled;
+        },
         hideStatebrowser: function hideStatebrowser() {
             this.$state.$emit('statebrowser.hide');
         },
@@ -228,6 +251,27 @@ export default {
     transition: background 0.2s, opacity 0.2s;
     z-index: 1;
     user-select: none;
+}
+
+.kiwi-statebrowser-notifications {
+    position: absolute;
+    top: 32px;
+    left: 0;
+    width: 32px;
+    line-height: 32px;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 20px;
+    opacity: 0.8;
+    border-bottom-right-radius: 14px;
+    transition: background 0.2s, opacity 0.2s;
+    z-index: 1;
+    user-select: none;
+}
+
+.kiwi-statebrowser-notifications--disabled {
+    opacity: 0.5;
 }
 
 .kiwi-statebrowser-logout {

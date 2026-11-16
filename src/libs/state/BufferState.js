@@ -971,6 +971,10 @@ export default class BufferState {
      * @param {Object} user The user object
      */
     userModePrefix(user) {
+        if (!this.state.setting('showPrefix')) {
+            return '';
+        }
+
         let modes = this.userModes(user);
         if (modes.length === 0) {
             return '';
@@ -1017,10 +1021,35 @@ export default class BufferState {
             return val;
         }
 
+        const resolveTriState = (value) => {
+            const booleanTriStates = [
+                'show_joinparts',
+                'show_topics',
+                'show_nick_changes',
+                'show_mode_changes',
+                'show_presence_changes',
+            ];
+            if (booleanTriStates.includes(name)) {
+                if (value === 'yes') {
+                    return true;
+                }
+                if (value === 'no') {
+                    return false;
+                }
+                if (value === 'default') {
+                    return this.state.setting('buffers.' + name);
+                }
+            }
+            if (name === 'show_redactions' && value === 'default') {
+                return this.state.setting('buffers.show_redactions');
+            }
+            return value;
+        };
+
         // Check the buffer specific settings before reverting to global settings
         let result = this.settings[name];
         if (typeof result !== 'undefined') {
-            return result;
+            return resolveTriState(result);
         }
 
         // Settings that belong to the network (capability-dependent options
@@ -1030,7 +1059,7 @@ export default class BufferState {
         if (network && network.settings &&
             typeof network.settings[name] !== 'undefined'
         ) {
-            return network.settings[name];
+            return resolveTriState(network.settings[name]);
         }
 
         // Special default for the *raw buffer scrollback size

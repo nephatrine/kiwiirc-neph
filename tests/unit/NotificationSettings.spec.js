@@ -67,6 +67,60 @@ describe('notification settings', () => {
         expect(audio.play).toHaveBeenCalled();
     });
 
+    test('per-buffer Never gates message sounds', () => {
+        const audio = { play: jest.fn() };
+        const manager = new AudioManager(audio);
+        manager.watchForMessages(s);
+
+        buffer.setting('alert_on', 'never');
+        addMessage(buffer, {
+            message: 'quiet',
+            type: 'privmsg',
+        });
+        expect(audio.play).not.toHaveBeenCalled();
+
+        buffer.setting('alert_on', 'message');
+        addMessage(buffer, {
+            message: 'loud',
+            type: 'privmsg',
+        });
+        expect(audio.play).toHaveBeenCalled();
+    });
+
+    test('global notification sounds gate startup sounds', () => {
+        const audio = { play: jest.fn() };
+        const manager = new AudioManager(audio);
+        manager.listen(s);
+
+        s.setting('notificationSounds', false);
+        s.$emit('audio.play', 'startup', network);
+        expect(audio.play).not.toHaveBeenCalled();
+
+        s.setting('notificationSounds', true);
+        s.$emit('audio.play', 'startup', network);
+        expect(audio.play).toHaveBeenCalledWith('startup');
+    });
+
+    test('do not disturb gates message sounds', () => {
+        const audio = { play: jest.fn() };
+        const manager = new AudioManager(audio);
+        manager.watchForMessages(s);
+
+        s.ui.notifications_enabled = false;
+        addMessage(buffer, {
+            message: 'quiet',
+            type: 'privmsg',
+        });
+        expect(audio.play).not.toHaveBeenCalled();
+
+        s.ui.notifications_enabled = true;
+        addMessage(buffer, {
+            message: 'loud',
+            type: 'privmsg',
+        });
+        expect(audio.play).toHaveBeenCalled();
+    });
+
     test('JOIN/PART activity notifies under All Messages', () => {
         s.setting('buffers.traffic_as_activity', true);
         addMessage(buffer, {

@@ -295,8 +295,14 @@ network:
 - Persistence preference (`persistencePreference`)
 - Typing sharing (`buffers.share_typing`)
 - Lenient rerouting (`buffers.lenient_rerouting`)
-- Ignore bots (`buffers.ignore_bots`)
 - Redaction display (`buffers.show_redactions`)
+- Bot messages (`showBotMessages`)
+- User traffic (`show_joinparts`)
+- Topic changes (`show_topics`)
+- Nickname changes (`show_nick_changes`)
+- Mode changes (`show_mode_changes`)
+- Presence changes (`show_presence_changes`)
+- Request history (`auto_request_history`)
 - Direct message policy (`blockDirectMessages`)
 - Message notifications (`alert_on`)
 - Reaction notifications (`reactionNotifications`)
@@ -310,9 +316,11 @@ config default affects networks created afterward.
 `blockDirectMessages` is `default`, `block`, `allow`, or `friends`. `default`
 uses the global `buffers.block_pms` value. `friends` currently blocks all new
 direct messages until a friends list exists. `alert_on` is the network default
-for buffers without a per-buffer override. `reactionNotifications` is `all`,
-`direct`, or `none`. `highlightReplies` and `highlightGroupMentions` default to
-`true`.
+for buffers without a per-buffer override. Per-buffer notification settings
+offer Default, All Messages, Only Highlights, and Never. Default removes the
+buffer override and falls back to the network value, then the global
+`buffers.alert_on`. `reactionNotifications` is `all`, `direct`, or `none`.
+`highlightReplies` and `highlightGroupMentions` default to `true`.
 
 Web Push is not configured in `config.json`. It is a per-network opt-in shown
 only after login when the server negotiates `draft/webpush` or `soju.im/webpush`
@@ -332,6 +340,8 @@ and provides a VAPID key.
 | `forceShowEmojiPicker`     | `false`                          | Show the emoji picker even on touch devices.                                 |
 | `emojiPickerMaxVersion`    | `0`                              | Maximum Unicode emoji version. `0` shows all versions.                       |
 | `showColorPicker`          | `true`                           | Show the colour picker button.                                               |
+| `showStylePicker`          | `true`                           | Show the formatting/style picker button.                                     |
+| `showExportButton`         | `false`                          | Show the Export Buffer button in buffer headers.                             |
 | `showSendButton`           | `false`                          | Show a send button on touch devices.                                         |
 | `showAutocomplete`         | `true`                           | Enable command and nick autocomplete.                                        |
 | `autocompleteTokens`       | `["/", "#", "@"]`                | Tokens that trigger autocomplete.                                            |
@@ -348,6 +358,10 @@ and provides a VAPID key.
 | `highlights`               | `""`                             | Space-separated extra highlight words.                                       |
 | `notificationSounds`       | `true`                           | Play message and reaction notification sounds.                               |
 | `unreadBadges`             | `true`                           | Show unread counts and badges.                                               |
+| `showColors`               | `true`                           | Colour nicknames in the nicklist and messages.                               |
+| `showBotMessages`          | `true`                           | Show bot messages by default.                                                |
+| `hideIgnored`              | `true`                           | Hide ignored users from the nicklist.                                        |
+| `showPrefix`               | `true`                           | Show IRC mode prefixes on nicklist and message author names.                 |
 
 `themes` entries support `name`, `url`, `mode` (`light` or `dark`), and
 `google_fonts`. A theme URL is a base path; Kiwi loads `<url>/theme.css`. If
@@ -386,11 +400,11 @@ Self-involved events are still processed.
   `customEmojis` and installed desktop packs over network/server/channel packs.
   `remote` reverses that order for unqualified `:name:` tokens. Local and remote
   packs both take precedence over the Unicode shortcode table.
-- `remoteEmojiPacks`: load network/server emoji packs automatically. Defaults to
-  `true`. Channel packs use a per-channel Prompt/Always/Never policy. Prompt
-  asks before loading a channel's packs, Always loads all of them and fetches
-  `draft/emoji` metadata for channels you have not joined, and Never keeps them
-  literal.
+- `remoteEmojiPacks`: controls the default remote emoji-pack policy. Defaults to
+  `true`. Network and channel packs use Default/Always/Never policies. Default
+  follows this setting; Always loads even when this is disabled; Never keeps
+  packs literal. Channel Default prompts only while this is enabled, and Always
+  also fetches `draft/emoji` metadata for channels you have not joined.
 - `hideSettings`: hides the settings button in the state browser.
 - `hide_advanced`: hides the Advanced settings tab.
 - `ircFramework`: advanced `irc-framework` client options. Use with care.
@@ -402,38 +416,41 @@ overrides them.
 
 ### Layout and Display
 
-| Key                            | Default       | Description                                                                                                                                             |
-| ------------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `messageLayout`                | `modern`      | `modern`, `corporate`, `compact`, `inline`, or `cyberdeck`. Corporate uses aligned chat bubbles; Cyberdeck uses avatar plates and cassette-style rails. |
-| `show_timestamps`              | `true`        | Show message timestamps.                                                                                                                                |
-| `timestamp_format`             | `%H:%M:%S`    | Timestamp format: `%H:%M:%S`, `%l:%M:%S %p`, or `decimal` for decimal time. Other formats hide the Time System selector.                                |
-| `timestamp_full_format`        | `""`          | Full timestamp format. Empty uses the browser locale.                                                                                                   |
-| `show_hostnames`               | `false`       | Show `nick!user@host` in system messages.                                                                                                               |
-| `show_realnames`               | `false`       | Show realnames in the Modern, Corporate, and Cyberdeck message layouts.                                                                                 |
-| `show_joinparts`               | `true`        | Show join and part messages.                                                                                                                            |
-| `show_topics`                  | `true`        | Show topic changes.                                                                                                                                     |
-| `show_topic_in_header`         | `false`       | Show topic in header. Desktop defaults to `true`.                                                                                                       |
-| `show_nick_changes`            | `true`        | Show nick changes.                                                                                                                                      |
-| `show_mode_changes`            | `true`        | Show mode changes.                                                                                                                                      |
-| `show_presence_changes`        | `true`        | Show presence changes.                                                                                                                                  |
-| `show_buffer_groups`           | `true`        | Group buffers by type in the sidebar.                                                                                                                   |
-| `coloured_nicklist`            | `true`        | Colour nicknames in the nicklist.                                                                                                                       |
-| `colour_nicknames_in_messages` | `true`        | Colour nicknames in messages.                                                                                                                           |
-| `nicklist_avatars`             | `true`        | Show avatars in the nicklist.                                                                                                                           |
-| `hide_message_counts`          | `false`       | Legacy per-buffer hidden count; global `unreadBadges` controls display.                                                                                 |
-| `show_message_info`            | `true`        | Show the message info action.                                                                                                                           |
-| `extra_formatting`             | `true`        | Enable Markdown-style and extra formatting.                                                                                                             |
-| `emoji_convert_as_typed`       | `false`       | Convert emoji shortcodes while typing.                                                                                                                  |
-| `emoji_convert_incoming`       | `true`        | Convert emoji shortcodes in incoming messages.                                                                                                          |
-| `show_redactions`              | `placeholder` | `hidden`, `placeholder`, or `revealed`.                                                                                                                 |
-| `favorite`                     | `false`       | Per-buffer favourite default.                                                                                                                           |
+| Key                      | Default       | Description                                                                                                                                              |
+| ------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `messageLayout`          | `modern`      | `modern`, `corporate`, `compact`, `inline`, or `cyberdeck`. Corporate uses aligned chat bubbles; Cyberdeck uses avatar plates and cassette-style rails.  |
+| `show_timestamps`        | `true`        | Show message timestamps.                                                                                                                                 |
+| `timestamp_format`       | `%H:%M:%S`    | Timestamp format: `%H:%M:%S`, `%l:%M:%S %p`, or `decimal` for decimal time. Other formats hide the Time System selector.                                 |
+| `timestamp_full_format`  | `""`          | Full timestamp format. Empty uses the browser locale.                                                                                                    |
+| `show_hostnames`         | `false`       | Show full `nick (user@host)` in JOIN/PART/QUIT messages and `ident@host` under the nick in Modern, Corporate, and Cyberdeck when Show Real Names is off. |
+| `show_realnames`         | `false`       | Show realnames in the Modern, Corporate, and Cyberdeck message layouts.                                                                                  |
+| `show_joinparts`         | `false`       | Show user JOIN/PART traffic.                                                                                                                             |
+| `show_topics`            | `true`        | Show topic changes.                                                                                                                                      |
+| `show_topic_in_header`   | `false`       | Show topic in header. Desktop defaults to `true`.                                                                                                        |
+| `show_nick_changes`      | `false`       | Show nickname changes.                                                                                                                                   |
+| `show_mode_changes`      | `true`        | Show mode changes.                                                                                                                                       |
+| `show_presence_changes`  | `false`       | Show presence changes.                                                                                                                                   |
+| `show_buffer_groups`     | `true`        | Group buffers by type in the sidebar.                                                                                                                    |
+| `nicklist_avatars`       | `true`        | Show avatars in the nicklist.                                                                                                                            |
+| `show_message_info`      | `true`        | Show the message info action.                                                                                                                            |
+| `extra_formatting`       | `true`        | Global Simple Markdown formatting. No per-buffer override.                                                                                               |
+| `emoji_convert_as_typed` | `false`       | Convert emoji shortcodes while typing.                                                                                                                   |
+| `emoji_convert_incoming` | `true`        | Convert emoji shortcodes in incoming messages.                                                                                                           |
+| `show_redactions`        | `placeholder` | `hidden`, `placeholder`, or `revealed`.                                                                                                                  |
+| `favorite`               | `false`       | Per-buffer favourite default.                                                                                                                            |
+
+`show_hostnames` affects JOIN, PART, and QUIT messages, and adds a secondary
+`ident@host` line in Modern, Corporate, and Cyberdeck layouts when Show Real
+Names is disabled. The built-in `irc` template enables it by default.
+
+Network settings can override the message filters with Default / No / Yes.
+`Default` follows the global `buffers.*` value.
 
 ### History and Scrolling
 
 | Key                     | Default    | Description                                                                                                                        |
 | ----------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `scrollback_size`       | `250`      | Normal buffer scrollback. Raw server buffers and desktop default to 500.                                                           |
-| `auto_request_history`  | `all`      | Request history for `all`, `channels`, `queries`, or `none`.                                                                       |
 | `prompt_leave`          | `channels` | Prompt before leaving `all`, `channels`, `queries`, or `none`.                                                                     |
 | `who_loop`              | `true`     | Refresh away status with WHO every three minutes when `away-notify` is unavailable. Channels with more than 100 users are skipped. |
 | `shared_input`          | `false`    | Share input across buffers.                                                                                                        |
@@ -442,14 +459,16 @@ overrides them.
 
 ### Notifications and Sounds
 
-| Key                   | Default     | Description                                                      |
-| --------------------- | ----------- | ---------------------------------------------------------------- |
-| `alert_on`            | `highlight` | Fallback for buffers without a network or per-buffer value.      |
-| `flash_title`         | `message`   | Taskbar flashing on `message`, `highlight`, or `off`.            |
-| `mute_sound`          | `false`     | Internal/legacy per-buffer mute; `notificationSounds` is global. |
-| `show_notifications`  | `true`      | Global desktop notifications.                                    |
-| `traffic_as_activity` | `false`     | Treat JOIN/PART traffic as activity globally.                    |
-| `server_as_activity`  | `true`      | Treat server messages as activity globally.                      |
+| Key                   | Default     | Description                                                                                                                    |
+| --------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `alert_on`            | `highlight` | Fallback for buffers without a network or per-buffer value. `never` suppresses message sounds and maps to Soju muted metadata. |
+| `flash_title`         | `message`   | Taskbar flashing on `message`, `highlight`, or `off`.                                                                          |
+| `show_notifications`  | `true`      | Global desktop notifications.                                                                                                  |
+| `traffic_as_activity` | `false`     | Treat JOIN/PART traffic as activity globally.                                                                                  |
+| `server_as_activity`  | `true`      | Treat server messages as activity globally.                                                                                    |
+
+Per-buffer unread badge display uses `unread_badge` (`default`, `hide`, or
+`show`). `default` follows the global `unreadBadges` setting.
 
 ### Link Previews and Media
 
@@ -463,24 +482,23 @@ overrides them.
 
 ### Moderation and Commands
 
-| Key                   | Default                                                       | Description                                       |
-| --------------------- | ------------------------------------------------------------- | ------------------------------------------------- |
-| `default_ban_mask`    | `*!%i@%h`                                                     | Default ban mask.                                 |
-| `default_kick_reason` | `Your behaviour is not conducive to the desired environment.` | Default kick reason.                              |
-| `ignore_bots`         | `false`                                                       | Ignore messages from known bots.                  |
-| `lenient_rerouting`   | `true`                                                        | Trust `+channel-context` rerouting when possible. |
-| `share_typing`        | `true`                                                        | Share typing state with other users.              |
+| Key                   | Default                                                       | Description                                           |
+| --------------------- | ------------------------------------------------------------- | ----------------------------------------------------- |
+| `default_ban_mask`    | `*!%i@%h`                                                     | Default ban mask.                                     |
+| `default_kick_reason` | `Your behaviour is not conducive to the desired environment.` | Default kick reason.                                  |
+| `lenient_rerouting`   | `true`                                                        | Trust `+channel-context` rerouting when possible.     |
+| `share_typing`        | `true`                                                        | Network-level typing sharing. No per-buffer override. |
 
 ## Avatars
 
-| Key                             | Default             | Description                                                                                                                    |
-| ------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `avatars.fallback_avatar_url`   | `""`                | Fallback avatar URL. `{nickname}` is replaced with the URL-encoded lowercase nick. An empty URL uses the selected local style. |
-| `avatars.fallback_style`        | `"local-identicon"` | `local-initials`, `local-identicon`, DiceBear, or `custom`.                                                                    |
-| `avatars.away_status_position`  | `2`                 | Away-dot corner: `1` top-right, `2` bottom-right, `3` bottom-left, `4` top-left.                                               |
-| `avatars.initials_length`       | `1`                 | Initials shown in local fallback avatars: `1` or `2`.                                                                          |
-| `avatars.show_image_background` | `true`              | Show the colour background behind avatars. When disabled, local initials and identicons use the nickname colour.               |
-| `avatars.show_without_user`     | `false`             | Show avatars for messages without a known user.                                                                                |
+| Key                             | Default             | Description                                                                                                                                                                        |
+| ------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `avatars.fallback_avatar_url`   | `""`                | Fallback avatar URL. `{nickname}` is replaced with the URL-encoded lowercase nick. An empty URL uses the selected local style.                                                     |
+| `avatars.fallback_style`        | `"local-identicon"` | `local-initials`, `local-identicon`, DiceBear, or `custom`.                                                                                                                        |
+| `avatars.away_status_position`  | `2`                 | Away-dot corner: `1` top-right, `2` bottom-right, `3` bottom-left, `4` top-left.                                                                                                   |
+| `avatars.initials_length`       | `1`                 | Initials shown in local fallback avatars: `1` or `2`.                                                                                                                              |
+| `avatars.show_image_background` | `true`              | Show the colour background behind avatars. When disabled, local initials and identicons use the nickname colour.                                                                   |
+| `avatars.show_without_user`     | `true`              | Show avatars for senders with a nick but no known user in Modern, Corporate, and Cyberdeck layouts. Uses the configured fallback URL; server notices without a nick get no avatar. |
 
 ## Text Formats
 

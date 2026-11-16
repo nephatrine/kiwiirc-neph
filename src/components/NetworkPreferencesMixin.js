@@ -85,7 +85,19 @@ export default {
         },
         botSupportFound() {
             const network = this.networkPreferencesTarget();
-            return network && typeof network.supports('BOT') !== 'undefined';
+            if (!network) {
+                return false;
+            }
+            const metadataBot = !!network.metadataCap() &&
+                !!network.metadata_limits &&
+                network.metadata_limits.maxKeys > 0;
+            return typeof network.supports('BOT') !== 'undefined' || metadataBot;
+        },
+        replySupported() {
+            const network = this.networkPreferencesTarget();
+            return network &&
+                typeof network.replyTagName === 'function' &&
+                !!network.replyTagName();
         },
         filehostSupported() {
             return networkFilehostSupported(this.networkPreferencesTarget());
@@ -102,8 +114,14 @@ export default {
         settingPersistencePreference: bindNetworkSetting('persistencePreference', 'keep'),
         settingWebpushEnabled: bindNetworkSetting('webpushEnabled', false),
         settingBufferShareTyping: bindNetworkSetting('share_typing', true),
-        settingBufferIgnoreBots: bindNetworkSetting('ignore_bots', false),
         settingBufferLenientRerouting: bindNetworkSetting('lenient_rerouting', true),
-        settingBufferShowRedactions: bindNetworkSetting('show_redactions', 'placeholder'),
+        settingBufferShowRedactions: bindNetworkSetting('show_redactions', 'default'),
+        settingBufferAutoRequestHistory: bindNetworkSetting('auto_request_history', 'all'),
+        settingShowBotMessages: bindNetworkSetting('showBotMessages', 'default'),
+        settingShowJoinParts: bindNetworkSetting('show_joinparts', 'default'),
+        settingShowTopics: bindNetworkSetting('show_topics', 'default'),
+        settingShowNickChanges: bindNetworkSetting('show_nick_changes', 'default'),
+        settingShowModeChanges: bindNetworkSetting('show_mode_changes', 'default'),
+        settingShowPresenceChanges: bindNetworkSetting('show_presence_changes', 'default'),
     },
 };

@@ -125,6 +125,13 @@ describe('webpush service worker focus handling', () => {
         expect(swUtils.shouldSuppressPush([])).toBe(false);
         expect(swUtils.shouldSuppressPush([{ focused: false }])).toBe(false);
     });
+
+    it('suppresses pushes when any client disables notifications', () => {
+        expect(swUtils.anyNotificationsDisabled([true, false])).toBe(true);
+        expect(swUtils.anyNotificationsDisabled([true, true])).toBe(false);
+        expect(swUtils.anyNotificationsDisabled()).toBe(false);
+        expect(swUtils.anyNotificationsDisabled([])).toBe(false);
+    });
 });
 
 describe('webpush service worker scopes', () => {

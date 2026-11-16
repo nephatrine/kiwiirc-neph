@@ -27,6 +27,32 @@ and this project adheres to
   and Unread Badges settings. Added per-network Message Notifications, Reaction
   Notifications, Highlight Replies, and Highlight Group Mentions settings.
   Reaction notifications only cover reactions to your own messages.
+- **Do Not Disturb**: Added a state-browser bell toggle that pauses desktop
+  notifications, Web Push notifications, and notification sounds without
+  changing their settings. The state-browser search icon now hides while the
+  remembered-state user menu is open.
+- **Settings**: Added Default to per-buffer notifications, renamed Mentions Only
+  to Only Highlights, moved Simple Markdown into the global Messages block, and
+  removed the per-buffer Simple Markdown and Share Typing controls.
+- **Unread Badges**: Added a per-buffer Unread Badge Default/Hide/Show setting
+  and replaced the legacy `hide_message_counts` option. Favorite and muted are
+  now mutually exclusive; muted requires Never notifications, hidden unread
+  badges, and a non-favorite buffer, and uses the same state for local styling,
+  ordering, and Soju muted metadata.
+- **Messages**: Added an Unknown Avatars setting for Modern, Corporate, and
+  Cyberdeck layouts, exposing `avatars.show_without_user` and defaulting it to
+  enabled.
+- **Messages**: Added a global Show Host Names setting and a secondary
+  `ident@host` line in Modern, Corporate, and Cyberdeck layouts when Show Real
+  Names is disabled.
+- **Messages**: Added Bot Messages, Mode Changes, Nickname Changes, Presence
+  Changes, Topic Changes, and User Traffic to the global and network Show
+  Messages sections. Network settings use Default/No/Yes; per-buffer controls
+  were removed. Nickname Changes and User Traffic now default to off.
+- **Channel Settings**: Split per-buffer Preferences from actual channel
+  Settings. The Preferences tab now contains user buffer preferences and
+  notification settings, and the Settings tab is hidden when it has no channel
+  settings to show.
 - **Desktop Releases**: Tag and manual releases now build the web bundle and
   Linux/Windows desktop installers, validate the tag against both package
   versions, and attach the artifacts with a combined `SHA256SUMS`. Added a
@@ -204,6 +230,25 @@ and this project adheres to
   global setting to per-network Highlight Group Mentions. Per-buffer Mute
   Notifications and Hide Unread Count controls were removed; the per-buffer
   Notify level remains as an override.
+- **Settings**: Reorganized General settings into Theme, Previews, Channels, and
+  Users blocks. Added global Show Colors, Show Prefix, and Hide Ignored. Show
+  Prefix applies to nicklist and message author prefixes. Removed the per-buffer
+  Color Nicklist options.
+- **Settings**: Added a Chat Box block and moved the chat-input options into it.
+  Added Show Style Picker and the Channels Export Button. Export Buffer is
+  hidden by default.
+- **Settings**: Added a Messages block with message layout, timestamps,
+  redactions, bot messages, and presence changes. Added network-level
+  Default/No/Yes message filters. Show Colors now controls nick colours in both
+  the nicklist and messages.
+- **Settings**: Moved Request History to per-network Channels settings, ungated
+  global emoji settings, gated Highlight Replies by reply-tag support, treated
+  metadata bots as bots, and listed network emoji packs alongside channel packs.
+  Renamed Lax Message Rerouting to Permissive Rerouting.
+- **Emoji Packs**: Added a network pack policy row and Default/Always/Never
+  channel policies. Always packs load even when global remote emoji is disabled;
+  Default follows the global setting. Channel rows remain visible while global
+  remote emoji is off. Empty gated network settings blocks are now hidden.
 - **Presets**: The browser header preset switcher is now optional through a
   default-on Show Preset Switcher setting in Appearance. The Electron app keeps
   its native Presets menu independent of that setting, and both menus list only
@@ -296,6 +341,10 @@ and this project adheres to
 
 ### Removed
 
+- Removed `buffers.mute_sound`; per-buffer Never now suppresses message sounds
+  and drives Soju muted metadata.
+- Removed dead `buffers.ignore_bots`, global `buffers.auto_request_history`,
+  unused `textFormats` keys, and orphaned settings locale strings.
 - **Avatars**: Removed the DiceBear Rings fallback style and shortened the
   DiceBear Gaze label to “DiceBear Gaze” so long option labels no longer widen
   settings dropdowns.
@@ -323,6 +372,9 @@ and this project adheres to
 
 ### Fixed
 
+- **Unknown Avatars**: No longer generates avatars for server notices without a
+  sender nick, and uses the configured fallback avatar URL for unknown senders
+  instead of always using the local identicon.
 - **Desktop Lifecycle**: Canceling the quit warning no longer closes the tray,
   notifications, or local chat logs. Added a rotating main-process log under the
   app logs directory and suppressed Chromium verbose media logging in packaged

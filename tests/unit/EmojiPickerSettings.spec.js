@@ -3,33 +3,7 @@ import EmojiPicker from '@/components/EmojiPicker.vue';
 import { emojiData } from '@/res/emojiData';
 import { emojiVersions } from '@/res/emojiLookup';
 
-function pickerEnabled(settings, utf8 = true) {
-    return AppSettings.computed.emojiPickerEnabled.call({
-        activeNetworkIsUtf8: utf8,
-        $state: {
-            setting: (name) => settings[name],
-        },
-    });
-}
-
 describe('Emoji picker version setting', () => {
-    it('is visible when the picker is enabled', () => {
-        expect(pickerEnabled({ showEmojiPicker: true })).toBe(true);
-        expect(pickerEnabled({ forceShowEmojiPicker: true })).toBe(true);
-    });
-
-    it('is hidden when the picker is disabled', () => {
-        expect(pickerEnabled({})).toBe(false);
-        expect(pickerEnabled({
-            showEmojiPicker: false,
-            forceShowEmojiPicker: false,
-        })).toBe(false);
-    });
-
-    it('is hidden on a non-UTF-8 network', () => {
-        expect(pickerEnabled({ showEmojiPicker: true }, false)).toBe(false);
-    });
-
     it('lists the Unicode versions available in the data', () => {
         const versions = AppSettings.computed.emojiVersions.call({});
 

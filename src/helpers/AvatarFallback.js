@@ -48,6 +48,23 @@ export function getAvatarFallbackUrl(style) {
     return DICEBEAR_FALLBACK_URLS[style] || '';
 }
 
+export function getConfiguredAvatarFallbackUrl(nick, state) {
+    const style = state.setting('avatars.fallback_style');
+    if (style === LOCAL_INITIALS) {
+        return '';
+    }
+
+    const fallbackUrl = state.setting('avatars.fallback_avatar_url');
+    if (!fallbackUrl) {
+        return '';
+    }
+
+    return fallbackUrl.replace(
+        '{nickname}',
+        encodeURIComponent(String(nick || '').toLowerCase())
+    );
+}
+
 export function avatarFallbackStyleFromUrl(url) {
     if (!url) {
         return LOCAL_IDENTICON;

@@ -136,13 +136,17 @@
                     }}</span><emoji-text :text="props.ml.displayNickFor(props.message)" />
                 </a>
                 <div
-                    v-if="props.m().showRealName()"
+                    v-if="props.m().showRealName() || props.m().showHostName()"
                     class="kiwi-messagelist-realname"
                     @click="props.m().onRealnameClick($event)"
                     @mouseover="props.ml.hover_nick = props.message.nick.toLowerCase();"
                     @mouseout="props.ml.hover_nick = '';"
                 >
-                    <span v-html="props.m().realnameHtml()" />
+                    <span
+                        v-if="props.m().showRealName()"
+                        v-html="props.m().realnameHtml()"
+                    />
+                    <span v-else>{{ props.m().hostName() }}</span>
                 </div>
             </div>
             <div
@@ -208,6 +212,8 @@
 
 import { urlRegex } from '@/helpers/TextFormatting';
 import { ircToHtml } from '@/helpers/IrcToHtml';
+import { messageHostName, shouldShowHostName } from '@/helpers/MessageAuthor';
+import { shouldDisplayAvatar } from '@/helpers/MessageAvatar';
 import * as Misc from '@/helpers/Misc';
 import MessageInfo from './MessageInfo';
 import AwayStatusIndicator from './AwayStatusIndicator';
@@ -254,6 +260,14 @@ const methods = {
         let props = this.props;
         return ircToHtml(props.message.user && props.message.user.realname);
     },
+    showHostName() {
+        let props = this.props;
+        return shouldShowHostName(props.message, props.ml.buffer);
+    },
+    hostName() {
+        let props = this.props;
+        return messageHostName(props.message);
+    },
     onRealnameClick(event) {
         let props = this.props;
         let target = event.target;
@@ -294,27 +308,10 @@ const methods = {
     },
     displayAvatar(message) {
         let props = this.props;
-        // if there is no user attached hide the avatar
-        if (!message.user && !props.ml.buffer.state.setting('avatars.show_without_user')) {
-            return false;
-        }
-
-        // if its not a message hide the avatar
-        if (!this.isMessage(message)) {
-            return false;
-        }
-
-        // dont show avatars in server or special buffers
-        if (props.ml.buffer.isServer() || props.ml.buffer.isSpecial()) {
-            return false;
-        }
-
-        // dont show avatar if its a repeat of the same user
-        if (this.isRepeat()) {
-            return false;
-        }
-
-        return true;
+        return shouldDisplayAvatar(message, props.ml.buffer, {
+            showWithoutUser: props.ml.buffer.state.setting('avatars.show_without_user'),
+            repeat: this.isRepeat(),
+        });
     },
     userMode(user) {
         let props = this.props;

@@ -164,29 +164,52 @@ describe('Soju metadata', () => {
         ]);
     });
 
-    test('incoming pinned and muted metadata updates the buffer settings', async() => {
+    test('incoming pinned and muted metadata updates mutually exclusive settings', async() => {
         const { s, network, client, getParsed } = setup({ maxKeys: '0' });
         s.addBuffer(network.id, '#chan');
         client.emit('join', { nick: 'TestNick', channel: '#chan' });
         const buffer = network.bufferByName('#chan');
         client.raw.mockClear();
 
+        buffer.setting('alert_on', 'never');
         applyMetadata(getParsed, client, '#chan', 'soju.im/pinned', '1');
         expect(buffer.setting('favorite')).toBe(true);
+        expect(buffer.settings.alert_on).toBeUndefined();
+        expect(buffer.setting('alert_on')).toBe('highlight');
+
         applyMetadata(getParsed, client, '#chan', 'soju.im/pinned', '0');
         expect(buffer.setting('favorite')).toBe(false);
 
         applyMetadata(getParsed, client, '#chan', 'soju.im/muted', '1');
-        expect(buffer.setting('alert_on')).toBe('never');
-        expect(buffer.setting('mute_sound')).toBe(true);
+        expect(buffer.setting('favorite')).toBe(false);
+        expect(buffer.settings.alert_on).toBe('never');
+        expect(buffer.settings.unread_badge).toBe('hide');
 
         applyMetadata(getParsed, client, '#chan', 'soju.im/muted', '0');
-        expect(buffer.setting('alert_on')).toBe('highlight');
-        expect(buffer.setting('mute_sound')).toBe(false);
+        expect(buffer.settings.alert_on).toBeUndefined();
+        expect(buffer.settings.unread_badge).toBeUndefined();
 
         await Vue.nextTick();
         await Vue.nextTick();
         expect(metadataCommands(client).filter((cmd) => cmd.params[1] === 'SET')).toHaveLength(0);
+    });
+
+    test('incoming unmute only clears a complete muted state', () => {
+        const { s, network, client, getParsed } = setup({ maxKeys: '0' });
+        s.addBuffer(network.id, '#chan');
+        client.emit('join', { nick: 'TestNick', channel: '#chan' });
+        const buffer = network.bufferByName('#chan');
+
+        buffer.setting('alert_on', 'never');
+        applyMetadata(getParsed, client, '#chan', 'soju.im/muted', '0');
+        expect(buffer.settings.alert_on).toBe('never');
+        expect(buffer.settings.unread_badge).toBeUndefined();
+
+        buffer.state.$delete(buffer.settings, 'alert_on');
+        buffer.setting('unread_badge', 'hide');
+        applyMetadata(getParsed, client, '#chan', 'soju.im/muted', '0');
+        expect(buffer.settings.alert_on).toBeUndefined();
+        expect(buffer.settings.unread_badge).toBe('hide');
     });
 
     test('outgoing buffer settings send Soju metadata once', async() => {
@@ -203,9 +226,13 @@ describe('Soju metadata', () => {
             { command: 'METADATA', params: ['#chan', 'SET', 'soju.im/pinned', '1'] },
         ]);
 
+        buffer.setting('favorite', false);
+        await Vue.nextTick();
+        await Vue.nextTick();
         client.raw.mockClear();
+
         buffer.setting('alert_on', 'never');
-        buffer.setting('mute_sound', true);
+        buffer.setting('unread_badge', 'hide');
         await Vue.nextTick();
         await Vue.nextTick();
         expect(metadataCommands(client)).toEqual([
@@ -213,7 +240,7 @@ describe('Soju metadata', () => {
         ]);
 
         client.raw.mockClear();
-        buffer.setting('mute_sound', false);
+        buffer.setting('unread_badge', 'show');
         await Vue.nextTick();
         await Vue.nextTick();
         expect(metadataCommands(client)).toEqual([

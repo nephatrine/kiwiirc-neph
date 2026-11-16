@@ -2,6 +2,7 @@
 
 import { findIndex } from '@/helpers/Utils';
 import getState from '@/libs/state';
+import { isBufferMuted } from '@/helpers/UnreadBadge';
 
 export function orderBuffers(buffers) {
     // Since vuejs will sort in-place and update views when .sort is called
@@ -20,14 +21,8 @@ export function orderBuffers(buffers) {
             return 1;
         }
 
-        const isMuted = (buffer) => (
-            buffer.setting('alert_on') === 'never' &&
-            buffer.setting('hide_message_counts') &&
-            !buffer.setting('favorite')
-        );
-
-        const aMuted = isMuted(a);
-        const bMuted = isMuted(b);
+        const aMuted = isBufferMuted(a);
+        const bMuted = isBufferMuted(b);
 
         if (aMuted && !bMuted) {
             return 1;

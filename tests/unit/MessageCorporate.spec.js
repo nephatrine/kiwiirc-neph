@@ -87,6 +87,8 @@ function createMethods(repeat, showActions = false, own = false) {
         userModePrefix: () => '',
         showRealName: () => false,
         realnameHtml: () => '',
+        showHostName: () => false,
+        hostName: () => '',
         onRealnameClick: jest.fn(),
         getNetwork: () => ({
             hasCap: (cap) => showActions && cap === 'message-tags',

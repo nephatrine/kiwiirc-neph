@@ -60,7 +60,7 @@
                         <i class="bx bx-cog" aria-hidden="true" />
                     </a>
                 </div>
-                <div v-if="!isMobile" class="kiwi-header-option">
+                <div v-if="!isMobile && showExportButton" class="kiwi-header-option">
                     <a :title="$t('export_buffer')" @click="exportBuffer()">
                         <i class="bx bx-download" aria-hidden="true" />
                     </a>
@@ -133,7 +133,7 @@
             </div>
             <div class="kiwi-header-center" />
             <div v-if="!isMobile" class="kiwi-header-options">
-                <div class="kiwi-header-option">
+                <div v-if="showExportButton" class="kiwi-header-option">
                     <a :title="$t('export_buffer')" @click="exportBuffer()">
                         <i class="bx bx-download" aria-hidden="true" />
                     </a>
@@ -167,7 +167,7 @@
             </div>
             <div class="kiwi-header-center" />
             <div :key="buffer.id" class="kiwi-header-options">
-                <div v-if="!isMobile" class="kiwi-header-option">
+                <div v-if="!isMobile && showExportButton" class="kiwi-header-option">
                     <a :title="$t('export_buffer')" @click="exportBuffer()">
                         <i class="bx bx-download" aria-hidden="true" />
                     </a>
@@ -215,7 +215,7 @@
             </div>
             <div class="kiwi-header-center" />
             <div v-if="!isMobile" class="kiwi-header-options">
-                <div class="kiwi-header-option">
+                <div v-if="showExportButton" class="kiwi-header-option">
                     <a :title="$t('export_buffer')" @click="exportBuffer()">
                         <i class="bx bx-download" aria-hidden="true" />
                     </a>
@@ -260,6 +260,9 @@ export default {
     computed: {
         isMobile() {
             return this.$state.ui.app_width <= 550;
+        },
+        showExportButton() {
+            return this.$state.setting('showExportButton');
         },
         isContextOnly() {
             return !!this.buffer.contextOnly;
