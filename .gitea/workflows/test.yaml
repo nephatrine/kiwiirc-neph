@@ -21,6 +21,13 @@ jobs:
         steps:
             - name: Checkout Repository
               uses: https://code.nephatrine.net/NephHub/checkout@v6
+            - name: Cache NPM
+              uses: https://code.nephatrine.net/NephHub/cache@v4.1.0
+              with:
+                  path: ~/.cache/npm
+                  key: kiwiirc-web-${{ hashFiles('package-lock.json') }}
+                  restore-keys: |
+                      kiwiirc-web-
             - name: Build Web
               run: cd "${{ gitea.workspace }}" && bash scripts/build-web.sh
             - name: Build Web Archives
@@ -72,6 +79,16 @@ jobs:
                   fetch-depth: 0
             - name: Install Build Dependencies
               run: bash "${{ gitea.workspace }}/desktop/docker/install-deps.sh"
+            - name: Cache Desktop Build Dependencies
+              uses: https://code.nephatrine.net/NephHub/cache@v4.1.0
+              with:
+                  path: |
+                      ~/.cache/npm
+                      ~/.cache/electron
+                      ~/.cache/electron-builder
+                  key: kiwiirc-amd64-${{ hashFiles('desktop/package-lock.json') }}
+                  restore-keys: |
+                      kiwiirc-amd64-
             - name: Download Web ZIP
               uses: https://code.nephatrine.net/NephHub/gitea-download-artifact@v8
               with:
@@ -146,6 +163,16 @@ jobs:
                   fetch-depth: 0
             - name: Install Build Dependencies
               run: bash "${{ gitea.workspace }}/desktop/docker/install-deps.sh"
+            - name: Cache Desktop Build Dependencies
+              uses: https://code.nephatrine.net/NephHub/cache@v4.1.0
+              with:
+                  path: |
+                      ~/.cache/npm
+                      ~/.cache/electron
+                      ~/.cache/electron-builder
+                  key: kiwiirc-arm64-${{ hashFiles('desktop/package-lock.json') }}
+                  restore-keys: |
+                      kiwiirc-arm64-
             - name: Download Web ZIP
               uses: https://code.nephatrine.net/NephHub/gitea-download-artifact@v8
               with:
