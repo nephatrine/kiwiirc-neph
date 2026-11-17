@@ -26,14 +26,14 @@ jobs:
             - name: Build Web Archives
               run: cd "${{ gitea.workspace }}" && bash scripts/build-web-archives.sh both
             - name: Upload Web ZIP
-              uses: https://code.nephatrine.net/NephHub/upload-artifact@v7
+              uses: https://code.nephatrine.net/NephHub/gitea-upload-artifact@v7
               with:
                   path: kiwiirc-release.zip
                   archive: false
                   if-no-files-found: error
                   retention-days: 7
             - name: Upload Web TGZ
-              uses: https://code.nephatrine.net/NephHub/upload-artifact@v7
+              uses: https://code.nephatrine.net/NephHub/gitea-upload-artifact@v7
               with:
                   path: kiwiirc-release.tar.gz
                   archive: false
@@ -73,7 +73,7 @@ jobs:
             - name: Install Build Dependencies
               run: bash "${{ gitea.workspace }}/desktop/docker/install-deps.sh"
             - name: Download Web ZIP
-              uses: https://code.nephatrine.net/NephHub/download-artifact@v8
+              uses: https://code.nephatrine.net/NephHub/gitea-download-artifact@v8
               with:
                   name: kiwiirc-release.zip
                   path: /tmp/web-build
@@ -97,14 +97,14 @@ jobs:
                   PACKAGE_SET: git
               run: bash "${{ gitea.workspace }}/scripts/build-linux-packages.sh"
             - name: Upload Linux Application
-              uses: https://code.nephatrine.net/NephHub/upload-artifact@v7
+              uses: https://code.nephatrine.net/NephHub/gitea-upload-artifact@v7
               with:
                   path: desktop/release/*.AppImage
                   archive: false
                   if-no-files-found: error
                   retention-days: 7
             - name: Upload Windows Application
-              uses: https://code.nephatrine.net/NephHub/upload-artifact@v7
+              uses: https://code.nephatrine.net/NephHub/gitea-upload-artifact@v7
               with:
                   path: desktop/release/*.exe
                   archive: false
