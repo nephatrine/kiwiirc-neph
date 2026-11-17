@@ -10,7 +10,7 @@ permissions:
     contents: read
     actions: write
 jobs:
-    test:
+    build_web:
         runs-on: nephnet-fast
         timeout-minutes: 30
         concurrency:
@@ -21,22 +21,101 @@ jobs:
         steps:
             - name: Checkout Repository
               uses: https://code.nephatrine.net/NephHub/checkout@v6
-            - name: Run Tests
-              run: cd "${{ gitea.workspace }}" && npm ci && npm run lint && npm test && npm run build:release
+            - name: Build Web
+              run: cd "${{ gitea.workspace }}" && bash scripts/build-web.sh
             - name: Build Web Archives
               run: cd "${{ gitea.workspace }}" && bash scripts/build-web-archives.sh both
-            - name: Upload Web Build
-              uses: https://code.nephatrine.net/NephHub/gitea-upload-artifact@v4
+            - name: Upload Web ZIP
+              uses: https://code.nephatrine.net/NephHub/upload-artifact@v7
               with:
-                  name: kiwiirc-web-build
-                  path: |
-                      kiwiirc-release.zip
-                      kiwiirc-release.tar.gz
+                  path: kiwiirc-release.zip
+                  archive: false
+                  if-no-files-found: error
+                  retention-days: 7
+            - name: Upload Web TGZ
+              uses: https://code.nephatrine.net/NephHub/upload-artifact@v7
+              with:
+                  path: kiwiirc-release.tar.gz
+                  archive: false
                   if-no-files-found: error
                   retention-days: 7
             - name: Notify Discord
               uses: https://code.nephatrine.net/NephHub/actions-status-discord@v1
               if: failure()
               with:
-                  title: "FAIL: test"
+                  title: "FAIL: Build Web Packages"
+                  webhook: ${{ secrets.DISCORD_WH_PROJECTS }}
+    build_desktop:
+        needs: [build_web]
+        runs-on: nephnet-amd64
+        timeout-minutes: 60
+        concurrency:
+            group: desktop-${{ gitea.repository }}-${{ gitea.ref }}
+            cancel-in-progress: true
+        container:
+            image: node:22-trixie
+        env:
+            CSC_IDENTITY_AUTO_DISCOVERY: "false"
+            ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+            PACKAGE_OWNER: ${{ gitea.repository_owner }}
+            PACKAGER_USER: ${{ gitea.actor }}
+            GITEA_URL: https://code.nephatrine.net
+            DISTRIBUTION: trixie
+            COMPONENT: main
+            ARCH_REPOSITORY: core
+            WINEDEBUG: "-all"
+            WINEDLLOVERRIDES: "winemenubuilder.exe=d;mscoree=d;mshtml=d"
+        steps:
+            - name: Checkout Repository
+              uses: https://code.nephatrine.net/NephHub/checkout@v6
+              with:
+                  fetch-depth: ${{ gitea.event_name == 'push' && 0 || 1 }}
+            - name: Install Build Dependencies
+              run: bash "${{ gitea.workspace }}/desktop/docker/install-deps.sh"
+            - name: Download Web ZIP
+              uses: https://code.nephatrine.net/NephHub/download-artifact@v8
+              with:
+                  name: kiwiirc-release.zip
+                  path: /tmp/web-build
+                  skip-decompress: true
+                  github-token: ${{ secrets.GITEA_TOKEN }}
+            - name: Extract Web Build
+              run: |
+                  rm -rf dist
+                  mkdir -p dist
+                  web_zip="$(find /tmp/web-build -name 'kiwiirc-release.zip' -print -quit)"
+                  if [ -z "$web_zip" ]; then
+                      echo "Downloaded web ZIP not found" >&2
+                      exit 1
+                  fi
+                  unzip -q "$web_zip" -d dist
+            - name: Build Desktop Artifacts
+              run: bash "${{ gitea.workspace }}/desktop/scripts/build-artifacts.sh"
+            - name: Build Linux Packages
+              if: gitea.event_name == 'push'
+              env:
+                  PACKAGE_SET: git
+              run: bash "${{ gitea.workspace }}/scripts/build-linux-packages.sh"
+            - name: Upload Linux Application
+              uses: https://code.nephatrine.net/NephHub/upload-artifact@v7
+              with:
+                  path: desktop/release/*.AppImage
+                  archive: false
+                  if-no-files-found: error
+            - name: Upload Windows Application
+              uses: https://code.nephatrine.net/NephHub/upload-artifact@v7
+              with:
+                  path: desktop/release/*.exe
+                  archive: false
+                  if-no-files-found: error
+            - name: Publish Linux Packages
+              if: gitea.event_name == 'push'
+              env:
+                  PACKAGER_TOKEN: ${{ secrets.PACKAGER_TOKEN }}
+              run: bash "${{ gitea.workspace }}/scripts/publish-linux-packages.sh"
+            - name: Notify Discord
+              uses: https://code.nephatrine.net/NephHub/actions-status-discord@v1
+              if: failure()
+              with:
+                  title: "FAIL: Build Desktop Packages"
                   webhook: ${{ secrets.DISCORD_WH_PROJECTS }}

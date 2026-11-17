@@ -369,17 +369,15 @@ npm run dist:all
 Artifacts are written to `desktop/release/`. Windows packaging requires Wine on
 Linux.
 
-## Debian Package Registry
+## Linux Package Registries
 
-The `.deb` package is built only by the **Package Debian** workflow and
-published to the Gitea Debian registry. Release and desktop-build workflows do
-not produce `.deb` files.
+Debian and Arch packages are published to the Gitea package registries. Pushes
+to `master` publish `kiwiirc-desktop-git` with a commit-based version. Release
+workflows publish `kiwiirc-desktop` at the release version. Pull requests and
+manual test runs do not publish packages. The stable and git packages conflict,
+so install only one of them.
 
-Release commits publish `kiwiirc-desktop` at the release version. On-demand
-builds publish `kiwiirc-desktop-git` with a commit-based version, and release
-commits also publish that git package.
-
-To install from the registry:
+### Debian
 
 ```sh
 sudo curl \
@@ -387,7 +385,7 @@ sudo curl \
     -o /etc/apt/keyrings/gitea-nephatrine.asc
 
 echo "deb [signed-by=/etc/apt/keyrings/gitea-nephatrine.asc] \
-https://code.nephatrine.net/api/packages/nephatrine/debian stable main" \
+https://code.nephatrine.net/api/packages/nephatrine/debian trixie main" \
     | sudo tee /etc/apt/sources.list.d/kiwiirc.list
 
 sudo apt update
@@ -395,6 +393,38 @@ sudo apt install kiwiirc-desktop
 ```
 
 Use `kiwiirc-desktop-git` to track packaged commits instead of releases.
+
+### Arch
+
+```sh
+sudo wget \
+    https://code.nephatrine.net/api/packages/nephatrine/arch/repository.key \
+    -O /tmp/gitea-nephatrine.asc
+gpg --show-keys /tmp/gitea-nephatrine.asc
+sudo pacman-key --add /tmp/gitea-nephatrine.asc
+sudo pacman-key --lsign-key <key-id>
+```
+
+Add the repository to `/etc/pacman.conf`:
+
+```ini
+[core]
+SigLevel = Required
+Server = https://code.nephatrine.net/api/packages/nephatrine/arch/core/$arch
+```
+
+Then install:
+
+```sh
+sudo pacman -Sy
+sudo pacman -S kiwiirc-desktop
+```
+
+Use `kiwiirc-desktop-git` to track packaged commits instead of releases.
+
+`core` is also the name of Arch's official repository. If `/etc/pacman.conf`
+already defines `[core]`, use a different local section name and hardcode the
+Gitea `arch/core` path in `Server`, or rename the Gitea repository.
 
 ## Container Build
 

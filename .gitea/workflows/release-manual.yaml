@@ -1,5 +1,5 @@
-name: Release Package (Manual)
-run-name: Manual Release of ${{ inputs.tag }}
+name: Re-Release Package
+run-name: Re-Release Package - ${{ inputs.tag }}
 on:
     workflow_dispatch:
         inputs:
@@ -11,13 +11,19 @@ permissions:
     releases: write
 jobs:
     build_release:
-        runs-on: nephnet-fast
+        runs-on: nephnet-amd64
         timeout-minutes: 120
         container:
             image: node:22-trixie
         env:
             CSC_IDENTITY_AUTO_DISCOVERY: "false"
             ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+            PACKAGE_OWNER: ${{ gitea.repository_owner }}
+            PACKAGER_USER: ${{ gitea.actor }}
+            GITEA_URL: https://code.nephatrine.net
+            DISTRIBUTION: trixie
+            COMPONENT: main
+            ARCH_REPOSITORY: core
             WINEDEBUG: "-all"
             WINEDLLOVERRIDES: "winemenubuilder.exe=d;mscoree=d;mshtml=d"
         steps:
@@ -31,6 +37,15 @@ jobs:
               env:
                   RELEASE_TAG: ${{ inputs.tag }}
               run: cd "${{ gitea.workspace }}" && bash scripts/release-build.sh
+            - name: Build Stable Linux Packages
+              env:
+                  PACKAGE_SET: stable
+                  RELEASE_TAG: ${{ inputs.tag }}
+              run: bash "${{ gitea.workspace }}/scripts/build-linux-packages.sh"
+            - name: Publish Stable Linux Packages
+              env:
+                  PACKAGER_TOKEN: ${{ secrets.PACKAGER_TOKEN }}
+              run: bash "${{ gitea.workspace }}/scripts/publish-linux-packages.sh"
             - name: Create Release
               uses: https://code.nephatrine.net/NephHub/gitea-release-action@v1
               with:
@@ -41,5 +56,5 @@ jobs:
               uses: https://code.nephatrine.net/NephHub/actions-status-discord@v1
               if: failure()
               with:
-                  title: "FAIL: release-manual"
+                  title: "FAIL: Release Packages"
                   webhook: ${{ secrets.DISCORD_WH_PROJECTS }}

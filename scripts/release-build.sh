@@ -37,10 +37,7 @@ fi
 rm -rf dist release-assets
 rm -f kiwiirc-release.tar.gz kiwiirc-release.zip
 
-npm ci
-npm run lint
-npm test
-npm run build:release
+bash scripts/build-web.sh
 bash scripts/build-web-archives.sh both
 
 bash desktop/scripts/build-artifacts.sh

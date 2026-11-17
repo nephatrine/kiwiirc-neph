@@ -17,6 +17,7 @@
         "pack": "electron-builder --dir",
         "dist:linux": "electron-builder --linux AppImage",
         "dist:linux:deb": "electron-builder --linux deb",
+        "dist:linux:pacman": "electron-builder --linux pacman",
         "dist:win": "electron-builder --win portable",
         "dist:all": "npm run dist:linux && npm run dist:win"
     },

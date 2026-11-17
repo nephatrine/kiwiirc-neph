@@ -32,5 +32,8 @@ appImage:
   artifactName: KiwiIRC-${version}.${ext}
 deb:
   artifactName: ${name}_${version}_${arch}.${ext}
+pacman:
+  artifactName: ${name}-${version}-${arch}.pkg.tar.zst
+  compression: zstd
 portable:
   artifactName: KiwiIRC-${version}-portable.${ext}

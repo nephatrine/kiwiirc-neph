@@ -18,5 +18,7 @@ apt-get install -y --no-install-recommends \
     xauth \
     xvfb \
     xz-utils \
-    zip
+    unzip \
+    zip \
+    zstd
 rm -rf /var/lib/apt/lists/*

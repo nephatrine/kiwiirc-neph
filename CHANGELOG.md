@@ -214,13 +214,14 @@ and this project adheres to
 
 ### Changed
 
-- **Desktop Packaging**: Debian packages are now published to the Gitea Debian
-  registry by a manual Package Debian workflow. Release and desktop-build
-  workflows no longer attach or build `.deb` files. Release commits publish
-  `kiwiirc-desktop`; commit builds publish `kiwiirc-desktop-git`. Releases now
-  contain the web ZIP/TGZ, Linux AppImage, Windows portable executable, and
-  `SHA256SUMS`; NSIS installers, blockmaps, and `latest*.yml` files were
-  removed.
+- **Desktop Packaging**: Debian and Arch packages are now published to the Gitea
+  package registries by a manual Package Linux workflow. Release and
+  desktop-build workflows no longer attach or build `.deb` files. Release
+  commits publish `kiwiirc-desktop`; commit builds publish
+  `kiwiirc-desktop-git`. The stable and git packages conflict in both package
+  managers. Releases now contain the web ZIP/TGZ, Linux AppImage, Windows
+  portable executable, and `SHA256SUMS`; NSIS installers, blockmaps, and
+  `latest*.yml` files were removed.
 - **Desktop Web Push**: Desktop builds now use native notifications and no
   longer negotiate or expose browser Web Push.
 - **Desktop Window**: Closing the window now hides it to the system tray by

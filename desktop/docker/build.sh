@@ -12,11 +12,7 @@ mkdir -p "$HOME" "$XDG_CACHE_HOME" "$WINEPREFIX" "$npm_config_cache"
 
 rm -rf dist
 
-npm ci
-npm run lint
-npm test
-npm run build:release
-
+bash scripts/build-web.sh
 bash desktop/scripts/build-artifacts.sh
 
 echo
