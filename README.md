@@ -2,6 +2,8 @@
 
 > A static, browser-based IRC client built around modern IRCv3 features.
 
+[![Test Status](https://code.nephatrine.net/nephatrine/kiwiirc/actions/workflows/test.yaml/badge.svg?branch=master)](https://code.nephatrine.net/nephatrine/kiwiirc/actions?workflow=test.yaml)
+
 ## Overview
 
 Kiwi IRC is a static web client for one or many IRC networks. It connects
@@ -9,6 +11,22 @@ directly over WebSocket or through
 [webircgateway](https://github.com/kiwiirc/webircgateway). It focuses on IRCv3,
 rich media, themes, and plugins while remaining deployable as plain static
 files.
+
+## Downloads
+
+Prebuilt web and desktop artifacts are available from the
+[releases page](https://code.nephatrine.net/nephatrine/kiwiirc/releases).
+
+Stable package pages appear after a release publishes them. Unstable `-git`
+package pages are available from `master` builds.
+
+- [Stable Debian Package](https://code.nephatrine.net/nephatrine/-/packages/debian/kiwiirc-desktop)
+- [Stable Arch Package](https://code.nephatrine.net/nephatrine/-/packages/arch/kiwiirc-desktop)
+- [Unstable Debian Package](https://code.nephatrine.net/nephatrine/-/packages/debian/kiwiirc-desktop-git)
+- [Unstable Arch Package](https://code.nephatrine.net/nephatrine/-/packages/arch/kiwiirc-desktop-git)
+
+See [desktop/README.md](desktop/README.md) for repository setup and installation
+commands.
 
 ## Features
 

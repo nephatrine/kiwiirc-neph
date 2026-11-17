@@ -851,6 +851,46 @@ msgstr "Spellcheck"
 msgid "settings_spellcheck_hint"
 msgstr "Underline misspelled words in the message input."
 
+#: Updates heading
+msgid "settings_updates"
+msgstr "Updates"
+
+#: Check for updates automatically
+msgid "settings_check_updates_auto"
+msgstr "Check Automatically"
+
+#: Automatic update check hint
+msgid "settings_check_updates_auto_hint"
+msgstr "Check for new desktop releases when Kiwi IRC starts and at a regular interval."
+
+#: Check for updates button
+msgid "settings_check_updates"
+msgstr "Check for Updates"
+
+#: Checking for updates
+msgid "settings_checking_updates"
+msgstr "Checking…"
+
+#: Current desktop version
+msgid "settings_current_version"
+msgstr "Current Version: {version}"
+
+#: No update available
+msgid "settings_update_up_to_date"
+msgstr "Kiwi IRC is up to date."
+
+#: Update available
+msgid "settings_update_available"
+msgstr "Kiwi IRC {version} is available."
+
+#: Update check failed
+msgid "settings_update_check_failed"
+msgstr "Unable to check for updates."
+
+#: Open the release page
+msgid "settings_view_update"
+msgstr "View Release"
+
 #: Messages in scrollback
 msgid "settings_scrollback"
 msgstr "Scrollback Messages"

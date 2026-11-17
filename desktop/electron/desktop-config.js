@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const JSON5 = require('json5');
+const { DEFAULT_API_URL, DEFAULT_INTERVAL_HOURS } = require('./updates');
 
 const CONFIG_FILENAME = 'config.json5';
 
@@ -45,6 +46,11 @@ const DEFAULT_CONFIG = {
         maxUploadBytes: 268435456,
         maxRedirects: 5,
     },
+    updates: {
+        apiUrl: DEFAULT_API_URL,
+        checkIntervalHours: DEFAULT_INTERVAL_HOURS,
+        notify: true,
+    },
 };
 
 const USER_CONFIG_TEMPLATE = `{
@@ -59,6 +65,12 @@ const USER_CONFIG_TEMPLATE = `{
     //
     // "desktopHttp": {
     //     "allowPrivateNetworks": false
+    // },
+    //
+    // "updates": {
+    //     "apiUrl": "${DEFAULT_API_URL}",
+    //     "checkIntervalHours": 24,
+    //     "notify": true
     // }
 }
 `;

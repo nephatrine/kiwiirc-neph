@@ -53,10 +53,16 @@ and this project adheres to
   Settings. The Preferences tab now contains user buffer preferences and
   notification settings, and the Settings tab is hidden when it has no channel
   settings to show.
-- **Desktop Releases**: Tag and manual releases now build the web bundle and
-  Linux/Windows desktop installers, validate the tag against both package
-  versions, and attach the artifacts with a combined `SHA256SUMS`. Added a
-  manual Desktop Build workflow for unsigned packaging smoke tests.
+- **Desktop Updates**: Added check-only update notifications using the Gitea
+  releases API, with manual and automatic checks, a tray indicator, and a
+  release-page link. Updates are never downloaded or installed automatically.
+- **Desktop Releases**: Tag and manual releases now build the web bundle,
+  Linux/Windows desktop artifacts, and stable Linux packages, validate the tag,
+  and attach the release assets with a combined `SHA256SUMS`. The test workflow
+  builds git packages on pushes to `master`.
+- **Desktop Packaging**: Linux AppImage builds now support arm64. The container
+  installs Wine and Xvfb only on x86_64, and the build scripts use them when
+  available to produce the Windows portable build.
 - **Nicklist**: Added an optional Grouped Nicklists setting that shows Owner,
   Operator, Half-Op, Voiced, Users/Online, and Offline headings based on each
   user's highest channel privilege.
@@ -215,13 +221,16 @@ and this project adheres to
 ### Changed
 
 - **Desktop Packaging**: Debian and Arch packages are now published to the Gitea
-  package registries by a manual Package Linux workflow. Release and
-  desktop-build workflows no longer attach or build `.deb` files. Release
-  commits publish `kiwiirc-desktop`; commit builds publish
-  `kiwiirc-desktop-git`. The stable and git packages conflict in both package
-  managers. Releases now contain the web ZIP/TGZ, Linux AppImage, Windows
-  portable executable, and `SHA256SUMS`; NSIS installers, blockmaps, and
-  `latest*.yml` files were removed.
+  package registries by the test and release workflows. Release commits publish
+  `kiwiirc-desktop`; pushes to `master` publish `kiwiirc-desktop-git`. The
+  stable and git packages conflict in both package managers. Releases now
+  contain the web ZIP/TGZ, Linux AppImage, Windows portable executable, and
+  `SHA256SUMS`; NSIS installers, blockmaps, and `latest*.yml` files were
+  removed. Packaging now uses the committed icon assets instead of regenerating
+  them, so ImageMagick and librsvg are no longer required for desktop builds.
+- **Desktop Packaging**: AppImage and Windows portable artifact names now
+  include the architecture (`x86_64`/`arm64` for AppImage, `x64`/`arm64` for
+  portable).
 - **Desktop Web Push**: Desktop builds now use native notifications and no
   longer negotiate or expose browser Web Push.
 - **Desktop Window**: Closing the window now hides it to the system tray by

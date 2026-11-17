@@ -136,6 +136,36 @@ describe('desktop tray service', () => {
         ]);
     });
 
+    it('adds an update item and opens the release page', () => {
+        const onOpenUpdate = jest.fn();
+        const { service, menus } = makeService({ onOpenUpdate });
+        service.create();
+
+        service.setUpdate({
+            updateAvailable: true,
+            latestVersion: '2.3.0',
+            releaseUrl: 'https://code.nephatrine.net/nephatrine/kiwiirc/releases/tag/v2.3.0',
+        });
+
+        const menu = menus[menus.length - 1];
+        const updateItem = menu.find((item) => item.label === 'Update Available: 2.3.0');
+        expect(updateItem).toBeTruthy();
+        updateItem.click();
+        expect(onOpenUpdate).toHaveBeenCalledWith({
+            latestVersion: '2.3.0',
+            releaseUrl: 'https://code.nephatrine.net/nephatrine/kiwiirc/releases/tag/v2.3.0',
+        });
+
+        service.setUpdate(null);
+        expect(menus[menus.length - 1].map((item) => item.label)).toEqual([
+            'Hide Kiwi IRC',
+            undefined,
+            'Close to Tray',
+            undefined,
+            'Quit Kiwi IRC',
+        ]);
+    });
+
     it('disables close-to-tray when the tray cannot be created', () => {
         FakeTray.fail = true;
         const { service } = makeService();

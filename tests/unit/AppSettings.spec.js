@@ -186,6 +186,34 @@ describe('AppSettings channel defaults', () => {
         }]);
     });
 
+    it('shows desktop update controls and status', () => {
+        window.kiwiDesktop = {
+            version: '2.2.0',
+            updates: {
+                check: jest.fn(),
+                status: jest.fn(),
+                onStatus: jest.fn(),
+            },
+        };
+
+        expect(AppSettings.computed.desktopUpdatesAvailable.call({})).toBe(true);
+        expect(AppSettings.computed.desktopVersion.call({})).toBe('2.2.0');
+        expect(AppSettings.computed.desktopUpdateAvailable.call({
+            desktopUpdateResult: {
+                updateAvailable: true,
+                releaseUrl: 'https://example.com/release',
+            },
+        })).toBe(true);
+        expect(AppSettings.computed.desktopUpdateStatus.call({
+            desktopUpdateError: '',
+            desktopUpdateResult: {
+                updateAvailable: true,
+                latestVersion: '2.3.0',
+            },
+            $t: (key, values) => `${key}:${values.version}`,
+        })).toBe('settings_update_available:2.3.0');
+    });
+
     it('shows channel emoji pack controls when a network has packs', () => {
         expect(AppSettings.computed.hasEmojiPacks.call({ activeNetwork: null }))
             .toBe(false);

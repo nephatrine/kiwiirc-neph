@@ -8,7 +8,16 @@ const DEFAULT_SETTINGS = Object.freeze({
     closeToTray: true,
     autoLaunch: false,
     spellcheck: true,
+    checkForUpdates: true,
+    lastNotifiedUpdate: '',
 });
+
+function normalizeVersion(value) {
+    if (typeof value !== 'string') {
+        return '';
+    }
+    return value.trim().slice(0, 64);
+}
 
 function normalizeSettings(value) {
     const source = value && typeof value === 'object' ? value : {};
@@ -23,6 +32,10 @@ function normalizeSettings(value) {
         spellcheck: typeof source.spellcheck === 'boolean' ?
             source.spellcheck :
             DEFAULT_SETTINGS.spellcheck,
+        checkForUpdates: typeof source.checkForUpdates === 'boolean' ?
+            source.checkForUpdates :
+            DEFAULT_SETTINGS.checkForUpdates,
+        lastNotifiedUpdate: normalizeVersion(source.lastNotifiedUpdate),
     };
 }
 

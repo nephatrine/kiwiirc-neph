@@ -30,6 +30,10 @@ describe('Desktop configuration', () => {
         expect(DEFAULT_CONFIG.buffers.show_topic_in_header).toBe(true);
         expect(DEFAULT_CONFIG.buffers.scrollback_size).toBe(500);
         expect(DEFAULT_CONFIG.desktopHttp.maxUploadBytes).toBe(268435456);
+        expect(DEFAULT_CONFIG.updates.apiUrl)
+            .toBe('https://code.nephatrine.net/api/v1/repos/nephatrine/kiwiirc/releases/latest');
+        expect(DEFAULT_CONFIG.updates.checkIntervalHours).toBe(24);
+        expect(DEFAULT_CONFIG.updates.notify).toBe(true);
     });
 
     it('allows desktop protocol registration to be disabled', () => {
@@ -75,6 +79,20 @@ describe('Desktop configuration', () => {
 
         expect(merged.desktopHttp.maxUploadBytes).toBe(10485760);
         expect(DEFAULT_CONFIG.desktopHttp.maxUploadBytes).toBe(268435456);
+    });
+
+    it('allows update checks to be configured', () => {
+        const merged = mergeConfig(DEFAULT_CONFIG, {
+            updates: {
+                apiUrl: 'https://example.com/releases/latest',
+                checkIntervalHours: 6,
+                notify: false,
+            },
+        });
+
+        expect(merged.updates.apiUrl).toBe('https://example.com/releases/latest');
+        expect(merged.updates.checkIntervalHours).toBe(6);
+        expect(merged.updates.notify).toBe(false);
     });
 
     it('deep merges objects and replaces arrays', () => {

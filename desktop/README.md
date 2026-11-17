@@ -101,6 +101,35 @@ Native desktop HTTP is controlled separately:
 `maxUploadBytes` limits native upload requests separately from normal HTTP
 requests. Raise it for WebDAV or other uploads larger than 256 MB.
 
+## Update Checks
+
+Desktop builds check the latest Gitea release and link to its release page. They
+do not download or install updates automatically.
+
+- **Settings → General → Updates** shows the current version, a Check for
+  Updates button, and the last result.
+- **Check Automatically** runs a check shortly after startup and at the
+  configured interval, 24 hours by default.
+- **Help → Check for Updates…** performs a manual check.
+- A newer release adds an **Update Available** tray item and shows one native
+  notification per version.
+
+Update checks are configurable in `config.json5`:
+
+```json5
+{
+    "updates": {
+        "apiUrl": "https://code.nephatrine.net/api/v1/repos/nephatrine/kiwiirc/releases/latest",
+        "checkIntervalHours": 24,
+        "notify": true
+    }
+}
+```
+
+Set `notify` to `false` to keep the tray and settings status without native
+notifications. Update notifications are separate from IRC message notifications.
+The check only reads public release metadata.
+
 Direct image, audio, and video previews use the `kiwi-media://` protocol in
 desktop builds. It follows the same private-network policy as native HTTP and
 does not proxy iframe embeds. YouTube and Twitch embeds receive a scoped HTTPS
@@ -238,9 +267,10 @@ browser notification and Web Push behavior.
 ## Tray and Close to Tray
 
 Desktop builds show a system tray icon while the app is running. The tray menu
-provides Show/Hide, a Close to Tray toggle, and Quit. The unread count and
-highlight state are reflected in the tray tooltip and, where the OS supports it,
-the application badge.
+provides Show/Hide, an Update Available item when a newer release is found, a
+Close to Tray toggle, and Quit. The unread count and highlight state are
+reflected in the tray tooltip and, where the OS supports it, the application
+badge.
 
 Close to Tray is enabled by default when the tray is available. Closing the
 window then hides it instead of disconnecting IRC sessions. Disable it from
@@ -248,8 +278,9 @@ window then hides it instead of disconnecting IRC sessions. Disable it from
 cannot be created, close-to-tray is disabled for the session and the window
 closes normally.
 
-Close to Tray, Launch at Login, and Spellcheck preferences are stored in
-`<userData>/desktop-settings.json` and are not part of profile export/import.
+Close to Tray, Launch at Login, Spellcheck, and automatic update-check
+preferences are stored in `<userData>/desktop-settings.json` and are not part of
+profile export/import.
 
 ## Auto-Launch
 
@@ -335,10 +366,11 @@ npm run icons
 
 This writes a multi-resolution `build/icon.ico` for Windows, PNG sizes under
 `build/icons/` for Linux, and the runtime tray and overlay assets under
-`assets/`. The generated files are committed so packaging does not need SVG
-tooling. Regenerating requires `rsvg-convert` and ImageMagick. Timestamp
-metadata is stripped so repeated builds from the same sources are
-byte-identical.
+`assets/`. The generated files are committed. Packaging uses those committed
+assets and does not regenerate them. Run `npm run icons` only after changing
+`static/kiwi.svg`. Regenerating requires `rsvg-convert` and ImageMagick.
+Timestamp metadata is stripped to keep repeated builds with the same tooling
+stable.
 
 ## Packaging
 
@@ -377,6 +409,17 @@ workflows publish `kiwiirc-desktop` at the release version. Pull requests and
 manual test runs do not publish packages. The stable and git packages conflict,
 so install only one of them.
 
+### Browse Packages
+
+- [Stable Debian Package](https://code.nephatrine.net/nephatrine/-/packages/debian/kiwiirc-desktop)
+- [Stable Arch Package](https://code.nephatrine.net/nephatrine/-/packages/arch/kiwiirc-desktop)
+- [Unstable Debian Package](https://code.nephatrine.net/nephatrine/-/packages/debian/kiwiirc-desktop-git)
+- [Unstable Arch Package](https://code.nephatrine.net/nephatrine/-/packages/arch/kiwiirc-desktop-git)
+
+Stable package pages appear after a release publishes them; the `-git` pages are
+available from `master` builds. Release downloads are available from the
+[releases page](https://code.nephatrine.net/nephatrine/kiwiirc/releases).
+
 ### Debian
 
 ```sh
@@ -408,9 +451,9 @@ sudo pacman-key --lsign-key <key-id>
 Add the repository to `/etc/pacman.conf`:
 
 ```ini
-[core]
+[nephnet]
 SigLevel = Required
-Server = https://code.nephatrine.net/api/packages/nephatrine/arch/core/$arch
+Server = https://code.nephatrine.net/api/packages/nephatrine/arch/nephnet/$arch
 ```
 
 Then install:
@@ -422,15 +465,13 @@ sudo pacman -S kiwiirc-desktop
 
 Use `kiwiirc-desktop-git` to track packaged commits instead of releases.
 
-`core` is also the name of Arch's official repository. If `/etc/pacman.conf`
-already defines `[core]`, use a different local section name and hardcode the
-Gitea `arch/core` path in `Server`, or rename the Gitea repository.
-
 ## Container Build
 
-The local Docker builder produces Linux and Windows artifacts without installing
-Node, Wine, or packaging tools on the host. It requires Docker with the Compose
-plugin:
+The local Docker builder produces Linux artifacts on all supported architectures
+and Windows artifacts on x86_64, without installing Node, Wine, or packaging
+tools on the host. Wine and Xvfb are installed only on x86_64. The build scripts
+use them when available and otherwise build the Linux AppImage only. It requires
+Docker with the Compose plugin:
 
 ```sh
 ./desktop/docker/run.sh
@@ -438,12 +479,14 @@ plugin:
 
 The repository is mounted at `/workspace`; generated files are written back to
 `dist/` and `desktop/release/`. The release directory includes a `SHA256SUMS`
-file covering the desktop artifacts. Node modules, Wine, and package-manager
-caches are kept in `~/.cache/kiwiirc-builder`, so the host `node_modules`
-directories are not replaced.
+file covering the desktop artifacts. Node modules, package-manager caches, and
+the Wine prefix on x86_64 are kept in `~/.cache/kiwiirc-builder`, so the host
+`node_modules` directories are not replaced.
 
-The first build initializes Wine and downloads the Electron runtimes for both
-platforms, so it takes longer than later builds.
+When Wine and Xvfb are available, the first build initializes Wine under Xvfb
+and downloads the Electron runtimes for Linux and Windows. Otherwise it
+downloads only the Linux runtime. Either way, the first build takes longer than
+later builds.
 
 ## Release Automation
 
@@ -454,16 +497,19 @@ bundle and both desktop platforms in CI. The tag version must match both
 The release includes:
 
 - the web release ZIP and TGZ
-- Linux AppImage
-- Windows portable executable
+- `KiwiIRC-<version>-x86_64.AppImage`
+- `KiwiIRC-<version>-x64-portable.exe`
 - a combined `SHA256SUMS`
 
-Debian packages are published separately to the package registry.
+Stable Debian and Arch packages are published separately to the package
+registry. Pushes to `master` publish the `-git` packages.
 
-The **Desktop Build** workflow can be run manually to build and upload the
-desktop AppImage and portable executable without creating a release. It is
-intended for packaging smoke tests. The shared build path is
-`scripts/release-build.sh`, with desktop packaging in
+The test workflow desktop jobs build and upload
+`KiwiIRC-<version>-x86_64.AppImage` on x86_64 and
+`KiwiIRC-<version>-arm64.AppImage` on arm64. The x86_64 job also builds and
+uploads `KiwiIRC-<version>-x64-portable.exe`. They run on pushes, pull requests,
+and manual runs and are intended for packaging smoke tests. The shared build
+path is `scripts/release-build.sh`, with desktop packaging in
 `desktop/scripts/build-artifacts.sh`.
 
 Windows and macOS artifacts are currently unsigned. Code signing and

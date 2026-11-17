@@ -88,6 +88,51 @@
                         </div>
                     </div>
 
+                    <div v-if="desktopUpdatesAvailable" class="kiwi-appsettings-block">
+                        <h3>{{ $t('settings_updates') }}</h3>
+                        <div class="kiwi-appsettings-section">
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_check_updates_auto') }} </span>
+                                <input
+                                    v-model="desktopCheckForUpdates"
+                                    type="checkbox"
+                                    @change="saveDesktopCheckForUpdates"
+                                >
+                            </label>
+                            <p class="kiwi-appsettings-hint">
+                                {{ $t('settings_check_updates_auto_hint') }}
+                            </p>
+                            <p v-if="desktopVersion" class="kiwi-appsettings-update-version">
+                                {{ $t('settings_current_version', { version: desktopVersion }) }}
+                            </p>
+                            <div class="kiwi-appsettings-update-actions">
+                                <button
+                                    :disabled="desktopUpdateChecking"
+                                    class="u-button u-button-primary"
+                                    type="button"
+                                    @click="checkForDesktopUpdates"
+                                >
+                                    {{ desktopUpdateButtonLabel }}
+                                </button>
+                                <button
+                                    v-if="desktopUpdateAvailable"
+                                    class="u-button"
+                                    type="button"
+                                    @click="openDesktopUpdate"
+                                >
+                                    {{ $t('settings_view_update') }}
+                                </button>
+                            </div>
+                            <p
+                                v-if="desktopUpdateStatus"
+                                class="kiwi-appsettings-hint"
+                                role="status"
+                            >
+                                {{ desktopUpdateStatus }}
+                            </p>
+                        </div>
+                    </div>
+
                     <div class="kiwi-appsettings-block">
                         <h3>{{ $t('settings_messaging_permissions') }}</h3>
                         <div class="kiwi-appsettings-section">
@@ -1042,6 +1087,7 @@ import desktop from '@/libs/desktop';
 import * as DesktopAutoLaunch from '@/libs/desktop/AutoLaunch';
 import * as DesktopSettings from '@/libs/desktop/Settings';
 import * as DesktopTray from '@/libs/desktop/Tray';
+import * as DesktopUpdates from '@/libs/desktop/Updates';
 import { getInstalledEmojiPackages, refreshLocalEmojiPacks } from '@/libs/LocalEmojiPacks';
 import { loadEmojiPacksSettings } from '@/libs/LazyLoad';
 import GlobalApi from '@/libs/GlobalApi';
@@ -1110,6 +1156,10 @@ export default {
             desktopAutoLaunchAvailable: false,
             desktopAutoLaunch: false,
             desktopSpellcheck: true,
+            desktopCheckForUpdates: true,
+            desktopUpdateChecking: false,
+            desktopUpdateResult: null,
+            desktopUpdateError: '',
             pluginUiElements: GlobalApi.singleton().appSettingsPlugins,
             generalSettingsBlocks: GlobalApi.singleton().generalSettingsBlocks,
             networkSettingsBlocks: GlobalApi.singleton().networkSettingsBlocks,
@@ -1231,6 +1281,38 @@ export default {
         },
         desktopEmojiPacksAvailable() {
             return desktop.isDesktop() && desktop.emojiPacks.isAvailable();
+        },
+        desktopUpdatesAvailable() {
+            return desktop.isDesktop() && DesktopUpdates.isAvailable();
+        },
+        desktopVersion() {
+            return DesktopUpdates.currentVersion();
+        },
+        desktopUpdateAvailable() {
+            return !!(
+                this.desktopUpdateResult &&
+                this.desktopUpdateResult.updateAvailable &&
+                this.desktopUpdateResult.releaseUrl
+            );
+        },
+        desktopUpdateButtonLabel() {
+            return this.desktopUpdateChecking ?
+                this.$t('settings_checking_updates') :
+                this.$t('settings_check_updates');
+        },
+        desktopUpdateStatus() {
+            if (this.desktopUpdateError) {
+                return this.$t('settings_update_check_failed');
+            }
+            if (!this.desktopUpdateResult) {
+                return '';
+            }
+            if (this.desktopUpdateResult.updateAvailable) {
+                return this.$t('settings_update_available', {
+                    version: this.desktopUpdateResult.latestVersion,
+                });
+            }
+            return this.$t('settings_update_up_to_date');
         },
         installedEmojiPacks() {
             return getInstalledEmojiPackages();
@@ -1436,10 +1518,14 @@ export default {
                 if (typeof settings.spellcheck === 'boolean') {
                     this.desktopSpellcheck = settings.spellcheck;
                 }
+                if (typeof settings.checkForUpdates === 'boolean') {
+                    this.desktopCheckForUpdates = settings.checkForUpdates;
+                }
             });
             this.$once('hook:destroyed', removeSettingsListener);
         }
         this.loadDesktopSettings();
+        this.loadDesktopUpdateStatus();
 
         this.listen(this.$state, 'settings.tab.show', (tabName) => {
             this.showTab(tabName);
@@ -1455,6 +1541,9 @@ export default {
                     }
                     if (typeof settings.spellcheck === 'boolean') {
                         this.desktopSpellcheck = settings.spellcheck;
+                    }
+                    if (typeof settings.checkForUpdates === 'boolean') {
+                        this.desktopCheckForUpdates = settings.checkForUpdates;
                     }
                 }
             } catch (err) {
@@ -1492,6 +1581,60 @@ export default {
             } catch (err) {
                 // Desktop settings are optional.
             }
+        },
+        async saveDesktopCheckForUpdates() {
+            try {
+                const settings = await DesktopSettings.set({
+                    checkForUpdates: this.desktopCheckForUpdates,
+                });
+                if (settings && typeof settings.checkForUpdates === 'boolean') {
+                    this.desktopCheckForUpdates = settings.checkForUpdates;
+                }
+            } catch (err) {
+                // Desktop settings are optional.
+            }
+        },
+        async loadDesktopUpdateStatus() {
+            if (!this.desktopUpdatesAvailable) {
+                return;
+            }
+
+            const removeStatusListener = DesktopUpdates.onStatus((result) => {
+                this.desktopUpdateResult = result;
+                this.desktopUpdateError = '';
+            });
+            this.$once('hook:destroyed', removeStatusListener);
+
+            try {
+                const result = await DesktopUpdates.status();
+                if (result) {
+                    this.desktopUpdateResult = result;
+                }
+            } catch (err) {
+                // The status is optional until the first check.
+            }
+        },
+        async checkForDesktopUpdates() {
+            if (this.desktopUpdateChecking) {
+                return;
+            }
+
+            this.desktopUpdateChecking = true;
+            this.desktopUpdateError = '';
+            try {
+                const result = await DesktopUpdates.check();
+                this.desktopUpdateResult = result;
+            } catch (err) {
+                this.desktopUpdateError = err && err.message ? err.message : String(err);
+            } finally {
+                this.desktopUpdateChecking = false;
+            }
+        },
+        openDesktopUpdate() {
+            if (!this.desktopUpdateResult || !this.desktopUpdateResult.releaseUrl) {
+                return;
+            }
+            window.open(this.desktopUpdateResult.releaseUrl, '_blank', 'noopener');
         },
         async saveDesktopAutoLaunch() {
             try {
@@ -1826,6 +1969,19 @@ export default {
     margin: 0 0 10px 2px;
     font-size: 0.9em;
     opacity: 0.8;
+}
+
+.kiwi-appsettings-update-version {
+    margin: 0 0 10px 2px;
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.kiwi-appsettings-update-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
 }
 
 .kiwi-appsettings-subsection {

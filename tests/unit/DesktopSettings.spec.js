@@ -18,13 +18,15 @@ describe('desktop settings', () => {
         await fs.rm(userDataDir, { recursive: true, force: true });
     });
 
-    it('defaults close-to-tray on and spellcheck on', async() => {
+    it('defaults close-to-tray, spellcheck, and update checks on', async() => {
         const store = createDesktopSettingsStore(userDataDir);
 
         expect(await store.load()).toEqual(DEFAULT_SETTINGS);
         expect(store.get()).toEqual(DEFAULT_SETTINGS);
         expect(DEFAULT_SETTINGS.autoLaunch).toBe(false);
         expect(DEFAULT_SETTINGS.spellcheck).toBe(true);
+        expect(DEFAULT_SETTINGS.checkForUpdates).toBe(true);
+        expect(DEFAULT_SETTINGS.lastNotifiedUpdate).toBe('');
     });
 
     it('persists desktop setting changes', async() => {
@@ -35,11 +37,15 @@ describe('desktop settings', () => {
             closeToTray: false,
             autoLaunch: true,
             spellcheck: false,
+            checkForUpdates: false,
+            lastNotifiedUpdate: '2.3.0',
         })).toEqual({
             version: 1,
             closeToTray: false,
             autoLaunch: true,
             spellcheck: false,
+            checkForUpdates: false,
+            lastNotifiedUpdate: '2.3.0',
         });
 
         const restored = createDesktopSettingsStore(userDataDir);
@@ -48,6 +54,8 @@ describe('desktop settings', () => {
             closeToTray: false,
             autoLaunch: true,
             spellcheck: false,
+            checkForUpdates: false,
+            lastNotifiedUpdate: '2.3.0',
         });
     });
 
@@ -67,11 +75,15 @@ describe('desktop settings', () => {
             closeToTray: 'yes',
             autoLaunch: 'no',
             spellcheck: 1,
+            checkForUpdates: 'yes',
+            lastNotifiedUpdate: 42,
         })).toEqual({
             version: 1,
             closeToTray: true,
             autoLaunch: false,
             spellcheck: true,
+            checkForUpdates: true,
+            lastNotifiedUpdate: '',
         });
     });
 });

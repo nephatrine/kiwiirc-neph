@@ -42,6 +42,27 @@ function formatOverlayDescription(value) {
     return parts.length ? parts.join(', ') : 'Kiwi IRC';
 }
 
+function normalizeUpdate(value) {
+    if (!value || !value.updateAvailable) {
+        return null;
+    }
+
+    const latestVersion = typeof value.latestVersion === 'string' ?
+        value.latestVersion.trim() :
+        '';
+    const releaseUrl = typeof value.releaseUrl === 'string' ?
+        value.releaseUrl.trim() :
+        '';
+    if (!latestVersion || !releaseUrl) {
+        return null;
+    }
+
+    return {
+        latestVersion,
+        releaseUrl,
+    };
+}
+
 function createTrayService({
     app,
     Tray,
@@ -50,6 +71,7 @@ function createTrayService({
     getWindow,
     getSettings,
     onChangeCloseToTray,
+    onOpenUpdate,
     onQuit,
     trayIconPath,
     badgeIconPath,
@@ -59,6 +81,7 @@ function createTrayService({
     let created = false;
     let badgeImage = null;
     let summary = normalizeBadgeSummary(null);
+    let update = null;
 
     function currentSettings() {
         if (typeof getSettings !== 'function') {
@@ -113,7 +136,7 @@ function createTrayService({
             typeof window.isVisible === 'function' &&
             window.isVisible();
 
-        tray.setContextMenu(Menu.buildFromTemplate([
+        const items = [
             {
                 label: visible ? 'Hide Kiwi IRC' : 'Show Kiwi IRC',
                 click: () => {
@@ -125,6 +148,21 @@ function createTrayService({
                 },
             },
             { type: 'separator' },
+        ];
+
+        if (update) {
+            items.push({
+                label: `Update Available: ${update.latestVersion}`,
+                click: () => {
+                    if (typeof onOpenUpdate === 'function') {
+                        onOpenUpdate(update);
+                    }
+                },
+            });
+            items.push({ type: 'separator' });
+        }
+
+        items.push(
             {
                 label: 'Close to Tray',
                 type: 'checkbox',
@@ -143,8 +181,10 @@ function createTrayService({
                         onQuit();
                     }
                 },
-            },
-        ]));
+            }
+        );
+
+        tray.setContextMenu(Menu.buildFromTemplate(items));
     }
 
     function updateTooltip() {
@@ -225,6 +265,11 @@ function createTrayService({
         updateMenu();
     }
 
+    function setUpdate(value) {
+        update = normalizeUpdate(value);
+        updateMenu();
+    }
+
     function create() {
         if (created) {
             return true;
@@ -274,6 +319,7 @@ function createTrayService({
         shouldHideOnClose,
         getCloseToTray: closeToTray,
         setCloseToTray,
+        setUpdate,
         showWindow,
         hideWindow,
         toggleWindow,
@@ -288,4 +334,5 @@ module.exports = {
     formatOverlayDescription,
     formatTrayTooltip,
     normalizeBadgeSummary,
+    normalizeUpdate,
 };

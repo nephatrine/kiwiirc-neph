@@ -47,6 +47,7 @@ const { createNotificationService } = require('./notifications');
 const { createDesktopSettingsStore } = require('./desktop-settings');
 const { createAutoLaunchService } = require('./auto-launch');
 const { createTrayService } = require('./tray');
+const { createUpdateService } = require('./updates');
 const { buildEditableContextMenuTemplate } = require('./spellcheck-menu');
 const { createMainLog } = require('./main-log');
 const { createChatLogStore } = require('./chat-log-store');
@@ -140,6 +141,8 @@ let notificationService = null;
 let desktopSettingsStore = null;
 let autoLaunchService = null;
 let trayService = null;
+let updateService = null;
+let updateNotification = null;
 let mainLog = null;
 let chatLogStore = null;
 let chatLogError = '';
@@ -216,6 +219,42 @@ if (!app.requestSingleInstanceLock()) {
         secretStore = createSecretStore({ userDataDir, safeStorage });
         desktopSettingsStore = createDesktopSettingsStore(userDataDir);
         await desktopSettingsStore.load();
+        try {
+            updateService = createUpdateService({
+                appVersion: app.getVersion(),
+                apiUrl: desktopUpdateConfig().apiUrl,
+                intervalHours: desktopUpdateConfig().checkIntervalHours,
+                request: (options) => httpService.request(options, desktopHttpPolicy()),
+                getAutoCheck: () => app.isPackaged &&
+                    desktopSettingsStore.get().checkForUpdates,
+                getLastNotified: () => desktopSettingsStore.get().lastNotifiedUpdate,
+                setLastNotified: (version) => saveDesktopSettings({
+                    lastNotifiedUpdate: version,
+                }),
+                onResult: (result) => {
+                    if (isQuitting) {
+                        return;
+                    }
+                    if (trayService) {
+                        trayService.setUpdate(result.updateAvailable ? result : null);
+                    }
+                    sendToRenderer('kiwi:update-status', result);
+                },
+                notify: (result) => {
+                    if (desktopUpdateConfig().notify !== false) {
+                        showUpdateNotification(result);
+                    }
+                },
+                log: {
+                    info: logInfo,
+                    warn: logWarn,
+                    error: logError,
+                },
+            });
+        } catch (err) {
+            logError('Failed to initialize update service', err);
+            updateService = null;
+        }
         autoLaunchService = createAutoLaunchService({
             app,
             platform: process.platform,
@@ -248,6 +287,7 @@ if (!app.requestSingleInstanceLock()) {
             logError('Failed to initialize chat log store', err);
         }
         registerDesktopConfigIpc();
+        registerUpdateIpc();
         registerThemeIpc();
         registerEmojiPackIpc();
         registerNetworkIconIpc();
@@ -268,6 +308,9 @@ if (!app.requestSingleInstanceLock()) {
                 }).catch((err) => {
                     logError('Failed to update desktop settings', err);
                 });
+            },
+            onOpenUpdate: (update) => {
+                openExternal(update.releaseUrl);
             },
             onQuit: quitFromTray,
             trayIconPath: resolveDesktopIcon('tray.png'),
@@ -291,6 +334,9 @@ if (!app.requestSingleInstanceLock()) {
             trayService.isAvailable() &&
             desktopSettingsStore.get().closeToTray;
         createWindow(startHidden);
+        if (updateService) {
+            updateService.start();
+        }
         if (trayService) {
             trayService.updateMenu();
         }
@@ -318,6 +364,20 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 function cleanupDesktopServices() {
+    if (updateService) {
+        updateService.stop();
+        updateService = null;
+    }
+
+    if (updateNotification) {
+        try {
+            updateNotification.close();
+        } catch (err) {
+            // The notification may already be closing.
+        }
+        updateNotification = null;
+    }
+
     if (trayService) {
         trayService.destroy();
         trayService = null;
@@ -550,6 +610,23 @@ function registerDesktopConfigIpc() {
     });
 }
 
+function registerUpdateIpc() {
+    ipcMain.on('kiwi:app-version', (event) => {
+        event.returnValue = app.getVersion();
+    });
+
+    ipcMain.handle('kiwi:updates-check', () => {
+        if (!updateService) {
+            throw new Error('update checks are unavailable');
+        }
+        return updateService.check({ manual: true });
+    });
+
+    ipcMain.handle('kiwi:updates-status', () => (
+        updateService ? updateService.status() : null
+    ));
+}
+
 function registerThemeIpc() {
     ipcMain.handle('kiwi:themes-list', () => (
         listThemes(app.getPath('userData'))
@@ -654,6 +731,16 @@ function desktopHttpPolicy() {
         maxUploadBytes: positiveInteger(settings.maxUploadBytes, 256 * 1024 * 1024),
         maxRedirects: positiveInteger(settings.maxRedirects, 5),
     };
+}
+
+function desktopUpdateConfig() {
+    if (desktopConfig &&
+        desktopConfig.updates &&
+        typeof desktopConfig.updates === 'object'
+    ) {
+        return desktopConfig.updates;
+    }
+    return {};
 }
 
 function safeRequestUrl(rawUrl) {
@@ -831,6 +918,9 @@ async function saveDesktopSettings(patch) {
     if (Object.prototype.hasOwnProperty.call(patch, 'spellcheck')) {
         configureSpellchecker(settings);
     }
+    if (Object.prototype.hasOwnProperty.call(patch, 'checkForUpdates') && updateService) {
+        updateService.setAutoCheck(settings.checkForUpdates);
+    }
     sendToRenderer('kiwi:desktop-settings-changed', settings);
     return settings;
 }
@@ -962,7 +1052,118 @@ function buildApplicationMenu() {
         template.push({ role: 'windowMenu' });
     }
 
+    template.push({
+        label: 'Help',
+        submenu: [
+            {
+                label: 'Check for Updates…',
+                click: () => {
+                    checkForUpdatesFromMenu();
+                },
+            },
+        ],
+    });
+
     Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
+function showMessageBox(options) {
+    return mainWindow && !mainWindow.isDestroyed() ?
+        dialog.showMessageBox(mainWindow, options) :
+        dialog.showMessageBox(options);
+}
+
+async function checkForUpdatesFromMenu() {
+    if (!updateService) {
+        await showMessageBox({
+            type: 'error',
+            title: 'Update Check Unavailable',
+            message: 'Update checks are not available.',
+            buttons: ['OK'],
+        });
+        return;
+    }
+
+    try {
+        const result = await updateService.check({ manual: true });
+        if (result.updateAvailable) {
+            const response = await showMessageBox({
+                type: 'info',
+                title: 'Update Available',
+                message: `Kiwi IRC ${result.latestVersion} is available.`,
+                detail: `You are using Kiwi IRC ${result.currentVersion}.`,
+                buttons: ['View Release', 'Later'],
+                defaultId: 0,
+                cancelId: 1,
+            });
+            if (response.response === 0) {
+                openExternal(result.releaseUrl);
+            }
+            return;
+        }
+
+        await showMessageBox({
+            type: 'info',
+            title: 'No Updates Available',
+            message: `Kiwi IRC ${result.currentVersion} is up to date.`,
+            buttons: ['OK'],
+        });
+    } catch (err) {
+        logWarn('Manual update check failed', err);
+        await showMessageBox({
+            type: 'error',
+            title: 'Update Check Failed',
+            message: 'Unable to check for updates.',
+            detail: err.message || String(err),
+            buttons: ['OK'],
+        });
+    }
+}
+
+function showUpdateNotification(result) {
+    if (isQuitting) {
+        return;
+    }
+    if (!Notification ||
+        typeof Notification.isSupported !== 'function' ||
+        !Notification.isSupported()
+    ) {
+        return;
+    }
+
+    if (updateNotification) {
+        try {
+            updateNotification.close();
+        } catch (err) {
+            // The notification may already be closing.
+        }
+        updateNotification = null;
+    }
+
+    try {
+        const notification = new Notification({
+            title: 'Kiwi IRC Update Available',
+            body: `Version ${result.latestVersion} is available. Click to view the release.`,
+        });
+        updateNotification = notification;
+        notification.on('click', () => {
+            openExternal(result.releaseUrl);
+        });
+        notification.on('close', () => {
+            if (updateNotification === notification) {
+                updateNotification = null;
+            }
+        });
+        notification.on('failed', () => {
+            if (updateNotification === notification) {
+                updateNotification = null;
+            }
+        });
+        notification.show();
+    } catch (err) {
+        updateNotification = null;
+        logWarn('Failed to show update notification', err);
+    }
 }
 
 function reloadWindow(ignoreCache) {
@@ -1011,6 +1212,9 @@ async function openLogFolder() {
 
 function reloadDesktopConfiguration() {
     loadDesktopConfiguration();
+    if (updateService) {
+        updateService.setConfig(desktopUpdateConfig());
+    }
     reloadWindow(false);
 }
 

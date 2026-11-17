@@ -5,6 +5,7 @@ const NOTIFICATION_CLICK_CHANNEL = 'kiwi:notification-click';
 const NOTIFICATION_CLOSED_CHANNEL = 'kiwi:notification-closed';
 const DESKTOP_SETTINGS_CHANGED_CHANNEL = 'kiwi:desktop-settings-changed';
 const WINDOW_VISIBILITY_CHANNEL = 'kiwi:window-visibility';
+const UPDATE_STATUS_CHANNEL = 'kiwi:update-status';
 const embedErrorHandlers = new Set();
 let embedErrorListening = false;
 let cachedConfig = null;
@@ -13,6 +14,7 @@ const notificationSupported = ipcRenderer.sendSync(
 ) === true;
 const traySupported = ipcRenderer.sendSync('kiwi:tray-supported') === true;
 const logsSupported = ipcRenderer.sendSync('kiwi:logs-supported') === true;
+const appVersion = ipcRenderer.sendSync('kiwi:app-version');
 
 function notificationEventHandler(channel) {
     const handlers = new Set();
@@ -83,6 +85,7 @@ function valueEventHandler(channel) {
 
 const onDesktopSettingsChanged = valueEventHandler(DESKTOP_SETTINGS_CHANGED_CHANNEL);
 const onWindowVisibilityChange = valueEventHandler(WINDOW_VISIBILITY_CHANNEL);
+const onUpdateStatus = valueEventHandler(UPDATE_STATUS_CHANNEL);
 
 function listenForEmbedErrors() {
     if (embedErrorListening) {
@@ -123,6 +126,7 @@ contextBridge.exposeInMainWorld('kiwiConfig', desktopConfig);
 contextBridge.exposeInMainWorld('kiwiDesktop', {
     isDesktop: true,
     platform: process.platform,
+    version: typeof appVersion === 'string' ? appVersion : '',
     versions: {
         electron: process.versions.electron,
         chrome: process.versions.chrome,
@@ -141,6 +145,7 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
         networkIcons: true,
         nativeNotifications: notificationSupported,
         tray: traySupported,
+        updates: true,
         dcc: false,
     },
     http: {
@@ -213,6 +218,11 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
         get: () => ipcRenderer.invoke('kiwi:desktop-settings'),
         set: (patch) => ipcRenderer.invoke('kiwi:desktop-settings-set', patch),
         onChanged: onDesktopSettingsChanged,
+    },
+    updates: {
+        check: () => ipcRenderer.invoke('kiwi:updates-check'),
+        status: () => ipcRenderer.invoke('kiwi:updates-status'),
+        onStatus: onUpdateStatus,
     },
     autoLaunch: {
         get: () => ipcRenderer.invoke('kiwi:auto-launch-get'),
