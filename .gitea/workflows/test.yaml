@@ -102,12 +102,14 @@ jobs:
                   path: desktop/release/*.AppImage
                   archive: false
                   if-no-files-found: error
+                  retention-days: 7
             - name: Upload Windows Application
               uses: https://code.nephatrine.net/NephHub/upload-artifact@v7
               with:
                   path: desktop/release/*.exe
                   archive: false
                   if-no-files-found: error
+                  retention-days: 7
             - name: Publish Linux Packages
               if: gitea.event_name == 'push'
               env:
