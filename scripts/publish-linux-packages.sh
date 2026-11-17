@@ -10,7 +10,7 @@ packager_token="${PACKAGER_TOKEN:?PACKAGER_TOKEN is required}"
 gitea_url="${GITEA_URL:-https://code.nephatrine.net}"
 distribution="${DISTRIBUTION:-trixie}"
 component="${COMPONENT:-main}"
-arch_repository="${ARCH_REPOSITORY:-core}"
+arch_repository="${ARCH_REPOSITORY:-nephnet}"
 input_dir="${1:-$repo_root/release-packages}"
 
 delete_package() {

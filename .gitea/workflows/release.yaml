@@ -21,7 +21,7 @@ jobs:
             GITEA_URL: https://code.nephatrine.net
             DISTRIBUTION: trixie
             COMPONENT: main
-            ARCH_REPOSITORY: core
+            ARCH_REPOSITORY: nephnet
             WINEDEBUG: "-all"
             WINEDLLOVERRIDES: "winemenubuilder.exe=d;mscoree=d;mshtml=d"
             REQUIRE_WINDOWS: "1"
@@ -68,7 +68,7 @@ jobs:
             GITEA_URL: https://code.nephatrine.net
             DISTRIBUTION: trixie
             COMPONENT: main
-            ARCH_REPOSITORY: core
+            ARCH_REPOSITORY: nephnet
         steps:
             - name: Checkout Repository
               uses: https://code.nephatrine.net/NephHub/checkout@v6
