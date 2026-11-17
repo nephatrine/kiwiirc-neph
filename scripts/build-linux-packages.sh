@@ -52,6 +52,10 @@ if [ ! -d desktop/node_modules ]; then
     echo "desktop/node_modules is missing; install desktop dependencies first." >&2
     exit 1
 fi
+if ! command -v bsdtar >/dev/null 2>&1; then
+    echo "bsdtar is required to build pacman packages; install libarchive-tools." >&2
+    exit 1
+fi
 
 build_package() {
     local package_name="$1"

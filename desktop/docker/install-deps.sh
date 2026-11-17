@@ -15,6 +15,7 @@ packages=(
     ca-certificates
     fakeroot
     git
+    libarchive-tools
     xz-utils
     unzip
     zip
