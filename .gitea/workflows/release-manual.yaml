@@ -10,7 +10,7 @@ permissions:
     contents: read
     releases: write
 jobs:
-    build_release:
+    build_release_x64:
         runs-on: nephnet-amd64
         timeout-minutes: 120
         container:
@@ -26,6 +26,7 @@ jobs:
             ARCH_REPOSITORY: core
             WINEDEBUG: "-all"
             WINEDLLOVERRIDES: "winemenubuilder.exe=d;mscoree=d;mshtml=d"
+            REQUIRE_WINDOWS: "1"
         steps:
             - name: Checkout Repository
               uses: https://code.nephatrine.net/NephHub/checkout@v6
@@ -56,5 +57,47 @@ jobs:
               uses: https://code.nephatrine.net/NephHub/actions-status-discord@v1
               if: failure()
               with:
-                  title: "FAIL: Release Packages"
+                  title: "FAIL: Release Packages (AMD64)"
+                  webhook: ${{ secrets.DISCORD_WH_PROJECTS }}
+    build_release_a64:
+        runs-on: nephnet-arm64
+        timeout-minutes: 120
+        container:
+            image: node:22-trixie
+        env:
+            CSC_IDENTITY_AUTO_DISCOVERY: "false"
+            ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+            PACKAGE_OWNER: ${{ gitea.repository_owner }}
+            PACKAGER_USER: ${{ gitea.actor }}
+            GITEA_URL: https://code.nephatrine.net
+            DISTRIBUTION: trixie
+            COMPONENT: main
+            ARCH_REPOSITORY: core
+        steps:
+            - name: Checkout Repository
+              uses: https://code.nephatrine.net/NephHub/checkout@v6
+              with:
+                  ref: ${{ inputs.tag }}
+            - name: Install Build Dependencies
+              run: bash "${{ gitea.workspace }}/desktop/docker/install-deps.sh"
+            - name: Build Web
+              run: cd "${{ gitea.workspace }}" && bash scripts/build-web.sh
+            - name: Install Desktop Dependencies
+              run: |
+                  cd "${{ gitea.workspace }}"
+                  ELECTRON_SKIP_BINARY_DOWNLOAD=1 bash scripts/npm-ci.sh desktop
+            - name: Build Stable Linux Packages
+              env:
+                  PACKAGE_SET: stable
+                  RELEASE_TAG: ${{ inputs.tag }}
+              run: bash "${{ gitea.workspace }}/scripts/build-linux-packages.sh"
+            - name: Publish Stable Linux Packages
+              env:
+                  PACKAGER_TOKEN: ${{ secrets.PACKAGER_TOKEN }}
+              run: bash "${{ gitea.workspace }}/scripts/publish-linux-packages.sh"
+            - name: Notify Discord
+              uses: https://code.nephatrine.net/NephHub/actions-status-discord@v1
+              if: failure()
+              with:
+                  title: "FAIL: Release Packages (ARM64)"
                   webhook: ${{ secrets.DISCORD_WH_PROJECTS }}

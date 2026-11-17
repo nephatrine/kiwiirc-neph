@@ -65,7 +65,17 @@ require_file() {
 require_file release-assets/kiwiirc-release.tar.gz
 require_file release-assets/kiwiirc-release.zip
 
-for pattern in '*.AppImage' '*-portable.exe'; do
+build_windows=0
+if bash scripts/windows-build-available.sh; then
+    build_windows=1
+fi
+
+required_patterns=('*.AppImage')
+if [ "$build_windows" = "1" ]; then
+    required_patterns+=('*-portable.exe')
+fi
+
+for pattern in "${required_patterns[@]}"; do
     if ! compgen -G "release-assets/$pattern" > /dev/null; then
         echo "Missing release asset matching $pattern" >&2
         exit 1
