@@ -4,6 +4,7 @@ const {
     Menu,
     Notification,
     Tray,
+    clipboard,
     dialog,
     ipcMain,
     protocol,
@@ -48,7 +49,8 @@ const { createDesktopSettingsStore } = require('./desktop-settings');
 const { createAutoLaunchService } = require('./auto-launch');
 const { createTrayService } = require('./tray');
 const { createUpdateService } = require('./updates');
-const { buildEditableContextMenuTemplate } = require('./spellcheck-menu');
+const { buildContextMenuTemplate } = require('./spellcheck-menu');
+const { collectProfileAssets, installProfileAssets } = require('./profile-assets');
 const { createMainLog } = require('./main-log');
 const { createChatLogStore } = require('./chat-log-store');
 const { addEmbedReferer } = require('./embed-referer');
@@ -519,6 +521,25 @@ function registerDesktopConfigIpc() {
             throw new Error('invalid profile data');
         }
 
+        let output = text;
+        try {
+            const bundle = JSON.parse(text);
+            const assets = await collectProfileAssets(
+                app.getPath('userData'),
+                bundle
+            );
+            if (assets) {
+                bundle.assets = assets;
+                output = JSON.stringify(bundle, null, 2);
+            }
+        } catch (err) {
+            // Not a JSON bundle; write it unchanged.
+        }
+
+        if (Buffer.byteLength(output, 'utf8') > MAX_STORAGE_BYTES) {
+            throw new Error('profile data is too large');
+        }
+
         const defaultName = path.basename(
             typeof filename === 'string' && filename ?
                 filename :
@@ -532,7 +553,7 @@ function registerDesktopConfigIpc() {
             return { saved: false };
         }
 
-        await fs.writeFile(result.filePath, text, { mode: 0o600 });
+        await fs.writeFile(result.filePath, output, { mode: 0o600 });
         return { saved: true, path: result.filePath };
     });
 
@@ -551,10 +572,22 @@ function registerDesktopConfigIpc() {
             throw new Error('profile file is too large');
         }
 
+        let text = await fs.readFile(filePath, 'utf8');
+        try {
+            const bundle = JSON.parse(text);
+            if (bundle && bundle.assets && typeof bundle.assets === 'object') {
+                await installProfileAssets(app.getPath('userData'), bundle);
+                delete bundle.assets;
+                text = JSON.stringify(bundle, null, 2);
+            }
+        } catch (err) {
+            // Not a JSON bundle; hand it back unchanged.
+        }
+
         return {
             canceled: false,
             path: filePath,
-            text: await fs.readFile(filePath, 'utf8'),
+            text,
         };
     });
 
@@ -1624,16 +1657,19 @@ function createWindow(startHidden = false) {
         sendToRenderer('kiwi:window-visibility', window.isVisible());
     });
     window.webContents.on('context-menu', (event, params) => {
-        if (!params.isEditable) {
-            return;
-        }
-
-        const template = buildEditableContextMenuTemplate(params, {
+        const template = buildContextMenuTemplate(params, {
             replaceMisspelling: (word) => window.webContents.replaceMisspelling(word),
             addToDictionary: (word) => (
                 window.webContents.session.addWordToSpellCheckerDictionary(word)
             ),
+            copyText: (text) => clipboard.writeText(String(text || '')),
+            copyImage: () => window.webContents.copyImageAt(params.x, params.y),
+            canOpenExternal: (url) => isExternalUrl(url),
+            openExternal: (url) => openExternal(url),
         });
+        if (!template.length) {
+            return;
+        }
         Menu.buildFromTemplate(template).popup({ window });
     });
     window.on('closed', () => {
@@ -1709,6 +1745,15 @@ function isAllowedNavigation(url) {
             return target.origin === DEV_ORIGIN;
         }
         return target.protocol === `${APP_SCHEME}:` && target.host === APP_HOST;
+    } catch (err) {
+        return false;
+    }
+}
+
+function isExternalUrl(url) {
+    try {
+        const target = new URL(url);
+        return ['http:', 'https:', 'mailto:'].includes(target.protocol);
     } catch (err) {
         return false;
     }

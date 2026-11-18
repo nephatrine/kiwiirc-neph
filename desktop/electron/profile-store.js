@@ -144,6 +144,26 @@ function createProfileStore(userDataDir) {
             );
         }));
 
+        // Local network and radio station icons live outside the profile
+        // directory, so copy them into the snapshot as well.
+        const iconRoot = path.join(userDataDir, 'network-icons');
+        try {
+            const iconEntries = await fs.readdir(iconRoot, { withFileTypes: true });
+            const iconBackupDir = path.join(backupDir, 'network-icons');
+            await ensureDirectory(iconBackupDir);
+            await Promise.all(iconEntries.map(async(entry) => {
+                if (!entry.isFile()) {
+                    return;
+                }
+                await fs.copyFile(
+                    path.join(iconRoot, entry.name),
+                    path.join(iconBackupDir, entry.name)
+                );
+            }));
+        } catch (err) {
+            // No local icons to back up.
+        }
+
         return backupDir;
     }
 

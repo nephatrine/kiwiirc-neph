@@ -10,6 +10,10 @@ and this project adheres to
 
 ### Added
 
+- **Desktop Context Menu**: Right-clicking links, images, media, and selected
+  text now offers copy actions, including Copy Link Address, Copy Image Address,
+  and Copy Image, plus opening links in the system browser. Editable fields keep
+  the spellcheck menu.
 - **Desktop Notifications**: Added native system notifications with
   click-to-open behavior, tag replacement, TTL handling, and focused-window
   suppression.
@@ -404,6 +408,9 @@ and this project adheres to
   avatar animation frame. Animated SVG avatars still animate inside their own
   image document, so their cost scales with the number of visible animated
   avatars.
+- **Profile Transfer**: Exported profiles now embed locally installed network
+  and radio station icons and importing restores them, so custom icons no longer
+  break after a transfer. Profile backups include the icon directory.
 - **Avatars**: Keep a stable avatar root element so swapping from the local
   identicon to the metadata avatar no longer drops the layout's scoped CSS
   attribute, which left the new image unsized and stretched to the message row

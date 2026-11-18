@@ -532,5 +532,5 @@ and manual runs and are intended for packaging smoke tests. The shared build
 path is `scripts/release-build.sh`, with desktop packaging in
 `desktop/scripts/build-artifacts.sh`.
 
-V1 Linux and Windows artifacts are unsigned. Code signing and macOS
-notarization are post-v1.
+V1 Linux and Windows artifacts are unsigned. Code signing and macOS notarization
+are post-v1.

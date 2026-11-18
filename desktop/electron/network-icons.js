@@ -128,6 +128,8 @@ module.exports = {
     ALLOWED_EXTENSION_LIST,
     ICON_HOST,
     ICON_SCHEME,
+    MAX_ICON_BYTES,
+    MIME_TYPES,
     installNetworkIcon,
     networkIconsRoot,
     resolveNetworkIconFile,
