@@ -499,6 +499,8 @@ and this project adheres to
   warning, added a native close confirmation, removed the nonfunctional Window
   menu on Linux and Windows, and open the configuration folder instead of
   relying on a JSON5 file association.
+- **Desktop Startup**: Prevented sidebar state errors when the Welcome screen has
+  no active buffer.
 - **IRC Protocol**: Casefold user and channel state with the negotiated
   `CASEMAPPING`, apply negated `RPL_ISUPPORT` tokens, and fall back to the
   modern `(ov)@+` `PREFIX` only when the server does not advertise one.
@@ -548,6 +550,18 @@ and this project adheres to
   shared, and failed previews are cached briefly before retrying.
 - **Plugins**: Exposed the Link Preview module to plugins, fixing the Radio
   plugin's missing-module warning during startup.
+
+### Security
+
+- **Desktop Shell**: Added a restrictive `app://` Content-Security-Policy,
+  default-deny permission handlers, top-frame IPC sender validation, and
+  Electron fuses for ASAR-only loading, ASAR integrity where supported, and
+  disabled run-as-Node, `NODE_OPTIONS`, and CLI inspection.
+- **Desktop Updates**: Update checks now require HTTPS endpoints and release
+  links and still never download or install updates automatically.
+- **Desktop HTTP**: Cross-origin redirects now drop authorization, cookie, and
+  proxy-authorization headers and request bodies. HTTPS-to-HTTP redirects are
+  refused, and caller-supplied Host headers are ignored.
 
 ## [2.1.0] - 2026-11-03
 

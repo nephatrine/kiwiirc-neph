@@ -9,6 +9,25 @@ The current shell loads the existing `dist/` build through a secure `app://`
 protocol, uses a sandboxed preload bridge, and sends external links to the
 system browser.
 
+## Security
+
+Desktop builds use `contextIsolation`, a sandboxed renderer, no Node integration
+in the renderer, and web security enabled. The `app://` document has a
+restrictive Content-Security-Policy and a default-deny permission handler;
+camera, microphone, geolocation, display capture, and device access are denied.
+IPC is accepted only from the top-level application frame. Native HTTP blocks
+private and loopback addresses by default, pins validated DNS results, and
+strips credentials and request bodies on cross-origin redirects. Update checks
+require HTTPS and never download or install an update. Electron fuses disable
+run-as-Node, `NODE_OPTIONS`, and CLI inspection, restrict the app to the ASAR,
+and enable ASAR integrity validation where the platform supports it.
+
+Plugins are trusted code and run with the page's privileges. The CSP allows
+inline scripts and `eval` for plugin and captcha compatibility; plugin trust,
+not the CSP script policy, is the boundary. Only install plugins from sources
+you trust. V1 artifacts are unsigned; verify the published `SHA256SUMS` before
+running a downloaded build.
+
 ## Development
 
 Build the web app first:
@@ -128,7 +147,8 @@ Update checks are configurable in `config.json5`:
 
 Set `notify` to `false` to keep the tray and settings status without native
 notifications. Update notifications are separate from IRC message notifications.
-The check only reads public release metadata.
+The check only reads public release metadata. The API endpoint and release links
+must use HTTPS; insecure URLs are ignored.
 
 Direct image, audio, and video previews use the `kiwi-media://` protocol in
 desktop builds. It follows the same private-network policy as native HTTP and
@@ -491,8 +511,8 @@ later builds.
 ## Release Automation
 
 Pushing a `v*` tag, or running the manual release workflow, builds the web
-bundle and both desktop platforms in CI. The tag version must match both
-`package.json` and `desktop/package.json`.
+bundle and the Linux and Windows desktop artifacts in CI. The tag version must
+match both `package.json` and `desktop/package.json`.
 
 The release includes:
 
@@ -512,5 +532,5 @@ and manual runs and are intended for packaging smoke tests. The shared build
 path is `scripts/release-build.sh`, with desktop packaging in
 `desktop/scripts/build-artifacts.sh`.
 
-Windows and macOS artifacts are currently unsigned. Code signing and
-notarization remain pending certificates.
+V1 Linux and Windows artifacts are unsigned. Code signing and macOS
+notarization are post-v1.

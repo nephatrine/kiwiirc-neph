@@ -60,6 +60,12 @@ const {
     saveWindowStateSync,
 } = require('./window-state');
 const { buildPresetMenu, normalisePresetItems } = require('./preset-menu');
+const {
+    APP_CSP,
+    APP_PERMISSIONS_POLICY,
+    isAllowedPermission,
+    isTrustedIpcSender,
+} = require('./security');
 
 const APP_SCHEME = 'app';
 const APP_HOST = 'kiwi';
@@ -213,6 +219,7 @@ if (!app.requestSingleInstanceLock()) {
             platform: process.platform,
             packaged: app.isPackaged,
         });
+        registerSessionSecurity();
         loadDesktopConfiguration();
         const userDataDir = app.getPath('userData');
         profileStore = createProfileStore(userDataDir);
@@ -420,27 +427,92 @@ function loadDesktopConfiguration() {
     }
 }
 
+function registerSessionSecurity() {
+    const defaultSession = session.defaultSession;
+    const permissionContext = {
+        appScheme: APP_SCHEME,
+        appHost: APP_HOST,
+        devOrigin: DEV_ORIGIN,
+        isDev,
+    };
+
+    defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+        const requestingUrl = details && details.requestingUrl ?
+            details.requestingUrl :
+            '';
+        callback(isAllowedPermission(permission, requestingUrl, permissionContext));
+    });
+
+    defaultSession.setPermissionCheckHandler((
+        webContents,
+        permission,
+        requestingOrigin,
+        details
+    ) => {
+        const requestingUrl = requestingOrigin && requestingOrigin !== 'null' ?
+            requestingOrigin :
+            ((details && details.requestingUrl) || '');
+        return isAllowedPermission(permission, requestingUrl, permissionContext);
+    });
+
+    if (typeof defaultSession.setDevicePermissionHandler === 'function') {
+        defaultSession.setDevicePermissionHandler(() => false);
+    }
+
+    if (typeof defaultSession.setDisplayMediaRequestHandler === 'function') {
+        defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+            const denied = {};
+            callback(denied);
+        });
+    }
+}
+
+function trustedIpcSender(event) {
+    return isTrustedIpcSender(event, {
+        webContents: mainWindow && mainWindow.webContents,
+        isAllowedNavigation,
+    });
+}
+
+function handleIpc(channel, handler) {
+    ipcMain.handle(channel, (event, ...args) => {
+        if (!trustedIpcSender(event)) {
+            throw new Error('untrusted IPC sender');
+        }
+        return handler(event, ...args);
+    });
+}
+
+function onIpc(channel, handler) {
+    ipcMain.on(channel, (event, ...args) => {
+        if (!trustedIpcSender(event)) {
+            return;
+        }
+        handler(event, ...args);
+    });
+}
+
 function registerDesktopConfigIpc() {
-    ipcMain.on('kiwi:desktop-config', (event) => {
+    onIpc('kiwi:desktop-config', (event) => {
         event.returnValue = desktopConfig;
     });
 
-    ipcMain.handle('kiwi:storage-get', (event, name) => profileStore.get(name));
-    ipcMain.handle('kiwi:storage-set', (event, name, value) => (
+    handleIpc('kiwi:storage-get', (event, name) => profileStore.get(name));
+    handleIpc('kiwi:storage-set', (event, name, value) => (
         profileStore.set(name, value)
     ));
-    ipcMain.handle('kiwi:secrets-status', () => secretStore.status());
-    ipcMain.handle('kiwi:secrets-load', (event, stateKey) => (
+    handleIpc('kiwi:secrets-status', () => secretStore.status());
+    handleIpc('kiwi:secrets-load', (event, stateKey) => (
         secretStore.load(stateKey)
     ));
-    ipcMain.handle('kiwi:secrets-save', (event, stateKey, secrets) => (
+    handleIpc('kiwi:secrets-save', (event, stateKey, secrets) => (
         secretStore.save(stateKey, secrets)
     ));
-    ipcMain.handle('kiwi:secrets-clear', (event, stateKey) => (
+    handleIpc('kiwi:secrets-clear', (event, stateKey) => (
         secretStore.clear(stateKey)
     ));
 
-    ipcMain.handle('kiwi:profile-export', async(event, text, filename) => {
+    handleIpc('kiwi:profile-export', async(event, text, filename) => {
         if (typeof text !== 'string' || !text ||
             Buffer.byteLength(text, 'utf8') > MAX_STORAGE_BYTES
         ) {
@@ -464,7 +536,7 @@ function registerDesktopConfigIpc() {
         return { saved: true, path: result.filePath };
     });
 
-    ipcMain.handle('kiwi:profile-import', async() => {
+    handleIpc('kiwi:profile-import', async() => {
         const result = await dialog.showOpenDialog(mainWindow, {
             properties: ['openFile'],
             filters: [{ name: 'Kiwi Profile', extensions: ['json'] }],
@@ -486,52 +558,52 @@ function registerDesktopConfigIpc() {
         };
     });
 
-    ipcMain.handle('kiwi:profile-backup', () => profileStore.backup());
+    handleIpc('kiwi:profile-backup', () => profileStore.backup());
 
-    ipcMain.handle('kiwi:profile-open-folder', async() => {
+    handleIpc('kiwi:profile-open-folder', async() => {
         const error = await shell.openPath(profileStore.profileDirectory());
         if (error) {
             throw new Error(error);
         }
     });
 
-    ipcMain.on('kiwi:logs-supported', (event) => {
+    onIpc('kiwi:logs-supported', (event) => {
         event.returnValue = !!chatLogStore;
     });
-    ipcMain.handle('kiwi:logs-append', (event, entries) => (
+    handleIpc('kiwi:logs-append', (event, entries) => (
         safeChatLog((store) => store.append(entries), 0)
     ));
-    ipcMain.handle('kiwi:logs-search', (event, options) => (
+    handleIpc('kiwi:logs-search', (event, options) => (
         safeChatLog(
             (store) => store.search(options),
             { rows: [], hasMore: false }
         )
     ));
-    ipcMain.handle('kiwi:logs-context', (event, options) => (
+    handleIpc('kiwi:logs-context', (event, options) => (
         safeChatLog(
             (store) => store.context(options),
             { rows: [], hasOlder: false, hasNewer: false }
         )
     ));
-    ipcMain.handle('kiwi:logs-redact', (event, options) => (
+    handleIpc('kiwi:logs-redact', (event, options) => (
         safeChatLog((store) => store.redact(options), 0)
     ));
-    ipcMain.handle('kiwi:logs-confirm', (event, options) => (
+    handleIpc('kiwi:logs-confirm', (event, options) => (
         safeChatLog((store) => store.confirm(options), 0)
     ));
-    ipcMain.handle('kiwi:logs-prune', (event, retentionDays) => (
+    handleIpc('kiwi:logs-prune', (event, retentionDays) => (
         safeChatLog((store) => store.prune(retentionDays), 0)
     ));
-    ipcMain.handle('kiwi:logs-clear', () => (
+    handleIpc('kiwi:logs-clear', () => (
         safeChatLog((store) => store.clear(), undefined)
     ));
-    ipcMain.handle('kiwi:logs-stats', () => (
+    handleIpc('kiwi:logs-stats', () => (
         safeChatLog(
             (store) => store.stats(),
             { count: 0, oldest: 0, newest: 0, size: 0 }
         )
     ));
-    ipcMain.handle('kiwi:logs-status', () => ({
+    handleIpc('kiwi:logs-status', () => ({
         available: !!chatLogStore,
         error: chatLogError,
         searchMode: chatLogStore && typeof chatLogStore.searchMode === 'function' ?
@@ -539,7 +611,7 @@ function registerDesktopConfigIpc() {
             '',
     }));
 
-    ipcMain.handle('kiwi:http-request', async(event, options) => {
+    handleIpc('kiwi:http-request', async(event, options) => {
         const policy = desktopHttpPolicy();
         const request = options && typeof options === 'object' ? options : {};
         const requestedMax = Number(request.maxResponseBytes);
@@ -559,7 +631,7 @@ function registerDesktopConfigIpc() {
         }
     });
 
-    ipcMain.handle('kiwi:http-upload', async(event, options) => {
+    handleIpc('kiwi:http-upload', async(event, options) => {
         const policy = desktopHttpPolicy();
         const request = options && typeof options === 'object' ? options : {};
         const uploadOptions = Object.assign({}, request, {
@@ -576,7 +648,7 @@ function registerDesktopConfigIpc() {
         }
     });
 
-    ipcMain.handle('kiwi:save-url', async(event, url) => {
+    handleIpc('kiwi:save-url', async(event, url) => {
         if (typeof url !== 'string' || !url) {
             throw new Error('invalid download URL');
         }
@@ -611,28 +683,28 @@ function registerDesktopConfigIpc() {
 }
 
 function registerUpdateIpc() {
-    ipcMain.on('kiwi:app-version', (event) => {
+    onIpc('kiwi:app-version', (event) => {
         event.returnValue = app.getVersion();
     });
 
-    ipcMain.handle('kiwi:updates-check', () => {
+    handleIpc('kiwi:updates-check', () => {
         if (!updateService) {
             throw new Error('update checks are unavailable');
         }
         return updateService.check({ manual: true });
     });
 
-    ipcMain.handle('kiwi:updates-status', () => (
+    handleIpc('kiwi:updates-status', () => (
         updateService ? updateService.status() : null
     ));
 }
 
 function registerThemeIpc() {
-    ipcMain.handle('kiwi:themes-list', () => (
+    handleIpc('kiwi:themes-list', () => (
         listThemes(app.getPath('userData'))
     ));
 
-    ipcMain.handle('kiwi:themes-install', async() => {
+    handleIpc('kiwi:themes-install', async() => {
         const result = await dialog.showOpenDialog(mainWindow, {
             properties: ['openFile'],
             filters: [{ name: 'Theme Archive', extensions: ['zip'] }],
@@ -648,17 +720,17 @@ function registerThemeIpc() {
         return { canceled: false, theme };
     });
 
-    ipcMain.handle('kiwi:themes-uninstall', (event, id) => (
+    handleIpc('kiwi:themes-uninstall', (event, id) => (
         uninstallTheme(app.getPath('userData'), id)
     ));
 }
 
 function registerEmojiPackIpc() {
-    ipcMain.handle('kiwi:emoji-packs-list', () => (
+    handleIpc('kiwi:emoji-packs-list', () => (
         listEmojiPacks(app.getPath('userData'))
     ));
 
-    ipcMain.handle('kiwi:emoji-packs-install', async() => {
+    handleIpc('kiwi:emoji-packs-install', async() => {
         const result = await dialog.showOpenDialog(mainWindow, {
             properties: ['openFile'],
             filters: [{ name: 'Emoji Pack Archive', extensions: ['zip'] }],
@@ -674,13 +746,13 @@ function registerEmojiPackIpc() {
         return { canceled: false, emojiPack };
     });
 
-    ipcMain.handle('kiwi:emoji-packs-uninstall', (event, id) => (
+    handleIpc('kiwi:emoji-packs-uninstall', (event, id) => (
         uninstallEmojiPack(app.getPath('userData'), id)
     ));
 }
 
 function registerNetworkIconIpc() {
-    ipcMain.handle('kiwi:network-icons-choose', async(event, networkName) => {
+    handleIpc('kiwi:network-icons-choose', async(event, networkName) => {
         const result = await dialog.showOpenDialog(mainWindow, {
             properties: ['openFile'],
             filters: [{
@@ -787,7 +859,7 @@ function suggestedDownloadName(url) {
 }
 
 function registerPresetIpc() {
-    ipcMain.on('kiwi:presets-available', (event, presets) => {
+    onIpc('kiwi:presets-available', (event, presets) => {
         if (!mainWindow || event.sender !== mainWindow.webContents) {
             return;
         }
@@ -803,28 +875,28 @@ function registerPresetIpc() {
 }
 
 function registerNotificationIpc() {
-    ipcMain.on('kiwi:notification-supported', (event) => {
+    onIpc('kiwi:notification-supported', (event) => {
         event.returnValue = !!(
             notificationService && notificationService.isSupported()
         );
     });
-    ipcMain.handle('kiwi:notification-show', (event, payload) => (
+    handleIpc('kiwi:notification-show', (event, payload) => (
         notificationService ?
             notificationService.show(payload) :
             { shown: false, reason: 'unavailable' }
     ));
-    ipcMain.handle('kiwi:notification-close', (event, id) => (
+    handleIpc('kiwi:notification-close', (event, id) => (
         notificationService ? notificationService.close(id) : false
     ));
 }
 
 function registerDesktopSettingsIpc() {
-    ipcMain.handle('kiwi:desktop-settings', () => (
+    handleIpc('kiwi:desktop-settings', () => (
         desktopSettingsStore ?
             desktopSettingsStore.get() :
             {}
     ));
-    ipcMain.handle('kiwi:desktop-settings-set', (event, patch) => {
+    handleIpc('kiwi:desktop-settings-set', (event, patch) => {
         if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
             throw new Error('invalid desktop settings');
         }
@@ -844,10 +916,10 @@ function registerDesktopSettingsIpc() {
 }
 
 function registerTrayIpc() {
-    ipcMain.on('kiwi:tray-supported', (event) => {
+    onIpc('kiwi:tray-supported', (event) => {
         event.returnValue = !!(trayService && trayService.isAvailable());
     });
-    ipcMain.on('kiwi:tray-badge', (event, summary) => {
+    onIpc('kiwi:tray-badge', (event, summary) => {
         if (trayService) {
             trayService.updateBadge(summary);
         }
@@ -855,7 +927,7 @@ function registerTrayIpc() {
 }
 
 function registerAutoLaunchIpc() {
-    ipcMain.handle('kiwi:auto-launch-get', async() => {
+    handleIpc('kiwi:auto-launch-get', async() => {
         if (!autoLaunchService || !autoLaunchService.isSupported()) {
             return {
                 supported: false,
@@ -867,7 +939,7 @@ function registerAutoLaunchIpc() {
             enabled: await autoLaunchService.isEnabled(),
         };
     });
-    ipcMain.handle('kiwi:auto-launch-set', async(event, enabled) => {
+    handleIpc('kiwi:auto-launch-set', async(event, enabled) => {
         if (typeof enabled !== 'boolean') {
             throw new Error('invalid auto-launch setting');
         }
@@ -1218,6 +1290,21 @@ function reloadDesktopConfiguration() {
     reloadWindow(false);
 }
 
+async function serveAppFile(filePath) {
+    const response = await net.fetch(pathToFileURL(filePath).toString());
+    const headers = new Headers(response.headers);
+    headers.set('X-Content-Type-Options', 'nosniff');
+    headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    if (path.extname(filePath).toLowerCase() === '.html') {
+        headers.set('Content-Security-Policy', APP_CSP);
+        headers.set('Permissions-Policy', APP_PERMISSIONS_POLICY);
+    }
+    return new Response(response.body, {
+        status: response.status,
+        headers,
+    });
+}
+
 async function registerAppProtocol() {
     protocol.handle(APP_SCHEME, async(request) => {
         let requestUrl;
@@ -1254,13 +1341,13 @@ async function registerAppProtocol() {
             if (stat.isDirectory()) {
                 filePath = path.join(filePath, 'index.html');
             }
-            return net.fetch(pathToFileURL(filePath).toString());
+            return serveAppFile(filePath);
         } catch (err) {
             // Hash-routing clients may request extensionless paths. The app has
             // a single entry point, so fall back to it rather than returning a
             // broken page.
             if (!path.extname(filePath)) {
-                return net.fetch(pathToFileURL(path.join(root, 'index.html')).toString());
+                return serveAppFile(path.join(root, 'index.html'));
             }
             return new Response('Not found', { status: 404 });
         }
@@ -1450,6 +1537,7 @@ function createWindow(startHidden = false) {
             nodeIntegration: false,
             webSecurity: true,
             spellcheck: true,
+            safeDialogs: true,
             // IRC needs keepalives and reconnect timers to keep running while
             // the window is minimized or behind another application.
             backgroundThrottling: false,

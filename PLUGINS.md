@@ -827,7 +827,11 @@ may contain plaintext passwords when the user explicitly includes them.
 ## Security
 
 - Plugin HTML is injected with `innerHTML` and plugin scripts execute with full
-  page privileges. Only install trusted plugins.
+  page privileges. Only install trusted plugins. Desktop builds allow inline
+  scripts and `eval` for plugin and captcha compatibility; plugin trust, not the
+  CSP script policy, is the boundary.
+- Native HTTP blocks private and loopback addresses by default and strips
+  credentials and request bodies on cross-origin redirects.
 - Do not put secrets in plugin configuration; the browser can read it.
 - Do not pass untrusted text to `v-html` or `innerHTML`.
 - Be careful with external scripts and stylesheets; they run in the same page.

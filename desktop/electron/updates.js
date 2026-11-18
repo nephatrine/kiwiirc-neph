@@ -107,6 +107,23 @@ function isNewerVersion(latest, current) {
     return compareVersions(latest, current) > 0;
 }
 
+function safeApiUrl(value) {
+    const text = cleanString(value, MAX_URL_LENGTH);
+    if (!text) {
+        return '';
+    }
+
+    try {
+        const url = new URL(text);
+        if (url.protocol !== 'https:' || url.username || url.password) {
+            return '';
+        }
+        return url.href;
+    } catch (err) {
+        return '';
+    }
+}
+
 function safeReleaseUrl(value) {
     const text = cleanString(value, MAX_URL_LENGTH);
     if (!text) {
@@ -115,7 +132,7 @@ function safeReleaseUrl(value) {
 
     try {
         const url = new URL(text);
-        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        if (url.protocol !== 'https:' || url.username || url.password) {
             return '';
         }
         return url.href;
@@ -180,7 +197,11 @@ function createUpdateService({
         error: typeof log.error === 'function' ? log.error : noop,
     };
 
-    let currentApiUrl = cleanString(apiUrl, MAX_URL_LENGTH) || DEFAULT_API_URL;
+    const configuredApiUrl = cleanString(apiUrl, MAX_URL_LENGTH) || DEFAULT_API_URL;
+    let currentApiUrl = safeApiUrl(configuredApiUrl);
+    if (!currentApiUrl) {
+        throw new Error('update API URL must use HTTPS');
+    }
     let currentIntervalHours = normalizeIntervalHours(intervalHours);
     let started = false;
     let startupTimer = null;
@@ -352,8 +373,10 @@ function createUpdateService({
         let changed = false;
 
         if (typeof config.apiUrl === 'string' && config.apiUrl.trim()) {
-            const nextApiUrl = config.apiUrl.trim();
-            if (nextApiUrl !== currentApiUrl) {
+            const nextApiUrl = safeApiUrl(config.apiUrl.trim());
+            if (!nextApiUrl) {
+                logger.warn('Ignoring update API URL that does not use HTTPS');
+            } else if (nextApiUrl !== currentApiUrl) {
                 currentApiUrl = nextApiUrl;
                 changed = true;
             }
@@ -396,4 +419,5 @@ module.exports = {
     isNewerVersion,
     normalizeRelease,
     parseVersion,
+    safeApiUrl,
 };

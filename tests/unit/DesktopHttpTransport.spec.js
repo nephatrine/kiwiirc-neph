@@ -15,13 +15,45 @@ function policy(overrides = {}) {
 
 describe('Desktop native HTTP transport', () => {
     let server;
+    let captureServer;
     let baseUrl;
+    let captureBaseUrl;
+    let captured;
 
-    beforeAll((done) => {
+    function captureRequest(req, res) {
+        const chunks = [];
+        req.on('data', (chunk) => chunks.push(chunk));
+        req.on('end', () => {
+            captured = {
+                method: req.method,
+                headers: req.headers,
+                body: Buffer.concat(chunks).toString(),
+            };
+            res.writeHead(200, { 'Content-Type': 'text/plain' });
+            res.end('captured');
+        });
+    }
+
+    beforeAll(async() => {
+        captureServer = http.createServer(captureRequest);
         server = http.createServer((req, res) => {
             if (req.url === '/redirect') {
                 res.writeHead(302, { Location: '/ok' });
                 res.end();
+                return;
+            }
+            if (req.url === '/redirect-cross-origin') {
+                res.writeHead(302, { Location: `${captureBaseUrl}/capture` });
+                res.end();
+                return;
+            }
+            if (req.url === '/redirect-same-origin') {
+                res.writeHead(307, { Location: '/capture' });
+                res.end();
+                return;
+            }
+            if (req.url === '/capture') {
+                captureRequest(req, res);
                 return;
             }
             if (req.url === '/bad-status') {
@@ -46,14 +78,23 @@ describe('Desktop native HTTP transport', () => {
             res.end('hello');
         });
 
-        server.listen(0, '127.0.0.1', () => {
-            baseUrl = `http://127.0.0.1:${server.address().port}`;
-            done();
+        await new Promise((resolve) => {
+            server.listen(0, '127.0.0.1', resolve);
         });
+        await new Promise((resolve) => {
+            captureServer.listen(0, '127.0.0.1', resolve);
+        });
+        baseUrl = `http://127.0.0.1:${server.address().port}`;
+        captureBaseUrl = `http://127.0.0.1:${captureServer.address().port}`;
     });
 
-    afterAll((done) => {
-        server.close(done);
+    afterAll(async() => {
+        await new Promise((resolve) => {
+            server.close(() => resolve());
+        });
+        await new Promise((resolve) => {
+            captureServer.close(() => resolve());
+        });
     });
 
     it('fetches a public response without browser CORS', async() => {
@@ -69,6 +110,62 @@ describe('Desktop native HTTP transport', () => {
 
         expect(response.status).toBe(200);
         expect(response.body.toString()).toBe('hello');
+    });
+
+    it('strips credentials and bodies on cross-origin redirects', async() => {
+        captured = null;
+        const response = await request({
+            url: `${baseUrl}/redirect-cross-origin`,
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic secret',
+                'Cookie': 'session=secret',
+                'Host': 'evil.example',
+                'Content-Type': 'text/plain',
+            },
+            body: Buffer.from('secret body'),
+        }, policy());
+
+        expect(response.status).toBe(200);
+        expect(captured).toMatchObject({
+            method: 'GET',
+            body: '',
+        });
+        expect(captured.headers.authorization).toBeUndefined();
+        expect(captured.headers.cookie).toBeUndefined();
+        expect(captured.headers.host).not.toBe('evil.example');
+    });
+
+    it('keeps credentials on same-origin redirects', async() => {
+        captured = null;
+        const response = await request({
+            url: `${baseUrl}/redirect-same-origin`,
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic secret',
+                'Content-Type': 'text/plain',
+            },
+            body: Buffer.from('same origin body'),
+        }, policy());
+
+        expect(response.status).toBe(200);
+        expect(captured).toMatchObject({
+            method: 'POST',
+            body: 'same origin body',
+        });
+        expect(captured.headers.authorization).toBe('Basic secret');
+    });
+
+    it('does not forward a caller-supplied Host header', async() => {
+        captured = null;
+        await request({
+            url: `${captureBaseUrl}/capture`,
+            headers: {
+                Host: 'evil.example',
+            },
+        }, policy());
+
+        expect(captured.headers.host).not.toBe('evil.example');
     });
 
     it('rejects loopback access when private networks are disabled', async() => {

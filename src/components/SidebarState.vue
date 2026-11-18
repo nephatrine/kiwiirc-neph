@@ -85,6 +85,10 @@ export default Vue.extend({
             }
 
             let buffer = this.$state.getActiveBuffer();
+            if (!buffer) {
+                return '';
+            }
+
             if (buffer.isQuery()) {
                 // This is a query with only one possible sidebar dont change the current state
                 // instead attempt to show the user, this allows channels to show their nicklist

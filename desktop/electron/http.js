@@ -46,6 +46,26 @@ function normalizeHeaders(headers) {
     return result;
 }
 
+function withoutHeaders(headers, names) {
+    const blocked = new Set(names.map((name) => String(name).toLowerCase()));
+    const result = {};
+
+    Object.keys(headers || {}).forEach((key) => {
+        if (!blocked.has(key.toLowerCase())) {
+            result[key] = headers[key];
+        }
+    });
+
+    return result;
+}
+
+const REDIRECT_SENSITIVE_HEADERS = [
+    'authorization',
+    'cookie',
+    'proxy-authorization',
+    'host',
+];
+
 function multipartBoundary() {
     return `----KiwiDesktop${crypto.randomBytes(12).toString('hex')}`;
 }
@@ -143,7 +163,7 @@ function requestOnce(target, options, policy) {
     return new Promise((resolve, reject) => {
         const isHttps = target.url.protocol === 'https:';
         const transport = isHttps ? https : http;
-        const headers = normalizeHeaders(options.headers);
+        const headers = withoutHeaders(normalizeHeaders(options.headers), ['host']);
         const body = options.body || null;
         const maxResponseBytes = toInteger(options.maxResponseBytes, policy.maxResponseBytes);
         const timeoutMs = toInteger(options.timeoutMs, policy.timeoutMs);
@@ -305,24 +325,41 @@ async function request(options, policy) {
             throw new Error('too many redirects');
         }
 
-        const nextUrl = new URL(response.headers.location, target.url).href;
-        const nextTarget = await resolveTarget(nextUrl, policy.allowPrivateNetworks);
+        const nextUrl = new URL(response.headers.location, target.url);
+        if (target.url.protocol === 'https:' && nextUrl.protocol === 'http:') {
+            throw new Error('refusing HTTPS to HTTP redirect');
+        }
+
+        const nextTarget = await resolveTarget(nextUrl.href, policy.allowPrivateNetworks);
+        const sameOrigin = nextTarget.url.origin === target.url.origin;
         let nextMethod = currentMethod;
         let nextBody = currentBody;
         let nextHeaders = currentHeaders;
+
+        if (!sameOrigin) {
+            nextHeaders = withoutHeaders(
+                currentHeaders,
+                REDIRECT_SENSITIVE_HEADERS
+            );
+            if (nextMethod !== 'GET' && nextMethod !== 'HEAD') {
+                nextMethod = 'GET';
+                nextBody = null;
+            }
+        }
 
         if (response.status === 303 ||
             ((response.status === 301 || response.status === 302) &&
                 currentMethod !== 'GET' && currentMethod !== 'HEAD')) {
             nextMethod = 'GET';
             nextBody = null;
-            nextHeaders = Object.assign({}, currentHeaders);
-            Object.keys(nextHeaders).forEach((key) => {
-                if (key.toLowerCase() === 'content-length' ||
-                    key.toLowerCase() === 'content-type') {
-                    delete nextHeaders[key];
-                }
-            });
+        }
+
+        if (nextMethod === 'GET' || nextMethod === 'HEAD') {
+            nextBody = null;
+            nextHeaders = withoutHeaders(
+                nextHeaders,
+                ['content-length', 'content-type']
+            );
         }
 
         return follow(nextTarget, nextMethod, nextBody, nextHeaders, redirects + 1);

@@ -4,6 +4,7 @@ const {
     isNewerVersion,
     normalizeRelease,
     parseVersion,
+    safeApiUrl,
 } = require('../../desktop/electron/updates');
 
 function releasePayload(overrides = {}) {
@@ -65,6 +66,17 @@ describe('desktop update checks', () => {
         expect(normalizeRelease(releasePayload({ draft: true }))).toBe(null);
         expect(normalizeRelease(releasePayload({ tag_name: 'nightly' }))).toBe(null);
         expect(normalizeRelease(releasePayload({ html_url: 'file:///tmp/release' }))).toBe(null);
+        expect(normalizeRelease(releasePayload({ html_url: 'http://example.com/release' }))).toBe(null);
+    });
+
+    it('requires HTTPS for update endpoints and release links', () => {
+        expect(safeApiUrl('https://example.com/releases/latest'))
+            .toBe('https://example.com/releases/latest');
+        expect(safeApiUrl('http://example.com/releases/latest')).toBe('');
+        expect(safeApiUrl('https://user:pass@example.com/releases/latest')).toBe('');
+        expect(() => makeService({
+            apiUrl: 'http://example.com/releases/latest',
+        })).toThrow('update API URL must use HTTPS');
     });
 
     it('reports a newer release', async() => {
@@ -114,6 +126,20 @@ describe('desktop update checks', () => {
 
         expect(request).toHaveBeenLastCalledWith(expect.objectContaining({
             url: 'https://example.org/releases/latest',
+        }));
+    });
+
+    it('ignores an insecure configured endpoint', async() => {
+        const request = jest.fn(() => Promise.resolve(jsonResponse(releasePayload())));
+        const service = makeService({ request });
+
+        service.setConfig({
+            apiUrl: 'http://example.org/releases/latest',
+        });
+        await service.check({ manual: true });
+
+        expect(request).toHaveBeenLastCalledWith(expect.objectContaining({
+            url: 'https://example.com/releases/latest',
         }));
     });
 

@@ -1,6 +1,14 @@
 appId: net.nephatrine.kiwiirc
 productName: KiwiIRC
 asar: true
+electronFuses:
+  runAsNode: false
+  enableCookieEncryption: true
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+  grantFileProtocolExtraPrivileges: false
 directories:
   output: release
 files:

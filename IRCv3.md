@@ -91,6 +91,8 @@ drafts and may gain wider support and interoperability in the future.
   - [FILEHOST](https://codeberg.org/emersion/soju/src/branch/master/doc/ext/filehost.md)
     [(PROPOSAL)](https://github.com/ircv3/ircv3-specifications/blob/9c583eaf143d38467df469da93d4297958bef804/extensions/filehost.md)
   - [Metadata](https://codeberg.org/emersion/soju/src/branch/master/doc/ext/metadata.md)
+  - [Search](https://codeberg.org/emersion/soju/src/branch/master/doc/ext/search.md)
+    [(PROPOSAL)](https://github.com/delthas/ircv3-specifications/blob/f1c46246e1e53e4f793beb00e5c57a217b04da4a/extensions/search.md)
   - [Web Push](https://codeberg.org/emersion/soju/src/branch/master/doc/ext/webpush.md)
     [(PROPOSAL)](https://github.com/ircv3/ircv3-specifications/blob/4c2410c4a2df611997fefc8d2d8adb432845fdce/extensions/webpush.md)
 - [Twitch](https://dev.twitch.tv/docs/chat/irc/)

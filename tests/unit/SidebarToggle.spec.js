@@ -61,6 +61,19 @@ describe('sidebar component toggle', () => {
         expect(testState.ui.sidebar_section).toBe('');
     });
 
+    it('does not throw when no active buffer is available', async() => {
+        testState.ui.app_width = 1200;
+        vm.sidebarOpen = true;
+        vm.sidebarSection = 'nicklist';
+
+        expect(vm.section()).toBe('');
+        vm.syncSidebarOpen();
+        await Vue.nextTick();
+
+        expect(testState.ui.sidebar_open).toBe(false);
+        expect(testState.ui.sidebar_section).toBe('');
+    });
+
     it('reports the active nicklist section for automatic companion sizing', async() => {
         testState.ui.app_width = 1200;
         let network = testState.addNetwork('TestNetwork', 'TestNick', {});
