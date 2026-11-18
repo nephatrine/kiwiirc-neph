@@ -398,6 +398,10 @@ and this project adheres to
   avatar animation frame. Animated SVG avatars still animate inside their own
   image document, so their cost scales with the number of visible animated
   avatars.
+- **Avatars**: Keep a stable avatar root element so swapping from the local
+  identicon to the metadata avatar no longer drops the layout's scoped CSS
+  attribute, which left the new image unsized and stretched to the message row
+  height.
 - **Themes**: Extended the Nightswatch and Radioactive user-menu avatar hover
   tint to the HTML avatar background.
 - **Desktop Icons**: Strip timestamp metadata from the generated badge PNG so

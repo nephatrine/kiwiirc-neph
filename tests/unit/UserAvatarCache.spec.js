@@ -150,6 +150,28 @@ describe('user avatar fallback cache', () => {
 
         vm.$destroy();
     });
+
+    test('keeps the same root element when the avatar image arrives', async() => {
+        const vm = mountAvatar('Alice');
+        await Vue.nextTick();
+
+        const root = vm.$el;
+        expect(root.tagName).toBe('SPAN');
+        expect(root.classList.contains('kiwi-avatar')).toBe(true);
+        expect(root.querySelector('.kiwi-avatar-svg')).not.toBeNull();
+
+        jest.advanceTimersByTime(100);
+        images[0].onload();
+        await Vue.nextTick();
+
+        // A replaced root loses the parent layout's scoped CSS attribute, which
+        // sizes the avatar.
+        expect(vm.$el).toBe(root);
+        expect(root.querySelector('.kiwi-avatar-svg')).toBeNull();
+        expect(root.querySelector('img')).not.toBeNull();
+
+        vm.$destroy();
+    });
 });
 
 describe('shared avatar definitions', () => {

@@ -1,87 +1,95 @@
 <template>
+    <!-- The root element must stay the same across the identicon-to-image swap.
+        Replacing it drops the parent layout's scoped CSS attribute, which sizes
+        the avatar.
+    -->
     <span
-        v-if="avatar.hasImage"
-        :class="[`kiwi-avatar--${shape}`, 'kiwi-avatar', 'kiwi-avatar--image']"
+        :class="[
+            `kiwi-avatar--${shape}`,
+            'kiwi-avatar',
+            { 'kiwi-avatar--image': avatar.hasImage },
+        ]"
     >
-        <span class="kiwi-avatar-frame" :style="frameStyle">
-            <img
-                :src="avatar[avatar.sizeKey[size]].url"
-                class="kiwi-avatar-image"
-                alt=""
-                @error="avatar[avatar.sizeKey[size]].setFailed()"
-            >
-        </span>
-        <span
-            v-if="awayStatus.show"
-            class="kiwi-avatar-status"
-            :class="{
-                'kiwi-avatar-status--toggle': allowToggle,
-                'kiwi-avatar-status--away': user.isAway(),
-                'kiwi-avatar-status--offline': user.isOffline(),
-            }"
-            :style="statusStyle"
-            :title="allowToggle ? $t('toggle_away') : null"
-            @click.stop="toggleAway"
-        />
-    </span>
-    <svg
-        v-else
-        viewBox="0 0 100 100"
-        xmlns="http://www.w3.org/2000/svg"
-        width="100"
-        height="100"
-        :class="`kiwi-avatar--${shape}`"
-        class="kiwi-avatar"
-    >
-        <g
-            v-bind="awayStatus.vbind"
-            :clip-path="`url(#${clipId})`"
-        >
-            <rect
-                v-if="avatar.showBackground"
-                width="100"
-                height="100"
-                class="kiwi-avatar-background"
-                :style="avatar.backgroundStyle"
+        <template v-if="avatar.hasImage">
+            <span class="kiwi-avatar-frame" :style="frameStyle">
+                <img
+                    :src="avatar[avatar.sizeKey[size]].url"
+                    class="kiwi-avatar-image"
+                    alt=""
+                    @error="avatar[avatar.sizeKey[size]].setFailed()"
+                >
+            </span>
+            <span
+                v-if="awayStatus.show"
+                class="kiwi-avatar-status"
+                :class="{
+                    'kiwi-avatar-status--toggle': allowToggle,
+                    'kiwi-avatar-status--away': user.isAway(),
+                    'kiwi-avatar-status--offline': user.isOffline(),
+                }"
+                :style="statusStyle"
+                :title="allowToggle ? $t('toggle_away') : null"
+                @click.stop="toggleAway"
             />
-            <template v-if="avatar.useInitials">
-                <text
-                    x="50"
-                    y="50"
-                    dy="0.36em"
-                    text-anchor="middle"
-                    class="kiwi-avatar-initials"
-                    :style="avatar.fallbackFill ? { fill: avatar.fallbackFill } : null"
-                    :font-size="avatar.initials.length === 1 ? '64px' : '44px'"
-                >{{ avatar.initials }}</text>
-            </template>
-            <template v-else>
-                <rect
-                    v-for="(cell, index) in avatar.identicon"
-                    :key="index"
-                    v-bind="cell"
-                    :style="avatar.fallbackFill ? { fill: avatar.fallbackFill } : null"
-                    class="kiwi-avatar-fallback-shape"
-                />
-            </template>
-        </g>
-        <circle
-            v-if="awayStatus.show"
-            :transform="awayStatus.transform"
-            r="12"
-            cx="50"
-            cy="0"
-            class="kiwi-avatar-status"
-            :class="{
-                'kiwi-avatar-status--toggle': allowToggle,
-                'kiwi-avatar-status--away': user.isAway(),
-                'kiwi-avatar-status--offline': user.isOffline(),
-            }"
-            @click.stop="toggleAway"
+        </template>
+        <svg
+            v-else
+            viewBox="0 0 100 100"
+            xmlns="http://www.w3.org/2000/svg"
+            width="100"
+            height="100"
+            class="kiwi-avatar-svg"
         >
-            <title v-if="allowToggle">{{ $t('toggle_away') }}</title>
-        </circle>
-    </svg>
+            <g
+                v-bind="awayStatus.vbind"
+                :clip-path="`url(#${clipId})`"
+            >
+                <rect
+                    v-if="avatar.showBackground"
+                    width="100"
+                    height="100"
+                    class="kiwi-avatar-background"
+                    :style="avatar.backgroundStyle"
+                />
+                <template v-if="avatar.useInitials">
+                    <text
+                        x="50"
+                        y="50"
+                        dy="0.36em"
+                        text-anchor="middle"
+                        class="kiwi-avatar-initials"
+                        :style="avatar.fallbackFill ? { fill: avatar.fallbackFill } : null"
+                        :font-size="avatar.initials.length === 1 ? '64px' : '44px'"
+                    >{{ avatar.initials }}</text>
+                </template>
+                <template v-else>
+                    <rect
+                        v-for="(cell, index) in avatar.identicon"
+                        :key="index"
+                        v-bind="cell"
+                        :style="avatar.fallbackFill ? { fill: avatar.fallbackFill } : null"
+                        class="kiwi-avatar-fallback-shape"
+                    />
+                </template>
+            </g>
+            <circle
+                v-if="awayStatus.show"
+                :transform="awayStatus.transform"
+                r="12"
+                cx="50"
+                cy="0"
+                class="kiwi-avatar-status"
+                :class="{
+                    'kiwi-avatar-status--toggle': allowToggle,
+                    'kiwi-avatar-status--away': user.isAway(),
+                    'kiwi-avatar-status--offline': user.isOffline(),
+                }"
+                @click.stop="toggleAway"
+            >
+                <title v-if="allowToggle">{{ $t('toggle_away') }}</title>
+            </circle>
+        </svg>
+    </span>
 </template>
 
 <script>
@@ -338,16 +346,20 @@ const toggleAway = () => {
 
 <style lang="less">
 .kiwi-avatar {
+    position: relative;
     display: block;
     max-width: 100px;
     max-height: 100px;
+    aspect-ratio: 1 / 1;
     font-size: 0;
     line-height: 0;
     user-select: none;
 }
 
-.kiwi-avatar--image {
-    position: relative;
+.kiwi-avatar-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 .kiwi-avatar-frame {
