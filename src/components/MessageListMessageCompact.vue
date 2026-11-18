@@ -77,8 +77,8 @@
         >
             <component
                 :is="injections.components.AwayStatusIndicator"
-                v-if="props.message.user && props.m().getNetwork()"
-                :network="props.m().getNetwork()" :user="props.message.user"
+                v-if="props.message.user && (props.network || props.m().getNetwork())"
+                :network="props.network || props.m().getNetwork()" :user="props.message.user"
                 :toggle="false"
             />
             <span v-if="!props.message.bridged_nick" class="kiwi-messagelist-nick--prefix">{{
@@ -185,7 +185,7 @@ const methods = {
     props: {},
     getNetwork() {
         let props = this.props;
-        return props.ml.buffer.getNetwork();
+        return props.network || props.ml.buffer.getNetwork();
     },
     isRepeat() {
         let props = this.props;
@@ -215,7 +215,8 @@ const methods = {
     },
     getReplyMessage(replyId) {
         let props = this.props;
-        const resolved = props.m().getNetwork().resolveMessage(replyId, props.ml.buffer);
+        const network = this.getNetwork();
+        const resolved = network && network.resolveMessage(replyId, props.ml.buffer);
         return resolved ? resolved.message : null;
     },
     getReplyMessageText(replyId) {
@@ -245,6 +246,11 @@ export default {
         ml: Object,
         message: Object,
         idx: Number,
+        network: Object,
+        showWithoutUser: Boolean,
+        showRealNames: Boolean,
+        showHostNames: Boolean,
+        hasExtendedJoin: Boolean,
         m: {
             default: function m() {
                 // vue uses this function to generate the prop. `this`==null Return our own function

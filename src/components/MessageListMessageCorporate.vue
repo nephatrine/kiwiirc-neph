@@ -59,7 +59,7 @@
                 v-if="props.m().displayAvatar(props.message)"
                 :data-nick="props.message.nick"
                 :user="props.message.user"
-                :network="props.m().getNetwork()"
+                :network="props.network || props.m().getNetwork()"
                 :message="props.message"
                 size="small"
             />
@@ -225,14 +225,12 @@ const methods = {
         let props = this.props;
 
         // Showing realname is not enabled
-        if (!props.ml.buffer.setting('show_realnames')) {
+        if (!props.showRealNames) {
             return false;
         }
 
-        let network = this.getNetwork();
-
         // Server does not support extended-join so realname would be inconsistent
-        if (!network || !network.hasCap('extended-join')) {
+        if (!props.hasExtendedJoin) {
             return false;
         }
 
@@ -259,7 +257,10 @@ const methods = {
     },
     showHostName() {
         let props = this.props;
-        return shouldShowHostName(props.message, props.ml.buffer);
+        return shouldShowHostName(props.message, props.ml.buffer, {
+            showRealNames: props.showRealNames,
+            showHostNames: props.showHostNames,
+        });
     },
     hostName() {
         let props = this.props;
@@ -278,7 +279,7 @@ const methods = {
     },
     getNetwork() {
         let props = this.props;
-        return props.ml.buffer.getNetwork();
+        return props.network || props.ml.buffer.getNetwork();
     },
     isRepeat() {
         let props = this.props;
@@ -318,7 +319,7 @@ const methods = {
     displayAvatar(message) {
         let props = this.props;
         return shouldDisplayAvatar(message, props.ml.buffer, {
-            showWithoutUser: props.ml.buffer.state.setting('avatars.show_without_user'),
+            showWithoutUser: props.showWithoutUser,
             repeat: this.isRepeat(),
         });
     },
@@ -332,7 +333,8 @@ const methods = {
     },
     getReplyMessage(replyId) {
         let props = this.props;
-        const resolved = props.m().getNetwork().resolveMessage(replyId, props.ml.buffer);
+        const network = this.getNetwork();
+        const resolved = network && network.resolveMessage(replyId, props.ml.buffer);
         return resolved ? resolved.message : null;
     },
     getReplyMessageText(replyId) {
@@ -367,6 +369,11 @@ export default {
         ml: Object,
         message: Object,
         idx: Number,
+        showWithoutUser: Boolean,
+        showRealNames: Boolean,
+        showHostNames: Boolean,
+        network: Object,
+        hasExtendedJoin: Boolean,
         m: {
             default: function m() {
                 // vue uses this function to generate the prop. `this`==null Return our own function

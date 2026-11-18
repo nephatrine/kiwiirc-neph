@@ -64,4 +64,22 @@ describe('message author host names', () => {
             show_realnames: false,
         }))).toBe(false);
     });
+
+    test('accepts cached host name settings without reading the buffer', () => {
+        const buffer = {
+            setting: jest.fn(() => {
+                throw new Error('buffer setting should not be read');
+            }),
+        };
+        const message = makeMessage({
+            username: 'ident',
+            host: 'example.com',
+        });
+
+        expect(shouldShowHostName(message, buffer, {
+            showRealNames: false,
+            showHostNames: true,
+        })).toBe(true);
+        expect(buffer.setting).not.toHaveBeenCalled();
+    });
 });

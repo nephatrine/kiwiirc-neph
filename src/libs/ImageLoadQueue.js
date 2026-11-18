@@ -2,6 +2,7 @@
 
 const MAX_ACTIVE = 4;
 const START_INTERVAL = 100;
+const MAX_LOADED_IMAGES = 2000;
 
 const loadedImages = new Set();
 const queue = [];
@@ -79,8 +80,14 @@ export function scheduleImageLoad(start) {
 }
 
 export function markImageLoaded(url) {
-    if (url) {
-        loadedImages.add(url);
+    if (!url || loadedImages.has(url)) {
+        return;
+    }
+
+    loadedImages.add(url);
+    if (loadedImages.size > MAX_LOADED_IMAGES) {
+        const oldest = loadedImages.values().next().value;
+        loadedImages.delete(oldest);
     }
 }
 

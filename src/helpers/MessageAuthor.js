@@ -15,14 +15,19 @@ export function messageHostName(message) {
     return username + '@' + host;
 }
 
-export function shouldShowHostName(message, buffer) {
+export function shouldShowHostName(message, buffer, options = {}) {
     if (!buffer || typeof buffer.setting !== 'function') {
         return false;
     }
-    if (buffer.setting('show_realnames')) {
-        return false;
-    }
-    if (!buffer.setting('show_hostnames')) {
+
+    const showRealNames = typeof options.showRealNames === 'boolean' ?
+        options.showRealNames :
+        buffer.setting('show_realnames');
+    const showHostNames = typeof options.showHostNames === 'boolean' ?
+        options.showHostNames :
+        buffer.setting('show_hostnames');
+
+    if (showRealNames || !showHostNames) {
         return false;
     }
 

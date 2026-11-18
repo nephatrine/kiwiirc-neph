@@ -499,8 +499,12 @@ and this project adheres to
   warning, added a native close confirmation, removed the nonfunctional Window
   menu on Linux and Windows, and open the configuration folder instead of
   relying on a JSON5 file association.
-- **Desktop Startup**: Prevented sidebar state errors when the Welcome screen has
-  no active buffer.
+- **Desktop Startup**: Prevented sidebar state errors when the Welcome screen
+  has no active buffer.
+- **Message List**: Cache avatar and host-name settings per buffer, avoid
+  per-message setting reads during rendering, scope message-row reactivity with
+  a stateful row wrapper, and bound avatar image caches to reduce Vue reactivity
+  overhead and renderer memory growth when switching channels.
 - **IRC Protocol**: Casefold user and channel state with the negotiated
   `CASEMAPPING`, apply negated `RPL_ISUPPORT` tokens, and fall back to the
   modern `(ov)@+` `PREFIX` only when the server does not advertise one.

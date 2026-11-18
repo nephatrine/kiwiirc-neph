@@ -5,15 +5,23 @@ import { scheduleImageLoad } from '@/libs/ImageLoadQueue';
 
 const FAILURE_TTL_MS = 10 * 60 * 1000;
 const LOAD_TIMEOUT_MS = 15 * 1000;
+const MAX_STATES = 1000;
 
 const states = Vue.observable({});
+const stateKeys = [];
 const pending = new Map();
 
 function stateEntry(url) {
     let entry = states[url];
     if (!entry) {
+        if (stateKeys.length >= MAX_STATES) {
+            const oldest = stateKeys.shift();
+            Vue.delete(states, oldest);
+        }
+
         entry = Vue.observable({ status: 'idle', failedAt: 0 });
         Vue.set(states, url, entry);
+        stateKeys.push(url);
     }
     return entry;
 }
@@ -102,6 +110,7 @@ export function markAvatarFailed(url) {
 export function clearAvatarCache() {
     pending.forEach((entry) => entry.handle.cancel());
     pending.clear();
+    stateKeys.length = 0;
     Object.keys(states).forEach((url) => {
         const entry = states[url];
         entry.status = 'idle';

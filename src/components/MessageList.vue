@@ -146,35 +146,17 @@
                                     :idx="filteredMessages.indexOf(message)"
                                     :ml="thisMl"
                                 />
-                                <message-list-message-modern
-                                    v-else-if="listType === 'modern'"
+                                <message-list-row
+                                    v-else-if="rowComponentForListType"
+                                    :row-component="rowComponentForListType"
                                     :message="message"
-                                    :idx="filteredMessages.indexOf(message)"
+                                    :idx="messageIndexes.get(message)"
                                     :ml="thisMl"
-                                />
-                                <message-list-message-inline
-                                    v-else-if="listType === 'inline'"
-                                    :message="message"
-                                    :idx="filteredMessages.indexOf(message)"
-                                    :ml="thisMl"
-                                />
-                                <message-list-message-cyberdeck
-                                    v-else-if="listType === 'cyberdeck'"
-                                    :message="message"
-                                    :idx="filteredMessages.indexOf(message)"
-                                    :ml="thisMl"
-                                />
-                                <message-list-message-corporate
-                                    v-else-if="listType === 'corporate'"
-                                    :message="message"
-                                    :idx="filteredMessages.indexOf(message)"
-                                    :ml="thisMl"
-                                />
-                                <message-list-message-compact
-                                    v-else-if="listType === 'compact'"
-                                    :message="message"
-                                    :idx="filteredMessages.indexOf(message)"
-                                    :ml="thisMl"
+                                    :show-without-user="showWithoutUser"
+                                    :show-real-names="showRealNames"
+                                    :show-host-names="showHostNames"
+                                    :network="messageNetwork"
+                                    :has-extended-join="messageNetworkHasExtendedJoin"
                                 />
                             </div>
                         </template>
@@ -230,6 +212,7 @@ import MessageListMessageCyberdeck from './MessageListMessageCyberdeck';
 import MessageListMessageModern from './MessageListMessageModern';
 import MessageListMessageInline from './MessageListMessageInline';
 import MessageListMessageRaw from './MessageListMessageRaw';
+import MessageListRow from './MessageListRow';
 import LoadingAnimation from './LoadingAnimation';
 import BufferKey from './BufferKey';
 import HistoryGap from './HistoryGap';
@@ -250,6 +233,7 @@ export default {
         MessageListMessageCompact,
         MessageListMessageInline,
         MessageListMessageRaw,
+        MessageListRow,
         LoadingAnimation,
         BufferKey,
         HistoryGap,
@@ -289,9 +273,49 @@ export default {
             }
             return this.buffer.setting('messageLayout') || this.$state.setting('messageLayout');
         },
+        rowComponentForListType() {
+            switch (this.listType) {
+            case 'modern':
+                return MessageListMessageModern;
+            case 'inline':
+                return MessageListMessageInline;
+            case 'cyberdeck':
+                return MessageListMessageCyberdeck;
+            case 'corporate':
+                return MessageListMessageCorporate;
+            case 'compact':
+                return MessageListMessageCompact;
+            default:
+                return null;
+            }
+        },
         useExtraFormatting() {
             // Enables simple markdown formatting globally
             return this.$state.setting('buffers.extra_formatting');
+        },
+        showWithoutUser() {
+            return !!(this.buffer && this.buffer.state &&
+                this.buffer.state.setting('avatars.show_without_user'));
+        },
+        showRealNames() {
+            return !!(this.buffer && this.buffer.setting('show_realnames'));
+        },
+        showHostNames() {
+            return !!(this.buffer && this.buffer.setting('show_hostnames'));
+        },
+        messageNetwork() {
+            return this.buffer ? this.buffer.getNetwork() : null;
+        },
+        messageNetworkHasExtendedJoin() {
+            return !!(this.messageNetwork &&
+                this.messageNetwork.hasCap('extended-join'));
+        },
+        messageIndexes() {
+            const indexes = new Map();
+            this.filteredMessages.forEach((message, index) => {
+                indexes.set(message, index);
+            });
+            return indexes;
         },
         shouldShowChathistoryTools() {
             // Only show it if we're connected
