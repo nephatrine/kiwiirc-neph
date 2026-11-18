@@ -277,15 +277,15 @@ msgstr "SASL Password"
 
 #: Password must be between {min} and {max} characters.
 msgid "register_password_length"
-msgstr "Password must be between {min} and {max} characters."
+msgstr "Password must be between {{min}} and {{max}} characters."
 
 #: Password must be at least {min} characters.
 msgid "register_password_min"
-msgstr "Password must be at least {min} characters."
+msgstr "Password must be at least {{min}} characters."
 
 #: Password must be at most {max} characters.
 msgid "register_password_max"
-msgstr "Password must be at most {max} characters."
+msgstr "Password must be at most {{max}} characters."
 
 #: Register
 msgid "register_submit"
@@ -305,11 +305,11 @@ msgstr "Verify"
 
 #: Account {account} registered and logged in.
 msgid "account_registered"
-msgstr "Account {account} registered and logged in."
+msgstr "Account {{account}} registered and logged in."
 
 #: Account {account} verified and logged in.
 msgid "account_verified"
-msgstr "Account {account} verified and logged in."
+msgstr "Account {{account}} verified and logged in."
 
 #: This server requires an account to connect. Enter your account details on the login page and try again.
 msgid "account_required"
@@ -883,7 +883,7 @@ msgstr "Checking…"
 
 #: Current desktop version
 msgid "settings_current_version"
-msgstr "Current Version: {version}"
+msgstr "Current Version: {{version}}"
 
 #: No update available
 msgid "settings_update_up_to_date"
@@ -891,7 +891,7 @@ msgstr "Kiwi IRC is up to date."
 
 #: Update available
 msgid "settings_update_available"
-msgstr "Kiwi IRC {version} is available."
+msgstr "Kiwi IRC {{version}} is available."
 
 #: Update check failed
 msgid "settings_update_check_failed"

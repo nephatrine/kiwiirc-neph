@@ -63,6 +63,26 @@ describe('locale files', () => {
         });
     });
 
+    it('uses i18next double-brace interpolation placeholders', () => {
+        // The avatar hint tells the user what to type into the URL field, so its
+        // single-brace placeholder is literal text and must stay that way.
+        const intentional = ['settings_avatar_fallback_url_hint'];
+
+        [en, dev].forEach((entries) => {
+            Object.keys(entries).forEach((key) => {
+                if (intentional.indexOf(key) > -1) {
+                    return;
+                }
+
+                const singles = entries[key]
+                    .replace(/\{\{[^}]*\}\}/g, '')
+                    .match(/\{[a-zA-Z_][a-zA-Z0-9_]*\}/g) || [];
+
+                expect({ key, singles }).toEqual({ key, singles: [] });
+            });
+        });
+    });
+
     it('keeps autocomplete command labels translated', () => {
         autocompleteCommands.forEach((command) => {
             if (command.description.indexOf('locale_id_') !== 0) {

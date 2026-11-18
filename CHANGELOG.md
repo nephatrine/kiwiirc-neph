@@ -389,6 +389,10 @@ and this project adheres to
 
 ### Fixed
 
+- **Localization**: Fixed update-check, account registration, and registration
+  password messages that displayed literal `{version}`, `{account}`, `{min}`,
+  and `{max}` placeholders. The strings used single-brace placeholders, but the
+  app interpolates with i18next, which requires double braces.
 - **Desktop Icons**: Strip timestamp metadata from the generated badge PNG so
   repeated icon builds produce byte-identical files.
 - **Fallback Avatars**: Shared fallback avatar load state across buffers and
