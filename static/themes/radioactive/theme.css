@@ -1152,8 +1152,11 @@
 }
 
 .kiwi-statebrowser-usermenu-avatar:hover .kiwi-avatar-background,
-.kiwi-statebrowser-usermenu--open .kiwi-avatar-background {
+.kiwi-statebrowser-usermenu-avatar:hover .kiwi-avatar-frame,
+.kiwi-statebrowser-usermenu--open .kiwi-avatar-background,
+.kiwi-statebrowser-usermenu--open .kiwi-avatar-frame {
     fill: #5dd895 !important;
+    background-color: #5dd895 !important;
 }
 
 .kiwi-avatar-background {

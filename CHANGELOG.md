@@ -393,6 +393,13 @@ and this project adheres to
   password messages that displayed literal `{version}`, `{account}`, `{min}`,
   and `{max}` placeholders. The strings used single-brace placeholders, but the
   app interpolates with i18next, which requires double braces.
+- **Avatars**: Render image avatars as plain HTML instead of SVG content, so the
+  message list and nicklist no longer recalculate style or lay out on every
+  avatar animation frame. Animated SVG avatars still animate inside their own
+  image document, so their cost scales with the number of visible animated
+  avatars.
+- **Themes**: Extended the Nightswatch and Radioactive user-menu avatar hover
+  tint to the HTML avatar background.
 - **Desktop Icons**: Strip timestamp metadata from the generated badge PNG so
   repeated icon builds produce byte-identical files.
 - **Fallback Avatars**: Shared fallback avatar load state across buffers and

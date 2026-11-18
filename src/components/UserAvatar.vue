@@ -1,5 +1,31 @@
 <template>
+    <span
+        v-if="avatar.hasImage"
+        :class="[`kiwi-avatar--${shape}`, 'kiwi-avatar', 'kiwi-avatar--image']"
+    >
+        <span class="kiwi-avatar-frame" :style="frameStyle">
+            <img
+                :src="avatar[avatar.sizeKey[size]].url"
+                class="kiwi-avatar-image"
+                alt=""
+                @error="avatar[avatar.sizeKey[size]].setFailed()"
+            >
+        </span>
+        <span
+            v-if="awayStatus.show"
+            class="kiwi-avatar-status"
+            :class="{
+                'kiwi-avatar-status--toggle': allowToggle,
+                'kiwi-avatar-status--away': user.isAway(),
+                'kiwi-avatar-status--offline': user.isOffline(),
+            }"
+            :style="statusStyle"
+            :title="allowToggle ? $t('toggle_away') : null"
+            @click.stop="toggleAway"
+        />
+    </span>
     <svg
+        v-else
         viewBox="0 0 100 100"
         xmlns="http://www.w3.org/2000/svg"
         width="100"
@@ -18,17 +44,7 @@
                 class="kiwi-avatar-background"
                 :style="avatar.backgroundStyle"
             />
-            <image
-                v-if="avatar.hasImage"
-                v-bind="{ ...avatar[avatar.sizeKey[size]].vbind }"
-                width="100"
-                height="100"
-                preserveAspectRatio="xMidYMid slice"
-                loading="lazy"
-                class="kiwi-avatar-image"
-                @error="avatar[avatar.sizeKey[size]].setFailed()"
-            />
-            <template v-else-if="avatar.useInitials">
+            <template v-if="avatar.useInitials">
                 <text
                     x="50"
                     y="50"
@@ -86,7 +102,7 @@ import {
     markAvatarFailed,
     requestAvatarLoad
 } from '@/libs/AvatarCache';
-import { getAvatarTransform } from './UserAvatarCommon';
+import { getAvatarStatusPoint, getAvatarTransform } from './UserAvatarCommon';
 
 </script>
 
@@ -130,10 +146,6 @@ const clipId = computed(() => (
 
 const getSizeObj = (size) => ({
     url: props.user.avatar[size],
-    vbind: {
-        'href': props.user.avatar[size],
-        'xlink:href': props.user.avatar[size],
-    },
     setFailed: () => {
         const avatar = props.user.avatar;
         const failedAvatar = avatar[size];
@@ -158,10 +170,6 @@ const getSizeObj = (size) => ({
 
 const getOverrideObj = () => ({
     url: props.message.bridged_avatar,
-    vbind: {
-        'href': props.message.bridged_avatar,
-        'xlink:href': props.message.bridged_avatar,
-    },
     setFailed: () => {
         props.message.bridged_avatar = '';
     },
@@ -193,11 +201,13 @@ const awayStatus = computed(() => {
     }
 
     const transform = getAvatarTransform();
+    const point = getAvatarStatusPoint();
 
     return {
         show,
         vbind,
         transform,
+        point,
     };
 });
 
@@ -263,10 +273,6 @@ const avatar = computed(() => {
         if (fallbackReady) {
             const fallbackObj = {
                 url: unknownFallbackUrl,
-                vbind: {
-                    'href': unknownFallbackUrl,
-                    'xlink:href': unknownFallbackUrl,
-                },
                 setFailed: () => {
                     markAvatarFailed(unknownFallbackUrl);
                 },
@@ -300,6 +306,27 @@ const avatar = computed(() => {
     return avatars;
 });
 
+const frameStyle = computed(() => {
+    const style = {};
+
+    if (avatar.value.showBackground) {
+        style.backgroundColor = avatar.value.backgroundStyle.fill;
+    }
+
+    if (awayStatus.value.show) {
+        const point = awayStatus.value.point;
+        style.maskImage = 'radial-gradient(ellipse 14% 14% at ' +
+            `${point.x}% ${point.y}%, transparent 98%, #000 100%)`;
+    }
+
+    return style;
+});
+
+const statusStyle = computed(() => ({
+    left: `${awayStatus.value.point.x}%`,
+    top: `${awayStatus.value.point.y}%`,
+}));
+
 const toggleAway = () => {
     if (!props.allowToggle || props.user.away === 'offline') {
         return;
@@ -319,8 +346,38 @@ const toggleAway = () => {
     user-select: none;
 }
 
+.kiwi-avatar--image {
+    position: relative;
+}
+
+.kiwi-avatar-frame {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.kiwi-avatar--circle .kiwi-avatar-frame {
+    border-radius: 50%;
+}
+
+.kiwi-avatar-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 .kiwi-avatar-status {
-    transition: fill 0.5s ease;
+    transition: fill 0.5s ease, background-color 0.5s ease;
+}
+
+.kiwi-avatar--image .kiwi-avatar-status {
+    position: absolute;
+    width: 24%;
+    height: 24%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .kiwi-avatar-status--toggle {
