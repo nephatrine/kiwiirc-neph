@@ -78,6 +78,7 @@ function createMethods() {
         userModePrefix: () => '',
         getReplyMessage: () => null,
         getReplyMessageText: () => '',
+        shouldShowReplyPreview: () => false,
         canReply: () => false,
         getNetwork: () => ({ hasCap: () => false, resolveMessage: () => null }),
     };

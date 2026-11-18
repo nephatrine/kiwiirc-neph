@@ -90,6 +90,7 @@ function createMethods({ showActions = false } = {}) {
         userModePrefix: () => '',
         getReplyMessage: () => null,
         getReplyMessageText: () => '',
+        shouldShowReplyPreview: () => false,
         canReply: () => showActions,
         getNetwork: () => ({
             hasCap: (cap) => showActions && cap === 'message-tags',

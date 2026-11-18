@@ -87,6 +87,7 @@ function createMethods(message, repeat) {
         getReplyMessage: () => null,
         getReplyMessageText: () => '',
         scrollToReply: jest.fn(),
+        shouldShowReplyPreview: () => false,
         canReply: () => false,
     };
 }

@@ -87,7 +87,7 @@
         </a>
 
         <div class="kiwi-messagelist-body-container">
-            <div v-if="props.ml.shouldShowReplyPreview(props.message, props.idx)" class="kiwi-messagelist-reply-preview" @click="props.ml.maybeScrollToId(props.message.reply)">
+            <div v-if="props.m().shouldShowReplyPreview()" class="kiwi-messagelist-reply-preview" @click="props.ml.maybeScrollToId(props.message.reply)">
                 <i class="bx bx-reply" aria-hidden="true" />
                 <span v-if="props.m().getReplyMessage(props.message.reply)" class="kiwi-messagelist-reply-preview-nick">
                     <emoji-text
@@ -176,6 +176,7 @@
 
 import MediaViewer from './MediaViewer';
 import * as Misc from '@/helpers/Misc';
+import { isConsecutiveMessage } from '@/libs/bufferTools';
 import AwayStatusIndicator from './AwayStatusIndicator';
 import MessageInfo from './MessageInfo';
 import MessageReactions from './MessageReactions';
@@ -189,17 +190,24 @@ const methods = {
     },
     isRepeat() {
         let props = this.props;
-        let ml = props.ml;
-        let idx = props.idx;
-        let message = props.message;
-        let prevMessage = ml.filteredMessages[idx - 1];
 
-        return !!prevMessage &&
-            prevMessage.condenseKey() === message.condenseKey() &&
-            message.time - prevMessage.time < 60000 &&
-            prevMessage.type !== 'traffic' &&
-            message.type !== 'traffic' &&
-            message.type === prevMessage.type;
+        if (typeof props.repeat === 'boolean') {
+            return props.repeat;
+        }
+
+        return isConsecutiveMessage(
+            props.ml.filteredMessages[props.idx - 1],
+            props.message
+        );
+    },
+    shouldShowReplyPreview() {
+        let props = this.props;
+
+        if (typeof props.showReplyPreview === 'boolean') {
+            return props.showReplyPreview;
+        }
+
+        return props.ml.shouldShowReplyPreview(props.message, props.idx);
     },
     isHoveringOverMessage(message) {
         let props = this.props;
@@ -251,6 +259,14 @@ export default {
         showRealNames: Boolean,
         showHostNames: Boolean,
         hasExtendedJoin: Boolean,
+        repeat: {
+            type: Boolean,
+            default: null,
+        },
+        showReplyPreview: {
+            type: Boolean,
+            default: null,
+        },
         m: {
             default: function m() {
                 // vue uses this function to generate the prop. `this`==null Return our own function

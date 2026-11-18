@@ -9,6 +9,8 @@
         :show-host-names="showHostNames"
         :network="network"
         :has-extended-join="hasExtendedJoin"
+        :repeat="repeat"
+        :show-reply-preview="showReplyPreview"
     />
 </template>
 
@@ -26,6 +28,14 @@ export default {
         showHostNames: Boolean,
         network: Object,
         hasExtendedJoin: Boolean,
+        repeat: {
+            type: Boolean,
+            default: null,
+        },
+        showReplyPreview: {
+            type: Boolean,
+            default: null,
+        },
     },
 };
 </script>

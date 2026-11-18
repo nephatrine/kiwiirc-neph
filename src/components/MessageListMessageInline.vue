@@ -51,7 +51,7 @@
         @dblclick="props.ml.onMessageDblClick($event, props.message)"
     >
         <div>
-            <div v-if="props.ml.shouldShowReplyPreview(props.message, props.idx)" class="kiwi-messagelist-reply-preview" @click="props.ml.maybeScrollToId(props.message.reply)">
+            <div v-if="props.m().shouldShowReplyPreview()" class="kiwi-messagelist-reply-preview" @click="props.ml.maybeScrollToId(props.message.reply)">
                 <i class="bx bx-reply" aria-hidden="true" />
                 <span v-if="props.m().getReplyMessage(props.message.reply)" class="kiwi-messagelist-reply-preview-nick">
                     <emoji-text
@@ -183,6 +183,15 @@ const methods = {
         let props = this.props;
         return props.network || props.ml.buffer.getNetwork();
     },
+    shouldShowReplyPreview() {
+        let props = this.props;
+
+        if (typeof props.showReplyPreview === 'boolean') {
+            return props.showReplyPreview;
+        }
+
+        return props.ml.shouldShowReplyPreview(props.message, props.idx);
+    },
     displayNick() {
         let props = this.props;
         let suffix = props.message.nick ?
@@ -238,6 +247,10 @@ export default {
         showRealNames: Boolean,
         showHostNames: Boolean,
         hasExtendedJoin: Boolean,
+        showReplyPreview: {
+            type: Boolean,
+            default: null,
+        },
         m: {
             default: function m() {
                 // vue uses this function to generate the prop. `this`==null Return our own function

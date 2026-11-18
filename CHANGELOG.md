@@ -503,8 +503,10 @@ and this project adheres to
   has no active buffer.
 - **Message List**: Cache avatar and host-name settings per buffer, avoid
   per-message setting reads during rendering, scope message-row reactivity with
-  a stateful row wrapper, and bound avatar image caches to reduce Vue reactivity
-  overhead and renderer memory growth when switching channels.
+  a stateful row wrapper, precompute author-repeat, reply-preview, and unread
+  marker state instead of scanning the message list per row, and bound avatar
+  image caches to reduce Vue reactivity overhead and renderer memory growth when
+  switching channels.
 - **IRC Protocol**: Casefold user and channel state with the negotiated
   `CASEMAPPING`, apply negated `RPL_ISUPPORT` tokens, and fall back to the
   modern `(ov)@+` `PREFIX` only when the server does not advertise one.

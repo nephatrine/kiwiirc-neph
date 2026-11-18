@@ -88,7 +88,7 @@
                     <remove-before-update :key="day.dayNum">
                         <template v-for="message in day.messages">
                             <div
-                                v-if="shouldShowUnreadMarker(message)"
+                                v-if="unreadMarkerMessageId === message.id"
                                 :key="`msgunreadmarker${message.id}`"
                                 class="kiwi-messagelist-seperator"
                             >
@@ -143,7 +143,7 @@
                                     v-bind="message.templateProps"
                                     :buffer="buffer"
                                     :message="message"
-                                    :idx="filteredMessages.indexOf(message)"
+                                    :idx="messageIndexes.get(message)"
                                     :ml="thisMl"
                                 />
                                 <message-list-row
@@ -157,6 +157,8 @@
                                     :show-host-names="showHostNames"
                                     :network="messageNetwork"
                                     :has-extended-join="messageNetworkHasExtendedJoin"
+                                    :repeat="messageRepeats.get(message)"
+                                    :show-reply-preview="messageReplyPreviews.get(message)"
                                 />
                             </div>
                         </template>
@@ -316,6 +318,44 @@ export default {
                 indexes.set(message, index);
             });
             return indexes;
+        },
+        messageRepeats() {
+            const repeats = new Map();
+            const messages = this.filteredMessages;
+            messages.forEach((message, index) => {
+                repeats.set(message, bufferTools.isConsecutiveMessage(
+                    messages[index - 1],
+                    message
+                ));
+            });
+            return repeats;
+        },
+        messageReplyPreviews() {
+            const previews = new Map();
+            const messages = this.filteredMessages;
+            messages.forEach((message, index) => {
+                previews.set(message, bufferTools.shouldShowReplyPreview(
+                    messages,
+                    message,
+                    index
+                ));
+            });
+            return previews;
+        },
+        unreadMarkerMessageId() {
+            const lastRead = this.buffer.last_read;
+            if (!lastRead) {
+                return null;
+            }
+
+            const messages = this.filteredMessages;
+            for (let i = 1; i < messages.length; i++) {
+                if (messages[i - 1].time < lastRead && messages[i].time > lastRead) {
+                    return messages[i].id;
+                }
+            }
+
+            return null;
         },
         shouldShowChathistoryTools() {
             // Only show it if we're connected
@@ -598,25 +638,7 @@ export default {
             }
         },
         shouldShowUnreadMarker(message) {
-            let idx = this.filteredMessages.indexOf(message);
-            let previous = this.filteredMessages[idx - 1];
-            let current = this.filteredMessages[idx];
-            let lastRead = this.buffer.last_read;
-
-            if (!lastRead) {
-                return false;
-            }
-
-            if (!current) {
-                return false;
-            }
-
-            // If the last message has been read, and this message not read
-            if (previous && previous.time < lastRead && current.time > lastRead) {
-                return true;
-            }
-
-            return false;
+            return this.unreadMarkerMessageId === message.id;
         },
         shouldShowDateChangeMarker(idx) {
             let previous = this.filteredMessages[idx - 1];
