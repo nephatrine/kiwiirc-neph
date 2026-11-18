@@ -220,6 +220,9 @@ and this project adheres to
 
 ### Changed
 
+- **Themes**: Softened the message-list date and unread separator line in the
+  dark themes that inherit `common/base.css` from a 2px dashed accent to a 1px
+  dashed accent at 25% opacity. Kiwi Dark keeps its original separator.
 - **Desktop Packaging**: Debian and Arch packages are now published to the Gitea
   package registries by the test and release workflows. Release commits publish
   `kiwiirc-desktop`; pushes to `master` publish `kiwiirc-desktop-git`. The

@@ -143,7 +143,7 @@ button.u-button.u-button-primary.u-submit.kiwi-welcome-znc-start {
 }
 
 .kiwi-messagelist-seperator {
-    border-top: 2px dashed #69A4F9;
+    border-top: 1px dashed rgb(105 164 249 / 25%);
 }
 
 .kiwi-messagelist-message--highlight {
