@@ -37,9 +37,6 @@
                                     @change="saveDesktopCloseToTray"
                                 >
                             </label>
-                            <p v-if="desktopTrayAvailable" class="kiwi-appsettings-hint">
-                                {{ $t('settings_close_to_tray_hint') }}
-                            </p>
                             <label
                                 v-if="desktopAutoLaunchAvailable"
                                 class="u-checkbox-wrapper"
@@ -51,12 +48,6 @@
                                     @change="saveDesktopAutoLaunch"
                                 >
                             </label>
-                            <p
-                                v-if="desktopAutoLaunchAvailable"
-                                class="kiwi-appsettings-hint"
-                            >
-                                {{ $t('settings_launch_at_login_hint') }}
-                            </p>
                             <label
                                 v-if="desktopSettingsAvailable"
                                 class="u-checkbox-wrapper"
@@ -68,12 +59,6 @@
                                     @change="saveDesktopSpellcheck"
                                 >
                             </label>
-                            <p
-                                v-if="desktopSettingsAvailable"
-                                class="kiwi-appsettings-hint"
-                            >
-                                {{ $t('settings_spellcheck_hint') }}
-                            </p>
                             <div
                                 v-if="canRegisterProtocolHandler"
                                 style="margin-top: 10px; text-align: center;"

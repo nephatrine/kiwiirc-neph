@@ -220,6 +220,9 @@ and this project adheres to
 
 ### Changed
 
+- **Settings**: Renamed the Show Messages toggles to Channel Changes, Nickname
+  Changes, Topic Changes, and User JOIN/PARTs, and removed the Close to Tray,
+  Launch at Login, and Spellcheck descriptions from the General block.
 - **Themes**: Softened the message-list date and unread separator line in the
   dark themes that inherit `common/base.css` from a 2px dashed accent to a 1px
   dashed accent at 25% opacity. Kiwi Dark keeps its original separator.

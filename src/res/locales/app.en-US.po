@@ -841,25 +841,13 @@ msgstr "On Soju, only connected users can be added or removed."
 msgid "settings_close_to_tray"
 msgstr "Close to Tray"
 
-#: Close-to-tray hint
-msgid "settings_close_to_tray_hint"
-msgstr "Keep Kiwi IRC running in the system tray when the window is closed."
-
 #: Launch at login
 msgid "settings_launch_at_login"
 msgstr "Launch at Login"
 
-#: Launch-at-login hint
-msgid "settings_launch_at_login_hint"
-msgstr "Start Kiwi IRC when you sign in."
-
 #: Spellcheck
 msgid "settings_spellcheck"
 msgstr "Spellcheck"
-
-#: Spellcheck hint
-msgid "settings_spellcheck_hint"
-msgstr "Underline misspelled words in the message input."
 
 #: Updates heading
 msgid "settings_updates"
@@ -1626,21 +1614,21 @@ msgstr "Your Settings"
 msgid "favorite_channel"
 msgstr "Favorite Channel"
 
-#: User JOIN/PART messages
+#: User JOIN/PARTs
 msgid "side_joins"
-msgstr "User JOIN/PART Messages"
+msgstr "User JOIN/PARTs"
 
-#: Channel topic changes
+#: Topic changes
 msgid "side_topics"
-msgstr "Channel Topic Changes"
+msgstr "Topic Changes"
 
-#: User nickname changes
+#: Nickname changes
 msgid "side_nick_changes"
-msgstr "User Nickname Changes"
+msgstr "Nickname Changes"
 
-#: Channel mode changes
+#: Channel changes
 msgid "side_mode_changes"
-msgstr "Channel Mode Changes"
+msgstr "Channel Changes"
 
 #: Color nicklist
 msgid "side_colours"
