@@ -410,6 +410,9 @@ and this project adheres to
   avatar animation frame. Animated SVG avatars still animate inside their own
   image document, so their cost scales with the number of visible animated
   avatars.
+- **Arch Packages**: Removed the AUR-only `http-parser` dependency from the
+  pacman package, which made it uninstallable on stock Arch Linux and Manjaro,
+  and added `libsecret` so password storage can use the system keyring.
 - **Profile Transfer**: Desktop exports are now ZIP archives containing the
   profile state plus installed themes, emoji packs, and custom network or
   station icons, so a transferred profile keeps its look and icons. Import skips
