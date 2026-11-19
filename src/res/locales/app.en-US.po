@@ -1101,6 +1101,10 @@ msgstr "Only Highlights"
 msgid "settings_notify_never"
 msgstr "Never"
 
+#: Never notifications are unavailable while this channel is a favorite.
+msgid "settings_never_disabled_hint"
+msgstr "Never notifications are unavailable while this channel is a favorite. Turn off Favorite to mute this channel."
+
 #: Nothing
 msgid "settings_notify_nothing"
 msgstr "Nothing"
@@ -1681,6 +1685,10 @@ msgstr "Your Settings"
 #: Favorite Channel
 msgid "favorite_channel"
 msgstr "Favorite Channel"
+
+#: Favorite is unavailable while notifications are set to Never.
+msgid "settings_favorite_disabled_hint"
+msgstr "Favorite is unavailable while notifications are set to Never. Choose another notification level to favorite this channel."
 
 #: User JOIN/PARTs
 msgid "side_joins"

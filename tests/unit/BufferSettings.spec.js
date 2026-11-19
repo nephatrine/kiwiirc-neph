@@ -100,6 +100,26 @@ describe('buffer notification settings', () => {
         s.$destroy();
     });
 
+    test('shows a hint when Favorite blocks Never', () => {
+        const { buffer } = makeBuffer({
+            settings: { favorite: true },
+        });
+
+        expect(BufferSettings.computed.neverDisabledHint.call({
+            buffer,
+            $t: (key) => key,
+        })).toBe('settings_never_disabled_hint');
+    });
+
+    test('has no hint when Never is available', () => {
+        const { buffer } = makeBuffer();
+
+        expect(BufferSettings.computed.neverDisabledHint.call({
+            buffer,
+            $t: (key) => key,
+        })).toBeNull();
+    });
+
     test('sends the selected value to the bouncer', () => {
         const { buffer, raw } = makeBuffer({ bncnetid: '42' });
 

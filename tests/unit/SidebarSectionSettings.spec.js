@@ -86,4 +86,20 @@ describe('per-buffer sidebar settings', () => {
         expect(SidebarSectionSettings.computed.notificationNever.call(context()))
             .toBe(true);
     });
+
+    test('shows a hint when Never blocks Favorite', () => {
+        buffer.setting('alert_on', 'never');
+
+        expect(SidebarSectionSettings.computed.favoriteDisabledHint.call({
+            notificationNever: true,
+            $t: (key) => key,
+        })).toBe('settings_favorite_disabled_hint');
+    });
+
+    test('has no Favorite hint when notifications are not Never', () => {
+        expect(SidebarSectionSettings.computed.favoriteDisabledHint.call({
+            notificationNever: false,
+            $t: (key) => key,
+        })).toBeNull();
+    });
 });

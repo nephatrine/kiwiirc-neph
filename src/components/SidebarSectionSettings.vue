@@ -5,10 +5,7 @@
                 <div class="kiwi-sidebar-settings">
                     <h3>{{ $t('side_settings') }}</h3>
                     <hr>
-                    <form
-                        class="u-form"
-                        :class="{ 'kiwi-sidebar-settings-disabled': notificationNever }"
-                    >
+                    <form class="u-form">
                         <label class="kiwi-sidebar-settings-inline">
                             <span>{{ $t('settings_unread_badge') }}</span>
                             <select v-model="settingUnreadBadge">
@@ -17,7 +14,13 @@
                                 <option value="show">{{ $t('settings_show') }}</option>
                             </select>
                         </label>
-                        <label class="u-checkbox-wrapper">
+                        <label
+                            class="u-checkbox-wrapper"
+                            :class="{
+                                'kiwi-sidebar-settings-disabled': notificationNever,
+                            }"
+                            :title="favoriteDisabledHint"
+                        >
                             <span>{{ $t('favorite_channel') }}</span>
                             <input
                                 v-model="settingFavorite"
@@ -228,6 +231,11 @@ export default {
         notificationNever() {
             return this.buffer.settings.alert_on === 'never';
         },
+        favoriteDisabledHint() {
+            return this.notificationNever ?
+                this.$t('settings_favorite_disabled_hint') :
+                null;
+        },
         areWeAnOp() {
             return this.buffer.isUserAnOp(this.buffer.getNetwork().nick);
         },
@@ -392,8 +400,9 @@ export default {
 }
 
 .kiwi-sidebar-settings-disabled {
-    .u-form input[type='checkbox'] {
+    input[type='checkbox'] {
         cursor: not-allowed;
+        pointer-events: none;
     }
 }
 

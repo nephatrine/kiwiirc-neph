@@ -16,7 +16,13 @@
                     <input v-model="settingAlertOn" type="radio" name="alert_on" value="highlight">
                     <span>{{ $t('settings_notify_highlights') }}</span>
                 </label>
-                <label class="u-checkbox-wrapper">
+                <label
+                    class="u-checkbox-wrapper"
+                    :class="{
+                        'kiwi-buffersettings-disabled': buffer.setting('favorite'),
+                    }"
+                    :title="neverDisabledHint"
+                >
                     <input
                         v-model="settingAlertOn"
                         type="radio"
@@ -63,6 +69,11 @@ export default {
 
                 return this.buffer.setting('alert_on', val);
             },
+        },
+        neverDisabledHint() {
+            return this.buffer.setting('favorite') ?
+                this.$t('settings_never_disabled_hint') :
+                null;
         },
     },
 };
@@ -116,5 +127,10 @@ export default {
 
 .kiwi-buffersettings .u-checkbox-wrapper input {
     order: 1;
+}
+
+.kiwi-buffersettings-disabled input[type='radio'] {
+    cursor: not-allowed;
+    pointer-events: none;
 }
 </style>
