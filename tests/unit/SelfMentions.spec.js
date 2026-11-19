@@ -37,7 +37,7 @@ describe('self mention notifications', () => {
         });
     });
 
-    it('does not notify or flash for a genuine self team mention', () => {
+    it('notifies and flashes only for non-self team mentions', () => {
         s.addMessage(buffer, {
             nick: 'TestNick',
             message: '@channel!',
@@ -46,10 +46,8 @@ describe('self mention notifications', () => {
 
         expect(notifications).toHaveLength(0);
         expect(flashes).toHaveLength(0);
-    });
 
-    it('notifies and flashes for a bridged user with the same displayed name', () => {
-        const msg = s.addMessage(buffer, {
+        let msg = s.addMessage(buffer, {
             nick: 'BridgeBot',
             message: '<TestNick> @channel!',
             tags: { bot: true },
@@ -63,10 +61,10 @@ describe('self mention notifications', () => {
         expect(buffer.setting('alert_on')).toBe('message');
         expect(notifications).toHaveLength(1);
         expect(flashes).toHaveLength(1);
-    });
 
-    it('notifies for a relayed user with the same displayed name', () => {
-        const msg = s.addMessage(buffer, {
+        notifications.length = 0;
+        flashes.length = 0;
+        msg = s.addMessage(buffer, {
             nick: 'TestNick/bridged',
             message: '@channel!',
             tags: { 'draft/relaymsg': 'TestNick' },
@@ -76,10 +74,10 @@ describe('self mention notifications', () => {
 
         expect(msg.isHighlight).toBe(true);
         expect(notifications).toHaveLength(1);
-    });
 
-    it('still notifies for another user team mention', () => {
-        const msg = s.addMessage(buffer, {
+        notifications.length = 0;
+        flashes.length = 0;
+        msg = s.addMessage(buffer, {
             nick: 'OtherUser',
             message: '@channel!',
             type: 'privmsg',
@@ -92,10 +90,10 @@ describe('self mention notifications', () => {
         expect(notifications).toHaveLength(1);
     });
 
-    it('does not play an alert sound for a genuine self message', () => {
-        const audio = { play: jest.fn() };
-        const manager = new AudioManager(audio);
-        manager.watchForMessages(s);
+    it('plays an alert sound only for bridged self-like messages', () => {
+        const quietAudio = { play: jest.fn() };
+        const quietManager = new AudioManager(quietAudio);
+        quietManager.watchForMessages(s);
 
         s.addMessage(buffer, {
             nick: 'TestNick',
@@ -103,13 +101,11 @@ describe('self mention notifications', () => {
             time: Date.now(),
         });
 
-        expect(audio.play).not.toHaveBeenCalled();
-    });
+        expect(quietAudio.play).not.toHaveBeenCalled();
 
-    it('plays an alert sound for a bridged self-like message', () => {
-        const audio = { play: jest.fn() };
-        const manager = new AudioManager(audio);
-        manager.watchForMessages(s);
+        const loudAudio = { play: jest.fn() };
+        const loudManager = new AudioManager(loudAudio);
+        loudManager.watchForMessages(s);
 
         s.addMessage(buffer, {
             nick: 'BridgeBot',
@@ -118,6 +114,6 @@ describe('self mention notifications', () => {
             time: Date.now(),
         });
 
-        expect(audio.play).toHaveBeenCalledWith('notification');
+        expect(loudAudio.play).toHaveBeenCalledWith('notification');
     });
 });

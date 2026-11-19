@@ -165,8 +165,8 @@ describe('desktop plugin installation', () => {
         expect(await listPlugins(userDataDir)).toEqual([]);
     });
 
-    test('accepts plugin.json inside one top-level folder', async() => {
-        const archivePath = writeArchive([
+    test('accepts a wrapper folder and rejects invalid manifests', async() => {
+        const wrapped = await installPlugin(userDataDir, writeArchive([
             {
                 ...manifestEntry(manifest()),
                 name: 'my-plugin/plugin.json',
@@ -175,13 +175,9 @@ describe('desktop plugin installation', () => {
                 name: 'my-plugin/plugin.js',
                 contents: 'plugin();',
             },
-        ]);
+        ]));
+        expect(wrapped.url).toBe(`kiwi-plugin://${wrapped.id}/plugin.js`);
 
-        const installed = await installPlugin(userDataDir, archivePath);
-        expect(installed.url).toBe(`kiwi-plugin://${installed.id}/plugin.js`);
-    });
-
-    test('rejects archives without a valid plugin.json', async() => {
         await expect(installPlugin(userDataDir, writeArchive([
             {
                 name: 'plugin.js',
@@ -202,7 +198,7 @@ describe('desktop plugin installation', () => {
         ]))).rejects.toThrow('entry');
     });
 
-    test('rejects missing or unsupported entry files', async() => {
+    test('rejects missing entries and unsafe uninstall ids', async() => {
         await expect(installPlugin(userDataDir, writeArchive([
             manifestEntry(manifest()),
         ]))).rejects.toThrow();
@@ -210,9 +206,7 @@ describe('desktop plugin installation', () => {
         await expect(installPlugin(userDataDir, writeArchive([
             manifestEntry(manifest({ entry: 'plugin.css' })),
         ]))).rejects.toThrow('entry');
-    });
 
-    test('rejects unsafe plugin ids and paths when uninstalling', async() => {
         await expect(uninstallPlugin(userDataDir, '../kiwi'))
             .rejects.toThrow('Invalid plugin id');
         await expect(uninstallPlugin(userDataDir, 'missing-plugin'))

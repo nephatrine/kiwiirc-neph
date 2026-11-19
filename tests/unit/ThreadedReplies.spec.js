@@ -21,9 +21,9 @@ describe('ThreadedReplies', () => {
         new InputHandler(s);
     });
 
-    it('should use irc_id (msgid) for +reply, NOT internal id', () => {
+    it('should use irc_id (msgid) for +reply, falling back to +draft/reply', () => {
         const msgId = 'server-msg-id-789';
-        const originalMsg = new Message({
+        let originalMsg = new Message({
             nick: 'sender',
             message: 'hello',
             tags: { msgid: msgId },
@@ -32,7 +32,7 @@ describe('ThreadedReplies', () => {
 
         buffer.replying_to = originalMsg;
 
-        const saySpy = jest.spyOn(network.ircClient, 'say').mockImplementation(() => {});
+        let saySpy = jest.spyOn(network.ircClient, 'say').mockImplementation(() => {});
 
         // Simulate sending a message via input
         s.$emit('input.raw', 'my reply', { network, buffer });
@@ -40,20 +40,15 @@ describe('ThreadedReplies', () => {
         expect(saySpy).toHaveBeenCalledWith('#test', 'my reply', { '+reply': msgId });
         // Double check it's NOT the numeric ID
         expect(saySpy.mock.calls[0][2]['+reply']).not.toBe(originalMsg.id);
-    });
 
-    it('should fallback to +draft/reply if +reply is denied', () => {
-        const msgId = 'server-msg-id-789';
-        const originalMsg = new Message({
+        originalMsg = new Message({
             nick: 'sender',
             message: 'hello',
             tags: { msgid: msgId },
         });
-
         buffer.replying_to = originalMsg;
         network.isupport.CLIENTTAGDENY = '+reply'; // Deny +reply, allow others
-
-        const saySpy = jest.spyOn(network.ircClient, 'say').mockImplementation(() => {});
+        saySpy.mockClear();
 
         s.$emit('input.raw', 'my reply', { network, buffer });
 

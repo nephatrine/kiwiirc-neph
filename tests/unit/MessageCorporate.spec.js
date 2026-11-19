@@ -157,8 +157,8 @@ function mountLayout({
 }
 
 describe('MessageListMessageCorporate', () => {
-    it('renders incoming messages as a metadata line and chat bubble', () => {
-        const { vm } = mountLayout({ reactions: true });
+    it('renders incoming messages as metadata, bubble, and outside media', () => {
+        let { vm } = mountLayout({ reactions: true });
 
         expect(vm.$el.classList.contains('kiwi-messagelist-message--corporate'))
             .toBe(true);
@@ -168,30 +168,53 @@ describe('MessageListMessageCorporate', () => {
             .toBe(false);
         expect(vm.$el.querySelector('.avatar-stub')).not.toBeNull();
         expect(vm.$el.querySelector('.kiwi-messagelist-corporate-meta')).not.toBeNull();
-        const bubble = vm.$el.querySelector('.kiwi-messagelist-corporate-bubble');
+        let bubble = vm.$el.querySelector('.kiwi-messagelist-corporate-bubble');
         const reactions = vm.$el.querySelector('.message-reactions-stub');
         expect(bubble).not.toBeNull();
         expect(reactions).not.toBeNull();
         expect(bubble.contains(reactions)).toBe(false);
         expect(vm.$el.querySelector('.kiwi-messagelist-body').innerHTML)
             .toContain('Hello from the office');
+        vm.$destroy();
 
+        ({ vm } = mountLayout({ embed: true }));
+        bubble = vm.$el.querySelector('.kiwi-messagelist-corporate-bubble');
+        const embed = vm.$el.querySelector('.kiwi-messagelist-embed');
+        expect(embed).not.toBeNull();
+        expect(bubble.contains(embed)).toBe(false);
+        expect(embed.querySelector('.media-viewer-stub')).not.toBeNull();
         vm.$destroy();
     });
 
-    it('marks own messages for right-aligned bubbles', () => {
-        const { vm } = mountLayout({ own: true });
+    it('marks own messages and keeps their actions in the row', () => {
+        let { vm } = mountLayout({ own: true });
 
         expect(vm.$el.classList.contains('kiwi-messagelist-message--own'))
             .toBe(true);
         expect(vm.$el.querySelector('.avatar-stub')).not.toBeNull();
         expect(vm.$el.querySelector('.kiwi-messagelist-corporate-bubble')).not.toBeNull();
+        vm.$destroy();
 
+        ({ vm } = mountLayout({ own: true, showActions: true }));
+        const bubble = vm.$el.querySelector('.kiwi-messagelist-corporate-bubble');
+        const actions = vm.$el.querySelector('.message-actions-stub');
+        expect(actions).not.toBeNull();
+        expect(bubble.contains(actions)).toBe(false);
+        expect(vm.$el.contains(actions)).toBe(true);
+        expect(actions.classList.contains('kiwi-messageactions--corporate-own'))
+            .toBe(true);
+        vm.$destroy();
+
+        ({ vm } = mountLayout({ own: true, bridgeCard: true }));
+        expect(vm.$el.classList.contains('kiwi-messagelist-message--bridge-card'))
+            .toBe(true);
+        expect(vm.$el.classList.contains('kiwi-messagelist-message--own'))
+            .toBe(true);
         vm.$destroy();
     });
 
-    it('collapses avatar and metadata for repeated authors', () => {
-        const { vm } = mountLayout({ repeat: true });
+    it('collapses repeated authors and skips own styling for traffic', () => {
+        let { vm } = mountLayout({ repeat: true });
 
         expect(vm.$el.classList.contains('kiwi-messagelist-message--authorrepeat'))
             .toBe(true);
@@ -199,55 +222,13 @@ describe('MessageListMessageCorporate', () => {
         expect(vm.$el.querySelector('.avatar-stub')).toBeNull();
         expect(vm.$el.querySelector('.kiwi-messagelist-corporate-meta')).toBeNull();
         expect(vm.$el.querySelector('.kiwi-messagelist-corporate-bubble')).not.toBeNull();
-
         vm.$destroy();
-    });
 
-    it('renders automatic media previews outside the bubble', () => {
-        const { vm } = mountLayout({ embed: true });
-        const bubble = vm.$el.querySelector('.kiwi-messagelist-corporate-bubble');
-        const embed = vm.$el.querySelector('.kiwi-messagelist-embed');
-
-        expect(embed).not.toBeNull();
-        expect(bubble.contains(embed)).toBe(false);
-        expect(embed.querySelector('.media-viewer-stub')).not.toBeNull();
-
-        vm.$destroy();
-    });
-
-    it('keeps own-message actions in the row with an inward tray', () => {
-        const { vm } = mountLayout({ own: true, showActions: true });
-        const bubble = vm.$el.querySelector('.kiwi-messagelist-corporate-bubble');
-        const actions = vm.$el.querySelector('.message-actions-stub');
-
-        expect(actions).not.toBeNull();
-        expect(bubble.contains(actions)).toBe(false);
-        expect(vm.$el.contains(actions)).toBe(true);
-        expect(actions.classList.contains('kiwi-messageactions--corporate-own'))
-            .toBe(true);
-
-        vm.$destroy();
-    });
-
-    it('does not apply own-message styling to self traffic messages', () => {
-        const { vm } = mountLayout({ own: true, type: 'traffic' });
-
+        ({ vm } = mountLayout({ own: true, type: 'traffic' }));
         expect(vm.$el.classList.contains('kiwi-messagelist-message--own'))
             .toBe(false);
         expect(vm.$el.classList.contains('kiwi-messagelist-message-traffic'))
             .toBe(true);
-
-        vm.$destroy();
-    });
-
-    it('marks bridge card messages so the outer bubble can be removed', () => {
-        const { vm } = mountLayout({ own: true, bridgeCard: true });
-
-        expect(vm.$el.classList.contains('kiwi-messagelist-message--bridge-card'))
-            .toBe(true);
-        expect(vm.$el.classList.contains('kiwi-messagelist-message--own'))
-            .toBe(true);
-
         vm.$destroy();
     });
 });

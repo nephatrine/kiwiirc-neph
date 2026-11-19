@@ -50,16 +50,22 @@ describe('Profile settings', () => {
     });
 
     afterEach(() => {
-        if (vm) {
-            vm.$destroy();
-            if (vm.$el.parentNode) {
-                vm.$el.parentNode.removeChild(vm.$el);
-            }
-        }
+        destroyMount();
         delete Vue.prototype.$state;
         delete window.kiwiDesktop;
         delete window.confirm;
     });
+
+    function destroyMount() {
+        if (!vm) {
+            return;
+        }
+        vm.$destroy();
+        if (vm.$el.parentNode) {
+            vm.$el.parentNode.removeChild(vm.$el);
+        }
+        vm = null;
+    }
 
     function mount() {
         const mountEl = document.createElement('div');
@@ -71,9 +77,9 @@ describe('Profile settings', () => {
         return vm.$children[0];
     }
 
-    it('allows export but hides import outside Personal mode', async() => {
+    it('hides import outside Personal mode and shows it in Personal mode', async() => {
         s.settings.startupScreen = 'customServer';
-        const comp = mount();
+        let comp = mount();
 
         expect(comp.$el.querySelector('.kiwi-profile-export')).not.toBeNull();
         expect(comp.$el.querySelector('.kiwi-profile-import')).toBeNull();
@@ -82,37 +88,37 @@ describe('Profile settings', () => {
 
         expect(window.kiwiDesktop.profile.import).not.toHaveBeenCalled();
         expect(comp.statusMessage).toBe('profile_import_personal_only');
-    });
 
-    it('shows import in Personal mode', async() => {
+        destroyMount();
+
         s.settings.startupScreen = 'personal';
-        const comp = mount();
+        comp = mount();
         await Vue.nextTick();
 
         expect(comp.$el.querySelector('.kiwi-profile-import')).not.toBeNull();
     });
 
-    it('exports state without passwords by default', async() => {
-        const comp = mount();
+    it('exports without passwords by default and with secrets when requested', async() => {
+        let comp = mount();
 
         await comp.exportProfile();
 
-        const text = window.kiwiDesktop.profile.export.mock.calls[0][0];
-        const bundle = JSON.parse(text);
+        let text = window.kiwiDesktop.profile.export.mock.calls[0][0];
+        let bundle = JSON.parse(text);
         expect(bundle.state.networks[0].password).toBe('');
         expect(bundle.state.networks[0].connection.password).toBe('');
         expect(bundle.secrets).toBeUndefined();
         expect(s.persistence.saveStateNow).toHaveBeenCalled();
-    });
 
-    it('exports separate plaintext secrets when requested', async() => {
-        const comp = mount();
+        destroyMount();
+
+        comp = mount();
         comp.includePasswords = true;
 
         await comp.exportProfile();
 
-        const text = window.kiwiDesktop.profile.export.mock.calls[0][0];
-        const bundle = JSON.parse(text);
+        text = window.kiwiDesktop.profile.export.mock.calls[1][0];
+        bundle = JSON.parse(text);
         expect(bundle.state.networks[0].password).toBe('');
         expect(bundle.state.networks[0].connection.password).toBe('');
         expect(bundle.secrets).toEqual({

@@ -51,13 +51,14 @@ function makePersistence(options = {}) {
 }
 
 describe('Desktop password persistence', () => {
-    it('writes sanitized state and stores both password kinds separately', async() => {
+    it('stores sanitized state and restores both password kinds', async() => {
         const { persistence, secretStore, storage } = makePersistence();
 
         const result = await persistence.saveStateNow();
 
         expect(result.secretsSaved).toBe(true);
-        const saved = JSON.parse(storage.set.mock.calls[0][1]);
+        const storedState = storage.set.mock.calls[0][1];
+        const saved = JSON.parse(storedState);
         expect(saved.networks[0].password).toBe('');
         expect(saved.networks[0].connection.password).toBe('');
         expect(secretStore.save).toHaveBeenCalledWith('test-key', {
@@ -66,30 +67,18 @@ describe('Desktop password persistence', () => {
                 sasl: 'sasl-secret',
             },
         });
-    });
-
-    it('restores passwords after importing the sanitized state', async() => {
-        const { persistence, storage } = makePersistence();
-        await persistence.saveStateNow();
-        const storedState = storage.set.mock.calls[0][1];
 
         const restored = state.create();
         restored.settings.startupOptions = {};
-        const restoredStorage = {
-            get: jest.fn(async() => storedState),
-            set: jest.fn(async() => {}),
-        };
         const restoredSecrets = makeSecretStore();
-        restoredSecrets.load.mockResolvedValue({
-            1: {
-                connection: 'server-secret',
-                sasl: 'sasl-secret',
-            },
-        });
+        restoredSecrets.load.mockResolvedValue(secretStore.save.mock.calls[0][1]);
         const restoredPersistence = new StatePersistence(
             'test-key',
             restored,
-            restoredStorage,
+            {
+                get: jest.fn(async() => storedState),
+                set: jest.fn(async() => {}),
+            },
             null,
             restoredSecrets
         );
@@ -139,30 +128,30 @@ describe('Desktop password persistence', () => {
             .toBe('webdav-secret');
     });
 
-    it('omits passwords for a network with rememberPassword disabled', async() => {
-        const { network, persistence, secretStore, storage } = makePersistence();
+    it('omits or clears passwords when disabled', async() => {
+        let { network, persistence, secretStore, storage } = makePersistence();
         network.setting('rememberPassword', false);
 
         await persistence.saveStateNow();
 
-        const saved = JSON.parse(storage.set.mock.calls[0][1]);
+        let saved = JSON.parse(storage.set.mock.calls[0][1]);
         expect(saved.networks[0].password).toBe('');
         expect(saved.networks[0].connection.password).toBe('');
         expect(secretStore.clear).toHaveBeenCalledWith('test-key');
         expect(secretStore.save).not.toHaveBeenCalled();
-    });
 
-    it('clears remembered passwords when the global include flag is off', async() => {
-        const { persistence, secretStore, storage } = makePersistence({
-            includePasswords: false,
-        });
+        let ctx = makePersistence({ includePasswords: false });
+        await ctx.persistence.saveStateNow();
 
-        await persistence.saveStateNow();
-
-        const saved = JSON.parse(storage.set.mock.calls[0][1]);
+        saved = JSON.parse(ctx.storage.set.mock.calls[0][1]);
         expect(saved.networks[0].password).toBe('');
+        expect(ctx.secretStore.clear).toHaveBeenCalledWith('test-key');
+        expect(ctx.storage.set).toHaveBeenCalled();
+
+        ({ persistence, secretStore } = makePersistence());
+        await persistence.clearStoredState();
+
         expect(secretStore.clear).toHaveBeenCalledWith('test-key');
-        expect(storage.set).toHaveBeenCalled();
     });
 
     it('still saves sanitized state when secret storage fails', async() => {
@@ -175,13 +164,5 @@ describe('Desktop password persistence', () => {
         const saved = JSON.parse(storage.set.mock.calls[0][1]);
         expect(saved.networks[0].password).toBe('');
         expect(saved.networks[0].connection.password).toBe('');
-    });
-
-    it('clears stored secrets when the profile is cleared', async() => {
-        const { persistence, secretStore } = makePersistence();
-
-        await persistence.clearStoredState();
-
-        expect(secretStore.clear).toHaveBeenCalledWith('test-key');
     });
 });

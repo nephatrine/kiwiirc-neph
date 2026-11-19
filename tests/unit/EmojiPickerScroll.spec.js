@@ -28,24 +28,20 @@ function scrollContext(sections, activeCategory = 'a') {
 }
 
 describe('Emoji picker category highlighting', () => {
-    test('highlights the topmost visible category, not the centered one', () => {
-        const context = scrollContext({ a: -200, b: -10, c: 300 });
+    test('highlights the topmost visible category and ignores programmatic scrolls', () => {
+        let context = scrollContext({ a: -200, b: -10, c: 300 });
 
         EmojiPicker.methods.onScroll.call(context);
 
         expect(context.activeCategory).toBe('b');
-    });
 
-    test('highlights the last category when it cannot be centered', () => {
-        const context = scrollContext({ a: -500, b: -200, c: -10 });
+        context = scrollContext({ a: -500, b: -200, c: -10 });
 
         EmojiPicker.methods.onScroll.call(context);
 
         expect(context.activeCategory).toBe('c');
-    });
 
-    test('ignores scroll events while a category scroll is in progress', () => {
-        const context = scrollContext({ a: -200, b: -10, c: 300 }, 'c');
+        context = scrollContext({ a: -200, b: -10, c: 300 }, 'c');
         context.scrollTarget = 'c';
         context.scrollTargetTop = 100;
         context.$refs.scroller.scrollTop = 10;

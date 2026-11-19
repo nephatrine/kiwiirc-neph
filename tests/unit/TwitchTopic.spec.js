@@ -54,25 +54,20 @@ describe('Twitch channel topic on join', () => {
         jest.restoreAllMocks();
     });
 
-    it('adds a join topic message on a Twitch channel', async() => {
+    it('adds a join topic message on a Twitch channel only once', async() => {
         setup('irc.chat.twitch.tv');
 
         await emitParsed(client, 'JOIN', joinEvent());
 
-        const topics = buffer.messagesObj.messages.filter((msg) => msg.type === 'topic');
+        let topics = buffer.messagesObj.messages.filter((msg) => msg.type === 'topic');
         expect(topics).toHaveLength(1);
         expect(topics[0].type_extra).toBe('topic_join');
         expect(topics[0].nick).toBe('');
         expect(topics[0].message).toContain('https://twitch.tv/test');
-    });
-
-    it('does not add the topic again on a later join', async() => {
-        setup('irc.chat.twitch.tv');
 
         await emitParsed(client, 'JOIN', joinEvent());
-        await emitParsed(client, 'JOIN', joinEvent());
 
-        const topics = buffer.messagesObj.messages.filter((msg) => msg.type === 'topic');
+        topics = buffer.messagesObj.messages.filter((msg) => msg.type === 'topic');
         expect(topics).toHaveLength(1);
     });
 

@@ -1,6 +1,18 @@
 import isupportMiddleware, { parseIsupportTokens } from '@/libs/IsupportMiddleware';
 import NetworkState from '@/libs/state/NetworkState';
 
+function install(client, network) {
+    let handler = null;
+    const rawEvents = {
+        use: jest.fn((fn) => {
+            handler = fn;
+        }),
+    };
+
+    isupportMiddleware(network)(client, rawEvents);
+    return handler;
+}
+
 describe('ISUPPORT middleware', () => {
     test('separates advertised and negated tokens', () => {
         expect(parseIsupportTokens([
@@ -15,8 +27,7 @@ describe('ISUPPORT middleware', () => {
         });
     });
 
-    test('removes negated options after the framework processes them', () => {
-        let handler = null;
+    test('removes negated options and tracks advertised tokens', () => {
         const client = {
             network: {
                 options: {
@@ -36,13 +47,8 @@ describe('ISUPPORT middleware', () => {
                 '-PREFIX': true,
             },
         };
-        const rawEvents = {
-            use: jest.fn((fn) => {
-                handler = fn;
-            }),
-        };
+        const handler = install(client, network);
 
-        isupportMiddleware(network)(client, rawEvents);
         handler('005', {
             params: ['TestNick', '-STATUSMSG', '-PREFIX'],
         }, '', client, () => {});
@@ -51,22 +57,7 @@ describe('ISUPPORT middleware', () => {
         expect(network.isupport).toEqual({});
         expect(client.advertisedIsupport.has('STATUSMSG')).toBe(false);
         expect(client.advertisedIsupport.has('PREFIX')).toBe(false);
-    });
 
-    test('tracks advertised tokens until they are negated', () => {
-        let handler = null;
-        const client = {
-            network: { options: {} },
-            on: jest.fn(),
-        };
-        const network = { isupport: {} };
-        const rawEvents = {
-            use: jest.fn((fn) => {
-                handler = fn;
-            }),
-        };
-
-        isupportMiddleware(network)(client, rawEvents);
         handler('005', {
             params: ['TestNick', 'PREFIX=(ov)@+'],
         }, '', client, () => {});
@@ -76,31 +67,24 @@ describe('ISUPPORT middleware', () => {
             params: ['TestNick', '-PREFIX'],
         }, '', client, () => {});
         expect(client.advertisedIsupport.has('PREFIX')).toBe(false);
-    });
-    test('reindexes users after a negated CASEMAPPING', () => {
-        let handler = null;
-        const client = {
+
+        const caseClient = {
             network: { options: { CASEMAPPING: 'ascii' } },
             on: jest.fn(),
         };
-        const network = {
+        const caseNetwork = {
             isupport: { CASEMAPPING: 'ascii' },
             reindexUsers: jest.fn(),
         };
-        const rawEvents = {
-            use: jest.fn((fn) => {
-                handler = fn;
-            }),
-        };
+        const caseHandler = install(caseClient, caseNetwork);
 
-        isupportMiddleware(network)(client, rawEvents);
-        handler('005', {
+        caseHandler('005', {
             params: ['TestNick', '-CASEMAPPING'],
-        }, '', client, () => {});
+        }, '', caseClient, () => {});
 
-        expect(client.network.options).toEqual({});
-        expect(network.isupport).toEqual({});
-        expect(network.reindexUsers).toHaveBeenCalledTimes(1);
+        expect(caseClient.network.options).toEqual({});
+        expect(caseNetwork.isupport).toEqual({});
+        expect(caseNetwork.reindexUsers).toHaveBeenCalledTimes(1);
     });
 });
 

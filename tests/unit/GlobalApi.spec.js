@@ -38,16 +38,10 @@ describe('GlobalApi plugin surface', () => {
     it('showInSidebar emits sidebar.component with its props and id', () => {
         let component = { name: 'SidebarThing' };
         api.showInSidebar(component, { network: 'net' }, 'plugin-a');
-
-        expect(state.emitted).toEqual([
-            ['sidebar.component', expect.any(Function), { network: 'net' }, 'plugin-a'],
-        ]);
-    });
-
-    it('showInSidebar defaults the id to null', () => {
         api.showInSidebar({ name: 'Thing' }, {});
 
         expect(state.emitted).toEqual([
+            ['sidebar.component', expect.any(Function), { network: 'net' }, 'plugin-a'],
             ['sidebar.component', expect.any(Function), {}, null],
         ]);
     });
@@ -72,6 +66,7 @@ describe('GlobalApi plugin surface', () => {
         api.addUi('userbox_whois', component);
         api.addUi('about_buffer', component);
         api.addUi('message_info', component);
+        api.addUi('not-a-real-type', { name: 'Ignored' });
 
         expect(api.appPlugins).toHaveLength(1);
         expect(api.controlInputPlugins).toHaveLength(1);
@@ -83,14 +78,6 @@ describe('GlobalApi plugin surface', () => {
         expect(api.userboxWhoisPlugins).toHaveLength(1);
         expect(api.aboutBufferPlugins).toHaveLength(1);
         expect(api.messageInfoPlugins).toHaveLength(1);
-    });
-
-    it('addUi ignores unknown types', () => {
-        api.addUi('not-a-real-type', { name: 'Thing' });
-
-        expect(api.appPlugins).toHaveLength(0);
-        expect(api.stateBrowserPlugins).toHaveLength(0);
-        expect(api.controlInputPlugins).toHaveLength(0);
     });
 
     it('addUi wraps the component and keeps its props and title', () => {

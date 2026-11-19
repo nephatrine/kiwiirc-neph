@@ -322,9 +322,8 @@ describe('BouncerProvider network saving', () => {
         expect(s.addMessage.mock.calls[0][1].message).toContain('boom');
     });
 
-    it('sends the server password as pass and never the SASL password', async() => {
+    it('maps server and SASL passwords correctly', async() => {
         addNetwork.mockReturnValue(Promise.resolve({ netid: 'netid-1' }));
-
         let network = s.addNetwork('Net', 'nick', {
             server: 'irc.example.com',
             port: 6697,
@@ -344,10 +343,8 @@ describe('BouncerProvider network saving', () => {
         });
         expect(addNetwork.mock.calls[0][0].pass).not.toBe(network.password);
         expect(network.connection.account).toBe('account');
-    });
 
-    it('restores the bouncer pass into the server password field', () => {
-        let network = provider.addNetworkToState({
+        network = provider.addNetworkToState({
             netid: '5',
             name: 'Libera',
             nickname: 'nick',
@@ -364,22 +361,20 @@ describe('BouncerProvider network saving', () => {
         expect(network.connection.password).toBe('server-pass');
         expect(network.password).toBe('');
         expect(network.connection.account).toBe('');
-    });
 
-    it('snapshots the server password rather than the SASL password', () => {
-        let network = s.addNetwork('Net', 'nick', {
+        network = s.addNetwork('Snapshot', 'nick', {
             server: 'irc.example.com',
             port: 6697,
             bncnetid: 'abc',
         });
-        network.connection.password = 'server-pass';
-        network.password = 'sasl-pass';
+        network.connection.password = 'snapshot-pass';
+        network.password = 'snapshot-sasl';
         network.username = 'ident';
         network.gecos = 'Real Name';
 
         provider.snapshotCurrentNetworks();
 
-        expect(provider.networksSnapshot.abc.pass).toBe('server-pass');
+        expect(provider.networksSnapshot.abc.pass).toBe('snapshot-pass');
         expect(provider.networksSnapshot.abc.username).toBe('ident');
         expect(provider.networksSnapshot.abc.realname).toBe('Real Name');
     });

@@ -21,53 +21,46 @@ function makeBuffer(options = {}) {
 }
 
 describe('MessageList local log history tools', () => {
-    test('offers local logs when chathistory is unsupported', () => {
-        const context = {
-            buffer: makeBuffer({ historySupported: false }),
-            localLogsAvailable: true,
-        };
+    test('decides when to offer local logs and opens them', () => {
+        const cases = [
+            {
+                options: { historySupported: false },
+                localLogsAvailable: true,
+                expected: true,
+            },
+            {
+                options: {
+                    historySupported: true,
+                    chathistoryAvailable: false,
+                },
+                localLogsAvailable: true,
+                expected: true,
+            },
+            {
+                options: {
+                    historySupported: true,
+                    chathistoryAvailable: true,
+                },
+                localLogsAvailable: true,
+                expected: false,
+            },
+            {
+                options: { historySupported: false },
+                localLogsAvailable: false,
+                expected: false,
+            },
+        ];
 
-        expect(MessageList.computed.shouldShowLocalLogsTools.call(context))
-            .toBe(true);
-    });
+        cases.forEach((testCase) => {
+            const context = {
+                buffer: makeBuffer(testCase.options),
+                localLogsAvailable: testCase.localLogsAvailable,
+            };
 
-    test('offers local logs when server history is exhausted', () => {
-        const context = {
-            buffer: makeBuffer({
-                historySupported: true,
-                chathistoryAvailable: false,
-            }),
-            localLogsAvailable: true,
-        };
+            expect(MessageList.computed.shouldShowLocalLogsTools.call(context))
+                .toBe(testCase.expected);
+        });
 
-        expect(MessageList.computed.shouldShowLocalLogsTools.call(context))
-            .toBe(true);
-    });
-
-    test('does not offer local logs while server history remains', () => {
-        const context = {
-            buffer: makeBuffer({
-                historySupported: true,
-                chathistoryAvailable: true,
-            }),
-            localLogsAvailable: true,
-        };
-
-        expect(MessageList.computed.shouldShowLocalLogsTools.call(context))
-            .toBe(false);
-    });
-
-    test('does not offer local logs without the desktop log store', () => {
-        const context = {
-            buffer: makeBuffer({ historySupported: false }),
-            localLogsAvailable: false,
-        };
-
-        expect(MessageList.computed.shouldShowLocalLogsTools.call(context))
-            .toBe(false);
-    });
-
-    test('opens channel logs with the current network and buffer', () => {
         const emit = jest.fn();
         const context = {
             buffer: {
@@ -88,27 +81,23 @@ describe('MessageList local log history tools', () => {
 });
 
 describe('MessageList history context scrolling', () => {
-    test('does not jump to the bottom while context is loading', () => {
-        const context = {
+    test('skips the bottom jump while context is loading', () => {
+        let context = {
             auto_scroll: true,
             buffer: { historyContextLoading: true },
             scrollToBottom: jest.fn(),
         };
 
         MessageList.methods.maybeScrollToBottom.call(context);
-
         expect(context.scrollToBottom).not.toHaveBeenCalled();
-    });
 
-    test('keeps auto-scrolling when context is not loading', () => {
-        const context = {
+        context = {
             auto_scroll: true,
             buffer: { historyContextLoading: false },
             scrollToBottom: jest.fn(),
         };
 
         MessageList.methods.maybeScrollToBottom.call(context);
-
         expect(context.scrollToBottom).toHaveBeenCalled();
     });
 });

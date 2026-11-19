@@ -16,23 +16,37 @@ function emitRawLine(client, command, params) {
 }
 
 describe('ircd identity', () => {
-    let s;
-    let network;
+    function makeNetwork() {
+        const s = state.create();
+        const network = s.addNetwork('TestNetwork', 'TestNick', {});
+        return network;
+    }
 
-    beforeEach(() => {
-        s = state.create();
-        network = s.addNetwork('TestNetwork', 'TestNick', {});
-    });
-
-    it('reads the ircd name out of the 002 reply', async() => {
+    it('reads the ircd name from 002 and keeps it over 004', async() => {
+        let network = makeNetwork();
         await emitRawLine(network.ircClient, '002', [
             'TestNick',
             'Your host is irc.example.com, running version InspIRCd-2.0',
         ]);
         expect(network.ircd).toBe('InspIRCd-2.0');
+
+        network = makeNetwork();
+        await emitRawLine(network.ircClient, '002', [
+            'TestNick',
+            'Your host is irc.example.com, running version InspIRCd-2.0',
+        ]);
+        await emitRawLine(network.ircClient, '004', [
+            'TestNick',
+            'irc.example.com',
+            'InspIRCd-3.14.0',
+            'iors',
+            'ntlk',
+        ]);
+        expect(network.ircd).toBe('InspIRCd-2.0');
     });
 
     it('falls back to the 004 version when 002 names no version', async() => {
+        const network = makeNetwork();
         await emitRawLine(network.ircClient, '002', [
             'TestNick',
             'Your host is bnc.example.com',
@@ -47,20 +61,5 @@ describe('ircd identity', () => {
             'OovaimnqpsrtklbeI',
         ]);
         expect(network.ircd).toBe('soju');
-    });
-
-    it('keeps the 002 version when 004 also reports one', async() => {
-        await emitRawLine(network.ircClient, '002', [
-            'TestNick',
-            'Your host is irc.example.com, running version InspIRCd-2.0',
-        ]);
-        await emitRawLine(network.ircClient, '004', [
-            'TestNick',
-            'irc.example.com',
-            'InspIRCd-3.14.0',
-            'iors',
-            'ntlk',
-        ]);
-        expect(network.ircd).toBe('InspIRCd-2.0');
     });
 });

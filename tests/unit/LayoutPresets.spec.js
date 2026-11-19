@@ -29,7 +29,7 @@ function createThemeManager(themeName = 'NephDeck') {
 }
 
 describe('layout presets', () => {
-    it('defines the expected desktop presets', () => {
+    it('defines presets and lists only those with enabled themes', () => {
         expect(LAYOUT_PRESETS.map((preset) => ({
             label: preset.label,
             theme: preset.theme,
@@ -67,9 +67,7 @@ describe('layout presets', () => {
                 monospace: false,
             },
         ]);
-    });
 
-    it('lists only presets whose themes are enabled', () => {
         const themeManager = {
             findTheme: jest.fn((name) => (
                 name === 'NephDeck' || name === 'NephWave' ? { name } : null
@@ -81,8 +79,8 @@ describe('layout presets', () => {
     });
 
     it('applies theme, layout, and font settings together', () => {
-        const state = createState();
-        const themeManager = createThemeManager();
+        let state = createState();
+        let themeManager = createThemeManager();
         const preset = LAYOUT_PRESETS[0];
 
         expect(applyLayoutPreset(state, themeManager, preset)).toBe(true);
@@ -92,12 +90,9 @@ describe('layout presets', () => {
         );
         expect(state.setting).toHaveBeenCalledWith('useMonospace', false);
         expect(themeManager.setTheme).toHaveBeenCalledWith('NephDeck');
-    });
 
-    it('does not partially apply a preset when its theme is unavailable', () => {
-        const state = createState();
-        const themeManager = createThemeManager('Kiwi Dark');
-        const preset = LAYOUT_PRESETS[0];
+        state = createState();
+        themeManager = createThemeManager('Kiwi Dark');
 
         expect(applyLayoutPreset(state, themeManager, preset)).toBe(false);
         expect(state.setting).not.toHaveBeenCalled();

@@ -7,7 +7,7 @@ import {
 } from '@/libs/bufferTools';
 
 describe('message ordering', () => {
-    test('compares messages by time and instance number', () => {
+    test('compares messages and reports sort requirements', () => {
         expect(compareMessages(
             { time: 100, instance_num: 1 },
             { time: 200, instance_num: 2 }
@@ -24,9 +24,7 @@ describe('message ordering', () => {
             { time: 100, instance_num: 1 },
             { time: 100, instance_num: 1 }
         )).toBe(0);
-    });
 
-    test('only reports a sort requirement for older or same-time earlier messages', () => {
         const previous = { time: 200, instance_num: 10 };
 
         expect(messageNeedsSort(previous, { time: 201, instance_num: 11 })).toBe(false);
@@ -48,9 +46,7 @@ describe('message ordering', () => {
 
         expect(messages.map((message) => message.time)).toEqual([100, 100, 200, 300, 400]);
         expect(messages.map((message) => message.instance_num)).toEqual([0, 1, 2, 3, 4]);
-    });
 
-    test('keeps late messages in chronological order through the buffer', () => {
         const s = state.create();
         const network = s.addNetwork('TestNetwork', 'TestNick', {});
         const buffer = s.addBuffer(network.id, '#channel');

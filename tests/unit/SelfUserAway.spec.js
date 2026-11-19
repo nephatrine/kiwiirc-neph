@@ -20,20 +20,16 @@ describe('SelfUser away message', () => {
         return { comp, raw };
     }
 
-    it('reuses the status metadata message when set via the checkbox', () => {
-        const { comp, raw } = build('Out to lunch');
+    it('sends the status metadata message or the localised default', () => {
+        let { comp, raw } = build('Out to lunch');
         comp.awayStatus = true;
         expect(raw).toHaveBeenCalledWith('AWAY', 'Out to lunch');
-    });
 
-    it('falls back to the localised default when no status is set', () => {
-        const { comp, raw } = build('');
+        ({ comp, raw } = build(''));
         comp.awayStatus = true;
         expect(raw).toHaveBeenCalledWith('AWAY', 'default_away_message');
-    });
 
-    it('falls back to the localised default when metadata is missing', () => {
-        const { comp, raw } = build(undefined);
+        ({ comp, raw } = build(undefined));
         delete comp.network.currentUser().metadata;
         comp.awayStatus = true;
         expect(raw).toHaveBeenCalledWith('AWAY', 'default_away_message');

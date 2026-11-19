@@ -141,18 +141,13 @@ describe('MessageSearch', () => {
         expect(result.hasMore).toBe(false);
     });
 
-    test('defaults to local logs when they are available', () => {
+    test('defaults to local logs when available, otherwise server history', () => {
         ChatLogs.isAvailable.mockReturnValue(true);
-        const state = { networks: [] };
+        expect(MessageSearch.defaultSource({ networks: [] })).toBe('local');
 
-        expect(MessageSearch.defaultSource(state)).toBe('local');
-    });
-
-    test('defaults to server history when local logs are unavailable', () => {
+        ChatLogs.isAvailable.mockReturnValue(false);
         const network = createNetwork();
-        const state = { networks: [network] };
-
-        expect(MessageSearch.defaultSource(state)).toBe('server');
+        expect(MessageSearch.defaultSource({ networks: [network] })).toBe('server');
     });
 
     test('loads server context without scrolling the result into view', async() => {

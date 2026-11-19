@@ -17,7 +17,7 @@ describe('desktop main log', () => {
         fs.rmSync(logDir, { recursive: true, force: true });
     });
 
-    it('writes timestamped log lines', () => {
+    it('writes timestamped log lines and formats errors and objects', () => {
         const log = createMainLog({ logDir });
 
         log.info('started');
@@ -28,6 +28,9 @@ describe('desktop main log', () => {
         expect(text).toContain('[INFO] started');
         expect(text).toContain('[WARN] warning');
         expect(text).toContain('[ERROR] Error: boom');
+
+        expect(formatValue(new Error('boom'))).toContain('Error: boom');
+        expect(formatValue({ ok: true })).toBe('{"ok":true}');
     });
 
     it('rotates the log when it exceeds the size limit', () => {
@@ -44,10 +47,5 @@ describe('desktop main log', () => {
             .toContain('a'.repeat(60));
         expect(fs.readFileSync(log.path(), 'utf8'))
             .toContain('b'.repeat(60));
-    });
-
-    it('formats errors and objects', () => {
-        expect(formatValue(new Error('boom'))).toContain('Error: boom');
-        expect(formatValue({ ok: true })).toBe('{"ok":true}');
     });
 });

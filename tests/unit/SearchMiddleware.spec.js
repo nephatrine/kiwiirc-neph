@@ -57,16 +57,13 @@ describe('SearchMiddleware', () => {
         jest.useRealTimers();
     });
 
-    test('is unavailable without the required capabilities', () => {
-        const { client } = install(['soju.im/search', 'batch']);
+    test('sends one escaped SEARCH, then serializes the queue', async() => {
+        const unsupported = install(['soju.im/search', 'batch']);
+        expect(unsupported.client.search.isSupported()).toBe(false);
 
-        expect(client.search.isSupported()).toBe(false);
-    });
-
-    test('sends one escaped SEARCH command and resolves its result', async() => {
         const { client } = install(SEARCH_CAPS);
 
-        const result = client.search.run({
+        const first = client.search.run({
             in: '#channel',
             text: 'hello world; x',
             limit: 50,
@@ -80,26 +77,15 @@ describe('SearchMiddleware', () => {
             'in=#channel;text=hello\\sworld\\:\\sx;limit=50'
         );
 
+        const second = client.search.run({ text: 'second' });
+        expect(client.raw).toHaveBeenCalledTimes(1);
+
         client.search.batchCallbacks.resolve({
             commands: [{ params: ['#channel', 'hello'] }],
         });
-
-        await expect(result).resolves.toMatchObject({
+        await expect(first).resolves.toMatchObject({
             commands: [{ params: ['#channel', 'hello'] }],
         });
-    });
-
-    test('serializes searches and advances after each batch', async() => {
-        const { client } = install(SEARCH_CAPS);
-
-        const first = client.search.run({ text: 'first' });
-        const second = client.search.run({ text: 'second' });
-
-        expect(client.raw).toHaveBeenCalledTimes(1);
-        expect(client.raw.mock.calls[0][0].params[0]).toBe('text=first');
-
-        client.search.batchCallbacks.resolve({ commands: [] });
-        await expect(first).resolves.toMatchObject({ commands: [] });
 
         expect(client.raw).toHaveBeenCalledTimes(2);
         expect(client.raw.mock.calls[1][0].params[0]).toBe('text=second');
@@ -108,17 +94,23 @@ describe('SearchMiddleware', () => {
         await expect(second).resolves.toMatchObject({ commands: [] });
     });
 
-    test('resolves a FAIL SEARCH response for the pending search', async() => {
-        const { client, parsedHandler } = install(SEARCH_CAPS);
-
-        const result = client.search.run({ text: 'bad' });
+    test('resolves FAIL and socket-close responses for pending searches', async() => {
+        let { client, parsedHandler } = install(SEARCH_CAPS);
+        let result = client.search.run({ text: 'bad' });
         parsedHandler('FAIL', {
             params: ['SEARCH', 'INVALID_PARAMS', 'context', 'Invalid parameters'],
         }, client, jest.fn());
-
         await expect(result).resolves.toMatchObject({
             error: 'INVALID_PARAMS',
             reason: 'Invalid parameters',
+        });
+
+        ({ client } = install(SEARCH_CAPS));
+        result = client.search.run({ text: 'pending' });
+        client.emit('socket close');
+        await expect(result).resolves.toMatchObject({
+            error: 'disconnected',
+            silent: true,
         });
     });
 
@@ -131,18 +123,6 @@ describe('SearchMiddleware', () => {
 
         await expect(result).resolves.toMatchObject({
             error: 'timeout',
-        });
-    });
-
-    test('resets pending searches when the socket closes', async() => {
-        const { client } = install(SEARCH_CAPS);
-
-        const result = client.search.run({ text: 'pending' });
-        client.emit('socket close');
-
-        await expect(result).resolves.toMatchObject({
-            error: 'disconnected',
-            silent: true,
         });
     });
 

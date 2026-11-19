@@ -20,7 +20,7 @@ describe('desktop network icons', () => {
         await fs.rm(tempDir, { recursive: true, force: true });
     });
 
-    test('copies a selected image using the network name', async() => {
+    test('copies a selected image and resolves the saved URL', async() => {
         const result = await installNetworkIcon(tempDir, 'Test Network', sourcePath);
         const iconPath = path.join(tempDir, 'network-icons', 'test-network.png');
 
@@ -29,10 +29,7 @@ describe('desktop network icons', () => {
         await expect(fs.readFile(iconPath)).resolves.toEqual(
             Buffer.from('89504e470d0a1a0a', 'hex')
         );
-    });
 
-    test('resolves a saved icon URL', async() => {
-        const result = await installNetworkIcon(tempDir, 'Test Network', sourcePath);
         const resolved = await resolveNetworkIconFile(tempDir, result.url);
 
         expect(resolved).toEqual(expect.objectContaining({
@@ -41,15 +38,13 @@ describe('desktop network icons', () => {
         }));
     });
 
-    test('rejects unsupported image types', async() => {
+    test('rejects unsupported image types and outside paths', async() => {
         const textPath = path.join(tempDir, 'icon.txt');
         await fs.writeFile(textPath, 'not an image');
 
         await expect(installNetworkIcon(tempDir, 'Test', textPath))
             .rejects.toThrow('Unsupported image type');
-    });
 
-    test('rejects paths outside the icon directory', async() => {
         const result = await resolveNetworkIconFile(
             tempDir,
             'kiwi-icon://network-icon/../outside.png'

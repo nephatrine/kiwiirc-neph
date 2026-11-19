@@ -3,17 +3,22 @@ import EmojiPicker from '@/components/EmojiPicker.vue';
 import { emojiData } from '@/res/emojiData';
 import { emojiVersions } from '@/res/emojiLookup';
 
+function clickContext(picker) {
+    return {
+        $state: { ui: { emoji_picker: picker } },
+        close: jest.fn(),
+    };
+}
+
 describe('Emoji picker version setting', () => {
-    it('lists the Unicode versions available in the data', () => {
+    it('lists the Unicode versions and filters picker data', () => {
         const versions = AppSettings.computed.emojiVersions.call({});
 
         expect(versions).toContain(13);
         expect(versions).toContain(13.1);
         expect(versions[0]).toBeGreaterThan(versions[versions.length - 1]);
         expect(versions).toEqual(emojiVersions);
-    });
 
-    it('filters the picker data by the selected version', () => {
         const visible = EmojiPicker.computed.visibleEmojiData.call({
             emojiData,
             emojiPickerMaxVersion: 13,
@@ -27,16 +32,9 @@ describe('Emoji picker version setting', () => {
 });
 
 describe('Emoji picker custom items', () => {
-    function clickContext(picker) {
-        return {
-            $state: { ui: { emoji_picker: picker } },
-            close: jest.fn(),
-        };
-    }
-
-    it('inserts a custom token into the input', () => {
-        const ircinput = { insertText: jest.fn() };
-        const context = clickContext({
+    it('inserts custom tokens and unicode characters into the input', () => {
+        let ircinput = { insertText: jest.fn() };
+        let context = clickContext({
             type: 'input',
             ircinput,
         });
@@ -48,6 +46,18 @@ describe('Emoji picker custom items', () => {
 
         expect(ircinput.insertText).toHaveBeenCalledWith(':kiwi/#test:');
         expect(context.close).toHaveBeenCalled();
+
+        ircinput = { insertText: jest.fn() };
+        context = clickContext({
+            type: 'input',
+            ircinput,
+        });
+
+        EmojiPicker.methods.onEmojiClick.call(context, {
+            char: '👍',
+        });
+
+        expect(ircinput.insertText).toHaveBeenCalledWith('👍');
     });
 
     it('reacts with a custom token', () => {
@@ -66,19 +76,5 @@ describe('Emoji picker custom items', () => {
 
         expect(buffer.react).toHaveBeenCalledWith(message, ':kiwi:');
         expect(context.close).toHaveBeenCalled();
-    });
-
-    it('still inserts unicode characters', () => {
-        const ircinput = { insertText: jest.fn() };
-        const context = clickContext({
-            type: 'input',
-            ircinput,
-        });
-
-        EmojiPicker.methods.onEmojiClick.call(context, {
-            char: '👍',
-        });
-
-        expect(ircinput.insertText).toHaveBeenCalledWith('👍');
     });
 });

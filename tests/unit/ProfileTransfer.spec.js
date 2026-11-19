@@ -20,77 +20,78 @@ function makeState() {
 }
 
 describe('Profile transfer', () => {
-    it('exports state without passwords by default', () => {
-        const { s } = makeState();
-        const bundle = buildProfileBundle(s);
+    it('exports state without secrets unless requested', () => {
+        const { s, network } = makeState();
+        const plain = buildProfileBundle(s);
 
-        expect(bundle.format).toBe('kiwi-profile');
-        expect(bundle.version).toBe(1);
-        expect(bundle.state.networks[0].password).toBe('');
-        expect(bundle.state.networks[0].connection.password).toBe('');
-        expect(bundle.secrets).toBeUndefined();
-    });
+        expect(plain.format).toBe('kiwi-profile');
+        expect(plain.version).toBe(1);
+        expect(plain.state.networks[0].password).toBe('');
+        expect(plain.state.networks[0].connection.password).toBe('');
+        expect(plain.secrets).toBeUndefined();
 
-    it('exports passwords separately when requested', () => {
-        const { s } = makeState();
-        const bundle = buildProfileBundle(s, {
+        const withPasswords = buildProfileBundle(s, {
             includePasswords: true,
             secrets: collectProfileSecrets(s),
             source: 'desktop',
         });
-
-        expect(bundle.source).toBe('desktop');
-        expect(bundle.state.networks[0].password).toBe('');
-        expect(bundle.state.networks[0].connection.password).toBe('');
-        expect(bundle.secrets).toEqual({
+        expect(withPasswords.source).toBe('desktop');
+        expect(withPasswords.state.networks[0].password).toBe('');
+        expect(withPasswords.state.networks[0].connection.password).toBe('');
+        expect(withPasswords.secrets).toEqual({
             1: {
                 connection: 'server-secret',
                 sasl: 'sasl-secret',
             },
         });
-    });
 
-    it('omits passwords for networks with rememberPassword disabled', () => {
-        const { s, network } = makeState();
         network.setting('rememberPassword', false);
-
         expect(collectProfileSecrets(s)).toEqual({});
     });
 
-    it('strips legacy passwords from imported state', () => {
+    it('strips legacy passwords and rejects invalid profile data', () => {
         const { s } = makeState();
         const bundle = buildProfileBundle(s);
         bundle.state.networks[0].password = 'legacy-sasl';
         bundle.state.networks[0].connection.password = 'legacy-server';
 
         const validated = validateProfileBundle(bundle);
-
         expect(validated.state.networks[0].password).toBe('');
         expect(validated.state.networks[0].connection.password).toBe('');
+
+        expect(() => parseProfileBundleText('not json')).toThrow('invalid profile JSON');
+        expect(() => validateProfileBundle({
+            format: 'kiwi-profile',
+            version: 2,
+            state: { networks: [] },
+        })).toThrow('unsupported profile version');
+        expect(() => validateProfileBundle({
+            format: 'other',
+            version: 1,
+            state: { networks: [] },
+        })).toThrow('invalid profile format');
     });
 
-    it('imports state and applies matching secrets', () => {
-        const { s } = makeState();
-        const bundle = buildProfileBundle(s, {
+    it('imports state and applies matching secrets unless the network opted out', () => {
+        let ctx = makeState();
+        let bundle = buildProfileBundle(ctx.s, {
             includePasswords: true,
-            secrets: collectProfileSecrets(s),
+            secrets: collectProfileSecrets(ctx.s),
         });
 
-        const imported = state.create();
+        let imported = state.create();
         imported.settings.startupOptions = {};
-        const result = applyProfileBundle(imported, bundle);
+        let result = applyProfileBundle(imported, bundle);
 
         expect(result.appliedSecrets).toBe(1);
         expect(imported.networks[0].name).toBe('ProfileNet');
         expect(imported.networks[0].connection.password).toBe('server-secret');
         expect(imported.networks[0].password).toBe('sasl-secret');
         expect(imported.networks[0].connection.account).toBe('ProfileAccount');
-    });
 
-    it('does not apply secrets to a network that opted out', () => {
-        const { s, network } = makeState();
-        network.setting('rememberPassword', false);
-        const bundle = buildProfileBundle(s, {
+        ctx = makeState();
+        ctx.network.setting('rememberPassword', false);
+        bundle = buildProfileBundle(ctx.s, {
             includePasswords: true,
             secrets: {
                 1: {
@@ -101,9 +102,9 @@ describe('Profile transfer', () => {
         });
         bundle.state.networks[0].settings.rememberPassword = false;
 
-        const imported = state.create();
+        imported = state.create();
         imported.settings.startupOptions = {};
-        const result = applyProfileBundle(imported, bundle);
+        result = applyProfileBundle(imported, bundle);
 
         expect(result.appliedSecrets).toBe(0);
         expect(imported.networks[0].connection.password).toBe('');
@@ -135,19 +136,5 @@ describe('Profile transfer', () => {
             .toBe('webdav-secret');
         expect(JSON.parse(imported.exportState(true)).user_settings
             .fileupload.webdav.password).toBeUndefined();
-    });
-
-    it('rejects invalid profile data', () => {
-        expect(() => parseProfileBundleText('not json')).toThrow('invalid profile JSON');
-        expect(() => validateProfileBundle({
-            format: 'kiwi-profile',
-            version: 2,
-            state: { networks: [] },
-        })).toThrow('unsupported profile version');
-        expect(() => validateProfileBundle({
-            format: 'other',
-            version: 1,
-            state: { networks: [] },
-        })).toThrow('invalid profile format');
     });
 });

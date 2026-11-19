@@ -2,7 +2,7 @@ import state from '@/libs/state';
 import Message from '@/libs/Message';
 
 describe('draft/oper-tag', () => {
-    it('marks messages with draft/oper', () => {
+    it('marks draft/oper messages and keeps bot flags independent', () => {
         let empty = new Message({
             nick: 'Oper',
             message: 'hello',
@@ -17,25 +17,21 @@ describe('draft/oper-tag', () => {
             tags: { 'draft/oper': 'launchd' },
         });
         expect(valued.is_oper).toBe(true);
-    });
 
-    it('does not use the unprefixed oper tag', () => {
-        let message = new Message({
+        let unprefixed = new Message({
             nick: 'Oper',
             message: 'hello',
             tags: { oper: '' },
         });
-        expect(message.is_oper).toBe(false);
-    });
+        expect(unprefixed.is_oper).toBe(false);
 
-    it('keeps bot and oper flags independent', () => {
-        let message = new Message({
+        let operBot = new Message({
             nick: 'OperBot',
             message: 'hello',
             tags: { 'bot': true, 'draft/oper': '' },
         });
-        expect(message.is_bot).toBe(true);
-        expect(message.is_oper).toBe(true);
+        expect(operBot.is_bot).toBe(true);
+        expect(operBot.is_oper).toBe(true);
     });
 
     it('updates oper status when a heuristic echo arrives', () => {

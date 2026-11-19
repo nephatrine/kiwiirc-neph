@@ -44,66 +44,67 @@ describe('message echo confirmation', () => {
         });
     }
 
-    it('confirms the pending message when the echo has a msgid', () => {
-        send('hello world');
-        receiveEcho('hello world', { msgid: 'abc123' });
-
-        expect(messages()).toHaveLength(1);
-        expect(messages()[0].irc_id).toBe('abc123');
-        expect(messages()[0].is_pending).toBe(false);
-        expect(buffer.messagesObj.messageIds.abc123).toBe(messages()[0]);
-    });
-
-    it('confirms the pending message when the echo has no msgid', () => {
-        send('hello world');
-        receiveEcho('hello world');
-
-        expect(messages()).toHaveLength(1);
-        expect(messages()[0].irc_id).toBeUndefined();
-        expect(messages()[0].is_pending).toBe(false);
-        expect(messages()[0].tags).toEqual({});
-    });
-
-    it('emits message.confirmed when an echo confirms the pending copy', () => {
+    it('confirms pending messages by msgid, raw text, order, or rewrite', () => {
         const confirmed = jest.fn();
         s.$on('message.confirmed', confirmed);
 
         send('hello world');
         receiveEcho('hello world', { msgid: 'abc123' });
-
+        expect(messages()).toHaveLength(1);
+        expect(messages()[0].irc_id).toBe('abc123');
+        expect(messages()[0].is_pending).toBe(false);
+        expect(buffer.messagesObj.messageIds.abc123).toBe(messages()[0]);
         expect(confirmed).toHaveBeenCalledWith({
             message: messages()[0],
             buffer,
         });
-    });
 
-    it('matches on the raw text rather than the rendered body', () => {
+        s = state.create();
+        network = s.addNetwork('TestNetwork', 'TestNick', {});
+        network.nick = 'TestNick';
+        network.enabled_caps = ['echo-message', 'message-tags'];
+        handler = new InputHandler(s);
+        buffer = s.getOrAddBufferByName(network.id, '#chan');
+        jest.spyOn(network.ircClient, 'say').mockImplementation(() => {});
         send('hello world');
-        // The server's rendering can differ (custom formats, relay rewrites)
-        receiveEcho('hello world', { msgid: 'abc123' }, 'TestNick (ident@host): hello world');
-
+        receiveEcho('hello world');
         expect(messages()).toHaveLength(1);
-        expect(messages()[0].irc_id).toBe('abc123');
+        expect(messages()[0].irc_id).toBeUndefined();
         expect(messages()[0].is_pending).toBe(false);
-    });
+        expect(messages()[0].tags).toEqual({});
 
-    it('confirms identical messages in the order they were sent', () => {
         send('same');
         send('same');
         receiveEcho('same', { msgid: 'first' });
         receiveEcho('same', { msgid: 'second' });
+        expect(messages()).toHaveLength(3);
+        expect(messages()[1].irc_id).toBe('first');
+        expect(messages()[2].irc_id).toBe('second');
 
-        expect(messages()).toHaveLength(2);
-        expect(messages()[0].irc_id).toBe('first');
-        expect(messages()[1].irc_id).toBe('second');
-    });
-
-    it('confirms the only pending message when the server rewrote the text', () => {
+        s = state.create();
+        network = s.addNetwork('TestNetwork', 'TestNick', {});
+        network.nick = 'TestNick';
+        network.enabled_caps = ['echo-message', 'message-tags'];
+        handler = new InputHandler(s);
+        buffer = s.getOrAddBufferByName(network.id, '#chan');
+        jest.spyOn(network.ircClient, 'say').mockImplementation(() => {});
         send('hello world');
-        receiveEcho('Hello, world!', { msgid: 'abc123' });
-
+        receiveEcho('hello world', { msgid: 'raw123' }, 'TestNick (ident@host): hello world');
         expect(messages()).toHaveLength(1);
-        expect(messages()[0].irc_id).toBe('abc123');
+        expect(messages()[0].irc_id).toBe('raw123');
+        expect(messages()[0].is_pending).toBe(false);
+
+        s = state.create();
+        network = s.addNetwork('TestNetwork', 'TestNick', {});
+        network.nick = 'TestNick';
+        network.enabled_caps = ['echo-message', 'message-tags'];
+        handler = new InputHandler(s);
+        buffer = s.getOrAddBufferByName(network.id, '#chan');
+        jest.spyOn(network.ircClient, 'say').mockImplementation(() => {});
+        send('hello world');
+        receiveEcho('Hello, world!', { msgid: 'rewrite123' });
+        expect(messages()).toHaveLength(1);
+        expect(messages()[0].irc_id).toBe('rewrite123');
         expect(messages()[0].is_pending).toBe(false);
     });
 

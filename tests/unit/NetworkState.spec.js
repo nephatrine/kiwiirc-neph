@@ -129,51 +129,45 @@ describe('NetworkState', () => {
         expect(network.replyTagName()).toBe('+reply');
     });
 
-    it('uses the Twitch icon unless DRAFT/ICON is advertised', () => {
+    it('uses built-in icons and prefers DRAFT/ICON', () => {
         let s = state.create();
         let twitch = s.addNetwork('Twitch', 'nick', {
             server: 'irc.chat.twitch.tv',
         });
-
         expect(twitch.iconUrl).toBe('/static/twitch.svg');
-
         twitch.isupport['DRAFT/ICON'] = 'https://example.com/icon-{size}.png';
         expect(twitch.iconUrl).toBe('https://example.com/icon-64.png');
-    });
 
-    it('uses the Libera icon for Libera.Chat unless DRAFT/ICON is advertised', () => {
-        let s = state.create();
         let libera = s.addNetwork('Libera.Chat', 'nick', {
             server: 'irc.libera.chat',
         });
-
         expect(libera.iconUrl).toBe('/static/libera.svg');
-
         libera.isupport['DRAFT/ICON'] = 'https://example.com/icon-{size}.png';
         expect(libera.iconUrl).toBe('https://example.com/icon-64.png');
-    });
 
-    it('uses the Libera icon from the NETWORK token after a rename', () => {
-        let s = state.create();
-        let network = s.addNetwork('Work', 'nick', {
+        let renamed = s.addNetwork('Work', 'nick', {
             server: 'irc.example.com',
         });
+        renamed.isupport.NETWORK = 'Libera.Chat';
+        expect(renamed.iconUrl).toBe('/static/libera.svg');
 
-        network.isupport.NETWORK = 'Libera.Chat';
-        expect(network.iconUrl).toBe('/static/libera.svg');
-    });
-
-    it('uses the RektNetwork icon fallback', () => {
-        let s = state.create();
-        let network = s.addNetwork('Work', 'nick', {
+        let rekt = s.addNetwork('Work', 'nick', {
             server: 'irc.example.com',
         });
+        rekt.isupport.NETWORK = 'RektNetwork';
+        expect(rekt.iconUrl).toBe('/static/nightride.webp');
 
-        network.isupport.NETWORK = 'RektNetwork';
-        expect(network.iconUrl).toBe('/static/nightride.webp');
+        let oftc = s.addNetwork('Work', 'nick', {
+            server: 'irc.example.com',
+        });
+        oftc.isupport.NETWORK = 'OFTC';
+        expect(oftc.supports('NETWORK')).toBe('OFTC');
+        expect(oftc.iconUrl).toBe('/static/oftc.svg');
+        oftc.isupport['DRAFT/ICON'] = 'https://example.com/icon-{size}.png';
+        expect(oftc.iconUrl).toBe('https://example.com/icon-64.png');
     });
 
-    it('lets a user network icon override DRAFT/ICON and fallbacks', () => {
+    it('lets a valid user icon override fallbacks and ignores invalid ones', () => {
         let s = state.create();
         let network = s.addNetwork('Libera.Chat', 'nick', {
             server: 'irc.libera.chat',
@@ -185,30 +179,10 @@ describe('NetworkState', () => {
 
         network.setting('network_icon_url', 'kiwi-icon://network-icon/custom.png');
         expect(network.iconUrl).toBe('kiwi-icon://network-icon/custom.png');
-    });
 
-    it('ignores an invalid user network icon', () => {
-        let s = state.create();
-        let network = s.addNetwork('Libera.Chat', 'nick', {
-            server: 'irc.libera.chat',
-        });
-
+        delete network.isupport['DRAFT/ICON'];
         network.setting('network_icon_url', 'data:image/png;base64,AAAA');
         expect(network.iconUrl).toBe('/static/libera.svg');
-    });
-
-    it('uses the OFTC icon unless DRAFT/ICON is advertised', () => {
-        let s = state.create();
-        let network = s.addNetwork('Work', 'nick', {
-            server: 'irc.example.com',
-        });
-
-        network.isupport.NETWORK = 'OFTC';
-        expect(network.supports('NETWORK')).toBe('OFTC');
-        expect(network.iconUrl).toBe('/static/oftc.svg');
-
-        network.isupport['DRAFT/ICON'] = 'https://example.com/icon-{size}.png';
-        expect(network.iconUrl).toBe('https://example.com/icon-64.png');
     });
 
     it('reports Twitch as the IRCd type', () => {

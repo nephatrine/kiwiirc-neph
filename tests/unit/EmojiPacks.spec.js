@@ -36,23 +36,26 @@ describe('Emoji pack channel settings', () => {
         state.resetState();
     });
 
-    test('lists joined metadata channels and unjoined policy channels', () => {
-        const rows = EmojiPacks.computed.channels.call({ network });
-
-        expect(rows).toEqual([
+    test('lists joined channels and unjoined policy channels', () => {
+        expect(EmojiPacks.computed.channels.call({ network })).toEqual([
             { name: '#away', joined: false },
             { name: '#test', joined: true },
         ]);
+
+        state.setting('remoteEmojiPacks', false);
+        expect(EmojiPacks.computed.channels.call({ network })).toEqual([
+            { name: '#away', joined: false },
+            { name: '#test', joined: true },
+        ]);
+        state.setting('remoteEmojiPacks', true);
     });
 
-    test('shows a network pack row when draft/EMOJI is supported', () => {
+    test('shows and lists network packs when draft/EMOJI is supported', () => {
         expect(EmojiPacks.computed.networkPackSupported.call({ network })).toBe(false);
 
         network.isupport['DRAFT/EMOJI'] = 'https://emoji.example/network.json';
         expect(EmojiPacks.computed.networkPackSupported.call({ network })).toBe(true);
-    });
 
-    test('lists loaded network packs separately from channel packs', () => {
         emojiPackState.server[network.id] = {
             url: 'https://emoji.example/network.json',
             status: 'loaded',
@@ -66,7 +69,7 @@ describe('Emoji pack channel settings', () => {
             .toBe('Network Pack');
     });
 
-    test('applies Default/Always/Never to network and channel packs', () => {
+    test('applies Default/Always/Never and updates channel policies', () => {
         state.setting('remoteEmojiPacks', false);
         expect(networkPackEnabled(network)).toBe(false);
         expect(channelPackEnabled(network, '#test')).toBe(false);
@@ -80,18 +83,7 @@ describe('Emoji pack channel settings', () => {
         setChannelPolicy(network, '#test', 'never');
         expect(networkPackEnabled(network)).toBe(false);
         expect(channelPackEnabled(network, '#test')).toBe(false);
-    });
 
-    test('keeps channel rows visible while global remote emoji is disabled', () => {
-        state.setting('remoteEmojiPacks', false);
-
-        expect(EmojiPacks.computed.channels.call({ network })).toEqual([
-            { name: '#away', joined: false },
-            { name: '#test', joined: true },
-        ]);
-    });
-
-    test('reads and updates a channel policy', () => {
         const context = { network };
 
         expect(EmojiPacks.methods.policyOf.call(context, '#away')).toBe('never');

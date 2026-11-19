@@ -10,28 +10,20 @@ describe('input-text autocomplete', () => {
         return vm.$children[0].$el.querySelector('input, textarea');
     }
 
-    it('defaults text inputs to autocomplete off', () => {
-        const el = mount({ value: '', type: 'text' });
+    it('defaults autocomplete off and forwards tokens and title hints', () => {
+        let el = mount({ value: '', type: 'text' });
         expect(el.getAttribute('autocomplete')).toBe('off');
-    });
 
-    it('defaults password inputs to autocomplete off', () => {
-        const el = mount({ value: '', type: 'password' });
+        el = mount({ value: '', type: 'password' });
         expect(el.getAttribute('autocomplete')).toBe('off');
-    });
 
-    it('forwards a username token to the rendered input', () => {
-        const el = mount({ value: '', type: 'text', autocomplete: 'username' });
+        el = mount({ value: '', type: 'text', autocomplete: 'username' });
         expect(el.getAttribute('autocomplete')).toBe('username');
-    });
 
-    it('forwards a current-password token to the rendered input', () => {
-        const el = mount({ value: '', type: 'password', autocomplete: 'current-password' });
+        el = mount({ value: '', type: 'password', autocomplete: 'current-password' });
         expect(el.getAttribute('autocomplete')).toBe('current-password');
-    });
 
-    it('forwards a title hint to the rendered input', () => {
-        const el = mount({ value: '', type: 'text', title: 'Field hint' });
+        el = mount({ value: '', type: 'text', title: 'Field hint' });
         expect(el.getAttribute('title')).toBe('Field hint');
     });
 

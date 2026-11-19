@@ -7,7 +7,12 @@ import {
 } from '@/libs/ErgoHistServ';
 
 describe('histserv completion', () => {
-    it('limits subcommand completion to the subcommand token', () => {
+    const ctx = {
+        knownAccounts: ['alice', 'bob'],
+        knownTargets: ['#chan', 'SomeNick'],
+    };
+
+    it('limits subcommand completion, transcribes syntax, and shows ghosts', () => {
         expect(isHistservSubcommandPosition('/msg HistServ ')).toBe(true);
         expect(isHistservSubcommandPosition('/msg HistServ P')).toBe(true);
         expect(isHistservSubcommandPosition('/msg histserv pla')).toBe(true);
@@ -18,21 +23,18 @@ describe('histserv completion', () => {
         expect(isHistservSubcommandPosition('/ns PLAY ')).toBe(false);
         expect(isHistservSubcommandPosition('')).toBe(false);
         expect(isHistservSubcommandPosition(null)).toBe(false);
-    });
 
-    it('transcribes upstream syntax', () => {
         expect(HISTSERV_SYNTAX.PLAY).toBe('PLAY <target> [limit]');
         expect(HISTSERV_SYNTAX.DELETE).toBe('DELETE <target> <msgid>');
         expect(HISTSERV_SYNTAX.FORGET).toBe('FORGET <account>');
         expect(HISTSERV_SYNTAX.EXPORT).toBe('EXPORT <account>');
-    });
-});
 
-describe('histserv argument completion', () => {
-    const ctx = {
-        knownAccounts: ['alice', 'bob'],
-        knownTargets: ['#chan', 'SomeNick'],
-    };
+        expect(histservSyntaxFor(['PLAY'])).toBe('PLAY <target> [limit]');
+        expect(histservSyntaxFor(['DELETE'])).toBe('DELETE <target> <msgid>');
+        expect(histservSyntaxFor(['FORGET'])).toBe('FORGET <account>');
+        expect(histservSyntaxFor(['FOO'])).toBe('');
+        expect(histservSyntaxFor([])).toBe('');
+    });
 
     it('parses command paths and argument slots', () => {
         expect(parseHistservInput('/msg HistServ ')).toBe(null);
@@ -56,7 +58,7 @@ describe('histserv argument completion', () => {
         });
     });
 
-    it('suggests accounts and targets', () => {
+    it('suggests accounts and targets, and stays quiet otherwise', () => {
         expect(histservArgSuggestions(parseHistservInput('/msg HistServ FORGET '), ctx))
             .toEqual(['alice', 'bob']);
         expect(histservArgSuggestions(parseHistservInput('/msg HistServ EXPORT b'), ctx))
@@ -65,19 +67,9 @@ describe('histserv argument completion', () => {
             .toEqual(['#chan', 'SomeNick']);
         expect(histservArgSuggestions(parseHistservInput('/msg HistServ DELETE '), ctx))
             .toEqual(['#chan', 'SomeNick']);
-    });
 
-    it('stays out of the way without suggestions', () => {
         expect(histservArgSuggestions(parseHistservInput('/msg HistServ PLAY #chan '), ctx)).toEqual([]);
         expect(histservArgSuggestions(parseHistservInput('/msg HistServ DELETE #chan id '), ctx)).toEqual([]);
         expect(histservArgSuggestions(null, ctx)).toEqual([]);
-    });
-
-    it('shows syntax ghosts for commands', () => {
-        expect(histservSyntaxFor(['PLAY'])).toBe('PLAY <target> [limit]');
-        expect(histservSyntaxFor(['DELETE'])).toBe('DELETE <target> <msgid>');
-        expect(histservSyntaxFor(['FORGET'])).toBe('FORGET <account>');
-        expect(histservSyntaxFor(['FOO'])).toBe('');
-        expect(histservSyntaxFor([])).toBe('');
     });
 });

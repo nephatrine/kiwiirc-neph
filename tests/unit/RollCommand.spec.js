@@ -30,7 +30,7 @@ describe('/roll command', () => {
         jest.restoreAllMocks();
     });
 
-    it('sends a single action for a valid roll', () => {
+    it('sends a single action and confirms it with the server echo', () => {
         network.enabled_caps = ['echo-message'];
         const actionSpy = jest.spyOn(network.ircClient, 'action').mockImplementation(() => {});
 
@@ -46,14 +46,6 @@ describe('/roll command', () => {
         expect(messages[0].is_pending).toBe(true);
         expect(messages[0].raw_text).toBe('dice_roll_breakdown');
         expect(messages[0].message).toContain('* TestNick');
-    });
-
-    it('confirms the local roll with the server echo instead of duplicating it', () => {
-        network.enabled_caps = ['echo-message'];
-        jest.spyOn(network.ircClient, 'action').mockImplementation(() => {});
-
-        s.$emit('input.raw', '/roll 4d6k3', { network, buffer });
-        expect(buffer.getMessages()).toHaveLength(1);
 
         s.addMessage(buffer, {
             time: Date.now(),
@@ -64,7 +56,7 @@ describe('/roll command', () => {
             tags: { msgid: 'roll-msgid' },
         });
 
-        let messages = buffer.getMessages();
+        messages = buffer.getMessages();
         expect(messages).toHaveLength(1);
         expect(messages[0].is_pending).toBe(false);
         expect(messages[0].irc_id).toBe('roll-msgid');
@@ -83,34 +75,26 @@ describe('/roll command', () => {
         expect(buffer.replying_to).toBeNull();
     });
 
-    it('shows a local error and sends nothing for an invalid roll', () => {
+    it('sends nothing for invalid, empty, or /dice input', () => {
         const actionSpy = jest.spyOn(network.ircClient, 'action').mockImplementation(() => {});
         const addMessageSpy = jest.spyOn(s, 'addMessage');
 
         s.$emit('input.raw', '/roll abc', { network, buffer });
 
         expect(actionSpy).not.toHaveBeenCalled();
-        const errorCall = addMessageSpy.mock.calls.find((call) => call[1].type === 'error');
+        let errorCall = addMessageSpy.mock.calls.find((call) => call[1].type === 'error');
         expect(errorCall).toBeTruthy();
         expect(errorCall[1].message).toBe('dice_invalid');
-    });
 
-    it('reports an empty roll differently from an invalid one', () => {
-        const actionSpy = jest.spyOn(network.ircClient, 'action').mockImplementation(() => {});
-        const addMessageSpy = jest.spyOn(s, 'addMessage');
-
+        addMessageSpy.mockClear();
         s.$emit('input.raw', '/roll', { network, buffer });
 
         expect(actionSpy).not.toHaveBeenCalled();
-        const errorCall = addMessageSpy.mock.calls.find((call) => call[1].type === 'error');
+        errorCall = addMessageSpy.mock.calls.find((call) => call[1].type === 'error');
         expect(errorCall).toBeTruthy();
         expect(errorCall[1].message).toBe('dice_invalid_empty');
-    });
 
-    it('no longer handles /dice', () => {
-        const actionSpy = jest.spyOn(network.ircClient, 'action').mockImplementation(() => {});
         const rawSpy = jest.spyOn(network.ircClient, 'raw').mockImplementation(() => {});
-
         s.$emit('input.raw', '/dice 20', { network, buffer });
 
         expect(actionSpy).not.toHaveBeenCalled();

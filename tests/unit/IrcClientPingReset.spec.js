@@ -5,14 +5,14 @@ describe('IRC ping timeout throttling', () => {
         jest.restoreAllMocks();
     });
 
-    test('coalesces timeout resets while events are arriving', () => {
+    test('coalesces resets and wraps a newly assigned reset function', () => {
         const now = jest.spyOn(Date, 'now');
         now.mockReturnValue(1000);
-        const original = jest.fn();
-        const client = { resetPingTimeoutTimer: original };
+        let original = jest.fn();
+        let client = { resetPingTimeoutTimer: original };
 
         throttlePingTimeoutReset(client, 1000);
-        const throttled = client.resetPingTimeoutTimer;
+        let throttled = client.resetPingTimeoutTimer;
 
         throttled();
         throttled();
@@ -25,12 +25,10 @@ describe('IRC ping timeout throttling', () => {
         now.mockReturnValue(2000);
         throttled();
         expect(original).toHaveBeenCalledTimes(2);
-    });
 
-    test('wraps a newly assigned reset function after reconnect', () => {
-        const now = jest.spyOn(Date, 'now');
         now.mockReturnValue(1000);
-        const client = { resetPingTimeoutTimer: jest.fn() };
+        original = jest.fn();
+        client = { resetPingTimeoutTimer: original };
 
         throttlePingTimeoutReset(client, 1000);
         const firstWrapper = client.resetPingTimeoutTimer;

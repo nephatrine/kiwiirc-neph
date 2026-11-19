@@ -88,47 +88,70 @@ describe('Welcome account tabs', () => {
         return undefined;
     }
 
-    it('shows anonymous and account until a probe says otherwise', () => {
-        comp.serverInfo = null;
-        expect(comp.showAnonymousTab).toBe(true);
-        expect(comp.showAccountTab).toBe(true);
-        expect(comp.showRegisterTab).toBe(false);
-    });
+    it('derives tab visibility from the probe', () => {
+        const cases = [
+            {
+                name: 'no probe',
+                info: null,
+                anonymous: true,
+                account: true,
+                register: false,
+            },
+            {
+                name: 'sasl offered',
+                info: { caps: { sasl: 'PLAIN' }, isupport: {} },
+                anonymous: true,
+                account: true,
+                register: false,
+            },
+            {
+                name: 'valueless sasl',
+                info: { caps: { sasl: '' }, isupport: {} },
+                anonymous: true,
+                account: true,
+                register: false,
+            },
+            {
+                name: 'sasl absent',
+                info: { caps: { 'draft/account-registration': '' }, isupport: {} },
+                anonymous: true,
+                account: false,
+                register: false,
+            },
+            {
+                name: 'account required',
+                info: {
+                    caps: { sasl: 'PLAIN' },
+                    isupport: { 'DRAFT/ACCOUNTREQUIRED': '' },
+                },
+                anonymous: false,
+                account: true,
+                register: false,
+            },
+            {
+                name: 'account required with registration only',
+                info: {
+                    caps: { 'draft/account-registration': '' },
+                    isupport: { 'DRAFT/ACCOUNTREQUIRED': '' },
+                },
+                anonymous: false,
+                account: true,
+                register: false,
+            },
+        ];
 
-    it('keeps both tabs when the probe saw sasl', () => {
-        comp.serverInfo = { caps: { sasl: 'PLAIN' }, isupport: {} };
-        expect(comp.showAnonymousTab).toBe(true);
-        expect(comp.showAccountTab).toBe(true);
-    });
-
-    it('treats a valueless sasl cap as offered', () => {
-        comp.serverInfo = { caps: { sasl: '' }, isupport: {} };
-        expect(comp.showAccountTab).toBe(true);
-    });
-
-    it('hides the account tab when the probe affirmatively lacks sasl', () => {
-        comp.serverInfo = { caps: { 'draft/account-registration': '' }, isupport: {} };
-        expect(comp.showAnonymousTab).toBe(true);
-        expect(comp.showAccountTab).toBe(false);
-    });
-
-    it('hides the anonymous tab on draft/ACCOUNTREQUIRED', () => {
-        comp.serverInfo = {
-            caps: { sasl: 'PLAIN' },
-            isupport: { 'DRAFT/ACCOUNTREQUIRED': '' },
-        };
-        expect(comp.showAnonymousTab).toBe(false);
-        expect(comp.showAccountTab).toBe(true);
-    });
-
-    it('falls back to the account tab when nothing else is offered', () => {
-        comp.serverInfo = {
-            caps: { 'draft/account-registration': '' },
-            isupport: { 'DRAFT/ACCOUNTREQUIRED': '' },
-        };
-        expect(comp.showAnonymousTab).toBe(false);
-        expect(comp.showRegisterTab).toBe(false);
-        expect(comp.showAccountTab).toBe(true);
+        cases.forEach((testCase) => {
+            comp.serverInfo = testCase.info;
+            expect({
+                anonymous: comp.showAnonymousTab,
+                account: comp.showAccountTab,
+                register: comp.showRegisterTab,
+            }).toEqual({
+                anonymous: testCase.anonymous,
+                account: testCase.account,
+                register: testCase.register,
+            });
+        });
     });
 
     it('defaults new users to the account tab when available', () => {
@@ -157,20 +180,21 @@ describe('Welcome account tabs', () => {
         expect(comp.activeTab).toBe('register');
     });
 
-    it('defaults the account nick placeholder from the account, stripping @', () => {
-        comp.tabs.account.account = 'USER@TAG';
-        expect(comp.accountNickSuggestion).toBe('USER');
-        // The override stays empty: the suggestion is only a placeholder
-        expect(comp.tabs.account.nick).toBe('');
-    });
+    it('derives the account nick suggestion by stripping suffixes', () => {
+        const cases = [
+            ['USER@TAG', 'USER'],
+            ['USER/NETWORK', 'USER'],
+            ['USER/NETWORK@CLIENT', 'USER'],
+            ['USER@CLIENT/NETWORK', 'USER'],
+        ];
 
-    it('strips network and client suffixes from the account', () => {
-        comp.tabs.account.account = 'USER/NETWORK';
-        expect(comp.accountNickSuggestion).toBe('USER');
-        comp.tabs.account.account = 'USER/NETWORK@CLIENT';
-        expect(comp.accountNickSuggestion).toBe('USER');
-        comp.tabs.account.account = 'USER@CLIENT/NETWORK';
-        expect(comp.accountNickSuggestion).toBe('USER');
+        cases.forEach(([account, expected]) => {
+            comp.tabs.account.account = account;
+            expect(comp.accountNickSuggestion).toBe(expected);
+        });
+
+        // The suggestion is only a placeholder, not an override.
+        expect(comp.tabs.account.nick).toBe('');
     });
 
     it('lets an empty override fall back to the account name', () => {
@@ -273,16 +297,13 @@ describe('Welcome account tabs', () => {
         expect(tokens).not.toContain('new-password');
     });
 
-    it('warns about anonymous limits while accounts are offered', async() => {
+    it('shows the anonymous warning only while accounts are offered', async() => {
         comp.serverInfo = null;
         comp.activeTab = 'anonymous';
         await comp.$nextTick();
         expect(comp.$el.querySelector('.kiwi-welcome-anonymous-warning')).not.toBe(null);
-    });
 
-    it('hides the anonymous warning once accounts are gone', async() => {
         comp.serverInfo = { caps: {}, isupport: {} };
-        comp.activeTab = 'anonymous';
         await comp.$nextTick();
         expect(comp.$el.querySelector('.kiwi-welcome-anonymous-warning')).toBe(null);
     });
@@ -342,22 +363,18 @@ describe('Welcome account tabs', () => {
         expect(inputByLabel('account_name').placeholder).toBeUndefined();
     });
 
-    it('focuses the account input on the register tab with custom names', async() => {
-        comp.serverInfo = CUSTOM_REG_INFO;
-        comp.activeTab = 'register';
-        await comp.$nextTick();
-        await comp.$nextTick();
-        const nameInput = inputByLabel('account_name').$el.querySelector('input');
-        expect(document.activeElement).toBe(nameInput);
-    });
+    it('focuses the account input on the register tab', async() => {
+        const expectFocus = async(info) => {
+            comp.serverInfo = info;
+            comp.activeTab = 'register';
+            await comp.$nextTick();
+            await comp.$nextTick();
+            const nameInput = inputByLabel('account_name').$el.querySelector('input');
+            expect(document.activeElement).toBe(nameInput);
+        };
 
-    it('focuses the account input on the register tab without custom names', async() => {
-        comp.serverInfo = REG_INFO;
-        comp.activeTab = 'register';
-        await comp.$nextTick();
-        await comp.$nextTick();
-        const nameInput = inputByLabel('account_name').$el.querySelector('input');
-        expect(document.activeElement).toBe(nameInput);
+        await expectFocus(REG_INFO);
+        await expectFocus(CUSTOM_REG_INFO);
     });
 
     it('collapses the advanced fields behind a toggle', async() => {
@@ -578,22 +595,12 @@ describe('Welcome account tabs', () => {
         expect(comp.effectiveNick).toBe('user');
     });
 
-    it('keeps a configured greeting when the probe reports a network name', async() => {
+    it('keeps a configured greeting and probe icon', async() => {
         s.settings.startupOptions = { greetingText: 'NephIRC' };
         comp.serverInfo = { isupport: { NETWORK: 'Libera.Chat' } };
         await comp.$nextTick();
         expect(comp.greetingText).toBe('NephIRC');
-    });
 
-    it('falls back to the network name when no greeting is configured', async() => {
-        s.settings.startupOptions = {};
-        comp.serverInfo = { isupport: { NETWORK: 'Libera.Chat' } };
-        await comp.$nextTick();
-        expect(comp.greetingText).toBe('welcome_to_network');
-    });
-
-    it('keeps the probe icon when a greeting is configured', async() => {
-        s.settings.startupOptions = { greetingText: 'NephIRC' };
         comp.serverInfo = {
             isupport: {
                 'DRAFT/ICON': 'https://example.com/icon-{size}.png',
@@ -602,5 +609,12 @@ describe('Welcome account tabs', () => {
         await comp.$nextTick();
         expect(comp.greetingText).toBe('NephIRC');
         expect(comp.serverIcon).toBe('https://example.com/icon-64.png');
+    });
+
+    it('falls back to the network name when no greeting is configured', async() => {
+        s.settings.startupOptions = {};
+        comp.serverInfo = { isupport: { NETWORK: 'Libera.Chat' } };
+        await comp.$nextTick();
+        expect(comp.greetingText).toBe('welcome_to_network');
     });
 });

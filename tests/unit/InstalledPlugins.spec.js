@@ -23,7 +23,7 @@ describe('installed desktop plugins', () => {
         s.$destroy();
     });
 
-    test('converts a desktop descriptor into a plugin entry', () => {
+    test('converts descriptors and merges them after configured plugins', () => {
         const plugin = pluginFromDescriptor({
             id: 'my-plugin-abcd1234',
             name: 'My Plugin',
@@ -41,49 +41,39 @@ describe('installed desktop plugins', () => {
             description: 'Does a thing',
             version: '2.0.0',
         });
-    });
 
-    test('merges installed plugins after configured plugins', () => {
         const plugins = mergeInstalledPlugins(s, [{
             id: 'my-plugin-abcd1234',
             name: 'My Plugin',
             url: 'kiwi-plugin://my-plugin-abcd1234/plugin.js',
         }]);
 
-        expect(plugins.map((plugin) => plugin.name)).toEqual([
+        expect(plugins.map((entry) => entry.name)).toEqual([
             'Built-in',
             DESKTOP_PLUGIN_PREFIX + 'my-plugin-abcd1234',
         ]);
         expect(s.settings.plugins).toBe(plugins);
     });
 
-    test('replaces previous installed entries when refreshing', () => {
+    test('replaces installed entries on refresh and removes them when gone', () => {
         mergeInstalledPlugins(s, [{
             id: 'first-abcd1234',
             name: 'First',
             url: 'kiwi-plugin://first-abcd1234/plugin.js',
         }]);
 
-        const plugins = mergeInstalledPlugins(s, [{
+        let plugins = mergeInstalledPlugins(s, [{
             id: 'second-abcd1234',
             name: 'Second',
             url: 'kiwi-plugin://second-abcd1234/plugin.js',
         }]);
 
-        expect(plugins.map((plugin) => plugin.displayName || plugin.name))
+        expect(plugins.map((entry) => entry.displayName || entry.name))
             .toEqual(['Built-in', 'Second']);
-    });
 
-    test('removes installed entries when none are returned', () => {
-        mergeInstalledPlugins(s, [{
-            id: 'my-plugin-abcd1234',
-            name: 'My Plugin',
-            url: 'kiwi-plugin://my-plugin-abcd1234/plugin.js',
-        }]);
+        plugins = mergeInstalledPlugins(s, []);
 
-        const plugins = mergeInstalledPlugins(s, []);
-
-        expect(plugins.map((plugin) => plugin.name)).toEqual(['Built-in']);
+        expect(plugins.map((entry) => entry.name)).toEqual(['Built-in']);
     });
 
     test('ignores duplicate or malformed descriptors', () => {

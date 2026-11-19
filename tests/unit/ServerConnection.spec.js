@@ -9,7 +9,7 @@ jest.mock('sockjs-client', () => {
 import { createChannelConstructor } from '@/libs/ServerConnection';
 
 describe('ServerConnection channel scoping', () => {
-    test('does not reuse a channel from a different gateway address', () => {
+    test('scopes channels by gateway address and network id', () => {
         const wrapperA = createChannelConstructor('http://gateway-a.test/', '', 1);
         const wrapperB = createChannelConstructor('http://gateway-b.test/', '', 1);
 
@@ -17,9 +17,7 @@ describe('ServerConnection channel scoping', () => {
         const channelB = wrapperB({ host: 'irc.example.com', port: 6667 });
 
         expect(channelA).not.toBe(channelB);
-    });
 
-    test('keeps probe channels clear of network channel IDs', () => {
         const addr = 'http://gateway-probe.test/';
         const probeWrapper = createChannelConstructor(addr, '', undefined);
         const networkWrapper = createChannelConstructor(addr, '', 1);

@@ -2,36 +2,26 @@ import * as IrcdDiffs from '@/helpers/IrcdDiffs';
 
 describe('IrcdDiffs.js', () => {
     describe('extbanAccount', () => {
-        it('should support ACCOUNTEXTBAN token', () => {
-            const network = {
+        it('should resolve the account extban for each ircd dialect', () => {
+            expect(IrcdDiffs.extbanAccount({
                 ircd: '',
                 supports: (name) => (name === 'ACCOUNTEXTBAN' ? '$,a' : ''),
-            };
-            expect(IrcdDiffs.extbanAccount(network)).toBe('$a');
-        });
+            })).toBe('$a');
 
-        it('should fallback to InspIRCd R type', () => {
-            const network = {
+            expect(IrcdDiffs.extbanAccount({
                 ircd: 'InspIRCd-2.0',
                 supports: (name) => (name === 'EXTBAN' ? '~,qjncrRa' : ''),
-            };
-            expect(IrcdDiffs.extbanAccount(network)).toBe('~R');
-        });
+            })).toBe('~R');
 
-        it('should fallback to default a type', () => {
-            const network = {
+            expect(IrcdDiffs.extbanAccount({
                 ircd: 'UnrealIRCd-4.0',
                 supports: (name) => (name === 'EXTBAN' ? '~,qjncrRa' : ''),
-            };
-            expect(IrcdDiffs.extbanAccount(network)).toBe('~a');
-        });
+            })).toBe('~a');
 
-        it('should return empty string if no extban support', () => {
-            const network = {
+            expect(IrcdDiffs.extbanAccount({
                 ircd: 'generic',
                 supports: () => '',
-            };
-            expect(IrcdDiffs.extbanAccount(network)).toBe('');
+            })).toBe('');
         });
     });
 });

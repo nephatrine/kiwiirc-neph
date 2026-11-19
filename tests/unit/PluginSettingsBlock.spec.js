@@ -40,8 +40,8 @@ describe('PluginSettingsBlock', () => {
         return vm.$children[0];
     }
 
-    it('renders the title and passes the active network to network blocks', () => {
-        const Child = {
+    it('renders the title, network props, and registered props', () => {
+        let Child = {
             props: ['network', 'pluginProps'],
             render(h) {
                 const networkName = this.network ? this.network.name : 'none';
@@ -55,12 +55,28 @@ describe('PluginSettingsBlock', () => {
         };
         const network = { name: 'TestNet' };
 
-        const comp = mountBlock(makeBlock(Child), network);
+        let comp = mountBlock(makeBlock(Child), network);
 
         expect(comp.$el.classList.contains('kiwi-appsettings-plugin-block')).toBe(true);
         expect(comp.$el.querySelector('h3').textContent).toBe('Plugin Block');
         expect(comp.$el.querySelector('.plugin-block-content').textContent)
             .toBe('TestNet|TestNet');
+
+        vm.$destroy();
+        vm.$el.remove();
+        vm = null;
+
+        Child = {
+            props: ['extra'],
+            render(h) {
+                return h('div', { class: 'plugin-block-content' }, [this.extra]);
+            },
+        };
+
+        comp = mountBlock(makeBlock(Child, 'Props', { extra: 'Extra value' }));
+
+        expect(comp.$el.querySelector('.plugin-block-content').textContent)
+            .toBe('Extra value');
     });
 
     it('renders general blocks without a network', () => {
@@ -79,19 +95,5 @@ describe('PluginSettingsBlock', () => {
         expect(comp.$el.querySelector('h3')).toBeNull();
         expect(comp.$el.querySelector('.plugin-block-content').textContent)
             .toBe('none|0');
-    });
-
-    it('passes registered props to the block component', () => {
-        const Child = {
-            props: ['extra'],
-            render(h) {
-                return h('div', { class: 'plugin-block-content' }, [this.extra]);
-            },
-        };
-
-        const comp = mountBlock(makeBlock(Child, 'Props', { extra: 'Extra value' }));
-
-        expect(comp.$el.querySelector('.plugin-block-content').textContent)
-            .toBe('Extra value');
     });
 });

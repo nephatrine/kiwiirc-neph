@@ -3,35 +3,26 @@ import render from '@/libs/renderers/Html';
 import EmojiText from '@/components/utils/EmojiText';
 
 describe('Emoji text wrapping', () => {
-    it('wraps known native emoji with their primary shortcode', () => {
+    it('wraps known native emoji and escapes surrounding text', () => {
         expect(wrapEmojiText('👍')).toBe(
             '<span class="kiwi-emoji" title=":thumbsup:">👍</span>'
         );
         expect(wrapEmojiText('⚡️')).toBe(
             '<span class="kiwi-emoji" title=":zap:">⚡️</span>'
         );
-    });
-
-    it('wraps a known ZWJ sequence as one unit', () => {
         expect(wrapEmojiText('👨‍👩‍👦')).toBe(
             '<span class="kiwi-emoji" title=":family_man_woman_boy:">👨‍👩‍👦</span>'
         );
-    });
-
-    it('does not wrap skin-tone variants or unqualified forms', () => {
         expect(wrapEmojiText('👍🏽')).toBe('👍🏽');
         expect(wrapEmojiText('❤')).toBe('❤');
         expect(wrapEmojiText('⚡')).toBe('⚡');
-    });
-
-    it('escapes surrounding text and leaves unknown emoji untouched', () => {
         expect(wrapEmojiText('<👍>')).toBe(
             '&lt;<span class="kiwi-emoji" title=":thumbsup:">👍</span>&gt;'
         );
         expect(wrapEmojiText('👍🏽')).not.toContain('kiwi-emoji');
     });
 
-    it('wraps converted shortcodes with the typed shortcode', () => {
+    it('wraps converted and rendered native emoji', () => {
         expect(blockToHtml({
             content: ':+1:',
             meta: {
@@ -39,55 +30,40 @@ describe('Emoji text wrapping', () => {
                 shortcode: '+1',
             },
         })).toBe('<span class="kiwi-emoji" title=":+1:">👍</span>');
-    });
 
-    it('wraps native emoji through the message HTML renderer', () => {
-        const html = render([{
+        expect(render([{
             content: 'Hi 👍',
             styles: {},
             type: 'text',
-        }], true);
-
-        expect(html).toBe(
+        }], true)).toBe(
             'Hi <span class="kiwi-emoji" title=":thumbsup:">👍</span>'
         );
+        expect(render([{
+            content: 'Hi 👍🏽',
+            styles: {},
+            type: 'text',
+        }], true)).toBe('Hi 👍🏽');
     });
 
     it('wraps emoji in nick and channel links', () => {
-        const nick = render([{
+        expect(render([{
             content: '👍',
             styles: {},
             type: 'user',
             meta: { user: '👍' },
-        }], true);
-        const channel = render([{
+        }], true)).toContain('kiwi-emoji');
+        expect(render([{
             content: '#👍',
             styles: {},
             type: 'channel',
             meta: { channel: '#👍' },
-        }], true);
-
-        expect(nick).toContain('kiwi-emoji');
-        expect(channel).toContain('kiwi-emoji');
-    });
-
-    it('leaves unknown emoji unwrapped through the message HTML renderer', () => {
-        const html = render([{
-            content: 'Hi 👍🏽',
-            styles: {},
-            type: 'text',
-        }], true);
-
-        expect(html).toBe('Hi 👍🏽');
+        }], true)).toContain('kiwi-emoji');
     });
 
     it('uses the same wrapping in the EmojiText component', () => {
         expect(EmojiText.options.computed.html.call({ text: 'Hi 👍' })).toBe(
             'Hi <span class="kiwi-emoji" title=":thumbsup:">👍</span>'
         );
-    });
-
-    it('does not wrap unknown emoji in the EmojiText component', () => {
         expect(EmojiText.options.computed.html.call({ text: '👍🏽' })).toBe('👍🏽');
     });
 });

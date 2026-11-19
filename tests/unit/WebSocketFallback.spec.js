@@ -44,7 +44,7 @@ describe('IRCv3 WebSocket transport', () => {
         return transport;
     }
 
-    it('falls back to no subprotocol for legacy servers', () => {
+    it('falls back to no subprotocol and writes one line per frame', () => {
         let transport = connect();
 
         expect(FakeWebSocket.instances[0].protocols)
@@ -57,22 +57,12 @@ describe('IRCv3 WebSocket transport', () => {
 
         FakeWebSocket.instances[1].onopen();
         expect(transport.connected).toBe(true);
-    });
 
-    it('writes one IRC line per frame without trailing CRLF', () => {
-        connect();
+        FakeWebSocket.instances = [];
+        transport = connect();
         FakeWebSocket.instances[0].onopen();
-
-        let transport = new WsTransport({
-            host: 'irc.example.net',
-            port: 6697,
-            tls: true,
-            websocket_protocol: IRC_WEBSOCKET_PROTOCOL,
-        });
-        transport.connect();
-        FakeWebSocket.instances[1].onopen();
         transport.writeLine('NICK test');
 
-        expect(FakeWebSocket.instances[1].sent).toEqual(['NICK test']);
+        expect(FakeWebSocket.instances[0].sent).toEqual(['NICK test']);
     });
 });

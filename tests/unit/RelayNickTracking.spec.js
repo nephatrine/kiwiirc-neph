@@ -17,7 +17,7 @@ describe('relayed nick tracking', () => {
         s.$destroy();
     });
 
-    test('records relayed authors per buffer and keeps the map session-only', () => {
+    test('records relayed authors per buffer and ignores ordinary ones', () => {
         s.addMessage(buffer, {
             time: Date.now(),
             nick: 'nephatrine/bridged',
@@ -37,9 +37,7 @@ describe('relayed nick tracking', () => {
             item.name === '#channel'
         ));
         expect(exportedBuffer.relayNicks).toBeUndefined();
-    });
 
-    test('does not record ordinary message authors', () => {
         s.addMessage(buffer, {
             time: Date.now(),
             nick: 'ordinary',
@@ -49,5 +47,7 @@ describe('relayed nick tracking', () => {
         });
 
         expect(buffer.relayNicks.ORDINARY).toBeUndefined();
+        expect(buffer.relayNicks['NEPHATRINE/BRIDGED'])
+            .toBe('nephatrine/bridged');
     });
 });

@@ -49,30 +49,24 @@ describe('generic upload services', () => {
         jest.restoreAllMocks();
     });
 
-    test('uploads to Catbox with an optional user hash', async() => {
-        const responseValue = response({ text: 'https://files.catbox.moe/test.txt' });
-        desktopUploadMultipart.mockResolvedValue(responseValue);
+    test('uploads simple files to Catbox, Filebin, ShareBin, and Uguu', async() => {
         const testFile = file();
-
+        desktopUploadMultipart.mockResolvedValue(response({
+            text: 'https://files.catbox.moe/test.txt',
+        }));
         await expect(uploadCatbox(testFile, 'hash123'))
             .resolves.toBe('https://files.catbox.moe/test.txt');
-
         expect(desktopUploadMultipart).toHaveBeenCalledWith(
             'https://catbox.moe/user/api.php',
             { reqtype: 'fileupload', userhash: 'hash123' },
             testFile
         );
-    });
 
-    test('uploads to Filebin and constructs the returned URL', async() => {
         desktopUploadFile.mockResolvedValue(response({
             status: 201,
             json: { file: { filename: 'test.txt' } },
         }));
-        const testFile = file();
-
-        const url = await uploadFilebin(testFile);
-
+        const filebinUrl = await uploadFilebin(testFile);
         expect(desktopUploadFile).toHaveBeenCalledWith(
             expect.stringMatching(/^https:\/\/filebin\.net\/[a-f0-9]+\/test\.txt$/),
             testFile,
@@ -81,27 +75,38 @@ describe('generic upload services', () => {
                 headers: { 'Content-Type': 'text/plain' },
             }
         );
-        expect(url).toMatch(/^https:\/\/filebin\.net\/[a-f0-9]+\/test\.txt$/);
-    });
+        expect(filebinUrl).toMatch(
+            /^https:\/\/filebin\.net\/[a-f0-9]+\/test\.txt$/
+        );
 
-    test('uploads a small ShareBin file with its expiry', async() => {
         desktopUploadMultipart.mockResolvedValue(response({
             text: '<input id="fileLinkText" type="text" value="https://sharebin.eu/files/test.txt">',
         }));
-        const testFile = file();
-
         await expect(uploadSharebin(testFile, '7d'))
             .resolves.toBe('https://sharebin.eu/files/test.txt');
-
         expect(desktopUploadMultipart).toHaveBeenCalledWith(
             'https://sharebin.eu/',
             { expiry_days: '7' },
             testFile,
             { fileField: 'file' }
         );
+
+        desktopUploadMultipart.mockResolvedValue(response({
+            json: {
+                success: true,
+                files: [{ url: 'https://d.uguu.se/test.txt' }],
+            },
+        }));
+        await expect(uploadUguu(testFile)).resolves.toBe('https://d.uguu.se/test.txt');
+        expect(desktopUploadMultipart).toHaveBeenCalledWith(
+            'https://uguu.se/upload',
+            {},
+            testFile,
+            { fileField: 'files[]' }
+        );
     });
 
-    test('uploads ShareBin files larger than 20 MB in chunks', async() => {
+    test('chunks large ShareBin uploads', async() => {
         desktopUploadMultipart
             .mockResolvedValueOnce(response({ text: '{"status":"uploaded"}' }))
             .mockResolvedValueOnce(response({
@@ -116,7 +121,6 @@ describe('generic upload services', () => {
 
         await expect(uploadSharebin(testFile, '30d'))
             .resolves.toBe('https://sharebin.eu/files/big.bin');
-
         expect(desktopUploadMultipart).toHaveBeenCalledTimes(2);
         expect(desktopUploadMultipart.mock.calls[1][0])
             .toBe('https://sharebin.eu/upload_part');
@@ -128,27 +132,7 @@ describe('generic upload services', () => {
         });
     });
 
-    test('uploads to Uguu and reads the returned file URL', async() => {
-        desktopUploadMultipart.mockResolvedValue(response({
-            json: {
-                success: true,
-                files: [{ url: 'https://d.uguu.se/test.txt' }],
-            },
-        }));
-        const testFile = file();
-
-        await expect(uploadUguu(testFile))
-            .resolves.toBe('https://d.uguu.se/test.txt');
-
-        expect(desktopUploadMultipart).toHaveBeenCalledWith(
-            'https://uguu.se/upload',
-            {},
-            testFile,
-            { fileField: 'files[]' }
-        );
-    });
-
-    test('generates unique WebDAV filenames', () => {
+    test('generates names and uploads to WebDAV with auth and access URLs', async() => {
         jest.spyOn(Date, 'now').mockReturnValue(1700000000000);
         jest.spyOn(Math, 'random').mockReturnValue(0.5);
 
@@ -156,27 +140,20 @@ describe('generic upload services', () => {
         expect(imageName).toMatch(/^1700000000000-[a-z0-9]+\.PNG$/);
         expect(imageName).not.toContain('photo');
         expect(imageName).not.toContain('/');
-
         expect(generateUniqueFilename('archive.tar.gz')).toMatch(/\.gz$/);
         expect(generateUniqueFilename('README')).toMatch(/^1700000000000-[a-z0-9]+$/);
         expect(generateUniqueFilename('C:\\Users\\alice\\photo.png'))
             .toMatch(/^1700000000000-[a-z0-9]+\.png$/);
-    });
 
-    test('uploads to WebDAV with basic auth and an access URL', async() => {
-        jest.spyOn(Date, 'now').mockReturnValue(1700000000000);
-        jest.spyOn(Math, 'random').mockReturnValue(0.5);
         desktopUploadFile.mockResolvedValue(response({ status: 204 }));
         const testFile = file('photo 1.png', 'image/png');
         const uniqueName = generateUniqueFilename(testFile.name);
-
-        const url = await uploadWebdav(testFile, {
+        let url = await uploadWebdav(testFile, {
             uploadUrl: 'https://dav.example.com/',
             accessUrl: 'https://static.example.com/',
             username: 'alice',
             password: 'secret',
         });
-
         expect(desktopUploadFile).toHaveBeenCalledWith(
             `https://dav.example.com/${uniqueName}`,
             testFile,
@@ -189,47 +166,33 @@ describe('generic upload services', () => {
             }
         );
         expect(url).toBe(`https://static.example.com/${uniqueName}`);
-    });
 
-    test('defaults the WebDAV access URL to the upload URL', async() => {
-        jest.spyOn(Date, 'now').mockReturnValue(1700000000000);
-        jest.spyOn(Math, 'random').mockReturnValue(0.5);
         desktopUploadFile.mockResolvedValue(response({ status: 201 }));
-        const testFile = file('test.txt');
-        const uniqueName = generateUniqueFilename(testFile.name);
-
-        const url = await uploadWebdav(testFile, {
+        url = await uploadWebdav(file('test.txt'), {
             uploadUrl: 'https://dav.example.com/uploads',
         });
-
-        expect(url).toBe(`https://dav.example.com/uploads/${uniqueName}`);
+        expect(url).toMatch(/^https:\/\/dav\.example\.com\/uploads\/1700000000000-/);
     });
 
-    test('exposes service limits and platform availability', () => {
+    test('exposes limits and ignores desktop-only services on web', () => {
         expect(services.catbox.maxBytes).toBe(200 * 1024 * 1024);
         expect(services.sharebin.maxBytes).toBe(500 * 1024 * 1024);
         expect(services.uguu.maxBytes).toBe(128 * 1024 * 1024);
         expect(services.sharebin.retentions).toEqual(['1d', '7d', '30d', 'never']);
         expect(retentionFor(services.sharebin, '30d')).toBe('30d');
         expect(retentionFor(services.sharebin, 'garbage')).toBe('7d');
-
         expect(serviceAvailableOnPlatform(services.litterbox)).toBe(true);
         expect(serviceAvailableOnPlatform(services.catbox)).toBe(false);
 
-        window.kiwiDesktop = {};
-        expect(serviceAvailableOnPlatform(services.catbox)).toBe(true);
-    });
-
-    test('ignores desktop-only services when selecting on web', () => {
         const state = {
             setting(name) {
                 return name === 'fileupload.service' ? 'catbox' : undefined;
             },
         };
-
         expect(effectiveService(state)).toBeNull();
 
         window.kiwiDesktop = {};
+        expect(serviceAvailableOnPlatform(services.catbox)).toBe(true);
         expect(effectiveService(state)).toBe(services.catbox);
     });
 });

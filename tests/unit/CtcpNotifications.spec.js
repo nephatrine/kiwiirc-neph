@@ -28,7 +28,7 @@ describe('CTCP notifications', () => {
         });
     });
 
-    it('does not notify, flash, or mark unread for CTCP messages', () => {
+    it('ignores CTCP messages but notifies for normal ones', () => {
         s.addMessage(buffer, {
             nick: '',
             message: '[CTCP Other reply] TIME Fri Oct 30 12:00:00 2026',
@@ -39,9 +39,7 @@ describe('CTCP notifications', () => {
         expect(notifications).toHaveLength(0);
         expect(titleFlashes).toHaveLength(0);
         expect(buffer.flags.unread || 0).toBe(0);
-    });
 
-    it('still notifies, flashes, and marks unread for normal messages', () => {
         s.addMessage(buffer, {
             nick: 'Other',
             message: 'hello',

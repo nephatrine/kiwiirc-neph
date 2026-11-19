@@ -105,16 +105,13 @@ describe('Desktop native HTTP transport', () => {
         expect(response.body.toString()).toBe('hello');
     });
 
-    it('follows a validated redirect', async() => {
-        const response = await request({ url: `${baseUrl}/redirect` }, policy());
-
+    it('follows redirects and scopes credentials and headers', async() => {
+        let response = await request({ url: `${baseUrl}/redirect` }, policy());
         expect(response.status).toBe(200);
         expect(response.body.toString()).toBe('hello');
-    });
 
-    it('strips credentials and bodies on cross-origin redirects', async() => {
         captured = null;
-        const response = await request({
+        response = await request({
             url: `${baseUrl}/redirect-cross-origin`,
             method: 'POST',
             headers: {
@@ -125,20 +122,14 @@ describe('Desktop native HTTP transport', () => {
             },
             body: Buffer.from('secret body'),
         }, policy());
-
         expect(response.status).toBe(200);
-        expect(captured).toMatchObject({
-            method: 'GET',
-            body: '',
-        });
+        expect(captured).toMatchObject({ method: 'GET', body: '' });
         expect(captured.headers.authorization).toBeUndefined();
         expect(captured.headers.cookie).toBeUndefined();
         expect(captured.headers.host).not.toBe('evil.example');
-    });
 
-    it('keeps credentials on same-origin redirects', async() => {
         captured = null;
-        const response = await request({
+        response = await request({
             url: `${baseUrl}/redirect-same-origin`,
             method: 'POST',
             headers: {
@@ -147,68 +138,42 @@ describe('Desktop native HTTP transport', () => {
             },
             body: Buffer.from('same origin body'),
         }, policy());
-
         expect(response.status).toBe(200);
         expect(captured).toMatchObject({
             method: 'POST',
             body: 'same origin body',
         });
         expect(captured.headers.authorization).toBe('Basic secret');
-    });
 
-    it('does not forward a caller-supplied Host header', async() => {
         captured = null;
         await request({
             url: `${captureBaseUrl}/capture`,
-            headers: {
-                Host: 'evil.example',
-            },
+            headers: { Host: 'evil.example' },
         }, policy());
-
         expect(captured.headers.host).not.toBe('evil.example');
     });
 
-    it('rejects loopback access when private networks are disabled', async() => {
+    it('rejects private networks, oversized/error responses, and closed connections', async() => {
         await expect(request({ url: `${baseUrl}/ok` }, policy({
             allowPrivateNetworks: false,
         }))).rejects.toThrow('private network access is disabled');
-    });
 
-    it('rejects responses larger than the configured limit', async() => {
         await expect(request({ url: `${baseUrl}/ok` }, policy({
             maxResponseBytes: 1,
         }))).rejects.toThrow('response is too large');
-    });
 
-    it('rejects HTTP error statuses before reading the body', async() => {
         await expect(request({
             url: `${baseUrl}/bad-status`,
             failOnHttpError: true,
-        }, policy())).rejects.toMatchObject({
-            statusCode: 400,
-        });
-    });
+        }, policy())).rejects.toMatchObject({ statusCode: 400 });
 
-    it('rejects unexpected content types before reading the body', async() => {
         await expect(request({
             url: `${baseUrl}/audio`,
             acceptContentTypes: ['text/html'],
         }, policy())).rejects.toMatchObject({
             code: 'ERR_UNEXPECTED_CONTENT_TYPE',
         });
-    });
 
-    it('accepts structured JSON content types', async() => {
-        const response = await request({
-            url: `${baseUrl}/vendor-json`,
-            acceptContentTypes: ['application/*+json'],
-        }, policy());
-
-        expect(response.status).toBe(200);
-        expect(response.body.toString()).toBe('{}');
-    });
-
-    it('rejects when the connection closes before a response', async() => {
         const closingServer = net.createServer((socket) => {
             socket.destroy();
         });
@@ -227,5 +192,15 @@ describe('Desktop native HTTP transport', () => {
                 closingServer.close(resolve);
             });
         }
+    });
+
+    it('accepts structured JSON content types', async() => {
+        const response = await request({
+            url: `${baseUrl}/vendor-json`,
+            acceptContentTypes: ['application/*+json'],
+        }, policy());
+
+        expect(response.status).toBe(200);
+        expect(response.body.toString()).toBe('{}');
     });
 });

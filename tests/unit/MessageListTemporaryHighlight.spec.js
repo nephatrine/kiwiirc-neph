@@ -16,8 +16,8 @@ describe('MessageList temporary message highlight', () => {
         };
     }
 
-    test('highlights the focused message and clears after the timeout', () => {
-        const context = makeContext();
+    test('highlights the focused message, clears after the timeout, or immediately', () => {
+        let context = makeContext();
 
         MessageList.methods.highlightMessage.call(context, 42);
 
@@ -35,10 +35,8 @@ describe('MessageList temporary message highlight', () => {
 
         expect(context.highlighted_message_id).toBeNull();
         expect(context.highlight_timeout).toBeNull();
-    });
 
-    test('clears a temporary highlight immediately', () => {
-        const context = makeContext();
+        context = makeContext();
         MessageList.methods.highlightMessage.call(context, 7);
 
         MessageList.methods.clearTemporaryHighlight.call(context);

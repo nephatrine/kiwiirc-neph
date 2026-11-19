@@ -30,10 +30,10 @@ function makeTwitchNetwork() {
 }
 
 describe('Twitch channel prefixes', () => {
-    it('applies the current user modes from USERSTATE', () => {
-        const { s, network, self } = makeTwitchNetwork();
-        const buffer = s.addBuffer(network.id, '#channel');
-        const next = jest.fn();
+    it('applies USERSTATE modes and marks the channel owner from NAMES', async() => {
+        let { s, network, self } = makeTwitchNetwork();
+        let buffer = s.addBuffer(network.id, '#channel');
+        let next = jest.fn();
 
         theMiddleware(network, 'unknown command', {
             command: 'USERSTATE',
@@ -46,14 +46,12 @@ describe('Twitch channel prefixes', () => {
 
         expect(buffer.userModePrefix(self)).toBe('@+');
         expect(next).not.toHaveBeenCalled();
-    });
 
-    it('marks the channel owner from NAMES before they speak', async() => {
-        const { s, network } = makeTwitchNetwork();
+        ({ s, network } = makeTwitchNetwork());
         const client = network.ircClient;
         client.user.nick = 'TestNick';
         jest.spyOn(client, 'raw').mockImplementation(() => {});
-        const buffer = s.addBuffer(network.id, '#Streamer');
+        buffer = s.addBuffer(network.id, '#Streamer');
 
         const founder = s.addUser(network, { nick: 'Streamer' });
         s.addUserToBuffer(buffer, founder, []);

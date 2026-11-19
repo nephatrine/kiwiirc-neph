@@ -19,14 +19,12 @@ describe('auto-launch', () => {
         await fs.rm(tempDir, { recursive: true, force: true });
     });
 
-    it('quotes Linux desktop Exec paths', () => {
+    it('quotes Exec paths and builds the Linux autostart entry', () => {
         expect(escapeDesktopExec('/opt/Kiwi IRC/kiwiirc-desktop'))
             .toBe('"/opt/Kiwi IRC/kiwiirc-desktop"');
         expect(escapeDesktopExec('/opt/a%20b'))
             .toBe('"/opt/a%%20b"');
-    });
 
-    it('builds a Linux autostart entry', () => {
         const entry = buildLinuxAutostartEntry('/opt/Kiwi IRC/kiwiirc-desktop');
 
         expect(entry).toContain('[Desktop Entry]');
@@ -37,8 +35,8 @@ describe('auto-launch', () => {
         expect(entry).toContain('X-GNOME-Autostart-enabled=true');
     });
 
-    it('writes and removes the Linux autostart file', async() => {
-        const service = createAutoLaunchService({
+    it('writes and removes the Linux file, honoring APPIMAGE', async() => {
+        let service = createAutoLaunchService({
             app: {},
             platform: 'linux',
             execPath: '/opt/Kiwi IRC/kiwiirc-desktop',
@@ -61,10 +59,8 @@ describe('auto-launch', () => {
 
         await service.setEnabled(false);
         expect(await service.isEnabled()).toBe(false);
-    });
 
-    it('uses APPIMAGE as the Linux command path', async() => {
-        const service = createAutoLaunchService({
+        service = createAutoLaunchService({
             app: {},
             platform: 'linux',
             execPath: '/tmp/.mount/kiwiirc-desktop',
@@ -82,15 +78,15 @@ describe('auto-launch', () => {
             .toContain('Exec="/opt/KiwiIRC.AppImage" --hidden');
     });
 
-    it('uses Windows login item settings', async() => {
+    it('uses login item settings on Windows and macOS', async() => {
         let enabled = false;
-        const app = {
+        let app = {
             getLoginItemSettings: jest.fn(() => ({ openAtLogin: enabled })),
             setLoginItemSettings: jest.fn((settings) => {
                 enabled = settings.openAtLogin;
             }),
         };
-        const service = createAutoLaunchService({
+        let service = createAutoLaunchService({
             app,
             platform: 'win32',
             execPath: 'C:\\Program Files\\KiwiIRC\\KiwiIRC.exe',
@@ -105,17 +101,15 @@ describe('auto-launch', () => {
             args: ['--hidden'],
         });
         expect(await service.isEnabled()).toBe(true);
-    });
 
-    it('uses macOS openAsHidden', async() => {
-        let enabled = false;
-        const app = {
+        enabled = false;
+        app = {
             getLoginItemSettings: jest.fn(() => ({ openAtLogin: enabled })),
             setLoginItemSettings: jest.fn((settings) => {
                 enabled = settings.openAtLogin;
             }),
         };
-        const service = createAutoLaunchService({
+        service = createAutoLaunchService({
             app,
             platform: 'darwin',
             execPath: '/Applications/KiwiIRC.app',

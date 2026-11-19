@@ -158,15 +158,13 @@ describe('desktop theme installation', () => {
         expect(await listThemes(userDataDir)).toEqual([]);
     });
 
-    test('accepts a single wrapper folder and derives the name', async() => {
-        const archivePath = writeArchive([
+    test('accepts one wrapper folder and rejects other layouts', async() => {
+        const installed = await installTheme(userDataDir, writeArchive([
             {
                 name: 'my-theme/theme.css',
                 contents: ':root {}\n',
             },
-        ]);
-
-        const installed = await installTheme(userDataDir, archivePath);
+        ]));
 
         expect(installed.name).toBe('my-theme');
         expect(fs.existsSync(path.join(
@@ -174,22 +172,15 @@ describe('desktop theme installation', () => {
             installed.id,
             'theme.json'
         ))).toBe(true);
-    });
 
-    test('rejects archives without a supported theme.css location', async() => {
-        const archivePath = writeArchive([
+        await expect(installTheme(userDataDir, writeArchive([
             {
                 name: 'one/two/theme.css',
                 contents: ':root {}\n',
             },
-        ]);
+        ]))).rejects.toThrow('theme.css');
 
-        await expect(installTheme(userDataDir, archivePath))
-            .rejects.toThrow('theme.css');
-    });
-
-    test('rejects extra top-level entries around a wrapper folder', async() => {
-        const archivePath = writeArchive([
+        await expect(installTheme(userDataDir, writeArchive([
             {
                 name: 'my-theme/theme.css',
                 contents: ':root {}\n',
@@ -198,27 +189,19 @@ describe('desktop theme installation', () => {
                 name: 'assets/background.png',
                 contents: 'not really a png',
             },
-        ]);
-
-        await expect(installTheme(userDataDir, archivePath))
-            .rejects.toThrow('theme.css');
+        ]))).rejects.toThrow('theme.css');
     });
 
-    test('rejects archive path traversal', async() => {
-        const archivePath = writeArchive([
+    test('rejects traversal, symlinks, and encrypted entries', async() => {
+        await expect(installTheme(userDataDir, writeArchive([
             {
                 name: '../escape.css',
                 contents: 'bad',
             },
-        ]);
-
-        await expect(installTheme(userDataDir, archivePath))
-            .rejects.toThrow('unsafe path');
+        ]))).rejects.toThrow('unsafe path');
         expect(fs.existsSync(path.join(userDataDir, 'escape.css'))).toBe(false);
-    });
 
-    test('rejects symlink entries', async() => {
-        const archivePath = writeArchive([
+        await expect(installTheme(userDataDir, writeArchive([
             {
                 name: 'theme.css',
                 contents: ':root {}\n',
@@ -229,23 +212,15 @@ describe('desktop theme installation', () => {
                 versionMadeBy: (3 * 256) + 20,
                 externalAttributes: 0o120777 * (2 ** 16),
             },
-        ]);
+        ]))).rejects.toThrow('symlinks');
 
-        await expect(installTheme(userDataDir, archivePath))
-            .rejects.toThrow('symlinks');
-    });
-
-    test('rejects encrypted entries', async() => {
-        const archivePath = writeArchive([
+        await expect(installTheme(userDataDir, writeArchive([
             {
                 name: 'theme.css',
                 contents: ':root {}\n',
                 flags: 0x1,
             },
-        ]);
-
-        await expect(installTheme(userDataDir, archivePath))
-            .rejects.toThrow('Encrypted');
+        ]))).rejects.toThrow('Encrypted');
     });
 
     test('rejects invalid theme ids during uninstall', async() => {

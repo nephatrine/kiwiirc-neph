@@ -23,9 +23,9 @@ describe('WhoQueue', () => {
         jest.useRealTimers();
     });
 
-    it('sends one WHO at a time and throttles the next', () => {
-        const client = new FakeClient();
-        const queue = new WhoQueue(client, {
+    it('sends one WHO at a time and deduplicates targets', () => {
+        let client = new FakeClient();
+        let queue = new WhoQueue(client, {
             throttleMs: 1000,
             rateLimitMs: 5000,
         });
@@ -41,11 +41,9 @@ describe('WhoQueue', () => {
 
         expect(client.raw).toHaveBeenCalledTimes(2);
         expect(client.raw).toHaveBeenLastCalledWith('WHO', 'two');
-    });
 
-    it('deduplicates queued targets', () => {
-        const client = new FakeClient();
-        const queue = new WhoQueue(client, {
+        client = new FakeClient();
+        queue = new WhoQueue(client, {
             throttleMs: 1000,
             rateLimitMs: 5000,
         });
@@ -65,9 +63,9 @@ describe('WhoQueue', () => {
         });
     });
 
-    it('backs off after a rate limit and continues the queue', () => {
-        const client = new FakeClient();
-        const queue = new WhoQueue(client, {
+    it('backs off after a rate limit and resets on reconnect', () => {
+        let client = new FakeClient();
+        let queue = new WhoQueue(client, {
             throttleMs: 1000,
             rateLimitMs: 5000,
         });
@@ -86,6 +84,22 @@ describe('WhoQueue', () => {
         jest.advanceTimersByTime(1);
         expect(client.raw).toHaveBeenCalledTimes(2);
         expect(client.raw).toHaveBeenLastCalledWith('WHO', 'two');
+
+        client = new FakeClient();
+        queue = new WhoQueue(client, {
+            throttleMs: 1000,
+            rateLimitMs: 5000,
+        });
+
+        queue.who('one');
+        client.emit('connecting');
+        jest.advanceTimersByTime(5000);
+
+        expect(client.raw).toHaveBeenCalledTimes(1);
+
+        queue.who('two');
+        expect(client.raw).toHaveBeenCalledTimes(2);
+        expect(client.raw).toHaveBeenLastCalledWith('WHO', 'two');
     });
 
     it('uses WHOX when the network supports it', () => {
@@ -100,23 +114,5 @@ describe('WhoQueue', () => {
             'one',
             '%tcuhsnfdaor,7'
         );
-    });
-
-    it('resets on reconnect', () => {
-        const client = new FakeClient();
-        const queue = new WhoQueue(client, {
-            throttleMs: 1000,
-            rateLimitMs: 5000,
-        });
-
-        queue.who('one');
-        client.emit('connecting');
-        jest.advanceTimersByTime(5000);
-
-        expect(client.raw).toHaveBeenCalledTimes(1);
-
-        queue.who('two');
-        expect(client.raw).toHaveBeenCalledTimes(2);
-        expect(client.raw).toHaveBeenLastCalledWith('WHO', 'two');
     });
 });

@@ -11,24 +11,20 @@ describe('MessageList internal buffer trimming', () => {
         };
     }
 
-    test('force-trims an internal buffer before the first render', () => {
-        const context = makeContext(true);
+    test('force-trims internal buffers on mount and when switching', () => {
+        let context = makeContext(true);
 
         MessageList.created.call(context);
 
         expect(context.highlight_timeout).toBeNull();
         expect(context.buffer.trimMessages).toHaveBeenCalledWith(true);
-    });
 
-    test('does not force-trim a chat buffer on mount', () => {
-        const context = makeContext(false);
+        context = makeContext(false);
 
         MessageList.created.call(context);
 
         expect(context.buffer.trimMessages).not.toHaveBeenCalled();
-    });
 
-    test('force-trims an internal buffer when switching to it', () => {
         const newBuffer = {
             shouldTrimImmediately: () => true,
             trimMessages: jest.fn(),
@@ -39,7 +35,7 @@ describe('MessageList internal buffer trimming', () => {
             isMessageTrimming: false,
             scheduleTrim: jest.fn(),
         };
-        const context = {
+        const switchContext = {
             buffer: newBuffer,
             message_info_open: {},
             clearTemporaryHighlight: jest.fn(),
@@ -49,7 +45,7 @@ describe('MessageList internal buffer trimming', () => {
             scrollToBottom: jest.fn(),
         };
 
-        MessageList.watch.buffer.call(context, newBuffer, oldBuffer);
+        MessageList.watch.buffer.call(switchContext, newBuffer, oldBuffer);
 
         expect(newBuffer.trimMessages).toHaveBeenCalledWith(true);
     });
@@ -79,15 +75,13 @@ describe('MessageList internal buffer trimming', () => {
     }
 
     test('caps internal buffer rendering to its scrollback size', () => {
-        const result = MessageList.computed.filteredMessages.call(
+        let result = MessageList.computed.filteredMessages.call(
             makeFilteredContext(true)
         );
 
         expect(result.map((message) => message.id)).toEqual([3, 4]);
-    });
 
-    test('does not cap chat buffers in the rendered list', () => {
-        const result = MessageList.computed.filteredMessages.call(
+        result = MessageList.computed.filteredMessages.call(
             makeFilteredContext(false)
         );
 

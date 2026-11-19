@@ -18,7 +18,7 @@ describe('IRC casemapping', () => {
         state.resetState();
     });
 
-    test('uses rfc1459 casemapping for users and buffers', () => {
+    test('uses rfc1459 casemapping for users, buffers, and channel members', () => {
         const user = state.addUser(network.id, { nick: '[User]' });
         const sameUser = state.addUser(network.id, { nick: '{User}' });
 
@@ -27,13 +27,11 @@ describe('IRC casemapping', () => {
 
         const buffer = state.addBuffer(network.id, '#[Test]');
         expect(state.getBufferByName(network.id, '#{Test}')).toBe(buffer);
-    });
 
-    test('uses rfc1459 casemapping for channel member lookups', () => {
-        const buffer = state.addBuffer(network.id, '#test');
-        state.addUserToBuffer(buffer, { nick: '[User]' });
+        const channel = state.addBuffer(network.id, '#test');
+        state.addUserToBuffer(channel, { nick: '[User]' });
 
-        expect(buffer.hasNick('{User}')).toBe(true);
+        expect(channel.hasNick('{User}')).toBe(true);
     });
 
     test('respects ascii casemapping when advertised', () => {

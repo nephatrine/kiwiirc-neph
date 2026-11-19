@@ -15,9 +15,8 @@ function total(expression, rolls) {
 
 describe('Dice helpers', () => {
     describe('rollDice', () => {
-        it('rolls a NdM expression', () => {
-            const result = rollDice('3d6', queuedRng([1, 2, 3]));
-
+        it('supports NdM, dM, and Nd forms', () => {
+            let result = rollDice('3d6', queuedRng([1, 2, 3]));
             expect(result.ok).toBe(true);
             expect(result.expression).toBe('3d6');
             expect(result.total).toBe(6);
@@ -25,84 +24,60 @@ describe('Dice helpers', () => {
             expect(result.diceGroups[0].rolls).toEqual([1, 2, 3]);
             expect(result.diceGroups[0].kept).toEqual([1, 2, 3]);
             expect(result.diceGroups[0].dropped).toEqual([]);
-        });
 
-        it('supports the dM shorthand', () => {
-            const result = rollDice('d20', queuedRng([12]));
-
+            result = rollDice('d20', queuedRng([12]));
             expect(result.ok).toBe(true);
             expect(result.expression).toBe('1d20');
             expect(result.total).toBe(12);
             expect(result.diceGroups[0].count).toBe(1);
             expect(result.diceGroups[0].sides).toBe(20);
-        });
 
-        it('supports the Nd shorthand with a default of 6 sides', () => {
-            const result = rollDice('4d', queuedRng([1, 2, 3, 4]));
-
+            result = rollDice('4d', queuedRng([1, 2, 3, 4]));
             expect(result.ok).toBe(true);
             expect(result.expression).toBe('4d6');
             expect(result.total).toBe(10);
         });
 
-        it('keeps the highest dice with k', () => {
-            const result = rollDice('4d6k3', queuedRng([6, 5, 4, 3]));
-
+        it('supports keep and drop modifiers', () => {
+            let result = rollDice('4d6k3', queuedRng([6, 5, 4, 3]));
             expect(result.expression).toBe('4d6k3');
             expect(result.total).toBe(15);
             expect(result.diceGroups[0].kept).toEqual([6, 5, 4]);
             expect(result.diceGroups[0].dropped).toEqual([3]);
-        });
 
-        it('normalises kh to k', () => {
             expect(rollDice('4d6kh3', queuedRng([1, 2, 3, 4])).expression).toBe('4d6k3');
-        });
 
-        it('keeps the lowest dice with kl', () => {
-            const result = rollDice('4d6kl1', queuedRng([6, 5, 4, 3]));
-
+            result = rollDice('4d6kl1', queuedRng([6, 5, 4, 3]));
             expect(result.expression).toBe('4d6kl1');
             expect(result.total).toBe(3);
             expect(result.diceGroups[0].kept).toEqual([3]);
             expect(result.diceGroups[0].dropped).toEqual([6, 5, 4]);
-        });
 
-        it('drops the lowest dice with dl (and the bare d shorthand)', () => {
-            const result = rollDice('4d6d1', queuedRng([6, 5, 4, 3]));
-
+            result = rollDice('4d6d1', queuedRng([6, 5, 4, 3]));
             expect(result.expression).toBe('4d6dl1');
             expect(result.total).toBe(15);
             expect(result.diceGroups[0].kept).toEqual([6, 5, 4]);
             expect(result.diceGroups[0].dropped).toEqual([3]);
-        });
 
-        it('drops the highest dice with dh', () => {
-            const result = rollDice('4d6dh1', queuedRng([6, 5, 4, 3]));
-
+            result = rollDice('4d6dh1', queuedRng([6, 5, 4, 3]));
             expect(result.expression).toBe('4d6dh1');
             expect(result.total).toBe(12);
             expect(result.diceGroups[0].kept).toEqual([5, 4, 3]);
             expect(result.diceGroups[0].dropped).toEqual([6]);
-        });
 
-        it('clamps keep/drop amounts to the number of dice', () => {
             expect(rollDice('4d6k10', queuedRng([1, 2, 3, 4])).total).toBe(10);
             expect(rollDice('4d6d10', queuedRng([1, 2, 3, 4])).total).toBe(0);
         });
 
-        it('handles arithmetic without any dice', () => {
+        it('handles arithmetic, precedence, and division rounding', () => {
             expect(total('2 + 2', [])).toBe(4);
             expect(total('4 * 3', [])).toBe(12);
             expect(rollDice('2 + 2', queuedRng([])).diceGroups).toHaveLength(0);
-        });
 
-        it('respects operator precedence', () => {
             expect(total('2+3*4', [])).toBe(14);
             expect(total('(2+3)*4', [])).toBe(20);
             expect(total('-5+10', [])).toBe(5);
-        });
 
-        it('rounds division towards 1', () => {
             expect(total('10/3', [])).toBe(3);
             expect(total('10/4', [])).toBe(2);
             expect(total('7/2', [])).toBe(3);
@@ -197,33 +172,23 @@ describe('Dice helpers', () => {
             expect(calls[1].params.dice).toBe('n6 + n5 + n4, dice_dropped');
         });
 
-        it('omits the dropped phrase when nothing was dropped', () => {
-            const calls = [];
-            const result = rollDice('3d6', queuedRng([1, 2, 3]));
-
+        it('formats single-group, multi-group, and plain results', () => {
+            let calls = [];
+            let result = rollDice('3d6', queuedRng([1, 2, 3]));
             formatRoll(result, translate(calls), String);
-
             expect(calls).toHaveLength(1);
             expect(calls[0].params.dice).toBe('1 + 2 + 3');
-        });
 
-        it('only shows the total for several dice groups', () => {
-            const calls = [];
-            const result = rollDice('2d6+1d8', queuedRng([1, 2, 3]));
-
+            calls = [];
+            result = rollDice('2d6+1d8', queuedRng([1, 2, 3]));
             formatRoll(result, translate(calls), String);
-
             expect(calls).toHaveLength(1);
             expect(calls[0].key).toBe('dice_roll_result');
             expect(calls[0].params).toEqual({ expression: '2d6+1d8', number: '6' });
-        });
 
-        it('only shows the total for plain arithmetic', () => {
-            const calls = [];
-            const result = rollDice('2+2', queuedRng([]));
-
+            calls = [];
+            result = rollDice('2+2', queuedRng([]));
             formatRoll(result, translate(calls), String);
-
             expect(calls).toHaveLength(1);
             expect(calls[0].key).toBe('dice_roll_result');
         });

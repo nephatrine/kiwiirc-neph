@@ -35,8 +35,8 @@ describe('ReplySupport', () => {
         expect(msg3.reply).toBe('msg789');
     });
 
-    it('should include +reply tag in buffer.say() when replying_to is set, but NOT modify body', () => {
-        const originalMsg = new Message({
+    it('includes +reply when allowed, omits it when denied, and keeps the body', () => {
+        let originalMsg = new Message({
             nick: 'user1',
             message: 'original',
             tags: { msgid: 'msg123' },
@@ -49,12 +49,29 @@ describe('ReplySupport', () => {
         network.enabled_caps = ['message-tags'];
 
         // Mock ircClient functions
-        const saySpy = jest.spyOn(network.ircClient, 'say').mockImplementation(() => {});
+        let saySpy = jest.spyOn(network.ircClient, 'say').mockImplementation(() => {});
 
         buffer.say('reply message');
 
         expect(saySpy).toHaveBeenCalledWith('#channel', 'reply message', { '+reply': 'msg123' });
         expect(buffer.replying_to).toBeNull();
+
+        originalMsg = new Message({
+            nick: 'user1',
+            message: 'original',
+            tags: { msgid: 'msg123' },
+        });
+
+        buffer.replying_to = originalMsg;
+
+        // Mock supportsTag to return false for +reply and +draft/reply
+        network.isupport.CLIENTTAGDENY = '+reply,+draft/reply';
+        network.enabled_caps = ['message-tags'];
+        saySpy.mockClear();
+
+        buffer.say('reply message');
+
+        expect(saySpy).toHaveBeenCalledWith('#channel', 'reply message', {});
     });
 
     it('should use reply-parent-msg-id for Twitch replies', () => {
@@ -76,25 +93,5 @@ describe('ReplySupport', () => {
         expect(saySpy).toHaveBeenCalledWith('#channel', 'reply message', {
             'reply-parent-msg-id': 'msg123',
         });
-    });
-
-    it('should NOT include +reply tag if server does not support it, and NOT modify body', () => {
-        const originalMsg = new Message({
-            nick: 'user1',
-            message: 'original',
-            tags: { msgid: 'msg123' },
-        });
-
-        buffer.replying_to = originalMsg;
-
-        // Mock supportsTag to return false for +reply and +draft/reply
-        network.isupport.CLIENTTAGDENY = '+reply,+draft/reply';
-        network.enabled_caps = ['message-tags'];
-
-        const saySpy = jest.spyOn(network.ircClient, 'say').mockImplementation(() => {});
-
-        buffer.say('reply message');
-
-        expect(saySpy).toHaveBeenCalledWith('#channel', 'reply message', {});
     });
 });

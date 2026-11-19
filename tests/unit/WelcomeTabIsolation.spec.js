@@ -78,52 +78,25 @@ describe('Welcome tab isolation', () => {
         return undefined;
     }
 
-    it('keeps account credentials when switching tabs', async() => {
+    it('keeps credentials and Remember Password per tab', async() => {
         comp.tabs.account.account = 'TestAccount';
         comp.tabs.account.password = 'secret';
-        comp.activeTab = 'account';
-        await comp.$nextTick();
-
-        comp.activeTab = 'anonymous';
-        await comp.$nextTick();
-        comp.activeTab = 'account';
-        await comp.$nextTick();
-
-        expect(comp.tabs.account.account).toBe('TestAccount');
-        expect(comp.tabs.account.password).toBe('secret');
-        expect(comp.tabs.anonymous.nick).toBe('AnonNick');
-    });
-
-    it('keeps the remembered password checkbox per tab', async() => {
         comp.tabs.account.rememberPasswords = true;
-        comp.activeTab = 'account';
-        await comp.$nextTick();
-
-        // Anonymous is its own identity and starts unchecked
-        comp.activeTab = 'anonymous';
-        await comp.$nextTick();
-        expect(comp.tabs.anonymous.rememberPasswords).toBe(false);
-
-        comp.activeTab = 'account';
-        await comp.$nextTick();
-        expect(comp.tabs.account.rememberPasswords).toBe(true);
-    });
-
-    it('does not let another tab clear a checked Remember Password', async() => {
-        comp.tabs.account.rememberPasswords = true;
-        comp.tabs.account.account = 'TestAccount';
-        comp.tabs.account.password = 'secret';
         comp.activeTab = 'account';
         await comp.$nextTick();
         expect(comp.layoutRememberPasswords).toBe(true);
 
-        // Visiting the anonymous tab used to reset the shared checkbox.
         comp.activeTab = 'anonymous';
         await comp.$nextTick();
+        expect(comp.tabs.anonymous.rememberPasswords).toBe(false);
         expect(comp.layoutRememberPasswords).toBe(false);
 
         comp.activeTab = 'account';
         await comp.$nextTick();
+        expect(comp.tabs.account.account).toBe('TestAccount');
+        expect(comp.tabs.account.password).toBe('secret');
+        expect(comp.tabs.anonymous.nick).toBe('AnonNick');
+        expect(comp.tabs.account.rememberPasswords).toBe(true);
         expect(comp.layoutRememberPasswords).toBe(true);
     });
 
@@ -187,7 +160,7 @@ describe('Welcome tab isolation', () => {
         }
     });
 
-    it('only shows the password strength meter on the register tab', async() => {
+    it('shows and scores the password strength meter on the register tab', async() => {
         comp.tabs.register.password = 'secret123';
         comp.tabs.account.password = 'secret123';
         comp.serverInfo = REG_INFO;
@@ -200,15 +173,12 @@ describe('Welcome tab isolation', () => {
         comp.activeTab = 'account';
         await comp.$nextTick();
         expect(comp.$el.querySelector('.kiwi-welcome-password-strength')).toBe(null);
-    });
 
-    it('scores stronger passwords higher', () => {
         comp.activeTab = 'register';
         comp.tabs.register.password = 'aaaaaaaa';
         const weak = comp.passwordStrength;
         comp.tabs.register.password = 'Correct-Horse-42!';
-        const strong = comp.passwordStrength;
-        expect(strong).toBeGreaterThan(weak);
+        expect(comp.passwordStrength).toBeGreaterThan(weak);
     });
 
     it('applies NICKLEN from the probe', async() => {

@@ -42,107 +42,93 @@ describe('Desktop secret store', () => {
         fs.rmSync(userDataDir, { recursive: true, force: true });
     });
 
-    it('reports an OS-backed store as secure', async() => {
-        const status = await store.status();
+    it('reports secure and basic_text storage status', async() => {
+        let status = await store.status();
+        expect(status).toMatchObject({
+            available: true,
+            secure: true,
+            protection: 'safeStorage',
+            backend: 'gnome_libsecret',
+        });
 
-        expect(status.available).toBe(true);
-        expect(status.secure).toBe(true);
-        expect(status.protection).toBe('safeStorage');
-        expect(status.backend).toBe('gnome_libsecret');
-    });
-
-    it('reports basic_text as available but insecure', async() => {
         store = createSecretStore({
             userDataDir,
             safeStorage: makeSafeStorage({ backend: 'basic_text' }),
         });
-
-        const status = await store.status();
-
-        expect(status.available).toBe(true);
-        expect(status.secure).toBe(false);
-        expect(status.protection).toBe('safeStorage');
+        status = await store.status();
+        expect(status).toMatchObject({
+            available: true,
+            secure: false,
+            protection: 'safeStorage',
+        });
     });
 
-    it('encrypts secrets and restores them', async() => {
+    it('encrypts network and WebDAV secrets and restores them', async() => {
         await store.save('kiwi-state', {
-            1: {
-                connection: 'server-secret',
-                sasl: 'sasl-secret',
-            },
+            1: { connection: 'server-secret', sasl: 'sasl-secret' },
+            fileupload: { webdavPassword: 'webdav-secret' },
         });
 
         const file = fs.readFileSync(store.filePath(), 'utf8');
         expect(file).not.toContain('server-secret');
         expect(file).not.toContain('sasl-secret');
+        expect(file).not.toContain('webdav-secret');
         expect(await store.load('kiwi-state')).toEqual({
             1: {
                 connection: 'server-secret',
                 sasl: 'sasl-secret',
             },
-        });
-    });
-
-    it('persists the WebDAV password alongside network secrets', async() => {
-        await store.save('kiwi-state', {
-            1: { connection: 'server-secret' },
-            fileupload: { webdavPassword: 'webdav-secret' },
-        });
-
-        const file = fs.readFileSync(store.filePath(), 'utf8');
-        expect(file).not.toContain('webdav-secret');
-        expect(await store.load('kiwi-state')).toEqual({
-            1: { connection: 'server-secret' },
             fileupload: { webdavPassword: 'webdav-secret' },
         });
     });
 
-    it('uses plaintext when encryption is unavailable', async() => {
+    it('handles unavailable and failing encryption', async() => {
         store = createSecretStore({
             userDataDir,
             safeStorage: makeSafeStorage({ available: false }),
         });
-
-        const status = await store.status();
+        let status = await store.status();
         await store.save('kiwi-state', {
             1: { connection: 'server-secret' },
         });
-
         expect(status.protection).toBe('plaintext');
         expect(status.secure).toBe(false);
         expect(fs.readFileSync(store.filePath(), 'utf8')).toContain('server-secret');
         expect(await store.load('kiwi-state')).toEqual({
             1: { connection: 'server-secret' },
         });
-    });
 
-    it('does not downgrade an encrypted file when storage becomes unavailable', async() => {
-        await store.save('kiwi-state', {
-            1: { sasl: 'sasl-secret' },
-        });
-        const encryptedFile = fs.readFileSync(store.filePath(), 'utf8');
+        const encryptedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiwi-secrets-enc-'));
+        try {
+            const encryptedStore = createSecretStore({
+                userDataDir: encryptedDir,
+                safeStorage: makeSafeStorage(),
+            });
+            await encryptedStore.save('kiwi-state', {
+                1: { sasl: 'sasl-secret' },
+            });
+            const encryptedFile = fs.readFileSync(encryptedStore.filePath(), 'utf8');
 
-        store = createSecretStore({
-            userDataDir,
-            safeStorage: makeSafeStorage({ available: false }),
-        });
+            const unavailableStore = createSecretStore({
+                userDataDir: encryptedDir,
+                safeStorage: makeSafeStorage({ available: false }),
+            });
+            await expect(unavailableStore.save('kiwi-state', {
+                1: { sasl: 'new-secret' },
+            })).rejects.toThrow('secure password storage is unavailable');
+            expect(fs.readFileSync(encryptedStore.filePath(), 'utf8'))
+                .toBe(encryptedFile);
+        } finally {
+            fs.rmSync(encryptedDir, { recursive: true, force: true });
+        }
 
-        await expect(store.save('kiwi-state', {
-            1: { sasl: 'new-secret' },
-        })).rejects.toThrow('secure password storage is unavailable');
-        expect(fs.readFileSync(store.filePath(), 'utf8')).toBe(encryptedFile);
-    });
-
-    it('falls back to plaintext if encryption throws without an existing secret file', async() => {
         store = createSecretStore({
             userDataDir,
             safeStorage: makeSafeStorage({ failEncrypt: true }),
         });
-
-        const status = await store.save('kiwi-state', {
+        status = await store.save('kiwi-state', {
             1: { sasl: 'sasl-secret' },
         });
-
         expect(status.protection).toBe('plaintext');
         expect(await store.load('kiwi-state')).toEqual({
             1: { sasl: 'sasl-secret' },

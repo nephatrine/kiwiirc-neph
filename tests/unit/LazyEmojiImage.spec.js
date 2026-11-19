@@ -18,9 +18,9 @@ describe('LazyEmojiImage', () => {
         }, overrides);
     }
 
-    test('queues the image source before rendering it', () => {
+    test('queues the image source before rendering it, or uses the cache', () => {
         const url = 'https://example.com/emoji/lazy-one.svg';
-        const context = makeContext({
+        let context = makeContext({
             src: url,
             renderedSrc: '',
             imageHandle: null,
@@ -35,14 +35,12 @@ describe('LazyEmojiImage', () => {
 
         LazyEmojiImage.methods.release.call(context);
         expect(context.imageHandle).toBeNull();
-    });
 
-    test('uses the cache for already loaded images', () => {
-        const url = 'https://example.com/emoji/lazy-cached.svg';
-        markImageLoaded(url);
+        const cachedUrl = 'https://example.com/emoji/lazy-cached.svg';
+        markImageLoaded(cachedUrl);
 
-        const context = makeContext({
-            src: url,
+        context = makeContext({
+            src: cachedUrl,
             renderedSrc: '',
             imageHandle: null,
             loadingStarted: false,
@@ -50,14 +48,14 @@ describe('LazyEmojiImage', () => {
 
         LazyEmojiImage.methods.startLoad.call(context);
 
-        expect(context.renderedSrc).toBe(url);
+        expect(context.renderedSrc).toBe(cachedUrl);
         expect(context.imageHandle).toBeNull();
     });
 
-    test('marks successful images as loaded and releases the queue', () => {
+    test('marks successful images as loaded and clears on error', () => {
         const url = 'https://example.com/emoji/lazy-loaded.svg';
-        const release = jest.fn();
-        const context = makeContext({
+        let release = jest.fn();
+        let context = makeContext({
             src: url,
             renderedSrc: url,
             imageHandle: { release },
@@ -68,11 +66,9 @@ describe('LazyEmojiImage', () => {
         expect(isImageLoaded(url)).toBe(true);
         expect(release).toHaveBeenCalled();
         expect(context.imageHandle).toBeNull();
-    });
 
-    test('clears the image and releases the queue on error', () => {
-        const release = jest.fn();
-        const context = makeContext({
+        release = jest.fn();
+        context = makeContext({
             src: 'https://example.com/emoji/lazy-error.svg',
             renderedSrc: 'https://example.com/emoji/lazy-error.svg',
             imageHandle: { release },

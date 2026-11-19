@@ -29,61 +29,41 @@ describe('HighlightSuppression', () => {
         network.setting('highlightGroupMentions', true);
     });
 
-    it('should NOT highlight when current user mentions their own nick', () => {
-        const msg = s.addMessage(buffer, {
-            nick: 'TestNick',
-            message: 'hello TestNick!',
-            time: Date.now(),
+    it('does not highlight self nick, highlights, or team mentions', () => {
+        const cases = [
+            'hello TestNick!',
+            'this is a secret-word',
+            'hey @everyone',
+        ];
+
+        cases.forEach((message) => {
+            const msg = s.addMessage(buffer, {
+                nick: 'TestNick',
+                message,
+                time: Date.now(),
+            });
+            expect(msg.isHighlight).toBe(false);
         });
-        expect(msg.isHighlight).toBe(false);
     });
 
-    it('should NOT highlight when current user uses a highlight word', () => {
-        const msg = s.addMessage(buffer, {
-            nick: 'TestNick',
-            message: 'this is a secret-word',
-            time: Date.now(),
+    it('still highlights another user mentioning nick, highlights, or teams', () => {
+        const cases = [
+            'hello TestNick!',
+            'this is an apple',
+            '@channel check this out',
+        ];
+
+        cases.forEach((message) => {
+            const msg = s.addMessage(buffer, {
+                nick: 'OtherUser',
+                message,
+                time: Date.now(),
+            });
+            expect(msg.isHighlight).toBe(true);
         });
-        expect(msg.isHighlight).toBe(false);
     });
 
-    it('should NOT highlight when current user uses team highlights', () => {
-        const msg = s.addMessage(buffer, {
-            nick: 'TestNick',
-            message: 'hey @everyone',
-            time: Date.now(),
-        });
-        expect(msg.isHighlight).toBe(false);
-    });
-
-    it('should STILL highlight when another user mentions current user', () => {
-        const msg = s.addMessage(buffer, {
-            nick: 'OtherUser',
-            message: 'hello TestNick!',
-            time: Date.now(),
-        });
-        expect(msg.isHighlight).toBe(true);
-    });
-
-    it('should STILL highlight when another user uses a highlight word', () => {
-        const msg = s.addMessage(buffer, {
-            nick: 'OtherUser',
-            message: 'this is an apple',
-            time: Date.now(),
-        });
-        expect(msg.isHighlight).toBe(true);
-    });
-
-    it('should STILL highlight when another user uses team highlights', () => {
-        const msg = s.addMessage(buffer, {
-            nick: 'OtherUser',
-            message: '@channel check this out',
-            time: Date.now(),
-        });
-        expect(msg.isHighlight).toBe(true);
-    });
-
-    it('highlights team mentions followed by punctuation', () => {
+    it('handles team mention punctuation, case, formatting, and retired tokens', () => {
         const messages = [
             '@channel!',
             '@channel?',
@@ -103,27 +83,23 @@ describe('HighlightSuppression', () => {
             });
             expect(msg.isHighlight).toBe(true);
         });
-    });
 
-    it('does not highlight the retired @everybody token', () => {
-        const msg = s.addMessage(buffer, {
-            nick: 'OtherUser',
-            message: '@everybody!',
-            time: Date.now(),
-        });
-        expect(msg.isHighlight).toBe(false);
-    });
-
-    it('highlights team mentions regardless of case and formatting', () => {
-        const msg = s.addMessage(buffer, {
+        const formatted = s.addMessage(buffer, {
             nick: 'OtherUser',
             message: '\x02@Channel!\x02',
             time: Date.now(),
         });
-        expect(msg.isHighlight).toBe(true);
+        expect(formatted.isHighlight).toBe(true);
+
+        const retired = s.addMessage(buffer, {
+            nick: 'OtherUser',
+            message: '@everybody!',
+            time: Date.now(),
+        });
+        expect(retired.isHighlight).toBe(false);
     });
 
-    it('does not highlight team mentions inside words or URLs', () => {
+    it('handles word boundaries, URLs, and away team mentions', () => {
         const word = s.addMessage(buffer, {
             nick: 'OtherUser',
             message: '@channelized',
@@ -137,9 +113,7 @@ describe('HighlightSuppression', () => {
             time: Date.now(),
         });
         expect(url.isHighlight).toBe(false);
-    });
 
-    it('does not highlight @here while away, but still highlights @channel', () => {
         network.away = 'away';
 
         const here = s.addMessage(buffer, {
@@ -157,33 +131,27 @@ describe('HighlightSuppression', () => {
         expect(channel.isHighlight).toBe(true);
     });
 
-    it('treats raw self messages case-insensitively', () => {
+    it('detects self messages by nick, connection nick, and account', () => {
         network.nick = 'testnick';
-
-        const msg = s.addMessage(buffer, {
+        let msg = s.addMessage(buffer, {
             nick: 'TestNick',
             message: '@channel!',
             time: Date.now(),
         });
         expect(msg.isHighlight).toBe(false);
-    });
 
-    it('falls back to the connection nick for self detection', () => {
         network.nick = '';
         network.connection.nick = 'TestNick';
-
-        const msg = s.addMessage(buffer, {
+        msg = s.addMessage(buffer, {
             nick: 'TestNick',
             message: '@channel!',
             time: Date.now(),
         });
         expect(msg.isHighlight).toBe(false);
-    });
 
-    it('treats another client on the same account as self', () => {
+        network.nick = 'TestNick';
         network.sasl_account = 'TestNick';
-
-        const msg = s.addMessage(buffer, {
+        msg = s.addMessage(buffer, {
             nick: 'OtherDevice',
             message: '@channel!',
             tags: { account: 'TestNick' },

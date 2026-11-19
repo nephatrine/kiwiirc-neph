@@ -45,7 +45,7 @@ describe('local emoji packs', () => {
         delete window.kiwiDesktop;
     });
 
-    test('flattens installed packages into renderer packs', () => {
+    test('flattens packages, sorts newer last, and emits on change', () => {
         setLocalEmojiPacks([makePackage()]);
 
         expect(getInstalledEmojiPackages()).toHaveLength(1);
@@ -54,7 +54,7 @@ describe('local emoji packs', () => {
             name: 'Kiwi Pack',
         });
 
-        const packs = getLocalEmojiPacks();
+        let packs = getLocalEmojiPacks();
         expect(packs).toHaveLength(1);
         expect(packs[0]).toMatchObject({
             id: 'kiwi',
@@ -66,9 +66,7 @@ describe('local emoji packs', () => {
             url: 'kiwi-emoji://kiwi-pack-abcd1234/images/kiwi.png',
             alt: 'kiwi bird',
         });
-    });
 
-    test('sorts newer packages last and drops unusable entries', () => {
         setLocalEmojiPacks([
             makePackage({ id: 'older', installedAt: 1 }),
             makePackage({
@@ -92,12 +90,10 @@ describe('local emoji packs', () => {
 
         expect(getInstalledEmojiPackages().map((pkg) => pkg.id))
             .toEqual(['older', 'newer']);
-        expect(getLocalEmojiPacks().map((pack) => pack.id))
-            .toEqual(['kiwi', 'newer-pack']);
-        expect(getLocalEmojiPacks()[1].emoji.bad).toBeUndefined();
-    });
+        packs = getLocalEmojiPacks();
+        expect(packs.map((pack) => pack.id)).toEqual(['kiwi', 'newer-pack']);
+        expect(packs[1].emoji.bad).toBeUndefined();
 
-    test('emits an event whenever the installed list changes', () => {
         const listener = jest.fn();
         state.$on('emoji.local-packs', listener);
 

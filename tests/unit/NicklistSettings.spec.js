@@ -40,16 +40,14 @@ function makeContext({ hideIgnored = true, showColors = true } = {}) {
 }
 
 describe('nicklist settings', () => {
-    it('hides ignored users by default', () => {
-        const context = makeContext();
+    it('hides ignored users by default and shows them when disabled', () => {
+        let context = makeContext();
 
         expect(Nicklist.computed.sortedUsers.call(context).map((user) => user.nick))
             .toEqual(['Alice']);
         expect(Nicklist.computed.allUsersCount.call(context)).toBe(1);
-    });
 
-    it('shows ignored users when hideIgnored is off', () => {
-        const context = makeContext({ hideIgnored: false });
+        context = makeContext({ hideIgnored: false });
 
         expect(Nicklist.computed.sortedUsers.call(context).map((user) => user.nick))
             .toEqual(['Alice', 'Bob']);

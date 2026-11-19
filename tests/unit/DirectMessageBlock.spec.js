@@ -23,18 +23,25 @@ function incomingMessage(network, nick, message) {
 }
 
 describe('direct message blocking', () => {
-    let s;
-    let network;
+    let created;
+
+    function fresh() {
+        const ctx = makeNetwork();
+        created.push(ctx.s);
+        return ctx;
+    }
 
     beforeEach(() => {
-        ({ s, network } = makeNetwork());
+        created = [];
     });
 
     afterEach(() => {
-        s.$destroy();
+        created.forEach((s) => s.$destroy());
+        created = [];
     });
 
-    test('an ignored user cannot open a new query buffer', () => {
+    test('an ignored user cannot open a query but still reaches an existing one', () => {
+        const { s, network } = fresh();
         network.setting('blockDirectMessages', 'allow');
         const alice = s.addUser(network.id, {
             nick: 'Alice',
@@ -45,45 +52,38 @@ describe('direct message blocking', () => {
         incomingMessage(network, 'Alice', 'hello');
 
         expect(s.getBufferByName(network.id, 'Alice')).toBeFalsy();
-    });
 
-    test('an ignored user still reaches an existing query buffer', () => {
-        network.setting('blockDirectMessages', 'allow');
-        const alice = s.addUser(network.id, {
-            nick: 'Alice',
-            account: 'alice',
-        });
-        alice.ignore = true;
         const query = s.addBuffer(network.id, 'Alice');
 
-        incomingMessage(network, 'Alice', 'hello');
+        incomingMessage(network, 'Alice', 'hello again');
 
         expect(query.getMessages()).toHaveLength(1);
-        expect(query.getMessages()[0].message).toContain('hello');
+        expect(query.getMessages()[0].message).toContain('hello again');
     });
 
-    test('Block policy blocks a known non-oper user', () => {
-        network.setting('blockDirectMessages', 'block');
-        const alice = s.addUser(network.id, { nick: 'Alice' });
+    test('Block policy blocks a known non-oper user unless Allow overrides it', () => {
+        let ctx = fresh();
+        ctx.network.setting('blockDirectMessages', 'block');
+        const alice = ctx.s.addUser(ctx.network.id, { nick: 'Alice' });
         alice.hasWhois = true;
 
-        incomingMessage(network, 'Alice', 'hello');
+        incomingMessage(ctx.network, 'Alice', 'hello');
 
-        expect(s.getBufferByName(network.id, 'Alice')).toBeFalsy();
-    });
+        expect(ctx.s.getBufferByName(ctx.network.id, 'Alice')).toBeFalsy();
 
-    test('Allow policy overrides the global block default', () => {
-        s.setting('buffers.block_pms', true);
-        network.setting('blockDirectMessages', 'allow');
-        const alice = s.addUser(network.id, { nick: 'Alice' });
-        alice.hasWhois = true;
+        ctx = fresh();
+        ctx.s.setting('buffers.block_pms', true);
+        ctx.network.setting('blockDirectMessages', 'allow');
+        const allowed = ctx.s.addUser(ctx.network.id, { nick: 'Alice' });
+        allowed.hasWhois = true;
 
-        incomingMessage(network, 'Alice', 'hello');
+        incomingMessage(ctx.network, 'Alice', 'hello');
 
-        expect(s.getBufferByName(network.id, 'Alice')).toBeTruthy();
+        expect(ctx.s.getBufferByName(ctx.network.id, 'Alice')).toBeTruthy();
     });
 
     test('Friends Only blocks a new query until the sender is a friend', () => {
+        const { s, network } = fresh();
         network.setting('blockDirectMessages', 'friends');
 
         incomingMessage(network, 'Alice', 'hello');

@@ -20,8 +20,8 @@ function makeBuffer() {
 }
 
 describe('history context gaps', () => {
-    it('does not treat messages dispatched inside a history batch as live', () => {
-        const { s, buffer } = makeBuffer();
+    it('tracks history batches, disjoint windows, and overlapping windows', () => {
+        let { s, buffer } = makeBuffer();
         buffer.historyBatchActive = true;
 
         addChatMessage(s, buffer, {
@@ -33,9 +33,65 @@ describe('history context gaps', () => {
 
         expect(buffer.getMessages()[0].is_history).toBe(true);
         expect(buffer.historySegments).toHaveLength(0);
+
+        ({ s, buffer } = makeBuffer());
+
+        addChatMessage(s, buffer, {
+            time: 1000,
+            server_time: 1000,
+            tags: { msgid: 'live-1' },
+        });
+        addChatMessage(s, buffer, {
+            time: 2000,
+            server_time: 2000,
+            tags: { msgid: 'live-2' },
+        });
+        addChatMessage(s, buffer, {
+            time: 3000,
+            server_time: 3000,
+            tags: { 'msgid': 'history-1', 'kiwi-history': true },
+        });
+        addChatMessage(s, buffer, {
+            time: 4000,
+            server_time: 4000,
+            tags: { 'msgid': 'history-2', 'kiwi-history': true },
+        });
+        buffer.noteHistoryWindow(3000, 4000);
+
+        expect(buffer.historySegments).toHaveLength(2);
+        expect(buffer.historyGaps).toHaveLength(1);
+        expect(buffer.historyGaps[0].from).toBe(2000);
+        expect(buffer.historyGaps[0].to).toBe(3000);
+
+        ({ s, buffer } = makeBuffer());
+
+        addChatMessage(s, buffer, {
+            time: 1000,
+            server_time: 1000,
+            tags: { msgid: 'live-1' },
+        });
+        addChatMessage(s, buffer, {
+            time: 2000,
+            server_time: 2000,
+            tags: { msgid: 'live-2' },
+        });
+        addChatMessage(s, buffer, {
+            time: 2000,
+            server_time: 2000,
+            tags: { 'msgid': 'history-1', 'kiwi-history': true },
+        });
+        addChatMessage(s, buffer, {
+            time: 3000,
+            server_time: 3000,
+            tags: { 'msgid': 'history-2', 'kiwi-history': true },
+        });
+        buffer.noteHistoryWindow(2000, 3000);
+
+        expect(buffer.historySegments).toHaveLength(1);
+        expect(buffer.historyGaps).toHaveLength(0);
     });
 
-    it('loads older into the older side and newer into the newer side', async() => {
+    it('requests the correct reference for each gap direction', async() => {
         const { s, network, buffer } = makeBuffer();
 
         addChatMessage(s, buffer, {
@@ -64,8 +120,14 @@ describe('history context gaps', () => {
         });
         buffer.noteHistoryWindow(3000, 4000);
 
-        const before = jest.fn(() => Promise.resolve({ commands: [] }));
-        const after = jest.fn(() => Promise.resolve({ commands: [] }));
+        const before = jest.fn().mockResolvedValue({
+            commands: [],
+            is_end: true,
+        });
+        const after = jest.fn().mockResolvedValue({
+            commands: [],
+            is_end: true,
+        });
         network.ircClient.chathistory = {
             isSupported: () => true,
             supportedRefTypes: () => ['msgid'],
@@ -79,66 +141,6 @@ describe('history context gaps', () => {
 
         await buffer.requestHistoryGap(gap, 'newer');
         expect(before).toHaveBeenCalledWith('#test', 'history-1');
-    });
-
-    it('tracks a gap between disjoint loaded history windows', () => {
-        const { s, buffer } = makeBuffer();
-
-        addChatMessage(s, buffer, {
-            time: 1000,
-            server_time: 1000,
-            tags: { msgid: 'live-1' },
-        });
-        addChatMessage(s, buffer, {
-            time: 2000,
-            server_time: 2000,
-            tags: { msgid: 'live-2' },
-        });
-        addChatMessage(s, buffer, {
-            time: 3000,
-            server_time: 3000,
-            tags: { 'msgid': 'history-1', 'kiwi-history': true },
-        });
-        addChatMessage(s, buffer, {
-            time: 4000,
-            server_time: 4000,
-            tags: { 'msgid': 'history-2', 'kiwi-history': true },
-        });
-        buffer.noteHistoryWindow(3000, 4000);
-
-        expect(buffer.historySegments).toHaveLength(2);
-        expect(buffer.historyGaps).toHaveLength(1);
-        expect(buffer.historyGaps[0].from).toBe(2000);
-        expect(buffer.historyGaps[0].to).toBe(3000);
-    });
-
-    it('merges overlapping history windows without creating a gap', () => {
-        const { s, buffer } = makeBuffer();
-
-        addChatMessage(s, buffer, {
-            time: 1000,
-            server_time: 1000,
-            tags: { msgid: 'live-1' },
-        });
-        addChatMessage(s, buffer, {
-            time: 2000,
-            server_time: 2000,
-            tags: { msgid: 'live-2' },
-        });
-        addChatMessage(s, buffer, {
-            time: 2000,
-            server_time: 2000,
-            tags: { 'msgid': 'history-1', 'kiwi-history': true },
-        });
-        addChatMessage(s, buffer, {
-            time: 3000,
-            server_time: 3000,
-            tags: { 'msgid': 'history-2', 'kiwi-history': true },
-        });
-        buffer.noteHistoryWindow(2000, 3000);
-
-        expect(buffer.historySegments).toHaveLength(1);
-        expect(buffer.historyGaps).toHaveLength(0);
     });
 
     it('loads a disjoint context window and exposes the resulting gap', async() => {
@@ -230,53 +232,5 @@ describe('history context gaps', () => {
         expect(buffer.historyGaps).toHaveLength(1);
         expect(buffer.historyGaps[0].from).toBe(2000);
         expect(buffer.historyGaps[0].to).toBe(2500);
-    });
-
-    it('requests the correct history reference for each gap direction', async() => {
-        const { s, network, buffer } = makeBuffer();
-
-        addChatMessage(s, buffer, {
-            time: 1000,
-            server_time: 1000,
-            tags: { msgid: 'live-1' },
-        });
-        addChatMessage(s, buffer, {
-            time: 2000,
-            server_time: 2000,
-            tags: { msgid: 'live-2' },
-        });
-        addChatMessage(s, buffer, {
-            time: 3000,
-            server_time: 3000,
-            tags: { 'msgid': 'history-1', 'kiwi-history': true },
-        });
-        addChatMessage(s, buffer, {
-            time: 4000,
-            server_time: 4000,
-            tags: { 'msgid': 'history-2', 'kiwi-history': true },
-        });
-        buffer.noteHistoryWindow(3000, 4000);
-
-        const before = jest.fn().mockResolvedValue({
-            commands: [],
-            is_end: true,
-        });
-        const after = jest.fn().mockResolvedValue({
-            commands: [],
-            is_end: true,
-        });
-        network.ircClient.chathistory = {
-            isSupported: () => true,
-            supportedRefTypes: () => ['msgid'],
-            before,
-            after,
-        };
-
-        const gap = buffer.historyGaps[0];
-        await buffer.requestHistoryGap(gap, 'older');
-        await buffer.requestHistoryGap(gap, 'newer');
-
-        expect(before).toHaveBeenCalledWith('#test', 'history-1');
-        expect(after).toHaveBeenCalledWith('#test', 'live-2');
     });
 });

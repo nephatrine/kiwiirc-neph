@@ -12,8 +12,8 @@ const extracted = [
 ];
 
 describe('Extracted plugin assets', () => {
-    extracted.forEach((plugin) => {
-        it(`loads ${plugin.name} from external assets`, () => {
+    it('loads every extracted plugin from external assets', () => {
+        extracted.forEach((plugin) => {
             const html = fs.readFileSync(
                 path.join(PLUGIN_DIR, `${plugin.name}.html`),
                 'utf8'

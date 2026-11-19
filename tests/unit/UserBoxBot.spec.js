@@ -67,26 +67,24 @@ describe('UserBox bot badge', () => {
         return { network, user };
     }
 
-    it('shows the floppy icon and bot metadata', async() => {
-        const { network, user } = createBot('Sopel 8.0');
-        const vm = mountUserBox(network, user);
+    it('shows the floppy icon with bot metadata or the generic label', async() => {
+        let { network, user } = createBot('Sopel 8.0');
+        let vm = mountUserBox(network, user);
         await Vue.nextTick();
 
-        const bot = vm.$children[0].$el.querySelector('.kiwi-userbox-bot');
+        let bot = vm.$children[0].$el.querySelector('.kiwi-userbox-bot');
         expect(bot.querySelector('.bx-save')).toBeTruthy();
         expect(bot.textContent).toContain('Sopel 8.0');
         expect(bot.getAttribute('title')).toBeNull();
 
         vm.$destroy();
         vm.$el.remove();
-    });
 
-    it('falls back to the bot user label', async() => {
-        const { network, user } = createBot('   ');
-        const vm = mountUserBox(network, user);
+        ({ network, user } = createBot('   '));
+        vm = mountUserBox(network, user);
         await Vue.nextTick();
 
-        const bot = vm.$children[0].$el.querySelector('.kiwi-userbox-bot');
+        bot = vm.$children[0].$el.querySelector('.kiwi-userbox-bot');
         expect(bot.querySelector('.bx-save')).toBeTruthy();
         expect(bot.textContent).toContain('bot_user');
         expect(bot.getAttribute('title')).toBeNull();

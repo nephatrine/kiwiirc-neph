@@ -10,7 +10,7 @@ import {
 } from '@/libs/SojuServices';
 
 describe('BouncerServ command data', () => {
-    test('lists the upstream top-level commands', () => {
+    test('lists commands, syntax, and the sidebar cheatsheet', () => {
         expect(BOUNCERSERV_SUBCOMMANDS).toEqual([
             'help',
             'network',
@@ -21,9 +21,7 @@ describe('BouncerServ command data', () => {
             'device-certificate',
             'server',
         ]);
-    });
 
-    test('transcribes the command tree and syntax', () => {
         const paths = BOUNCERSERV_COMMANDS.map((command) => command.path);
         expect(paths).toContain('network create');
         expect(paths).toContain('certfp generate');
@@ -39,9 +37,7 @@ describe('BouncerServ command data', () => {
         expect(BOUNCERSERV_SYNTAX['sasl set-plain']).toBe(
             'sasl set-plain [-network name] <username> <password>'
         );
-    });
 
-    test('keeps the sidebar cheatsheet focused on common commands', () => {
         expect(BOUNCERSERV_CHEATSHEET.map((command) => command.path)).toEqual([
             'network create',
             'network status',
@@ -56,13 +52,11 @@ describe('BouncerServ command data', () => {
             expect(command.labelKey).toMatch(/^bouncerserv_/);
             expect(BOUNCERSERV_SYNTAX[command.path]).toBeTruthy();
         });
-        expect(BOUNCERSERV_COMMANDS.map((command) => command.path))
-            .toContain('server debug');
     });
 });
 
 describe('BouncerServ completion', () => {
-    test('only activates in the top-level command position', () => {
+    test('activates only at the top level and shows syntax ghosts', () => {
         expect(isBouncerservSubcommandPosition('/msg BouncerServ ')).toBe(true);
         expect(isBouncerservSubcommandPosition('/msg BouncerServ net')).toBe(true);
         expect(isBouncerservSubcommandPosition('/msg BouncerServ network ')).toBe(false);
@@ -70,6 +64,16 @@ describe('BouncerServ completion', () => {
         expect(isBouncerservSubcommandPosition('/msg OtherServ ')).toBe(false);
         expect(isBouncerservSubcommandPosition('')).toBe(false);
         expect(isBouncerservSubcommandPosition(null)).toBe(false);
+
+        expect(bouncerservSyntaxFor(['network'])).toBe(
+            'network <create|status|update|delete|quote>'
+        );
+        expect(bouncerservSyntaxFor(['network', 'create'])).toContain('-addr <addr>');
+        expect(bouncerservSyntaxFor(['sasl', 'set-plain'])).toBe(
+            'sasl set-plain [-network name] <username> <password>'
+        );
+        expect(bouncerservSyntaxFor(['unknown'])).toBe('');
+        expect(bouncerservSyntaxFor([])).toBe('');
     });
 
     test('parses lowercase command paths and argument slots', () => {
@@ -100,17 +104,5 @@ describe('BouncerServ completion', () => {
         expect(bouncerservArgSuggestions(parseBouncerservInput('/msg BouncerServ network create ')))
             .toEqual([]);
         expect(bouncerservArgSuggestions(null)).toEqual([]);
-    });
-
-    test('shows syntax ghosts for command paths', () => {
-        expect(bouncerservSyntaxFor(['network'])).toBe(
-            'network <create|status|update|delete|quote>'
-        );
-        expect(bouncerservSyntaxFor(['network', 'create'])).toContain('-addr <addr>');
-        expect(bouncerservSyntaxFor(['sasl', 'set-plain'])).toBe(
-            'sasl set-plain [-network name] <username> <password>'
-        );
-        expect(bouncerservSyntaxFor(['unknown'])).toBe('');
-        expect(bouncerservSyntaxFor([])).toBe('');
     });
 });

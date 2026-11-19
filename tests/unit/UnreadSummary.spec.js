@@ -26,8 +26,8 @@ function makeState(unreadBadges, buffers) {
 }
 
 describe('unread summary', () => {
-    it('sums unread messages and counts highlights and errors', () => {
-        const state = makeState(true, [
+    it('sums unread messages and applies the per-buffer badge policy', () => {
+        let state = makeState(true, [
             buffer({ unread: 2, highlight: true }),
             buffer({ unread: 3 }),
             buffer({ name: '*server', unread: 5 }),
@@ -40,10 +40,8 @@ describe('unread summary', () => {
             highlights: 1,
             errors: 1,
         });
-    });
 
-    it('returns no unread badges when globally disabled and buffers use Default', () => {
-        const state = makeState(false, [
+        state = makeState(false, [
             buffer({ unread: 2, highlight: true }),
             buffer({ unread: 3 }),
         ]);
@@ -53,10 +51,8 @@ describe('unread summary', () => {
             highlights: 0,
             errors: 0,
         });
-    });
 
-    it('includes buffers explicitly set to Show', () => {
-        const state = makeState(false, [
+        state = makeState(false, [
             buffer({ unread: 2, highlight: true }),
             buffer({ unread: 3, unreadBadge: 'show' }),
         ]);
@@ -66,10 +62,8 @@ describe('unread summary', () => {
             highlights: 0,
             errors: 0,
         });
-    });
 
-    it('excludes buffers explicitly set to Hide', () => {
-        const state = makeState(true, [
+        state = makeState(true, [
             buffer({ unread: 2, unreadBadge: 'hide' }),
             buffer({ unread: 3 }),
         ]);

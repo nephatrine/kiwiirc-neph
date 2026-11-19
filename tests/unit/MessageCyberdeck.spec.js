@@ -143,8 +143,8 @@ function mountLayout(repeat = false, wideTimestamp = false) {
 }
 
 describe('MessageListMessageCyberdeck', () => {
-    it('renders an avatar plate, timestamp, header, and body', () => {
-        const { vm } = mountLayout(false);
+    it('renders the avatar plate and collapses repeats while keeping the time', () => {
+        let { vm } = mountLayout(false);
 
         expect(vm.$el.classList.contains('kiwi-messagelist-message--cyberdeck'))
             .toBe(true);
@@ -162,10 +162,8 @@ describe('MessageListMessageCyberdeck', () => {
             .toContain('Hello from the deck');
 
         vm.$destroy();
-    });
 
-    it('collapses the avatar and header for repeated authors but keeps the time', () => {
-        const { vm } = mountLayout(true);
+        ({ vm } = mountLayout(true));
 
         expect(vm.$el.classList.contains('kiwi-messagelist-message--authorrepeat'))
             .toBe(true);

@@ -14,43 +14,25 @@ const vars = {
 };
 
 describe('default aliases', () => {
-    it('routes /ns to NickServ', () => {
-        const out = makeRewriter().process('/ns register hunter2', vars);
-        expect(out).toBe('/msg NickServ register hunter2');
-    });
-
-    it('routes /cs to ChanServ', () => {
-        const out = makeRewriter().process('/cs register #chan', vars);
-        expect(out).toBe('/msg ChanServ register #chan');
-    });
-
-    it('routes /hs to HostServ', () => {
-        const out = makeRewriter().process('/hs request myhost', vars);
-        expect(out).toBe('/msg HostServ request myhost');
-    });
-
-    it('routes /ms to MemoServ', () => {
-        const out = makeRewriter().process('/ms TestNick hello', vars);
-        expect(out).toBe('/msg MemoServ TestNick hello');
-    });
-
-    it('sets the topic with /t and text', () => {
-        const out = makeRewriter().process('/t a brand new topic', vars);
-        expect(out).toBe('/topic #chan a brand new topic');
-    });
-
-    it('reads the topic with a bare /t', () => {
-        const out = makeRewriter().process('/t', vars);
-        expect(out).toBe('/topic #chan');
-    });
-
-    it('leaves the removed /connect alias unrewritten', () => {
-        const out = makeRewriter().process('/connect irc.example.com', vars);
-        expect(out).toBe('/connect irc.example.com');
-    });
-
-    it('keeps existing shorthand working', () => {
+    it('routes service aliases and topic commands', () => {
         const rewriter = makeRewriter();
+        expect(rewriter.process('/ns register hunter2', vars))
+            .toBe('/msg NickServ register hunter2');
+        expect(rewriter.process('/cs register #chan', vars))
+            .toBe('/msg ChanServ register #chan');
+        expect(rewriter.process('/hs request myhost', vars))
+            .toBe('/msg HostServ request myhost');
+        expect(rewriter.process('/ms TestNick hello', vars))
+            .toBe('/msg MemoServ TestNick hello');
+        expect(rewriter.process('/t a brand new topic', vars))
+            .toBe('/topic #chan a brand new topic');
+        expect(rewriter.process('/t', vars)).toBe('/topic #chan');
+    });
+
+    it('leaves removed aliases alone and keeps existing shorthand', () => {
+        const rewriter = makeRewriter();
+        expect(rewriter.process('/connect irc.example.com', vars))
+            .toBe('/connect irc.example.com');
         expect(rewriter.process('/j #chan', vars)).toBe('/join #chan');
         expect(rewriter.process('/q TestNick', vars)).toBe('/query TestNick');
     });

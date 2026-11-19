@@ -45,14 +45,12 @@ const deadTextFormats = [
 ];
 
 describe('dead legacy config cleanup', () => {
-    test('does not define removed buffer options', () => {
+    test('does not define removed buffer options or unused text formats', () => {
         expect(configTemplates.default.buffers).not.toHaveProperty('ignore_bots');
         expect(configTemplates.default.buffers).not.toHaveProperty('auto_request_history');
         expect(configTemplates.default.buffers).not.toHaveProperty('mute_sound');
         expect(configTemplates.default.buffers).not.toHaveProperty('hide_message_counts');
-    });
 
-    test('does not define unused text formats', () => {
         deadTextFormats.forEach((key) => {
             expect(configTemplates.default.textFormats).not.toHaveProperty(key);
         });

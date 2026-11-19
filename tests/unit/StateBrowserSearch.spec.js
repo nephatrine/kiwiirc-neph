@@ -32,16 +32,11 @@ describe('StateBrowser search availability', () => {
         };
     }
 
-    test('hides search when unavailable in restricted mode', () => {
-        const context = makeContext(false, true);
-
-        expect(StateBrowser.computed.searchHidden.call(context)).toBe(true);
-    });
-
-    test('keeps search visible but disabled outside restricted mode', () => {
-        const context = makeContext(false, false);
-
-        expect(StateBrowser.computed.searchHidden.call(context)).toBe(false);
+    test('gates search visibility on restricted mode', () => {
+        expect(StateBrowser.computed.searchHidden.call(makeContext(false, true)))
+            .toBe(true);
+        expect(StateBrowser.computed.searchHidden.call(makeContext(false, false)))
+            .toBe(false);
     });
 
     test('recognizes server and special buffers', () => {
@@ -66,50 +61,31 @@ describe('StateBrowser search availability', () => {
         expect(channel).toBe(false);
     });
 
-    test('shows search on special buffers in the desktop layout', () => {
-        const context = makeVisibilityContext();
+    test('shows search only on special desktop buffers with a source', () => {
+        expect(StateBrowser.computed.searchVisible.call(makeVisibilityContext()))
+            .toBe(true);
+        expect(StateBrowser.computed.searchVisible.call(makeVisibilityContext({
+            special: false,
+        }))).toBe(false);
+        expect(StateBrowser.computed.searchVisible.call(makeVisibilityContext({
+            mobile: true,
+        }))).toBe(false);
+        expect(StateBrowser.computed.searchVisible.call(makeVisibilityContext({
+            hidden: true,
+        }))).toBe(false);
 
-        expect(StateBrowser.computed.searchVisible.call(context)).toBe(true);
+        const menuContext = makeVisibilityContext();
+        menuContext.usermenuOpen = true;
+        expect(StateBrowser.computed.searchVisible.call(menuContext)).toBe(false);
     });
 
-    test('hides search for normal buffers', () => {
-        const context = makeVisibilityContext({ special: false });
+    test('opens search only when it is available', () => {
+        const unavailable = makeContext(false, false);
+        StateBrowser.methods.clickSearch.call(unavailable);
+        expect(unavailable.$state.$emit).not.toHaveBeenCalled();
 
-        expect(StateBrowser.computed.searchVisible.call(context)).toBe(false);
-    });
-
-    test('hides search in the mobile layout', () => {
-        const context = makeVisibilityContext({ mobile: true });
-
-        expect(StateBrowser.computed.searchVisible.call(context)).toBe(false);
-    });
-
-    test('hides search in restricted mode without a source', () => {
-        const context = makeVisibilityContext({ hidden: true });
-
-        expect(StateBrowser.computed.searchVisible.call(context)).toBe(false);
-    });
-
-    test('hides search while the user menu is open', () => {
-        const context = makeVisibilityContext();
-        context.usermenuOpen = true;
-
-        expect(StateBrowser.computed.searchVisible.call(context)).toBe(false);
-    });
-
-    test('does not open search when it is unavailable', () => {
-        const context = makeContext(false, false);
-
-        StateBrowser.methods.clickSearch.call(context);
-
-        expect(context.$state.$emit).not.toHaveBeenCalled();
-    });
-
-    test('opens search when it is available', () => {
-        const context = makeContext(true, true);
-
-        StateBrowser.methods.clickSearch.call(context);
-
-        expect(context.$state.$emit).toHaveBeenCalledWith('chatlogs.open');
+        const available = makeContext(true, true);
+        StateBrowser.methods.clickSearch.call(available);
+        expect(available.$state.$emit).toHaveBeenCalledWith('chatlogs.open');
     });
 });

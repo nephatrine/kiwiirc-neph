@@ -36,47 +36,34 @@ describe('Desktop configuration', () => {
         expect(DEFAULT_CONFIG.updates.notify).toBe(true);
     });
 
-    it('allows desktop protocol registration to be disabled', () => {
-        const merged = mergeConfig(DEFAULT_CONFIG, {
+    it('allows desktop defaults to be overridden', () => {
+        let merged = mergeConfig(DEFAULT_CONFIG, {
             allowRegisterProtocolHandler: false,
         });
-
         expect(merged.allowRegisterProtocolHandler).toBe(false);
         expect(DEFAULT_CONFIG.allowRegisterProtocolHandler).toBe(true);
-    });
 
-    it('allows the desktop default for hiding bridged previews to be overridden', () => {
-        const merged = mergeConfig(DEFAULT_CONFIG, {
+        merged = mergeConfig(DEFAULT_CONFIG, {
             buffers: { hide_preview_cards: false },
         });
-
         expect(merged.buffers.hide_preview_cards).toBe(false);
         expect(DEFAULT_CONFIG.buffers.hide_preview_cards).toBe(true);
-    });
 
-    it('allows the desktop topic-in-header default to be overridden', () => {
-        const merged = mergeConfig(DEFAULT_CONFIG, {
+        merged = mergeConfig(DEFAULT_CONFIG, {
             buffers: { show_topic_in_header: false },
         });
-
         expect(merged.buffers.show_topic_in_header).toBe(false);
         expect(DEFAULT_CONFIG.buffers.show_topic_in_header).toBe(true);
-    });
 
-    it('allows the desktop scrollback default to be overridden', () => {
-        const merged = mergeConfig(DEFAULT_CONFIG, {
+        merged = mergeConfig(DEFAULT_CONFIG, {
             buffers: { scrollback_size: 250 },
         });
-
         expect(merged.buffers.scrollback_size).toBe(250);
         expect(DEFAULT_CONFIG.buffers.scrollback_size).toBe(500);
-    });
 
-    it('allows the desktop upload limit to be overridden', () => {
-        const merged = mergeConfig(DEFAULT_CONFIG, {
+        merged = mergeConfig(DEFAULT_CONFIG, {
             desktopHttp: { maxUploadBytes: 10485760 },
         });
-
         expect(merged.desktopHttp.maxUploadBytes).toBe(10485760);
         expect(DEFAULT_CONFIG.desktopHttp.maxUploadBytes).toBe(268435456);
     });

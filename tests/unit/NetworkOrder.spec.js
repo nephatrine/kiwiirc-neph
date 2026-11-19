@@ -12,8 +12,10 @@ function makeNetworks() {
 }
 
 describe('Network ordering', () => {
-    it('moves a network up without changing its active buffer', () => {
-        const { s, first, third } = makeNetworks();
+    it('moves networks up and down and rejects out-of-range moves', () => {
+        let {
+            s, first, second, third,
+        } = makeNetworks();
         s.setActiveBuffer(third.id, '*');
 
         expect(s.moveNetworkUp(third.id)).toBe(true);
@@ -25,10 +27,8 @@ describe('Network ordering', () => {
         ]);
         expect(s.ui.active_network).toBe(third.id);
         expect(s.moveNetworkUp(first.id)).toBe(false);
-    });
 
-    it('supports moving down and rejects out-of-range moves', () => {
-        const { s, first, second, third } = makeNetworks();
+        ({ s, first, second, third } = makeNetworks());
 
         expect(s.moveNetwork(first.id, 1)).toBe(true);
         expect(s.networks.map((network) => network.name)).toEqual([
@@ -40,33 +40,31 @@ describe('Network ordering', () => {
         expect(s.moveNetwork(second.id, -1)).toBe(false);
     });
 
-    it('persists the reordered network list', async() => {
-        const { s, third } = makeNetworks();
+    it('persists the reordered list directly and through the watcher', async() => {
+        let { s, third } = makeNetworks();
         s.moveNetworkUp(third.id);
-        const storage = {
+        let storage = {
             get: jest.fn(),
             set: jest.fn(async() => {}),
         };
-        const persistence = new StatePersistence('test-key', s, storage);
+        let persistence = new StatePersistence('test-key', s, storage);
 
         await persistence.saveStateNow();
 
-        const saved = JSON.parse(storage.set.mock.calls[0][1]);
+        let saved = JSON.parse(storage.set.mock.calls[0][1]);
         expect(saved.networks.map((network) => network.name)).toEqual([
             'First',
             'Third',
             'Second',
         ]);
-    });
 
-    it('saves a reordered network list when the state watcher runs', async() => {
         jest.useFakeTimers();
-        const { s, third } = makeNetworks();
-        const storage = {
+        ({ s, third } = makeNetworks());
+        storage = {
             get: jest.fn(),
             set: jest.fn(async() => {}),
         };
-        const persistence = new StatePersistence('test-key', s, storage);
+        persistence = new StatePersistence('test-key', s, storage);
         persistence.watchStateForChanges();
 
         s.moveNetworkUp(third.id);
@@ -74,7 +72,7 @@ describe('Network ordering', () => {
         jest.advanceTimersByTime(1000);
 
         expect(storage.set).toHaveBeenCalledTimes(1);
-        const saved = JSON.parse(storage.set.mock.calls[0][1]);
+        saved = JSON.parse(storage.set.mock.calls[0][1]);
         expect(saved.networks.map((network) => network.name)).toEqual([
             'First',
             'Third',

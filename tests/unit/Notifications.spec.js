@@ -60,6 +60,26 @@ function makeNativeBridge() {
     };
 }
 
+function makeBrowserNotification() {
+    const instances = [];
+
+    class WebNotification {
+        static permission = 'granted';
+        static requestPermission = jest.fn();
+
+        constructor(title, options) {
+            this.title = title;
+            this.options = options;
+            this.close = jest.fn();
+            instances.push(this);
+        }
+    }
+
+    window.Notification = WebNotification;
+
+    return { WebNotification, instances };
+}
+
 describe('desktop notifications', () => {
     beforeEach(() => {
         jest.useFakeTimers();
@@ -75,11 +95,11 @@ describe('desktop notifications', () => {
         jest.useRealTimers();
     });
 
-    it('uses the native bridge and routes click callbacks', () => {
-        const bridge = makeNativeBridge();
-        const Notifications = loadNotifications();
-        const state = makeState();
-        const onclick = jest.fn();
+    it('uses the native bridge and honors do not disturb and close', () => {
+        let bridge = makeNativeBridge();
+        let Notifications = loadNotifications();
+        let state = makeState();
+        let onclick = jest.fn();
 
         Notifications.listenForNewMessages(state);
         notificationHandler(state)('hello', {
@@ -94,16 +114,30 @@ describe('desktop notifications', () => {
             id: expect.any(String),
         }));
 
-        const id = bridge.show.mock.calls[0][0].id;
+        let id = bridge.show.mock.calls[0][0].id;
         bridge.emitClick(id);
-
         expect(onclick).toHaveBeenCalledTimes(1);
-    });
 
-    it('suppresses notifications while do not disturb is enabled', () => {
-        const bridge = makeNativeBridge();
-        const Notifications = loadNotifications();
-        const state = makeState();
+        bridge = makeNativeBridge();
+        Notifications = loadNotifications();
+        state = makeState();
+        onclick = jest.fn();
+
+        Notifications.listenForNewMessages(state);
+        notificationHandler(state)('hello', {
+            title: 'Title',
+            onclick,
+            force: true,
+        });
+
+        id = bridge.show.mock.calls[0][0].id;
+        bridge.emitClose(id);
+        bridge.emitClick(id);
+        expect(onclick).not.toHaveBeenCalled();
+
+        bridge = makeNativeBridge();
+        Notifications = loadNotifications();
+        state = makeState();
         state.ui.notifications_enabled = false;
 
         Notifications.listenForNewMessages(state);
@@ -113,26 +147,6 @@ describe('desktop notifications', () => {
         });
 
         expect(bridge.show).not.toHaveBeenCalled();
-    });
-
-    it('drops native click callbacks when a notification closes', () => {
-        const bridge = makeNativeBridge();
-        const Notifications = loadNotifications();
-        const state = makeState();
-        const onclick = jest.fn();
-
-        Notifications.listenForNewMessages(state);
-        notificationHandler(state)('hello', {
-            title: 'Title',
-            onclick,
-            force: true,
-        });
-
-        const id = bridge.show.mock.calls[0][0].id;
-        bridge.emitClose(id);
-        bridge.emitClick(id);
-
-        expect(onclick).not.toHaveBeenCalled();
     });
 
     it('does not request browser permission when native notifications exist', () => {
@@ -205,25 +219,12 @@ describe('desktop notifications', () => {
         }
     });
 
-    it('falls back to browser notifications and attaches onclick', () => {
+    it('falls back to browser notifications and closes them after the TTL', () => {
         delete window.kiwiDesktop;
 
-        class WebNotification {
-            static permission = 'granted';
-            static requestPermission = jest.fn();
-            static instances = [];
-
-            constructor(title, options) {
-                this.title = title;
-                this.options = options;
-                this.close = jest.fn();
-                WebNotification.instances.push(this);
-            }
-        }
-        window.Notification = WebNotification;
-
-        const Notifications = loadNotifications();
-        const state = makeState();
+        let browser = makeBrowserNotification();
+        let Notifications = loadNotifications();
+        let state = makeState();
         const onclick = jest.fn();
 
         Notifications.listenForNewMessages(state);
@@ -233,30 +234,13 @@ describe('desktop notifications', () => {
             force: true,
         });
 
-        expect(WebNotification.instances).toHaveLength(1);
-        expect(WebNotification.instances[0].title).toBe('Title');
-        expect(WebNotification.instances[0].onclick).toBe(onclick);
-    });
+        expect(browser.instances).toHaveLength(1);
+        expect(browser.instances[0].title).toBe('Title');
+        expect(browser.instances[0].onclick).toBe(onclick);
 
-    it('closes browser notifications after their TTL', () => {
-        delete window.kiwiDesktop;
-
-        class WebNotification {
-            static permission = 'granted';
-            static requestPermission = jest.fn();
-            static instances = [];
-
-            constructor(title, options) {
-                this.title = title;
-                this.options = options;
-                this.close = jest.fn();
-                WebNotification.instances.push(this);
-            }
-        }
-        window.Notification = WebNotification;
-
-        const Notifications = loadNotifications();
-        const state = makeState();
+        browser = makeBrowserNotification();
+        Notifications = loadNotifications();
+        state = makeState();
 
         Notifications.listenForNewMessages(state);
         notificationHandler(state)('hello', {
@@ -267,6 +251,6 @@ describe('desktop notifications', () => {
 
         jest.advanceTimersByTime(1000);
 
-        expect(WebNotification.instances[0].close).toHaveBeenCalled();
+        expect(browser.instances[0].close).toHaveBeenCalled();
     });
 });

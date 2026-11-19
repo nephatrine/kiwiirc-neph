@@ -12,39 +12,16 @@ describe('CapNotify', () => {
         const client = network.ircClient;
     });
 
-    it('should request the standard-replies capability', () => {
-        const client = network.ircClient;
-        expect(client.request_extra_caps).toContain('standard-replies');
-    });
-
-    it('should update enabled_caps on cap ack', () => {
+    it('updates enabled caps on ACK and DEL', () => {
         const client = network.ircClient;
         client.network.cap.enabled = ['cap1', 'cap2'];
         client.emit('cap ack', { capabilities: { cap1: '', cap2: '' } });
+
         expect(network.enabled_caps).toEqual(['cap1', 'cap2']);
         expect(network.hasCap('cap1')).toBe(true);
         expect(network.hasCap('cap2')).toBe(true);
         expect(network.hasCap('cap3')).toBe(false);
-    });
 
-    it('should NOT update enabled_caps on cap new but should add message for desired caps', () => {
-        const client = network.ircClient;
-        const requestSpy = jest.spyOn(client, 'requestCap').mockImplementation(() => {});
-
-        client.emit('cap new', { capabilities: { 'message-tags': '' } });
-
-        // Should not update enabled_caps yet (waiting for ACK)
-        expect(network.enabled_caps).toEqual([]);
-        expect(requestSpy).toHaveBeenCalledWith('message-tags');
-
-        const serverBuffer = network.serverBuffer();
-        const lastMessage = serverBuffer.getLastMessage();
-        expect(lastMessage.message).toContain('Requested new capabilities: message-tags');
-    });
-
-    it('should update enabled_caps and add message on cap del', () => {
-        const client = network.ircClient;
-        network.enabled_caps = ['cap1', 'cap2'];
         client.network.cap.enabled = ['cap1'];
         client.emit('cap del', { capabilities: { cap2: '' } });
 
@@ -53,5 +30,23 @@ describe('CapNotify', () => {
         const serverBuffer = network.serverBuffer();
         const lastMessage = serverBuffer.getLastMessage();
         expect(lastMessage.message).toContain('Capabilities removed: cap2');
+    });
+
+    it('requests standard-replies and new caps without enabling them', () => {
+        const client = network.ircClient;
+        expect(client.request_extra_caps).toContain('standard-replies');
+
+        const requestSpy = jest.spyOn(client, 'requestCap').mockImplementation(() => {});
+
+        client.emit('cap new', { capabilities: { 'message-tags': '' } });
+
+        // Should not update enabled_caps yet (waiting for ACK)
+        expect(network.enabled_caps).toEqual([]);
+        expect(requestSpy).toHaveBeenCalledWith('message-tags');
+        requestSpy.mockRestore();
+
+        const serverBuffer = network.serverBuffer();
+        const lastMessage = serverBuffer.getLastMessage();
+        expect(lastMessage.message).toContain('Requested new capabilities: message-tags');
     });
 });

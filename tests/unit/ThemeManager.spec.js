@@ -61,25 +61,20 @@ describe('ThemeManager mode detection', () => {
         jest.restoreAllMocks();
     });
 
-    it('lets the config mode override the name heuristic', () => {
-        const manager = makeManager(makeTheme('Neutral'));
+    it('resolves mode from config or name heuristic', () => {
+        let manager = makeManager(makeTheme('Neutral'));
         manager.setMode('light');
         manager.guessMode(makeTheme('Neutral Dark', 'light'));
         expect(manager.themeMode()).toBe('light');
-
         manager.guessMode(makeTheme('Neutral Light', 'dark'));
         expect(manager.themeMode()).toBe('dark');
-    });
 
-    it('falls back to the name heuristic when no mode is configured', () => {
-        const manager = makeManager(makeTheme('Neutral'));
+        manager = makeManager(makeTheme('Neutral'));
         manager.setMode('light');
         manager.guessMode(makeTheme('Neutral Dark'));
         expect(manager.themeMode()).toBe('dark');
-    });
 
-    it('leaves the mode untouched when the name matches neither', () => {
-        const manager = makeManager(makeTheme('NephDeck'));
+        manager = makeManager(makeTheme('NephDeck'));
         manager.setMode('dark');
         manager.guessMode(makeTheme('NephDeck'));
         expect(manager.themeMode()).toBe('dark');
@@ -285,37 +280,33 @@ describe('ThemeManager theme loading', () => {
         expect(state.setting).toHaveBeenCalledWith('theme', 'Neutral');
     });
 
-    it('reload adds a cache buster and reapplies the current theme', () => {
+    it('reload updates or skips the cache buster as needed', () => {
         const first = { name: 'Neutral', url: 'static/themes/first' };
-        const { manager } = makeLoaded(first);
-        manager.activeTheme = first;
-        manager.setTheme = jest.fn();
+        const loaded = makeLoaded(first);
+        loaded.manager.activeTheme = first;
+        loaded.manager.setTheme = jest.fn();
 
-        manager.reload();
-
-        expect(first.url).toMatch(/^static\/themes\/first\?cb=\d+$/);
-        expect(manager.setTheme).toHaveBeenCalledWith('Neutral');
-    });
-
-    it('reload replaces an existing cache buster', () => {
-        const first = { name: 'Neutral', url: 'static/themes/first?cb=111' };
-        const { manager } = makeLoaded(first);
-        manager.activeTheme = first;
-        manager.setTheme = jest.fn();
-
-        manager.reload();
+        loaded.manager.reload();
 
         expect(first.url).toMatch(/^static\/themes\/first\?cb=\d+$/);
-        expect(first.url).not.toBe('static/themes/first?cb=111');
-    });
+        expect(loaded.manager.setTheme).toHaveBeenCalledWith('Neutral');
 
-    it('reload does nothing when no theme is current', () => {
-        const { manager } = makeLoaded({ name: 'Neutral', url: 'static/themes/first' });
-        manager.currentTheme = () => null;
-        manager.setTheme = jest.fn();
+        const second = { name: 'Neutral', url: 'static/themes/second?cb=111' };
+        const existing = makeLoaded(second);
+        existing.manager.activeTheme = second;
+        existing.manager.setTheme = jest.fn();
 
-        manager.reload();
+        existing.manager.reload();
 
-        expect(manager.setTheme).not.toHaveBeenCalled();
+        expect(second.url).toMatch(/^static\/themes\/second\?cb=\d+$/);
+        expect(second.url).not.toBe('static/themes/second?cb=111');
+
+        const empty = makeLoaded({ name: 'Neutral', url: 'static/themes/third' });
+        empty.manager.currentTheme = () => null;
+        empty.manager.setTheme = jest.fn();
+
+        empty.manager.reload();
+
+        expect(empty.manager.setTheme).not.toHaveBeenCalled();
     });
 });

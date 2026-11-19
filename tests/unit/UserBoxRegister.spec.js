@@ -82,7 +82,7 @@ describe('UserBox registration', () => {
         return comp.$el.querySelector(`input[autocomplete="${autocomplete}"]`);
     }
 
-    it('places password before email and keeps autocomplete tokens', async() => {
+    it('places password before email and shows the strength class and label', async() => {
         const password = registerInput('new-password');
         const email = registerInput('email');
 
@@ -103,11 +103,6 @@ describe('UserBox registration', () => {
             .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
         expect(strength.compareDocumentPosition(emailAfter))
             .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    });
-
-    it('shows a password strength class and label', async() => {
-        comp.registerForm.password = 'abc';
-        await Vue.nextTick();
 
         expect(comp.registerPasswordStrength).toBe(1);
         expect(comp.registerPasswordStrengthClass)

@@ -51,26 +51,23 @@ describe('Desktop HTTP adapter', () => {
         delete global.fetch;
     });
 
-    it('uses the browser fetch fallback when the bridge is absent', async() => {
-        const response = { ok: true, text: () => Promise.resolve('browser') };
-        global.fetch = jest.fn().mockResolvedValue(response);
-
-        const result = await desktopFetch('https://example.com/data');
-
+    it('falls back to browser fetch and performs native requests', async() => {
+        const browserResponse = { ok: true, text: () => Promise.resolve('browser') };
+        global.fetch = jest.fn().mockResolvedValue(browserResponse);
+        let result = await desktopFetch('https://example.com/data');
         expect(global.fetch).toHaveBeenCalledWith('https://example.com/data', {});
-        expect(result).toBe(response);
+        expect(result).toBe(browserResponse);
         expect(isDesktop()).toBe(false);
-    });
 
-    it('performs native requests through the bridge', async() => {
-        const request = jest.fn().mockResolvedValue(nativeResult());
+        const request = jest.fn().mockResolvedValue(Object.assign(
+            nativeResult(),
+            { url: 'https://example.com/final' }
+        ));
         window.kiwiDesktop = { http: { request } };
-
-        const response = await desktopFetch('https://example.com/data', {
+        let response = await desktopFetch('https://example.com/data', {
             method: 'POST',
             headers: { 'X-Test': 'yes' },
         });
-
         expect(request).toHaveBeenCalledWith({
             url: 'https://example.com/data',
             method: 'POST',
@@ -80,11 +77,9 @@ describe('Desktop HTTP adapter', () => {
         expect(response.status).toBe(200);
         expect(await response.text()).toBe('hello');
         expect(isDesktop()).toBe(true);
-    });
 
-    it('passes preview policy options through the bridge', async() => {
-        const request = jest.fn().mockResolvedValue(nativeResult());
-        window.kiwiDesktop = { http: { request } };
+        response = await desktopFetch('https://example.com/start');
+        expect(response.url).toBe('https://example.com/final');
 
         await desktopFetch('https://example.com/preview', {
             purpose: 'page-preview',
@@ -93,8 +88,7 @@ describe('Desktop HTTP adapter', () => {
             acceptContentTypes: ['text/html'],
             failOnHttpError: true,
         });
-
-        expect(request).toHaveBeenCalledWith({
+        expect(request).toHaveBeenLastCalledWith({
             url: 'https://example.com/preview',
             method: 'GET',
             headers: {},
@@ -136,30 +130,18 @@ describe('Desktop HTTP adapter', () => {
         await Promise.all(calls);
     });
 
-    it('exposes the final native response URL after redirects', async() => {
-        const request = jest.fn().mockResolvedValue(Object.assign(nativeResult(), {
-            url: 'https://example.com/final',
-        }));
-        window.kiwiDesktop = { http: { request } };
-
-        const response = await desktopFetch('https://example.com/start');
-
-        expect(response.url).toBe('https://example.com/final');
-    });
-
-    it('sends a file upload through the bridge', async() => {
+    it('uploads files and multipart data with custom fields', async() => {
         const upload = jest.fn().mockResolvedValue(nativeResult());
         window.kiwiDesktop = { http: { upload } };
-        const file = {
+        let file = {
             name: 'test.txt',
             type: 'text/plain',
             arrayBuffer: jest.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
         };
 
-        const response = await desktopUploadFile('https://example.com/upload', file, {
+        let response = await desktopUploadFile('https://example.com/upload', file, {
             headers: { Authorization: 'Basic test' },
         });
-
         expect(upload).toHaveBeenCalledWith({
             url: 'https://example.com/upload',
             method: 'POST',
@@ -168,24 +150,18 @@ describe('Desktop HTTP adapter', () => {
             purpose: 'upload',
         });
         expect(response.status).toBe(200);
-    });
 
-    it('sends multipart uploads through the bridge', async() => {
-        const upload = jest.fn().mockResolvedValue(nativeResult());
-        window.kiwiDesktop = { http: { upload } };
-        const file = {
+        file = {
             name: 'test.txt',
             type: 'text/plain',
             arrayBuffer: jest.fn().mockResolvedValue(new Uint8Array([4, 5])),
         };
-
         await desktopUploadMultipart(
             'https://example.com/upload',
             { reqtype: 'fileupload', time: '72h' },
             file
         );
-
-        expect(upload).toHaveBeenCalledWith({
+        expect(upload).toHaveBeenLastCalledWith({
             url: 'https://example.com/upload',
             method: 'POST',
             headers: {},
@@ -198,16 +174,6 @@ describe('Desktop HTTP adapter', () => {
                 data: new Uint8Array([4, 5]),
             },
         });
-    });
-
-    it('passes a custom multipart file field name', async() => {
-        const upload = jest.fn().mockResolvedValue(nativeResult());
-        window.kiwiDesktop = { http: { upload } };
-        const file = {
-            name: 'test.txt',
-            type: 'text/plain',
-            arrayBuffer: jest.fn().mockResolvedValue(new Uint8Array([4, 5])),
-        };
 
         await desktopUploadMultipart(
             'https://example.com/upload',
@@ -215,22 +181,18 @@ describe('Desktop HTTP adapter', () => {
             file,
             { fileField: 'files[]' }
         );
-
-        expect(upload).toHaveBeenCalledWith(expect.objectContaining({
+        expect(upload).toHaveBeenLastCalledWith(expect.objectContaining({
             file: expect.objectContaining({
                 fieldName: 'files[]',
             }),
         }));
     });
 
-    it('returns null for downloads when the native bridge is absent', () => {
+    it('delegates downloads when the files bridge exists', async() => {
         expect(saveUrl('https://example.com/file')).toBe(null);
-    });
 
-    it('delegates native downloads to the files bridge', async() => {
         const saveUrlFn = jest.fn().mockResolvedValue({ saved: true });
         window.kiwiDesktop = { files: { saveUrl: saveUrlFn } };
-
         await expect(saveUrl('https://example.com/file')).resolves.toEqual({ saved: true });
         expect(saveUrlFn).toHaveBeenCalledWith('https://example.com/file');
     });

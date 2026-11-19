@@ -20,10 +20,10 @@ function makeHistoryBuffer() {
 }
 
 describe('latest chathistory boundaries', () => {
-    test('keeps older history available and hides the latest-to-live gap', async() => {
-        const { s, network, buffer } = makeHistoryBuffer();
-        const now = Date.now();
-        const earlier = now - 60000;
+    test('closes the latest gap using displayable messages only', async() => {
+        let { s, network, buffer } = makeHistoryBuffer();
+        let now = Date.now();
+        let earlier = now - 60000;
 
         s.addMessage(buffer, {
             time: now,
@@ -66,12 +66,12 @@ describe('latest chathistory boundaries', () => {
         expect(buffer.historyGaps).toHaveLength(0);
         expect(buffer.getMessages().some((message) => message.irc_id === 'older'))
             .toBe(true);
-    });
 
-    test('ignores non-displayable events when closing the latest gap', async() => {
-        const { s, network, buffer } = makeHistoryBuffer();
-        const now = Date.now();
-        const earlier = now - 60000;
+        // Reaction TAGMSGs are consumed before they reach the buffer, but
+        // still appear in chathistory and must not move the boundary.
+        ({ s, network, buffer } = makeHistoryBuffer());
+        now = Date.now();
+        earlier = now - 60000;
         const reactionTime = now - 30000;
 
         s.addMessage(buffer, {
@@ -103,8 +103,6 @@ describe('latest chathistory boundaries', () => {
                             tags: { 'kiwi-history': true, 'msgid': 'older' },
                         },
                         {
-                            // Reaction TAGMSGs are consumed before they reach
-                            // the buffer, but still appear in chathistory.
                             time: reactionTime,
                             tags: {
                                 'kiwi-history': true,
@@ -155,8 +153,8 @@ describe('latest chathistory boundaries', () => {
         expect(buffer.historyGaps[0].to).toBe(now);
     });
 
-    test('does not disable older history after an empty latest response', async() => {
-        const { network, buffer } = makeHistoryBuffer();
+    test('handles empty latest and exhausted BEFORE responses', async() => {
+        let { network, buffer } = makeHistoryBuffer();
         network.ircClient.chathistory = {
             isSupported: () => true,
             supportedRefTypes: () => ['timestamp'],
@@ -171,10 +169,8 @@ describe('latest chathistory boundaries', () => {
 
         expect(buffer.history_latest_loaded).toBe(true);
         expect(buffer.flags.chathistory_available).toBe(true);
-    });
 
-    test('hides older history when BEFORE reaches the end', async() => {
-        const { network, buffer } = makeHistoryBuffer();
+        ({ network, buffer } = makeHistoryBuffer());
         network.ircClient.chathistory = {
             isSupported: () => true,
             supportedRefTypes: () => ['timestamp'],

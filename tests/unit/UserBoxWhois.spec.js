@@ -52,21 +52,21 @@ describe('UserBox WHOIS action', () => {
         delete Vue.prototype.$state;
     });
 
-    it('hides Show Details on Twitch networks', async() => {
-        const network = s.addNetwork('Twitch', 'TestNick', {
+    it('hides Show Details on Twitch and shows it elsewhere', async() => {
+        let network = s.addNetwork('Twitch', 'TestNick', {
             server: 'irc.chat.twitch.tv',
             port: 6697,
             tls: true,
         });
         network.state = 'connected';
         network.nick = 'TestNick';
-        const user = s.addUser(network, { nick: 'Other' });
+        let user = s.addUser(network, { nick: 'Other' });
 
-        const vm = mountUserBox(network, user);
+        let vm = mountUserBox(network, user);
         await Vue.nextTick();
 
-        const comp = vm.$children[0];
-        const actions = Array.from(comp.$el.querySelectorAll('.kiwi-userbox-action'));
+        let comp = vm.$children[0];
+        let actions = Array.from(comp.$el.querySelectorAll('.kiwi-userbox-action'));
 
         expect(comp.showWhoisButton).toBe(false);
         expect(actions.some((action) => action.textContent.includes('more_information')))
@@ -74,23 +74,21 @@ describe('UserBox WHOIS action', () => {
 
         vm.$destroy();
         vm.$el.remove();
-    });
 
-    it('shows Show Details on non-Twitch networks', async() => {
-        const network = s.addNetwork('TestNetwork', 'TestNick', {
+        network = s.addNetwork('TestNetwork', 'TestNick', {
             server: 'irc.example.com',
             port: 6697,
             tls: true,
         });
         network.state = 'connected';
         network.nick = 'TestNick';
-        const user = s.addUser(network, { nick: 'Other' });
+        user = s.addUser(network, { nick: 'Other' });
 
-        const vm = mountUserBox(network, user);
+        vm = mountUserBox(network, user);
         await Vue.nextTick();
 
-        const comp = vm.$children[0];
-        const actions = Array.from(comp.$el.querySelectorAll('.kiwi-userbox-action'));
+        comp = vm.$children[0];
+        actions = Array.from(comp.$el.querySelectorAll('.kiwi-userbox-action'));
 
         expect(comp.showWhoisButton).toBe(true);
         expect(actions.some((action) => action.textContent.includes('more_information')))

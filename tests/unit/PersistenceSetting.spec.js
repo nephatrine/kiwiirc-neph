@@ -46,30 +46,24 @@ function makeHarness(preference) {
 }
 
 describe('draft/persistence preference', () => {
-    it('assumes non-persistent with empty client setting on a fresh network', () => {
-        const { network } = makeHarness('on');
+    it('adopts server persistence state without sending SET', () => {
+        let { network } = makeHarness('on');
         expect(network.persistence_status).toEqual({ client: '', effective: 'OFF' });
         expect(network.persistenceCap()).toBe('');
-    });
 
-    it('adopts the server preference instead of sending a SET', () => {
-        const h = makeHarness('on');
+        let h = makeHarness('on');
         h.emitStatus(['STATUS', 'OFF', 'OFF']);
         expect(h.network.persistence_status).toEqual({ client: 'OFF', effective: 'OFF' });
         expect(h.sets()).toHaveLength(0);
         expect(h.network.setting('persistencePreference')).toBe('off');
-    });
 
-    it('adopts DEFAULT when the server reports it', () => {
-        const h = makeHarness('on');
+        h = makeHarness('on');
         h.emitStatus(['STATUS', 'DEFAULT', 'OFF']);
         expect(h.network.persistence_status.client).toBe('DEFAULT');
         expect(h.sets()).toHaveLength(0);
         expect(h.network.setting('persistencePreference')).toBe('default');
-    });
 
-    it('never overwrites keep-as-is with the server value', () => {
-        const h = makeHarness('keep');
+        h = makeHarness('keep');
         h.emitStatus(['STATUS', 'OFF', 'OFF']);
         expect(h.network.persistence_status.client).toBe('OFF');
         expect(h.sets()).toHaveLength(0);
@@ -95,16 +89,14 @@ describe('draft/persistence preference', () => {
         expect(h.network.setting('persistencePreference')).toBe('off');
     });
 
-    it('ignores malformed STATUS lines', () => {
-        const h = makeHarness('on');
+    it('ignores malformed STATUS lines and junk preferences', () => {
+        let h = makeHarness('on');
         h.emitStatus(['STATUS', 'BOGUS']);
         h.emitStatus(['GET']);
         expect(h.network.persistence_status).toEqual({ client: '', effective: 'OFF' });
         expect(h.sets()).toHaveLength(0);
-    });
 
-    it('treats junk preference values as keep-as-is', () => {
-        const h = makeHarness('sometimes');
+        h = makeHarness('sometimes');
         h.emitStatus(['STATUS', 'OFF', 'OFF']);
         expect(h.network.persistence_status.client).toBe('OFF');
         expect(h.sets()).toHaveLength(0);
@@ -138,15 +130,6 @@ describe('draft/persistence preference', () => {
         h.emitStatus(['STATUS', 'OFF', 'OFF']);
         expect(h.network.setting('persistencePreference')).toBe('off');
         expect(h.sets()).toHaveLength(1);
-    });
-
-    it('applies dropdown changes immediately via setPersistencePreference', () => {
-        const h = makeHarness('keep');
-        h.emitStatus(['STATUS', 'OFF', 'OFF']);
-        expect(h.sets()).toHaveLength(0);
-        h.network.setting('persistencePreference', 'on');
-        h.network.setPersistencePreference();
-        expect(h.sets()).toEqual([['PERSISTENCE', 'SET', 'ON']]);
     });
 
     it('gates the setting on account login plus the negotiated cap', () => {

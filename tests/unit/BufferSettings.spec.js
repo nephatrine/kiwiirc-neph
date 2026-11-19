@@ -89,6 +89,11 @@ describe('buffer notification settings', () => {
         const buffer = s.addBuffer(network.id, '#test');
         buffer.setting('favorite', true);
 
+        expect(BufferSettings.computed.neverDisabledHint.call({
+            buffer,
+            $t: (key) => key,
+        })).toBe('settings_never_disabled_hint');
+
         BufferSettings.computed.settingAlertOn.set.call(
             makeContext(buffer, (target, key) => s.$delete(target, key)),
             'never'
@@ -96,28 +101,12 @@ describe('buffer notification settings', () => {
 
         expect(buffer.setting('alert_on')).toBe('never');
         expect(buffer.setting('favorite')).toBe(false);
-
-        s.$destroy();
-    });
-
-    test('shows a hint when Favorite blocks Never', () => {
-        const { buffer } = makeBuffer({
-            settings: { favorite: true },
-        });
-
-        expect(BufferSettings.computed.neverDisabledHint.call({
-            buffer,
-            $t: (key) => key,
-        })).toBe('settings_never_disabled_hint');
-    });
-
-    test('has no hint when Never is available', () => {
-        const { buffer } = makeBuffer();
-
         expect(BufferSettings.computed.neverDisabledHint.call({
             buffer,
             $t: (key) => key,
         })).toBeNull();
+
+        s.$destroy();
     });
 
     test('sends the selected value to the bouncer', () => {

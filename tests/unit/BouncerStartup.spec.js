@@ -96,16 +96,20 @@ describe('Bouncer startup tabs', () => {
         comp = vm.$children[0];
     }
 
-    it('shows BNC and Account when probing is disabled', () => {
+    it('shows BNC and Account when probing is disabled or incomplete', async() => {
         mount({});
         expect(comp.showBncTab).toBe(true);
         expect(comp.showAccountTab).toBe(true);
         expect(comp.showRegisterTab).toBe(false);
         expect(comp.activeTab).toBe('account');
         expect(probeServerCaps).not.toHaveBeenCalled();
-    });
 
-    it('shows both tabs when the probe cannot complete', async() => {
+        vm.$destroy();
+        if (vm.$el.parentNode) {
+            vm.$el.parentNode.removeChild(vm.$el);
+        }
+        vm = null;
+
         probeServerCaps.mockResolvedValue({
             caps: {},
             isupport: {},
@@ -200,7 +204,7 @@ describe('Bouncer startup tabs', () => {
         expect(comp.fields.password).toBe('account-pass');
     });
 
-    it('labels the BNC and Account fields', async() => {
+    it('labels the BNC fields', async() => {
         mount({});
         comp.activeTab = 'bnc';
         await comp.$nextTick();
@@ -210,16 +214,9 @@ describe('Bouncer startup tabs', () => {
         ]);
         expect(comp.$el.querySelector('.u-input-text-plaintext').title)
             .toBe('server_password');
-
-        comp.activeTab = 'account';
-        await comp.$nextTick();
-        expect(fieldTitles()).toEqual([
-            'account_name',
-            'account_password',
-        ]);
     });
 
-    it('labels the Register fields', async() => {
+    it('labels the Account and Register fields', async() => {
         probeServerCaps.mockResolvedValue(probeInfo({
             'sasl': 'PLAIN',
             'draft/bouncer-networks': '',
@@ -227,6 +224,13 @@ describe('Bouncer startup tabs', () => {
         }));
         mount({ probeServerCaps: true });
         await flushPromises();
+
+        comp.activeTab = 'account';
+        await comp.$nextTick();
+        expect(fieldTitles()).toEqual([
+            'account_name',
+            'account_password',
+        ]);
 
         comp.activeTab = 'register';
         await comp.$nextTick();

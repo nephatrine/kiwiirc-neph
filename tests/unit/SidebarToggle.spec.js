@@ -109,7 +109,7 @@ describe('sidebar component toggle', () => {
         expect(testState.ui.sidebar_section).toBe('nicklist');
     });
 
-    it('shows a component with an id and reports it open', () => {
+    it('shows components with and without an id', () => {
         let component = { template: '<div />' };
         testState.$emit('sidebar.component', component, { foo: 'bar' }, 'plugin-a');
         expect(vm.sidebarOpen).toBe(true);
@@ -119,38 +119,29 @@ describe('sidebar component toggle', () => {
         expect(vm.section()).toBe('component');
         expect(vm.isComponentOpen('plugin-a')).toBe(true);
         expect(vm.isComponentOpen('plugin-b')).toBe(false);
-    });
 
-    it('toggle closes the open component with the same id', () => {
-        let component = { template: '<div />' };
-        testState.$emit('sidebar.component', component, {}, 'plugin-a');
-        expect(vm.isComponentOpen('plugin-a')).toBe(true);
-
-        testState.$emit('sidebar.component.toggle', 'plugin-a', component, {});
-        expect(vm.sidebarOpen).toBe(false);
-        expect(vm.activeComponent).toBe(null);
+        vm.close();
+        testState.$emit('sidebar.component', component, {});
+        expect(vm.sidebarOpen).toBe(true);
         expect(vm.activeComponentId).toBe(null);
         expect(vm.isComponentOpen('plugin-a')).toBe(false);
     });
 
-    it('toggle with a different id switches components', () => {
-        let first = { template: '<div />' };
-        let second = { template: '<span />' };
-        testState.$emit('sidebar.component', first, {}, 'plugin-a');
+    it('toggles the same id closed and switches to a different id', () => {
+        let component = { template: '<div />' };
+        testState.$emit('sidebar.component', component, {}, 'plugin-a');
+        testState.$emit('sidebar.component.toggle', 'plugin-a', component, {});
+        expect(vm.sidebarOpen).toBe(false);
+        expect(vm.activeComponent).toBe(null);
+        expect(vm.activeComponentId).toBe(null);
 
+        let second = { template: '<span />' };
+        testState.$emit('sidebar.component', component, {}, 'plugin-a');
         testState.$emit('sidebar.component.toggle', 'plugin-b', second, {});
         expect(vm.sidebarOpen).toBe(true);
         expect(vm.activeComponent).toBe(second);
         expect(vm.isComponentOpen('plugin-a')).toBe(false);
         expect(vm.isComponentOpen('plugin-b')).toBe(true);
-    });
-
-    it('legacy shows without an id still work and match no id', () => {
-        let component = { template: '<div />' };
-        testState.$emit('sidebar.component', component, {});
-        expect(vm.sidebarOpen).toBe(true);
-        expect(vm.activeComponentId).toBe(null);
-        expect(vm.isComponentOpen('plugin-a')).toBe(false);
     });
 
     it('showing a built-in section clears the component id', () => {

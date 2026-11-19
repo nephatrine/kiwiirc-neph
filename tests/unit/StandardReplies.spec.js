@@ -20,7 +20,7 @@ function harness() {
 }
 
 describe('handleStandardReply', () => {
-    test('FAIL METADATA INVALID_TARGET names the target', () => {
+    test('FAIL METADATA names the target and key', () => {
         let h = harness();
         handleStandardReply('FAIL', {
             params: ['METADATA', 'INVALID_TARGET', 'x2Tuff4Ux/bridged', ''],
@@ -32,10 +32,8 @@ describe('handleStandardReply', () => {
             'FAIL METADATA x2Tuff4Ux/bridged (INVALID_TARGET)'
         );
         expect(h.added[0].message.type).toBe('error');
-    });
 
-    test('FAIL METADATA KEY_NOT_SET names the target and key', () => {
-        let h = harness();
+        h = harness();
         handleStandardReply('FAIL', {
             params: ['METADATA', 'KEY_NOT_SET', 'SomeNick', 'avatar', ''],
             tags: {},

@@ -124,8 +124,8 @@ describe('draft/channel-rename', () => {
         expect(s.getActiveBuffer()).toBe(buffer);
     });
 
-    it('omits the reason when the server sends an empty one', async() => {
-        const notifications = jest.fn();
+    it('omits an empty reason and supports case-only renames', async() => {
+        let notifications = jest.fn();
         s.$on('notification.show', notifications);
 
         await dispatchRename(client, ['#old', '#new', '']);
@@ -135,18 +135,27 @@ describe('draft/channel-rename', () => {
             '#old was renamed to #new.',
             expect.objectContaining({ title: 'Channel Renamed' })
         );
+
+        const caseRename = state.create();
+        const caseNetwork = caseRename.addNetwork('CaseNetwork', 'TestNick', {});
+        caseNetwork.state = 'connected';
+        caseNetwork.nick = 'TestNick';
+        const caseClient = caseNetwork.ircClient;
+        caseClient.user.nick = 'TestNick';
+        const caseBuffer = caseRename.addBuffer(caseNetwork.id, '#old');
+        caseRename.setActiveBuffer(caseNetwork.id, '#old');
+
+        await dispatchRename(caseClient, ['#old', '#OLD', '']);
+
+        expect(caseBuffer.name).toBe('#OLD');
+        expect(caseRename.getBufferByName(caseNetwork.id, '#old')).toBe(caseBuffer);
+        expect(caseRename.ui.active_buffer).toBe('#OLD');
+        expect(caseBuffer.getMessages().some((message) => (
+            message.message === '#old was renamed to #OLD.'
+        ))).toBe(true);
     });
 
-    it('supports case-only renames', async() => {
-        await dispatchRename(client, ['#old', '#OLD', '']);
-
-        expect(buffer.name).toBe('#OLD');
-        expect(s.getBufferByName(network.id, '#old')).toBe(buffer);
-        expect(s.ui.active_buffer).toBe('#OLD');
-        expect(buffer.getMessages()[1].message).toBe('#old was renamed to #OLD.');
-    });
-
-    it('updates history without changing the active buffer when inactive', async() => {
+    it('updates history without switching buffers and ignores unknown channels', async() => {
         s.setActiveBuffer(network.id, '#other');
 
         await dispatchRename(client, ['#old', '#new', '']);
@@ -159,16 +168,14 @@ describe('draft/channel-rename', () => {
                 { networkid: network.id, bufferName: '#new' },
             ])
         );
-    });
 
-    it('ignores a rename for an unknown channel', async() => {
         const notifications = jest.fn();
         s.$on('notification.show', notifications);
 
-        await dispatchRename(client, ['#missing', '#new', '']);
+        await dispatchRename(client, ['#missing', '#newer', '']);
 
         expect(s.getBufferByName(network.id, '#missing')).toBeFalsy();
-        expect(s.getBufferByName(network.id, '#new')).toBeFalsy();
+        expect(s.getBufferByName(network.id, '#newer')).toBeFalsy();
         expect(notifications).not.toHaveBeenCalled();
     });
 

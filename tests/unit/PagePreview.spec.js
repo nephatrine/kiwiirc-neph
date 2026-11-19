@@ -622,6 +622,21 @@ describe('Tier D page previews', () => {
         expect(parseAmazonProduct('https://www.amazon.com/s?k=amazon')).toBe(null);
         expect(parseAmazonProduct('https://amzn.to/abc123')).toBe(null);
         expect(parseAmazonProduct('https://amazon.com.evil/dp/B08N5WRWNW')).toBe(null);
+
+        const url = 'https://www.amazon.com/dp/B08N5WRWNW';
+        delete window.kiwiDesktop;
+        expect(Misc.getMediaInfo(url)).toMatchObject({
+            type: 'metadata',
+            provider: 'amazon',
+            id: 'B08N5WRWNW',
+        });
+
+        window.kiwiDesktop = {};
+        expect(Misc.getMediaInfo(url)).toMatchObject({
+            type: 'metadata',
+            provider: 'amazon',
+            id: 'B08N5WRWNW',
+        });
     });
 
     it('builds an Amazon card without fetching the product page', async() => {
@@ -659,24 +674,6 @@ describe('Tier D page previews', () => {
         expect(global.fetch).not.toHaveBeenCalled();
     });
 
-    it('recognizes Amazon products on web and desktop', () => {
-        const url = 'https://www.amazon.com/dp/B08N5WRWNW';
-
-        delete window.kiwiDesktop;
-        expect(Misc.getMediaInfo(url)).toMatchObject({
-            type: 'metadata',
-            provider: 'amazon',
-            id: 'B08N5WRWNW',
-        });
-
-        window.kiwiDesktop = {};
-        expect(Misc.getMediaInfo(url)).toMatchObject({
-            type: 'metadata',
-            provider: 'amazon',
-            id: 'B08N5WRWNW',
-        });
-    });
-
     it('recognizes GameTracker server URLs', () => {
         expect(parseGameTrackerServer(
             'https://www.gametracker.com/server_info/nephatrine.net:27910/'
@@ -688,6 +685,17 @@ describe('Tier D page previews', () => {
         expect(parseGameTrackerServer(
             'https://www.gametracker.com/server_info/nephatrine.net:27910/b/'
         )).toBe(null);
+
+        const url = 'https://www.gametracker.com/server_info/nephatrine.net:27910/';
+        delete window.kiwiDesktop;
+        expect(Misc.getMediaInfo(url).type).toBe('');
+
+        window.kiwiDesktop = {};
+        expect(Misc.getMediaInfo(url)).toMatchObject({
+            type: 'metadata',
+            provider: 'gametracker',
+            id: 'nephatrine.net:27910',
+        });
     });
 
     it('builds a GameTracker card with the server banner', async() => {
@@ -728,31 +736,12 @@ describe('Tier D page previews', () => {
         });
     });
 
-    it('enables GameTracker metadata only in the desktop app', () => {
-        const url = 'https://www.gametracker.com/server_info/nephatrine.net:27910/';
-
-        delete window.kiwiDesktop;
-        expect(Misc.getMediaInfo(url).type).toBe('');
-
-        window.kiwiDesktop = {};
-        expect(Misc.getMediaInfo(url)).toMatchObject({
-            type: 'metadata',
-            provider: 'gametracker',
-            id: 'nephatrine.net:27910',
-        });
-    });
-
-    it('makes generic metadata manually previewable on desktop', () => {
+    it('gates generic metadata to desktop and known providers', () => {
         window.kiwiDesktop = {};
 
         expect(Misc.getMediaInfo('https://example.com/article').type).toBe('metadata');
         expect(Misc.getMediaInfo('https://example.com/article').provider).toBe('generic');
         expect(Misc.getMediaInfo('https://github.com/owner/repo').provider).toBe('github');
-    });
-
-    it('does not use generic metadata for known unsupported providers', () => {
-        window.kiwiDesktop = {};
-
         expect(Misc.getMediaInfo('https://www.flickr.com/photos/user/123').type)
             .toBe('oembed');
     });

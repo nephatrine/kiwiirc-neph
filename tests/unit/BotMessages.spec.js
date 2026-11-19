@@ -27,19 +27,14 @@ function emitMessage(network, nick, target, message) {
 }
 
 describe('bot messages', () => {
-    test('marks metadata bots as bot messages', () => {
-        const { s, user } = makeNetwork();
+    test('marks metadata bots and resolves the bot-message policy', () => {
+        const { s, network, user } = makeNetwork();
         const message = new Message({
             nick: 'BotUser',
             message: 'hello',
         }, user);
 
         expect(message.is_bot).toBe(true);
-        s.$destroy();
-    });
-
-    test('resolves the network and global bot-message policy', () => {
-        const { s, network } = makeNetwork();
 
         expect(network.showBotMessages()).toBe(true);
         s.setting('showBotMessages', false);

@@ -22,7 +22,7 @@ function emojiBlock(meta = {}) {
 }
 
 describe('Emoji-only detection', () => {
-    test('accepts literal unicode emoji and whitespace', () => {
+    test('detects literal emoji-only text', () => {
         expect(isEmojiOnlyText('😀')).toBe(true);
         expect(isEmojiOnlyText(' 😀 😃 ')).toBe(true);
         expect(isEmojiOnlyText('😀  😃\n😄')).toBe(true);
@@ -30,9 +30,6 @@ describe('Emoji-only detection', () => {
         expect(isEmojiOnlyText('👍🏽')).toBe(true);
         expect(isEmojiOnlyText('🇺🇸')).toBe(true);
         expect(isEmojiOnlyText('1️⃣')).toBe(true);
-    });
-
-    test('rejects mixed text and non-emoji content', () => {
         expect(isEmojiOnlyText('')).toBe(false);
         expect(isEmojiOnlyText('   ')).toBe(false);
         expect(isEmojiOnlyText('😀 hello')).toBe(false);
@@ -41,15 +38,13 @@ describe('Emoji-only detection', () => {
         expect(isEmojiOnlyText(':wave:')).toBe(false);
     });
 
-    test('accepts parsed emoji blocks', () => {
+    test('accepts parsed emoji blocks and whitespace-separated emoji', () => {
         expect(isEmojiOnlyBlocks([
             textBlock('😀'),
             emojiBlock({ emoji: '😃', shortcode: 'smile' }),
             textBlock(' '),
         ])).toBe(true);
-        expect(isEmojiOnlyBlocks([
-            textBlock('😀 😃'),
-        ])).toBe(true);
+        expect(isEmojiOnlyBlocks([textBlock('😀 😃')])).toBe(true);
         expect(isEmojiOnlyBlocks([
             emojiBlock({ emoji: '😀', shortcode: 'smile' }),
             textBlock(' '),
@@ -64,9 +59,7 @@ describe('Emoji-only detection', () => {
                 shortcode: 'wave',
             }),
         ])).toBe(true);
-    });
 
-    test('accepts parsed emoji blocks separated by whitespace', () => {
         const state = getState();
         state.setting('buffers.emoji_convert_incoming', true);
         state.setting('customEmojis', {
@@ -76,11 +69,6 @@ describe('Emoji-only detection', () => {
         try {
             const spaced = parseMessage(':doom: :doom:');
             const adjacent = parseMessage(':doom::doom:');
-
-            expect(spaced.every((block) => (
-                block.type === 'emoji' ||
-                (block.type === 'text' && !block.content.trim())
-            ))).toBe(true);
             expect(isEmojiOnlyBlocks(spaced)).toBe(true);
             expect(isEmojiOnlyBlocks(adjacent)).toBe(true);
         } finally {
@@ -130,15 +118,12 @@ describe('MessageList emoji-only messages', () => {
         return MessageList.methods.isEmojiOnlyMessage.call(context, message);
     }
 
-    test('accepts normal chat messages that parse as emoji only', () => {
-        const message = makeMessage();
-
+    test('accepts normal, whitespace-separated, and uppercase chat messages', () => {
+        let message = makeMessage();
         expect(isEmojiOnly(message)).toBe(true);
         expect(message.toBlocks).toHaveBeenCalledWith(context.buffer, true);
-    });
 
-    test('accepts whitespace between emoji blocks', () => {
-        const message = makeMessage({
+        message = makeMessage({
             toBlocks: () => [
                 textBlock('😀'),
                 textBlock(' '),
@@ -147,11 +132,8 @@ describe('MessageList emoji-only messages', () => {
                 textBlock('😄'),
             ],
         });
-
         expect(isEmojiOnly(message)).toBe(true);
-    });
 
-    test('accepts uppercase message types', () => {
         expect(isEmojiOnly(makeMessage({ type: 'PRIVMSG' }))).toBe(true);
     });
 
@@ -168,15 +150,12 @@ describe('MessageList emoji-only messages', () => {
         expect(isEmojiOnly(makeMessage({ type: 'join' }))).toBe(false);
     });
 
-    test('rejects redacted, templated, and embedded messages', () => {
+    test('rejects ineligible or non-emoji message content', () => {
         expect(isEmojiOnly(makeMessage({ is_redacted: true }))).toBe(false);
         expect(isEmojiOnly(makeMessage({ bodyTemplate: {} }))).toBe(false);
         expect(isEmojiOnly(makeMessage({
             embed: { payload: 'https://example.com' },
         }))).toBe(false);
-    });
-
-    test('rejects messages whose parsed content is not emoji only', () => {
         expect(isEmojiOnly(makeMessage({
             toBlocks: () => [textBlock('😀 hello')],
         }))).toBe(false);

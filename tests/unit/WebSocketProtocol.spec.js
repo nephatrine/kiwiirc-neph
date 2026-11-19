@@ -10,9 +10,9 @@ describe('IRCv3 WebSocket protocol', () => {
         WsTransport.mockClear();
     });
 
-    it('configures direct IRC clients with the text subprotocol', () => {
-        let s = state.create();
-        let network = s.addNetwork('TestNetwork', 'TestNick', {
+    it('configures direct clients and probes with the text subprotocol', () => {
+        const s = state.create();
+        const network = s.addNetwork('TestNetwork', 'TestNick', {
             server: 'irc.example.net',
             port: 6697,
             tls: true,
@@ -21,9 +21,7 @@ describe('IRCv3 WebSocket protocol', () => {
 
         expect(network.ircClient.options.websocket_protocol)
             .toBe(IRC_WEBSOCKET_PROTOCOL);
-    });
 
-    it('uses the text subprotocol for direct capability probes', () => {
         createProbeTransport({
             direct: true,
             host: 'irc.example.net',

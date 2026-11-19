@@ -1,4 +1,6 @@
 import Sidebar from '@/components/Sidebar';
+import StateBrowser from '@/components/StateBrowser';
+import StateBrowserUsermenu from '@/components/StateBrowserUsermenu';
 
 function clickEvent(handle) {
     return {
@@ -74,5 +76,29 @@ describe('Sidebar link handles', () => {
         expect(emit).not.toHaveBeenCalled();
         expect(event.preventDefault).not.toHaveBeenCalled();
         expect(event.stopPropagation).not.toHaveBeenCalled();
+    });
+});
+
+describe('StateBrowser notification toggle', () => {
+    test('defaults to enabled and toggles the global pause state', () => {
+        const ui = {};
+        const context = {
+            $state: { ui },
+        };
+
+        expect(StateBrowser.computed.notificationsEnabled.call(context)).toBe(true);
+
+        context.notificationsEnabled = true;
+        StateBrowser.methods.toggleNotifications.call(context);
+
+        expect(ui.notifications_enabled).toBe(false);
+    });
+
+    test('user menu emits its open state', () => {
+        const emit = jest.fn();
+
+        StateBrowserUsermenu.watch.is_usermenu_open.call({ $emit: emit }, true);
+
+        expect(emit).toHaveBeenCalledWith('toggle', true);
     });
 });

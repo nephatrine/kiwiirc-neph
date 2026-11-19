@@ -52,46 +52,36 @@ describe('bouncer feature planes', () => {
         direct.enabled_caps = ['draft/persistence', 'draft/chathistory'];
     });
 
-    it('recognises the controller, bound and direct connections', () => {
+    it('recognises connections, accounts, and persistence support', () => {
         expect(controller.isBouncerConnection()).toBe(true);
         expect(controller.isBouncerController()).toBe(true);
         expect(bound.isBouncerConnection()).toBe(true);
         expect(bound.isBouncerController()).toBe(false);
         expect(direct.isBouncerConnection()).toBe(false);
         expect(direct.isBouncerController()).toBe(false);
-    });
 
-    it('tracks the current account from SASL and explicit reports', () => {
         expect(direct.currentAccount()).toBe('direct-account');
         expect(bound.currentAccount()).toBe('');
         expect(controller.currentAccount()).toBe('');
-
         bound.sasl_account = 'USER/NETWORK@CLIENT';
         expect(bound.currentAccount()).toBe('USER');
-
         bound.setCurrentAccount('explicit/NETWORK@CLIENT');
         expect(bound.currentAccount()).toBe('explicit');
-
         bound.setCurrentAccount('*');
         expect(bound.currentAccount()).toBe('');
-
         bound.setCurrentAccount('explicit');
         bound.resetCurrentAccount();
         expect(bound.currentAccount()).toBe('USER');
-
         controller.sasl_account = 'bouncer-account';
         expect(controller.currentAccount()).toBe('bouncer-account');
-    });
 
-    it('offers persistence on every network that negotiated it', () => {
-        controller.sasl_account = 'bouncer-account';
         bound.sasl_account = 'bouncer-account';
         expect(controller.persistencePreferenceAvailable()).toBe(true);
         expect(bound.persistencePreferenceAvailable()).toBe(true);
         expect(direct.persistencePreferenceAvailable()).toBe(true);
     });
 
-    it('offers webpush on the controller and a bound network', () => {
+    it('offers webpush on the controller, bound, and upstream networks', () => {
         controller.sasl_account = 'bouncer-account';
         controller.setting('show_notifications', true);
         bound.sasl_account = 'bouncer-account';
@@ -101,26 +91,15 @@ describe('bouncer feature planes', () => {
 
         expect(controller.webpushAvailable()).toBe(true);
         expect(bound.webpushAvailable()).toBe(true);
-    });
 
-    it('does not borrow the controller VAPID for a bound network', () => {
-        bound.sasl_account = 'bouncer-account';
-        bound.setting('show_notifications', true);
-        bound.persistence_status = { client: 'ON', effective: 'ON' };
-
+        delete bound.isupport.VAPID;
         expect(bound.webpushVapidKey()).toBe('');
         expect(bound.webpushAvailable()).toBe(false);
-    });
 
-    it('offers upstream webpush on a bound network', () => {
-        bound.sasl_account = 'bouncer-account';
-        bound.setting('show_notifications', true);
         bound.advertised_caps = bound.advertised_caps.filter((cap) => (
             cap !== 'draft/webpush'
         ));
         bound.isupport.VAPID = 'upstream-key';
-        bound.persistence_status = { client: 'ON', effective: 'ON' };
-
         expect(bound.webpushAvailable()).toBe(true);
     });
 

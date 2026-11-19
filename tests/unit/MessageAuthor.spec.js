@@ -11,14 +11,12 @@ function makeMessage(user) {
 }
 
 describe('message author host names', () => {
-    test('formats ident@host', () => {
+    test('formats ident@host from either field set', () => {
         expect(messageHostName(makeMessage({
             username: 'ident',
             host: 'example.com',
         }))).toBe('ident@example.com');
-    });
 
-    test('supports alternate user field names', () => {
         expect(messageHostName(makeMessage({
             ident: 'ident',
             hostname: 'example.com',
@@ -29,9 +27,19 @@ describe('message author host names', () => {
         expect(messageHostName(makeMessage({ username: 'ident' }))).toBe('');
         expect(messageHostName(makeMessage({ host: 'example.com' }))).toBe('');
         expect(messageHostName(makeMessage(null))).toBe('');
+
+        expect(shouldShowHostName(makeMessage(null), makeBuffer({
+            show_hostnames: true,
+            show_realnames: false,
+        }))).toBe(false);
+
+        expect(shouldShowHostName(makeMessage({ username: 'ident' }), makeBuffer({
+            show_hostnames: true,
+            show_realnames: false,
+        }))).toBe(false);
     });
 
-    test('shows only when host names are enabled and real names are off', () => {
+    test('shows only when enabled, and accepts cached settings', () => {
         const message = makeMessage({
             username: 'ident',
             host: 'example.com',
@@ -51,30 +59,12 @@ describe('message author host names', () => {
             show_hostnames: false,
             show_realnames: false,
         }))).toBe(false);
-    });
 
-    test('does not show without a user host', () => {
-        expect(shouldShowHostName(makeMessage(null), makeBuffer({
-            show_hostnames: true,
-            show_realnames: false,
-        }))).toBe(false);
-
-        expect(shouldShowHostName(makeMessage({ username: 'ident' }), makeBuffer({
-            show_hostnames: true,
-            show_realnames: false,
-        }))).toBe(false);
-    });
-
-    test('accepts cached host name settings without reading the buffer', () => {
         const buffer = {
             setting: jest.fn(() => {
                 throw new Error('buffer setting should not be read');
             }),
         };
-        const message = makeMessage({
-            username: 'ident',
-            host: 'example.com',
-        });
 
         expect(shouldShowHostName(message, buffer, {
             showRealNames: false,

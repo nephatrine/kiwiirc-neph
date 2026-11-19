@@ -1,5 +1,6 @@
 import state from '@/libs/state';
 import { LOCAL_INITIALS } from '@/helpers/AvatarFallback';
+import { getAvatarTransform } from '@/components/UserAvatarCommon';
 
 describe('user fallback avatars', () => {
     afterEach(() => {
@@ -76,5 +77,27 @@ describe('user fallback avatars', () => {
         expect(second.large).toBe('');
 
         s.$destroy();
+    });
+});
+
+describe('avatar away status transform', () => {
+    const appState = state();
+
+    afterEach(() => {
+        appState.setting('avatars.away_status_position', 2);
+    });
+
+    it('uses the configured corner and defaults to bottom-right', () => {
+        appState.setting('avatars.away_status_position', 2);
+        expect(appState.setting('avatars.away_status_position')).toBe(2);
+        expect(getAvatarTransform()).toBe('rotate(135 50 50)');
+
+        appState.setting('avatars.away_status_position', 1);
+
+        expect(getAvatarTransform()).toBe('rotate(45 50 50)');
+
+        appState.setting('avatars.away_status_position', 4);
+
+        expect(getAvatarTransform()).toBe('rotate(315 50 50)');
     });
 });

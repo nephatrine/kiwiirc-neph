@@ -1,7 +1,7 @@
 import { hash32 } from '@/helpers/MurmurHash3';
 
 describe('MurmurHash3.hash32', () => {
-    test('matches known x86 32-bit hashes', () => {
+    test('hashes known inputs, multi-block data, and seeds', () => {
         const known = {
             '': 0,
             'a': 1009084850,
@@ -20,26 +20,19 @@ describe('MurmurHash3.hash32', () => {
         Object.keys(known).forEach((input) => {
             expect(hash32(input)).toBe(known[input]);
         });
-    });
 
-    test('covers multi-block input', () => {
         // 100 chars exercises the block loop and the remainder switch.
         expect(hash32('x'.repeat(100))).toBe(2625171602);
-    });
 
-    test('returns an unsigned 32-bit integer', () => {
         const value = hash32('some longer string that covers several blocks');
-
         expect(value).toBeGreaterThanOrEqual(0);
         expect(value).toBeLessThanOrEqual(0xffffffff);
+
+        expect(hash32('foo', 1)).not.toBe(hash32('foo'));
     });
 
     test('treats missing input as an empty string', () => {
         expect(hash32()).toBe(0);
         expect(hash32('', 0)).toBe(0);
-    });
-
-    test('uses the seed when supplied', () => {
-        expect(hash32('foo', 1)).not.toBe(hash32('foo'));
     });
 });

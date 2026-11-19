@@ -20,8 +20,8 @@ describe('BatchHandlers.js', () => {
             client = {};
         });
 
-        it('should concatenate messages with draft/multiline-concat tag (look-back)', () => {
-            const batch = {
+        it('should concatenate continued lines for PRIVMSG and NOTICE', () => {
+            let batch = {
                 tags: { account: 'Account1' },
                 commands: [
                     {
@@ -42,13 +42,38 @@ describe('BatchHandlers.js', () => {
                 ],
             };
 
-            const results = BatchHandlers.handleMultilineBatch(network, client, batch);
+            let results = BatchHandlers.handleMultilineBatch(network, client, batch);
 
             expect(results.length).toBe(1);
-            const syntheticEvent = results[0];
-            // Part 1 + continued should be merged without newline
-            // Part 2 should be after a newline
-            expect(syntheticEvent.params[1]).toBe('Part 1 continued\nPart 2');
+            // Part 1 + continued merge without newline; Part 2 follows a newline
+            expect(results[0].params[1]).toBe('Part 1 continued\nPart 2');
+
+            batch = {
+                tags: {},
+                commands: [
+                    {
+                        command: 'NOTICE',
+                        params: ['#channel', 'Part 1'],
+                        tags: {},
+                    },
+                    {
+                        command: 'NOTICE',
+                        params: ['#channel', ' continued'],
+                        tags: { 'draft/multiline-concat': '' },
+                    },
+                    {
+                        command: 'NOTICE',
+                        params: ['#channel', 'Part 2'],
+                        tags: {},
+                    },
+                ],
+            };
+
+            results = BatchHandlers.handleMultilineBatch(network, client, batch);
+
+            expect(results.length).toBe(1);
+            expect(results[0].command).toBe('NOTICE');
+            expect(results[0].params[1]).toBe('Part 1 continued\nPart 2');
         });
 
         it('should mark bridge card multiline batches', () => {
@@ -77,35 +102,6 @@ describe('BatchHandlers.js', () => {
 
             expect(results[0].tags['kiwi-bridge-card']).toBe('1');
             expect(results[0].params[1]).toBe('[PREVIEW]\nTitle: A title\nBody');
-        });
-
-        it('should join logical NOTICE lines and concatenate continued lines', () => {
-            const batch = {
-                tags: {},
-                commands: [
-                    {
-                        command: 'NOTICE',
-                        params: ['#channel', 'Part 1'],
-                        tags: {},
-                    },
-                    {
-                        command: 'NOTICE',
-                        params: ['#channel', ' continued'],
-                        tags: { 'draft/multiline-concat': '' },
-                    },
-                    {
-                        command: 'NOTICE',
-                        params: ['#channel', 'Part 2'],
-                        tags: {},
-                    },
-                ],
-            };
-
-            const results = BatchHandlers.handleMultilineBatch(network, client, batch);
-
-            expect(results.length).toBe(1);
-            expect(results[0].command).toBe('NOTICE');
-            expect(results[0].params[1]).toBe('Part 1 continued\nPart 2');
         });
     });
 
@@ -138,6 +134,12 @@ describe('BatchHandlers.js', () => {
             ));
         });
 
+        function sentMessages() {
+            return client.raw.mock.calls
+                .map(([message]) => message)
+                .filter((message) => message && message.command === 'PRIVMSG');
+        }
+
         it('should send value-less concat tag on subsequent chunks only', () => {
             const longLine = 'a'.repeat(400); // Trigger chunking (350 limit)
             BatchHandlers.sendMultiline(network, {}, 'PRIVMSG', '#channel', longLine, {});
@@ -157,13 +159,7 @@ describe('BatchHandlers.js', () => {
             }));
         });
 
-        function sentMessages() {
-            return client.raw.mock.calls
-                .map(([message]) => message)
-                .filter((message) => message && message.command === 'PRIVMSG');
-        }
-
-        it('should not split surrogate pairs in long emoji lines', () => {
+        it('should keep emoji graphemes intact in long lines', () => {
             const emoji = '😀';
             const longLine = emoji.repeat(100);
             BatchHandlers.sendMultiline(
@@ -175,30 +171,29 @@ describe('BatchHandlers.js', () => {
                 {}
             );
 
-            const chunks = sentMessages().map((message) => message.params[1]);
+            let chunks = sentMessages().map((message) => message.params[1]);
             expect(chunks.join('')).toBe(longLine);
             expect(chunks.length).toBeGreaterThan(1);
             chunks.forEach((chunk) => {
                 expect(chunk.split(emoji).join('')).toBe('');
                 expect(new TextEncoder().encode(chunk).length).toBeLessThanOrEqual(300);
             });
-        });
 
-        it('should keep ZWJ emoji sequences intact in long lines', () => {
+            client.raw.mockClear();
             const family = '👨‍👩‍👧‍👦';
-            const longLine = family.repeat(50);
+            const familyLine = family.repeat(50);
             network.capValue.mockReturnValue('max-bytes=10000,max-lines=10');
             BatchHandlers.sendMultiline(
                 network,
                 {},
                 'PRIVMSG',
                 '#channel',
-                longLine,
+                familyLine,
                 {}
             );
 
-            const chunks = sentMessages().map((message) => message.params[1]);
-            expect(chunks.join('')).toBe(longLine);
+            chunks = sentMessages().map((message) => message.params[1]);
+            expect(chunks.join('')).toBe(familyLine);
             expect(chunks.length).toBeGreaterThan(1);
             chunks.forEach((chunk) => {
                 expect(chunk.split(family).join('')).toBe('');

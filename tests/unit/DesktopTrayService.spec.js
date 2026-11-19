@@ -94,7 +94,7 @@ describe('desktop tray service', () => {
         FakeTray.fail = false;
     });
 
-    it('formats tooltip and overlay text', () => {
+    it('formats tooltip and overlay text and normalizes summaries', () => {
         const summary = {
             unread: 1200,
             highlights: 2,
@@ -106,9 +106,7 @@ describe('desktop tray service', () => {
         expect(formatOverlayDescription(summary))
             .toBe('999+ unread, 2 highlights, 1 error');
         expect(formatTrayTooltip({})).toBe('Kiwi IRC');
-    });
 
-    it('normalizes badge summaries', () => {
         expect(normalizeBadgeSummary({
             unread: -1,
             highlights: 2.9,
@@ -120,8 +118,9 @@ describe('desktop tray service', () => {
         });
     });
 
-    it('creates the tray and menu', () => {
-        const { service, menus } = makeService();
+    it('creates the tray and menu, updates items, and destroys the tray', () => {
+        const onOpenUpdate = jest.fn();
+        const { service, menus } = makeService({ onOpenUpdate });
 
         expect(service.create()).toBe(true);
         expect(service.isAvailable()).toBe(true);
@@ -134,12 +133,6 @@ describe('desktop tray service', () => {
             undefined,
             'Quit Kiwi IRC',
         ]);
-    });
-
-    it('adds an update item and opens the release page', () => {
-        const onOpenUpdate = jest.fn();
-        const { service, menus } = makeService({ onOpenUpdate });
-        service.create();
 
         service.setUpdate({
             updateAvailable: true,
@@ -164,6 +157,10 @@ describe('desktop tray service', () => {
             undefined,
             'Quit Kiwi IRC',
         ]);
+
+        service.destroy();
+        expect(FakeTray.instances[0].destroyed).toBe(true);
+        expect(service.isAvailable()).toBe(false);
     });
 
     it('disables close-to-tray when the tray cannot be created', () => {
@@ -175,7 +172,7 @@ describe('desktop tray service', () => {
         expect(service.shouldHideOnClose()).toBe(false);
     });
 
-    it('shows, hides, and toggles the window', () => {
+    it('shows, hides, and toggles the window, and updates OS badges', () => {
         const { service, window } = makeService();
         service.create();
 
@@ -189,48 +186,37 @@ describe('desktop tray service', () => {
 
         service.toggleWindow();
         expect(window.hide).toHaveBeenCalledTimes(2);
-    });
 
-    it('updates the OS badge and Windows overlay', () => {
-        const window = makeWindow();
+        const winWindow = makeWindow();
         const app = { setBadgeCount: jest.fn() };
-        const service = createTrayService({
+        const winService = createTrayService({
             app,
             Tray: FakeTray,
             Menu: { buildFromTemplate: jest.fn(() => []) },
             nativeImage: {
                 createFromPath: jest.fn(() => ({ isEmpty: () => false })),
             },
-            getWindow: () => window,
+            getWindow: () => winWindow,
             getSettings: () => ({ closeToTray: true }),
             trayIconPath: '/tmp/tray.png',
             badgeIconPath: '/tmp/badge.png',
             platform: 'win32',
         });
 
-        service.create();
-        service.updateBadge({
+        winService.create();
+        winService.updateBadge({
             unread: 3,
             highlights: 1,
             errors: 0,
         });
 
         expect(app.setBadgeCount).toHaveBeenCalledWith(3);
-        expect(window.setOverlayIcon).toHaveBeenCalledWith(
+        expect(winWindow.setOverlayIcon).toHaveBeenCalledWith(
             expect.anything(),
             '3 unread, 1 highlight'
         );
 
-        service.updateBadge({ unread: 0, highlights: 0, errors: 0 });
-        expect(window.setOverlayIcon).toHaveBeenLastCalledWith(null, '');
-    });
-
-    it('destroys the tray', () => {
-        const { service } = makeService();
-        service.create();
-        service.destroy();
-
-        expect(FakeTray.instances[0].destroyed).toBe(true);
-        expect(service.isAvailable()).toBe(false);
+        winService.updateBadge({ unread: 0, highlights: 0, errors: 0 });
+        expect(winWindow.setOverlayIcon).toHaveBeenLastCalledWith(null, '');
     });
 });

@@ -30,13 +30,11 @@ describe('Reddit link previews', () => {
         delete window.kiwiDesktop;
     });
 
-    it('recognizes Reddit post and short-link URLs', () => {
+    it('recognizes Reddit URLs and uses the oEmbed card', async() => {
         expect(getLinkPreviewProvider(redditUrl).id).toBe('reddit');
         expect(getLinkPreviewProvider('https://www.reddit.com/r/Guildwars2/s/ayBuBWuPXW').id)
             .toBe('reddit');
-    });
 
-    it('uses the oEmbed card without requesting Reddit JSON', async() => {
         global.fetch = jest.fn().mockResolvedValue(jsonResponse({
             title: 'A cat',
             author_name: 'alice',
@@ -65,7 +63,7 @@ describe('Reddit link previews', () => {
         );
     });
 
-    it('falls back to page metadata when Reddit oEmbed fails', async() => {
+    it('falls back to page metadata and rejects when everything fails', async() => {
         window.kiwiDesktop = {};
         global.fetch = jest.fn()
             .mockRejectedValueOnce(new Error('oEmbed blocked'))
@@ -76,15 +74,15 @@ describe('Reddit link previews', () => {
                 </head></html>
             `));
 
-        const card = await resolveLinkPreview(redditUrl);
+        let card = await resolveLinkPreview(redditUrl);
 
         expect(card).toMatchObject({
             title: 'Reddit page',
             image: 'https://example.com/reddit.jpg',
         });
-    });
 
-    it('does not add a fallback card when oEmbed and page metadata fail', async() => {
+        clearLinkPreviewCache();
+        clearPagePreviewCache();
         global.fetch = jest.fn().mockRejectedValue(new Error('blocked'));
 
         await expect(resolveLinkPreview(redditUrl)).rejects.toThrow('blocked');

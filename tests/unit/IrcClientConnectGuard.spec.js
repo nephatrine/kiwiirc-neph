@@ -12,33 +12,29 @@ function makeNetwork() {
 }
 
 describe('IrcClient connect guard', () => {
-    test('does not replace a transport that is already connecting', () => {
-        const { network, client, connect } = makeNetwork();
+    test('guards an in-flight connection and marks state before emitting', () => {
+        let { network, client, connect } = makeNetwork();
         network.state = 'connecting';
 
         client.connect();
 
         expect(connect).not.toHaveBeenCalled();
-    });
 
-    test('starts a connection from the disconnected state', () => {
-        const { network, client, connect } = makeNetwork();
+        ({ network, client, connect } = makeNetwork());
         network.state = 'disconnected';
 
         client.connect();
 
         expect(connect).toHaveBeenCalledTimes(1);
-    });
 
-    test('sets connecting before emitting network.connecting', () => {
-        const { appState, network, client } = makeNetwork();
+        const context = makeNetwork();
         let seenState = null;
-        appState.$on('network.connecting', () => {
-            seenState = network.state;
+        context.appState.$on('network.connecting', () => {
+            seenState = context.network.state;
         });
-        network.state = 'disconnected';
+        context.network.state = 'disconnected';
 
-        client.connect();
+        context.client.connect();
 
         expect(seenState).toBe('connecting');
     });

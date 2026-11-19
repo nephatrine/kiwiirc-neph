@@ -191,22 +191,18 @@ describe('webpush registration', () => {
             return h;
         }
 
-        it('hides when the server reports OFF', () => {
-            const h = persistentHarness('OFF', 'OFF');
-            expect(h.network.webpushAvailable()).toBe(false);
-        });
+        it('gates visibility on the effective persistence status', () => {
+            const cases = [
+                ['OFF', 'OFF', false],
+                ['DEFAULT', 'OFF', false],
+                ['ON', 'ON', true],
+            ];
 
-        it('hides on DEFAULT when the server reports OFF', () => {
-            const h = persistentHarness('DEFAULT', 'OFF');
-            expect(h.network.webpushAvailable()).toBe(false);
-        });
+            cases.forEach(([clientSetting, effective, expected]) => {
+                const h = persistentHarness(clientSetting, effective);
+                expect(h.network.webpushAvailable()).toBe(expected);
+            });
 
-        it('shows when the server reports ON', () => {
-            const h = persistentHarness('ON', 'ON');
-            expect(h.network.webpushAvailable()).toBe(true);
-        });
-
-        it('shows without a persistence cap (servers like soju)', () => {
             const h = makeHarness();
             expect(h.network.hasCap('draft/persistence')).toBe(false);
             expect(h.network.webpushAvailable()).toBe(true);
@@ -669,19 +665,7 @@ describe('webpush registration', () => {
             expect(h.network.webpush_endpoint).toBe('');
         });
 
-        it('receives cross-tab failures', () => {
-            const h = makeHarness();
-            h.ipc.emit({
-                type: 'webpush-failed',
-                stateKey: 'kiwi-state',
-                networkId: h.network.id,
-                reason: 'Nope',
-            });
-            expect(h.network.setting('webpushEnabled')).toBe(false);
-            expect(h.network.webpush_error).toBe('Nope');
-        });
-
-        it('ignores messages for other networks and state keys', () => {
+        it('handles cross-tab failures and ignores unrelated messages', () => {
             const h = makeHarness();
             h.ipc.emit({
                 type: 'webpush-failed',
@@ -698,6 +682,15 @@ describe('webpush registration', () => {
                 reason: 'Nope',
             });
             expect(h.network.setting('webpushEnabled')).toBe(true);
+
+            h.ipc.emit({
+                type: 'webpush-failed',
+                stateKey: 'kiwi-state',
+                networkId: h.network.id,
+                reason: 'Nope',
+            });
+            expect(h.network.setting('webpushEnabled')).toBe(false);
+            expect(h.network.webpush_error).toBe('Nope');
         });
 
         it('resetWebpush unchecks, unregisters, and unsubscribes', async() => {

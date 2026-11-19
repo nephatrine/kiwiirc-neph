@@ -19,36 +19,35 @@ function hasBatchStart(client) {
 }
 
 describe('outgoing multiline trigger', () => {
-    let network;
-    let client;
-
-    beforeEach(() => {
+    function makeClient() {
         const appState = state.create();
-        network = appState.addNetwork('TestNetwork', 'TestNick', {});
+        const network = appState.addNetwork('TestNetwork', 'TestNick', {});
         network.enabled_caps = ['draft/multiline'];
-        client = network.ircClient;
+        const client = network.ircClient;
         client.raw = jest.fn();
-    });
+        return client;
+    }
 
-    test('uses multiline for a long emoji message by byte length', () => {
-        const message = '😀'.repeat(100);
+    test('uses multiline for long emoji messages by byte length', () => {
+        let client = makeClient();
+        const emoji = '😀';
+        let message = emoji.repeat(100);
         client.say('#channel', message);
 
         expect(hasBatchStart(client)).toBe(true);
-        const chunks = sentChunks(client);
+        let chunks = sentChunks(client);
         expect(chunks.join('')).toBe(message);
         chunks.forEach((chunk) => {
-            expect(chunk.split('😀').join('')).toBe('');
+            expect(chunk.split(emoji).join('')).toBe('');
         });
-    });
 
-    test('uses multiline for a long ZWJ sequence by byte length', () => {
+        client = makeClient();
         const family = '👨‍👩‍👧‍👦';
-        const message = family.repeat(20);
+        message = family.repeat(20);
         client.say('#channel', message);
 
         expect(hasBatchStart(client)).toBe(true);
-        const chunks = sentChunks(client);
+        chunks = sentChunks(client);
         expect(chunks.join('')).toBe(message);
         chunks.forEach((chunk) => {
             expect(chunk.split(family).join('')).toBe('');
@@ -56,6 +55,7 @@ describe('outgoing multiline trigger', () => {
     });
 
     test('keeps short messages out of multiline batches', () => {
+        const client = makeClient();
         client.say('#channel', 'hello');
 
         expect(hasBatchStart(client)).toBe(false);

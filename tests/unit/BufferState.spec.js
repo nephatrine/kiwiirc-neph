@@ -13,24 +13,17 @@ describe('raw buffer scrollback', () => {
         channel = s.addBuffer(network.id, '#chan');
     });
 
-    it('defaults the raw buffer to 500 lines', () => {
+    it('resolves raw scrollback from defaults, network, and buffer overrides', () => {
         expect(raw.setting('scrollback_size')).toBe(500);
-    });
 
-    it('uses the network raw_scrollback_size for the raw buffer', () => {
         network.setting('raw_scrollback_size', 5000);
         expect(raw.setting('scrollback_size')).toBe(5000);
-    });
 
-    it('prefers a per-buffer override over the network value', () => {
-        network.setting('raw_scrollback_size', 5000);
         raw.setting('scrollback_size', 100);
         expect(raw.setting('scrollback_size')).toBe(100);
-    });
 
-    it('does not apply the network value to normal buffers', () => {
-        network.setting('raw_scrollback_size', 5000);
-        expect(channel.setting('scrollback_size')).toBe(s.setting('buffers.scrollback_size'));
+        expect(channel.setting('scrollback_size'))
+            .toBe(s.setting('buffers.scrollback_size'));
     });
 });
 
@@ -194,44 +187,25 @@ describe('user prefixes', () => {
 });
 
 describe('channel topics', () => {
-    it('defaults a Twitch channel topic to its channel link', () => {
+    it('defaults Twitch channel topics and preserves real or non-Twitch topics', () => {
         let s = state.create();
-        let network = s.addNetwork('Twitch', 'nick', {
+        let twitch = s.addNetwork('Twitch', 'nick', {
             server: 'irc.chat.twitch.tv',
         });
-        let channel = s.addBuffer(network.id, '#theprimeagen');
+        let channel = s.addBuffer(twitch.id, '#theprimeagen');
 
         expect(channel.topic).toBe('https://twitch.tv/theprimeagen');
-    });
 
-    it('prefers a real Twitch topic over the channel link', () => {
-        let s = state.create();
-        let network = s.addNetwork('Twitch', 'nick', {
-            server: 'irc.chat.twitch.tv',
-        });
-        let channel = s.addBuffer(network.id, '#theprimeagen');
         channel.topic = 'A real topic';
-
         expect(channel.topic).toBe('A real topic');
-    });
 
-    it('does not add a default topic on other networks', () => {
-        let s = state.create();
-        let network = s.addNetwork('Test', 'nick', {
+        let other = s.addNetwork('Test', 'nick', {
             server: 'irc.example.com',
         });
-        let channel = s.addBuffer(network.id, '#chan');
+        let otherChannel = s.addBuffer(other.id, '#chan');
+        expect(otherChannel.topic).toBe('');
 
-        expect(channel.topic).toBe('');
-    });
-
-    it('does not add a default topic to Twitch queries', () => {
-        let s = state.create();
-        let network = s.addNetwork('Twitch', 'nick', {
-            server: 'irc.chat.twitch.tv',
-        });
-        let query = s.addBuffer(network.id, 'theprimeagen');
-
+        let query = s.addBuffer(twitch.id, 'theprimeagen');
         expect(query.topic).toBe('');
     });
 });

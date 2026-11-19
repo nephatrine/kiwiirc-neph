@@ -40,9 +40,7 @@ describe('multiline notice formatting', () => {
         });
 
         expect(lastMessage().message).toBe('[NOTICE] Line one\n[NOTICE] Line two');
-    });
 
-    it('prefixes only logical lines when chunks are concatenated', () => {
         dispatch({
             type: 'notice',
             nick: 'Other',
@@ -53,9 +51,7 @@ describe('multiline notice formatting', () => {
         });
 
         expect(lastMessage().message).toBe('[NOTICE] Part 1 continued\n[NOTICE] Part 2');
-    });
 
-    it('keeps a single-line notice unchanged', () => {
         dispatch({
             type: 'notice',
             nick: 'Other',

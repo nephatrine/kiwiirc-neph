@@ -118,8 +118,8 @@ function mountLayout(wideTimestamp = false) {
 }
 
 describe('MessageListMessageCompact', () => {
-    it('does not widen the timestamp reserve for the default format', () => {
-        const { vm } = mountLayout(false);
+    it('reserves wider timestamp space only for 12-hour and custom formats', () => {
+        let { vm } = mountLayout(false);
 
         expect(vm.$el.classList.contains('kiwi-messagelist-message--compact'))
             .toBe(true);
@@ -129,10 +129,8 @@ describe('MessageListMessageCompact', () => {
             .toContain('11:53');
 
         vm.$destroy();
-    });
 
-    it('uses the wider timestamp reserve for 12-hour and custom formats', () => {
-        const { vm } = mountLayout(true);
+        ({ vm } = mountLayout(true));
 
         expect(vm.$el.classList.contains('kiwi-messagelist-message--wide-timestamp'))
             .toBe(true);

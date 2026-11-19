@@ -1,5 +1,15 @@
+import Vue from 'vue';
 import getState from '@/libs/state';
 import { installGlobalErrorHandlers, showUnexpectedError } from '@/libs/GlobalErrorHandler';
+import StartupError from '@/components/StartupError';
+
+Vue.mixin({
+    computed: {
+        $t() {
+            return (key, options) => key;
+        },
+    },
+});
 
 jest.mock('@/helpers/TextFormatting', () => {
     const actual = jest.requireActual('@/helpers/TextFormatting');
@@ -60,5 +70,15 @@ describe('GlobalErrorHandler.js', () => {
         vue.config.errorHandler(new Error('vue broke'), null, 'render');
         expect(addMessage).toHaveBeenCalledTimes(2);
         expect(addMessage.mock.calls[1][1].message).toContain('vue broke');
+    });
+});
+
+describe('StartupError.vue', () => {
+    it('renders the provided error text', () => {
+        const vm = new Vue({
+            el: document.createElement('div'),
+            render: (h) => h(StartupError, { props: { error: 'some error' } }),
+        });
+        expect(vm.$el.querySelector('span.kiwi-error-text').textContent).toEqual('some error');
     });
 });

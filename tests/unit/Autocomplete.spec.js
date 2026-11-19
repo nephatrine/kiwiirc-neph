@@ -19,19 +19,15 @@ describe('autocomplete protocol', () => {
         };
     }
 
-    test('applies backspaces and suffixes', () => {
+    test('applies responses, parses them, and checks capabilities', () => {
         expect(applyAutocompleteResponse('frenod', '\b\b\benode')).toBe('freenode');
         expect(applyAutocompleteResponse('net', 'work')).toBe('network');
-    });
 
-    test('parses tab-separated responses and removes duplicates', () => {
         expect(parseAutocompleteResponses('net', 'work\twork\twork2'))
             .toEqual(['network', 'network2']);
         expect(parseAutocompleteResponses('net', '')).toEqual([]);
         expect(parseAutocompleteResponses('net', undefined)).toEqual([]);
-    });
 
-    test('requires message-tags, an allowed request tag, and tagmsg', () => {
         expect(canRequestAutocomplete(makeNetwork())).toBe(true);
         expect(canRequestAutocomplete(makeNetwork({
             hasCap: jest.fn(() => false),
@@ -47,7 +43,7 @@ describe('autocomplete protocol', () => {
         }))).toBe(false);
     });
 
-    test('builds an /auto context for channels and queries', () => {
+    test('builds /auto and always-auto contexts for channels and queries', () => {
         const channel = {
             name: '#test',
             isChannel: () => true,
@@ -57,6 +53,11 @@ describe('autocomplete protocol', () => {
             name: 'SupyBot',
             isChannel: () => false,
             isQuery: () => true,
+        };
+        const server = {
+            name: '*',
+            isChannel: () => false,
+            isQuery: () => false,
         };
 
         expect(autocompleteCommandContext('/auto SupyBot: foo', channel)).toEqual({
@@ -71,24 +72,7 @@ describe('autocomplete protocol', () => {
         });
         expect(autocompleteCommandContext('/auto', channel)).toBeNull();
         expect(autocompleteCommandContext('SupyBot: foo', channel)).toBeNull();
-        expect(autocompleteCommandContext('/auto foo', {
-            name: '*',
-            isChannel: () => false,
-            isQuery: () => false,
-        })).toBeNull();
-    });
-
-    test('builds an always-auto context for ordinary message text', () => {
-        const channel = {
-            name: '#test',
-            isChannel: () => true,
-            isQuery: () => false,
-        };
-        const query = {
-            name: 'SupyBot',
-            isChannel: () => false,
-            isQuery: () => true,
-        };
+        expect(autocompleteCommandContext('/auto foo', server)).toBeNull();
 
         expect(autocompleteCommandContext('SupyBot: foo', channel, true)).toEqual({
             target: '#test',
@@ -121,7 +105,7 @@ describe('autocomplete middleware', () => {
         };
     }
 
-    test('consumes autocomplete responses and requests', () => {
+    test('consumes autocomplete TAGMSGs and passes others through', () => {
         const network = makeNetwork();
         let handler = null;
         autocompleteMiddleware(network)({}, {}, {
@@ -145,21 +129,10 @@ describe('autocomplete middleware', () => {
             { network, event: request }
         );
         expect(next).not.toHaveBeenCalled();
-    });
-
-    test('passes unrelated TAGMSGs through', () => {
-        const network = makeNetwork();
-        let handler = null;
-        autocompleteMiddleware(network)({}, {}, {
-            use: (fn) => {
-                handler = fn;
-            },
-        });
-        const next = jest.fn();
 
         handler('TAGMSG', { command: 'TAGMSG', tags: { '+typing': 'active' } }, {}, next);
 
         expect(next).toHaveBeenCalledTimes(1);
-        expect(network.appState.$emit).not.toHaveBeenCalled();
+        expect(network.appState.$emit).toHaveBeenCalledTimes(2);
     });
 });

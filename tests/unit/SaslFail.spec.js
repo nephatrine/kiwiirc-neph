@@ -24,45 +24,41 @@ function emitSaslFailed(client, message) {
 }
 
 describe('SASL failure handling', () => {
-    let s;
-    let network;
-
-    beforeEach(() => {
-        s = state.create();
-        network = s.addNetwork('TestNetwork', 'TestNick', {});
+    function makeContext(options = {}) {
+        const s = state.create();
+        const network = s.addNetwork('TestNetwork', 'TestNick', {});
         // Touching ircClient builds the framework client and middleware
         expect(network.ircClient).toBeTruthy();
-        network.state = 'connecting';
-        network.ircClient.connection.options.sasl_disconnect_on_fail = true;
-    });
+        network.state = options.state || 'connecting';
+        network.ircClient.connection.options.sasl_disconnect_on_fail =
+            options.disconnectOnFail !== false;
+        return { s, network };
+    }
 
-    it('resets a connecting session so the login form can retry', async() => {
+    it('resets only a connecting session that disconnects on failure', async() => {
+        let { network } = makeContext();
         await emitSaslFailed(network.ircClient, 'challenge proof invalid');
         expect(network.sasl_account).toBe('');
         // The framework ends the connection, but its close arrives while
         // we still look connecting and is ignored as stale. Without this
         // reset the login form spins forever.
         expect(network.state).toBe('disconnected');
-    });
 
-    it('leaves the session alone when staying connected on failure', async() => {
-        network.ircClient.connection.options.sasl_disconnect_on_fail = false;
+        ({ network } = makeContext({ disconnectOnFail: false }));
         await emitSaslFailed(network.ircClient, 'challenge proof invalid');
         expect(network.state).toBe('connecting');
-    });
 
-    it('leaves connected sessions alone', async() => {
-        network.state = 'connected';
+        ({ network } = makeContext({ state: 'connected' }));
         await emitSaslFailed(network.ircClient, 'challenge proof invalid');
         expect(network.state).toBe('connected');
     });
 
     it('appends the title-cased 904 detail to the login error', async() => {
+        let { network } = makeContext();
         await emitSaslFailed(network.ircClient, 'challenge proof invalid');
         expect(network.last_error).toBe('Login Failed (Challenge Proof Invalid)');
-    });
 
-    it('omits the parenthetical when the server sends no detail', async() => {
+        ({ network } = makeContext());
         await emitSaslFailed(network.ircClient, undefined);
         expect(network.last_error).toBe('Login Failed');
     });

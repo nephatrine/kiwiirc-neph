@@ -32,7 +32,7 @@ describe('InputHandler /auto', () => {
         jest.restoreAllMocks();
     });
 
-    test('strips the /auto prefix and sends the remainder', () => {
+    test('strips the /auto prefix, sends in queries, and toggles on bare /auto', () => {
         handler.processLine('/auto SupyBot: foo', { network, buffer });
 
         expect(network.ircClient.say).toHaveBeenCalledWith(
@@ -40,10 +40,20 @@ describe('InputHandler /auto', () => {
             'SupyBot: foo',
             {}
         );
-    });
 
-    test('toggles always-auto mode with a bare /auto', () => {
+        const query = s.addBuffer(network.id, 'SupyBot');
+        network.ircClient.say.mockClear();
+
+        handler.processLine('/auto !discord role', { network, buffer: query });
+
+        expect(network.ircClient.say).toHaveBeenCalledWith(
+            'SupyBot',
+            '!discord role',
+            {}
+        );
+
         const emit = jest.spyOn(s, '$emit');
+        network.ircClient.say.mockClear();
 
         handler.processLine('/auto', { network, buffer });
 
@@ -54,36 +64,23 @@ describe('InputHandler /auto', () => {
         expect(network.ircClient.say).not.toHaveBeenCalled();
     });
 
-    test('sends the remainder unchanged in a query', () => {
-        const query = s.addBuffer(network.id, 'SupyBot');
-
-        handler.processLine('/auto !discord role', { network, buffer: query });
-
-        expect(network.ircClient.say).toHaveBeenCalledWith(
-            'SupyBot',
-            '!discord role',
-            {}
-        );
-    });
-
-    test('errors when autocomplete requests are unavailable', () => {
+    test('errors when autocomplete requests are unavailable or denied', () => {
         network.enabled_caps = [];
-        const addMessage = jest.spyOn(s, 'addMessage');
+        let addMessage = jest.spyOn(s, 'addMessage');
 
         handler.processLine('/auto SupyBot: foo', { network, buffer });
 
-        const error = addMessage.mock.calls.find((call) => call[1].type === 'error');
+        let error = addMessage.mock.calls.find((call) => call[1].type === 'error');
         expect(error).toBeTruthy();
         expect(network.ircClient.say).not.toHaveBeenCalled();
-    });
 
-    test('errors when the autocomplete request tag is denied', () => {
+        network.enabled_caps = ['message-tags'];
         network.isupport.CLIENTTAGDENY = ['*'];
-        const addMessage = jest.spyOn(s, 'addMessage');
+        addMessage = jest.spyOn(s, 'addMessage');
 
         handler.processLine('/auto SupyBot: foo', { network, buffer });
 
-        const error = addMessage.mock.calls.find((call) => call[1].type === 'error');
+        error = addMessage.mock.calls.find((call) => call[1].type === 'error');
         expect(error).toBeTruthy();
         expect(network.ircClient.say).not.toHaveBeenCalled();
     });

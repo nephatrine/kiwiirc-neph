@@ -1,4 +1,5 @@
 import { desktopMediaUrl, isMediaProxyAvailable } from '@/libs/desktop/Media';
+import { embedParentHostname } from '@/libs/desktop/Embed';
 import {
     decodeMediaUrl,
     encodeMediaUrl
@@ -95,5 +96,19 @@ describe('Desktop media proxy', () => {
 
         expect(headers['Access-Control-Allow-Origin']).toBe('app://kiwi');
         expect(headers.Vary).toBe('Origin');
+    });
+});
+
+describe('Desktop embed hostname', () => {
+    afterEach(() => {
+        delete window.kiwiDesktop;
+    });
+
+    it('uses the web hostname without the bridge and localhost inside the shell', () => {
+        expect(embedParentHostname()).toBe(window.location.hostname);
+
+        window.kiwiDesktop = { version: 'test' };
+
+        expect(embedParentHostname()).toBe('localhost');
     });
 });

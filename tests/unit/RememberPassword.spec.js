@@ -53,58 +53,49 @@ describe('Remember Password', () => {
         return net;
     }
 
-    it('exports passwords by default', () => {
+    it('exports passwords by default and strips them when excluded', () => {
         addPasswordNetwork();
-        const exported = JSON.parse(s.exportState(true));
+        let exported = JSON.parse(s.exportState(true));
         expect(exported.networks[0].password).toBe('sasl-secret');
         expect(exported.networks[0].connection.password).toBe('server-secret');
-    });
 
-    it('strips both passwords but keeps the account when excluded', () => {
-        addPasswordNetwork();
-        const exported = JSON.parse(s.exportState(true, false));
+        exported = JSON.parse(s.exportState(true, false));
         expect(exported.networks[0].password).toBe('');
         expect(exported.networks[0].connection.password).toBe('');
         expect(exported.networks[0].connection.account).toBe('TestAccount');
         expect(exported.networks[0].connection.nick).toBe('TestNick');
     });
 
-    it('passes the persistence flag through to saved state', async() => {
+    it('honors the includePasswords flag for debounced and immediate saves', async() => {
         jest.useFakeTimers();
         addPasswordNetwork();
-        const storage = { set: jest.fn(), get: jest.fn() };
-        const persistence = new StatePersistence('test-key', s, storage);
+        let storage = { set: jest.fn(), get: jest.fn() };
+        let persistence = new StatePersistence('test-key', s, storage);
         persistence.includePasswords = false;
         persistence.watchStateForChanges();
         s.networks[0].gecos = 'changed';
         await Vue.nextTick();
         jest.advanceTimersByTime(1000);
         expect(storage.set).toHaveBeenCalled();
-        const saved = JSON.parse(storage.set.mock.calls[0][1]);
+        let saved = JSON.parse(storage.set.mock.calls[0][1]);
         expect(saved.networks[0].password).toBe('');
         expect(saved.networks[0].connection.password).toBe('');
         persistence.stopWatchingState();
-    });
 
-    it('flushes synchronously on demand, bypassing the debounce', async() => {
-        addPasswordNetwork();
-        const storage = { set: jest.fn(), get: jest.fn() };
-        const persistence = new StatePersistence('test-key', s, storage);
+        storage = { set: jest.fn(), get: jest.fn() };
+        persistence = new StatePersistence('test-key', s, storage);
         persistence.includePasswords = false;
         await persistence.saveStateNow();
         expect(storage.set).toHaveBeenCalledTimes(1);
-        const saved = JSON.parse(storage.set.mock.calls[0][1]);
+        saved = JSON.parse(storage.set.mock.calls[0][1]);
         expect(saved.networks[0].password).toBe('');
         expect(saved.networks[0].connection.password).toBe('');
         expect(saved.networks[0].connection.account).toBe('TestAccount');
-    });
 
-    it('saveStateNow keeps passwords when the flag allows them', async() => {
-        addPasswordNetwork();
-        const storage = { set: jest.fn(), get: jest.fn() };
-        const persistence = new StatePersistence('test-key', s, storage);
+        storage = { set: jest.fn(), get: jest.fn() };
+        persistence = new StatePersistence('test-key', s, storage);
         await persistence.saveStateNow();
-        const saved = JSON.parse(storage.set.mock.calls[0][1]);
+        saved = JSON.parse(storage.set.mock.calls[0][1]);
         expect(saved.networks[0].password).toBe('sasl-secret');
         expect(saved.networks[0].connection.password).toBe('server-secret');
     });
@@ -130,13 +121,11 @@ describe('Remember Password', () => {
             vm.$destroy();
         });
 
-        it('defaults to unchecked but enabled on the account tab', () => {
+        it('starts unchecked on account and follows tab/Remember Me rules', async() => {
             expect(comp.activeTab).toBe('account');
             expect(comp.tabs.account.rememberPasswords).toBe(false);
             expect(comp.rememberPasswordDisabled).toBe(false);
-        });
 
-        it('is disabled on the anonymous tab and follows Remember Me', async() => {
             comp.activeTab = 'anonymous';
             await comp.$nextTick();
             expect(comp.rememberPasswordDisabled).toBe(true);
@@ -149,27 +138,22 @@ describe('Remember Password', () => {
             comp.tabs.account.rememberSettings = false;
             await comp.$nextTick();
             expect(comp.rememberPasswordDisabled).toBe(true);
-            // Disabling never throws away the tab's own choice: turning
-            // Remember Me back on restores the checkbox as it was.
             expect(comp.tabs.account.rememberPasswords).toBe(true);
             expect(comp.layoutRememberPasswords).toBe(false);
         });
 
-        it('writes the preference when the login starts', () => {
+        it('writes the login preference for checked and unchecked', () => {
             comp.tabs.account.account = 'TestAccount';
             comp.tabs.account.password = 'secret';
             comp.tabs.account.rememberPasswords = true;
             comp.startUp('account');
-            const net = comp.network;
+            let net = comp.network;
             net.ircClient.emit('registered', { nick: 'TestNick' });
             expect(s.user_settings.remember_password).toBe(true);
-        });
 
-        it('writes a false preference when left unchecked', () => {
-            comp.tabs.account.account = 'TestAccount';
-            comp.tabs.account.password = 'secret';
+            comp.tabs.account.rememberPasswords = false;
             comp.startUp('account');
-            const net = comp.network;
+            net = comp.network;
             net.ircClient.emit('registered', { nick: 'TestNick' });
             expect(s.user_settings.remember_password).toBe(false);
         });

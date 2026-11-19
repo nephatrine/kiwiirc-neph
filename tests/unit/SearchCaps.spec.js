@@ -30,7 +30,20 @@ describe('search capabilities', () => {
         jest.useRealTimers();
     });
 
-    test('prefers draft/search over soju.im/search', () => {
+    test('prefers draft/search for searchCap and cap new', () => {
+        const requestSpy = jest.spyOn(network.ircClient, 'requestCap').mockImplementation(() => {});
+
+        network.ircClient.emit('cap new', {
+            capabilities: {
+                'draft/search': '',
+                'soju.im/search': '',
+            },
+        });
+
+        expect(requestSpy).toHaveBeenCalledWith('draft/search');
+        expect(requestSpy).not.toHaveBeenCalledWith('soju.im/search');
+        requestSpy.mockRestore();
+
         expect(network.searchCap()).toBe('');
         network.enabled_caps = ['soju.im/search'];
         expect(network.searchCap()).toBe('soju.im/search');
@@ -69,20 +82,5 @@ describe('search capabilities', () => {
         expect(network.ircClient.request_extra_caps).not.toContain('draft/search');
         expect(network.ircClient.request_extra_caps).not.toContain('soju.im/search');
         rawSpy.mockRestore();
-    });
-
-    test('requests only draft/search on cap new when both are advertised', () => {
-        const requestSpy = jest.spyOn(network.ircClient, 'requestCap').mockImplementation(() => {});
-
-        network.ircClient.emit('cap new', {
-            capabilities: {
-                'draft/search': '',
-                'soju.im/search': '',
-            },
-        });
-
-        expect(requestSpy).toHaveBeenCalledWith('draft/search');
-        expect(requestSpy).not.toHaveBeenCalledWith('soju.im/search');
-        requestSpy.mockRestore();
     });
 });

@@ -1,69 +1,72 @@
 import state from '@/libs/state';
 
 describe('BufferState.say echo confirmation', () => {
-    let s;
-    let network;
-    let buffer;
+    let created;
+
+    function fresh(caps) {
+        const s = state.create();
+        const network = s.addNetwork('TestNetwork', 'TestNick', {});
+        network.enabled_caps = caps;
+        const buffer = s.addBuffer(network.id, '#channel');
+        jest.spyOn(network.ircClient, 'say').mockImplementation(() => {});
+        created.push(s);
+        return { s, network, buffer };
+    }
 
     beforeEach(() => {
-        s = state.create();
-        network = s.addNetwork('TestNetwork', 'TestNick', {});
-        buffer = s.addBuffer(network.id, '#channel');
+        created = [];
     });
 
     afterEach(() => {
         jest.restoreAllMocks();
-        s.$destroy();
+        created.forEach((s) => s.$destroy());
+        created = [];
     });
 
-    test('marks labeled outgoing messages pending and confirms their echo', () => {
-        network.enabled_caps = ['echo-message', 'labeled-response'];
-        jest.spyOn(network.ircClient, 'say').mockImplementation(() => {});
-        const url = 'https://files.example/upload.txt';
+    test('confirms labeled and unlabeled echoes without duplicating', () => {
+        let ctx = fresh(['echo-message', 'labeled-response']);
+        let url = 'https://files.example/upload.txt';
 
-        buffer.say(url);
+        ctx.buffer.say(url);
 
-        const local = buffer.getLastMessage();
+        let local = ctx.buffer.getLastMessage();
         expect(local.is_pending).toBe(true);
         expect(local.raw_text).toBe(url);
         expect(local.tags.label).toBeTruthy();
 
-        const count = buffer.getMessages().length;
-        s.addMessage(buffer, {
+        let count = ctx.buffer.getMessages().length;
+        ctx.s.addMessage(ctx.buffer, {
             time: Date.now(),
-            nick: network.nick,
+            nick: ctx.network.nick,
             message: url,
             raw_text: url,
             tags: { label: local.tags.label },
             type: 'privmsg',
         });
 
-        expect(buffer.getMessages()).toHaveLength(count);
+        expect(ctx.buffer.getMessages()).toHaveLength(count);
         expect(local.is_pending).toBe(false);
-    });
 
-    test('confirms an unlabeled echo by its raw text', () => {
-        network.enabled_caps = ['echo-message'];
-        jest.spyOn(network.ircClient, 'say').mockImplementation(() => {});
-        const url = 'https://files.example/upload.txt';
+        ctx = fresh(['echo-message']);
+        url = 'https://files.example/upload.txt';
 
-        buffer.say(url);
+        ctx.buffer.say(url);
 
-        const local = buffer.getLastMessage();
+        local = ctx.buffer.getLastMessage();
         expect(local.is_pending).toBe(true);
         expect(local.raw_text).toBe(url);
 
-        const count = buffer.getMessages().length;
-        s.addMessage(buffer, {
+        count = ctx.buffer.getMessages().length;
+        ctx.s.addMessage(ctx.buffer, {
             time: Date.now(),
-            nick: network.nick,
+            nick: ctx.network.nick,
             message: url,
             raw_text: url,
             tags: {},
             type: 'privmsg',
         });
 
-        expect(buffer.getMessages()).toHaveLength(count);
+        expect(ctx.buffer.getMessages()).toHaveLength(count);
         expect(local.is_pending).toBe(false);
     });
 });

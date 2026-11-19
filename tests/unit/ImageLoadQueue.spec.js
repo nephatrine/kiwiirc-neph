@@ -14,7 +14,7 @@ describe('Image load queue', () => {
         jest.useRealTimers();
     });
 
-    test('limits concurrency and spaces image starts', () => {
+    test('limits concurrency, spaces starts, and cancels queued loads', () => {
         const starts = [];
         const handles = [];
 
@@ -48,23 +48,19 @@ describe('Image load queue', () => {
         handles.forEach((handle) => {
             handle.cancel();
         });
-    });
-
-    test('cancels queued loads and releases started ones', () => {
-        const starts = [];
 
         const queued = scheduleImageLoad(() => {
             starts.push('queued');
         });
         queued.cancel();
         jest.advanceTimersByTime(200);
-        expect(starts).toEqual([]);
+        expect(starts).toEqual([0, 1, 2, 3, 4, 5]);
 
         const started = scheduleImageLoad(() => {
             starts.push('started');
         });
         jest.advanceTimersByTime(100);
-        expect(starts).toEqual(['started']);
+        expect(starts).toEqual([0, 1, 2, 3, 4, 5, 'started']);
 
         started.cancel();
 
@@ -72,7 +68,7 @@ describe('Image load queue', () => {
             starts.push('next');
         });
         jest.advanceTimersByTime(100);
-        expect(starts).toEqual(['started', 'next']);
+        expect(starts).toEqual([0, 1, 2, 3, 4, 5, 'started', 'next']);
 
         next.cancel();
     });

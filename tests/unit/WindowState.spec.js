@@ -11,6 +11,7 @@ import {
 
 const primary = { x: 0, y: 0, width: 1920, height: 1080 };
 const secondary = { x: 1920, y: 0, width: 1920, height: 1080 };
+const left = { x: -1920, y: 0, width: 1920, height: 1080 };
 
 describe('Desktop window state', () => {
     let userDataDir;
@@ -23,7 +24,7 @@ describe('Desktop window state', () => {
         fs.rmSync(userDataDir, { recursive: true, force: true });
     });
 
-    it('uses centered default bounds when no state exists', () => {
+    it('centers, restores, and clamps bounds across displays', () => {
         expect(restoreWindowState(null, [primary, secondary], primary)).toEqual({
             x: 320,
             y: 130,
@@ -31,9 +32,7 @@ describe('Desktop window state', () => {
             height: 820,
             maximized: false,
         });
-    });
 
-    it('restores a window on a secondary display', () => {
         expect(restoreWindowState({
             x: 2100,
             y: 100,
@@ -46,10 +45,7 @@ describe('Desktop window state', () => {
             height: 700,
             maximized: false,
         });
-    });
 
-    it('keeps negative coordinates on a display left of the primary', () => {
-        const left = { x: -1920, y: 0, width: 1920, height: 1080 };
         expect(restoreWindowState({
             x: -1500,
             y: 100,
@@ -62,9 +58,7 @@ describe('Desktop window state', () => {
             height: 700,
             maximized: false,
         });
-    });
 
-    it('centers a window whose saved position is off-screen', () => {
         expect(restoreWindowState({
             x: 9000,
             y: 9000,
@@ -77,9 +71,7 @@ describe('Desktop window state', () => {
             height: 700,
             maximized: false,
         });
-    });
 
-    it('clamps oversized windows and preserves the maximized flag', () => {
         expect(restoreWindowState({
             x: 100,
             y: 100,
@@ -95,7 +87,7 @@ describe('Desktop window state', () => {
         });
     });
 
-    it('loads and saves the window state', async() => {
+    it('round-trips the window state and ignores malformed files', async() => {
         await saveWindowState(userDataDir, {
             x: 10,
             y: 20,
@@ -126,11 +118,8 @@ describe('Desktop window state', () => {
             height: 800,
             maximized: true,
         });
-    });
 
-    it('ignores a malformed window state file', () => {
         fs.writeFileSync(stateFilePath(userDataDir), '{invalid');
-
         expect(loadWindowState(userDataDir)).toBe(null);
     });
 });

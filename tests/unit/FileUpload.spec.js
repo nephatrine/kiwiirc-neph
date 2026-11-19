@@ -18,20 +18,15 @@ const { TextEncoder } = require('util');
 global.TextEncoder = TextEncoder;
 
 describe('fileupload', () => {
-    test('resolves known services and treats none as disabled', () => {
+    test('resolves services, persistence, and retention defaults', () => {
         expect(serviceFromId('litterbox')).toBe(services.litterbox);
         expect(serviceFromId('none')).toBe(null);
         expect(serviceFromId('')).toBe(null);
         expect(serviceFromId(undefined)).toBe(null);
         expect(serviceFromId('missing')).toBe(null);
-    });
-
-    test('marks only non-ephemeral services as persistent', () => {
         expect(services.filehost.persistent).toBe(true);
         expect(services.litterbox.persistent).toBeFalsy();
-    });
 
-    test('falls back to the default retention', () => {
         let service = services.litterbox;
         expect(retentionFor(service, '1h')).toBe('1h');
         expect(retentionFor(service, '12h')).toBe('12h');
@@ -116,7 +111,7 @@ describe('fileupload', () => {
         });
     });
 
-    test('prefers FILEHOST when enabled and available', () => {
+    test('selects the effective FILEHOST and global service', () => {
         let network = filehostNetwork({
             'DRAFT/FILEHOST': 'https://draft.example/upload',
         });
@@ -133,17 +128,9 @@ describe('fileupload', () => {
             name === 'useFilehost' ? false : undefined
         );
         expect(effectiveService(state, network)).toBe(services.litterbox);
-    });
 
-    test('requires SASL credentials before FILEHOST is used', () => {
-        let network = filehostNetwork({
-            'DRAFT/FILEHOST': 'https://draft.example/upload',
-        });
-        let state = {
-            setting() {
-                return 'none';
-            },
-        };
+        network.setting = undefined;
+        state = { setting: () => 'none' };
         expect(filehostAvailable(network)).toBe(true);
         expect(effectiveService(state, network)).toBe(services.filehost);
 
@@ -155,16 +142,13 @@ describe('fileupload', () => {
         network.password = '';
         expect(filehostAvailable(network)).toBe(false);
         expect(effectiveService(state, network)).toBe(null);
-    });
+        expect(filehostSupported(network)).toBe(true);
 
-    test('uses the global service and retention when FILEHOST is disabled', () => {
-        let network = filehostNetwork({
-            'DRAFT/FILEHOST': 'https://draft.example/upload',
-        });
+        network.password = 'secret';
         network.setting = (name) => (
             name === 'useFilehost' ? false : undefined
         );
-        let state = {
+        state = {
             setting(name) {
                 if (name === 'fileupload.service') {
                     return 'litterbox';
@@ -175,36 +159,15 @@ describe('fileupload', () => {
                 return undefined;
             },
         };
-
         expect(effectiveService(state, network)).toBe(services.litterbox);
         expect(effectiveRetention(state, services.litterbox)).toBe('24h');
-    });
 
-    test('ignores a legacy global FILEHOST preference', () => {
-        let network = filehostNetwork({
-            'DRAFT/FILEHOST': 'https://draft.example/upload',
-        });
-        network.setting = (name) => (
-            name === 'useFilehost' ? false : undefined
-        );
-        let state = {
+        state = {
             setting(name) {
                 return name === 'fileupload.service' ? 'filehost' : undefined;
             },
         };
-
         expect(effectiveService(state, network)).toBe(null);
-    });
-
-    test('detects FILEHOST support without credentials', () => {
-        let network = filehostNetwork({
-            'DRAFT/FILEHOST': 'https://draft.example/upload',
-        });
-        network.sasl_account = '';
-        network.password = '';
-
-        expect(filehostSupported(network)).toBe(true);
-        expect(filehostAvailable(network)).toBe(false);
     });
 
     test('encodes FILEHOST basic auth', () => {

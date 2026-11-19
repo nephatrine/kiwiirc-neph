@@ -25,14 +25,14 @@ function makeLocalStorage(initial = {}) {
 }
 
 describe('Legacy desktop profile migration', () => {
-    it('migrates state and metadata, then removes the local copies', async() => {
-        const storage = makeStorage();
-        const localStorageImpl = makeLocalStorage({
+    it('migrates state and metadata, but keeps local copies on failure', async() => {
+        let storage = makeStorage();
+        let localStorageImpl = makeLocalStorage({
             'kiwi-state': '{"networks":[]}',
             'kiwi-metadata-cache': '{"networks":{}}',
         });
-        const state = { importState: jest.fn() };
-        const persistence = {
+        let state = { importState: jest.fn() };
+        let persistence = {
             saveStateNow: jest.fn(async() => {
                 await storage.set('kiwi-state', '{"networks":[]}');
                 return {
@@ -58,15 +58,13 @@ describe('Legacy desktop profile migration', () => {
         );
         expect(localStorageImpl.values.has('kiwi-state')).toBe(false);
         expect(localStorageImpl.values.has('kiwi-metadata-cache')).toBe(false);
-    });
 
-    it('keeps the local state when password migration fails', async() => {
-        const storage = makeStorage();
-        const localStorageImpl = makeLocalStorage({
+        storage = makeStorage();
+        localStorageImpl = makeLocalStorage({
             'kiwi-state': '{"networks":[]}',
         });
-        const state = { importState: jest.fn() };
-        const persistence = {
+        state = { importState: jest.fn() };
+        persistence = {
             saveStateNow: jest.fn(async() => ({
                 secretsSaved: false,
                 stateSaved: true,

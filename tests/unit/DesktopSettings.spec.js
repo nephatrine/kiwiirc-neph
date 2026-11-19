@@ -6,6 +6,11 @@ const {
     createDesktopSettingsStore,
     normalizeSettings,
 } = require('../../desktop/electron/desktop-settings');
+const {
+    get,
+    isAvailable,
+    set,
+} = require('../../src/libs/storage/Desktop');
 
 describe('desktop settings', () => {
     let userDataDir;
@@ -85,5 +90,29 @@ describe('desktop settings', () => {
             checkForUpdates: true,
             lastNotifiedUpdate: '',
         });
+    });
+});
+
+describe('Desktop storage adapter', () => {
+    afterEach(() => {
+        delete window.kiwiDesktop;
+    });
+
+    it('reports unavailable without a bridge and delegates with one', async() => {
+        expect(isAvailable()).toBe(false);
+        expect(await get('kiwi-state')).toBe(null);
+
+        const storage = {
+            get: jest.fn(async() => '{"networks":[]}'),
+            set: jest.fn(async() => {}),
+        };
+        window.kiwiDesktop = { storage };
+
+        expect(isAvailable()).toBe(true);
+        expect(await get('kiwi-state')).toBe('{"networks":[]}');
+        await set('kiwi-state', '{"networks":[1]}');
+
+        expect(storage.get).toHaveBeenCalledWith('kiwi-state');
+        expect(storage.set).toHaveBeenCalledWith('kiwi-state', '{"networks":[1]}');
     });
 });

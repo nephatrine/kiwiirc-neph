@@ -9,7 +9,7 @@ describe('network.isService', () => {
         network = s.addNetwork('TestNetwork', 'TestNick', {});
     });
 
-    it('recognises common network services', () => {
+    it('recognises common network services case-insensitively', () => {
         [
             'NickServ', 'ChanServ', 'MemoServ', 'HostServ',
             'OperServ', 'BotServ', 'RootServ', 'HelpServ',
@@ -17,21 +17,17 @@ describe('network.isService', () => {
         ].forEach((service) => {
             expect(network.isService(service)).toBe(true);
         });
-    });
 
-    it('matches service nicks case-insensitively', () => {
         expect(network.isService('HISTserv')).toBe(true);
         expect(network.isService('histserv')).toBe(true);
     });
 
-    it('returns false for regular nicks and empty input', () => {
+    it('rejects regular nicks and honours network-specific services', () => {
         expect(network.isService('SomeUser')).toBe(false);
         expect(network.isService('')).toBe(false);
         expect(network.isService(null)).toBe(false);
         expect(network.isService(undefined)).toBe(false);
-    });
 
-    it('honours network-specific services when provided', () => {
         network.services = ['CustomServ'];
         expect(network.isService('customserv')).toBe(true);
         expect(network.isService('SomeUser')).toBe(false);

@@ -25,10 +25,10 @@ function install(client) {
 }
 
 describe('SaslMiddleware reconnect safety', () => {
-    test('does not write a SCRAM response after the attempt is reset', async() => {
-        const client = createClient();
+    test('ignores a stale SCRAM result after the attempt is reset', async() => {
+        let client = createClient();
         let resolveFirst;
-        const scram = {
+        let scram = {
             state: 'FIRST_SENT',
             handleServerFirst: jest.fn(() => new Promise((resolve) => {
                 resolveFirst = resolve;
@@ -36,7 +36,7 @@ describe('SaslMiddleware reconnect safety', () => {
         };
         client.sasl_scram = scram;
 
-        const rawHandler = install(client);
+        let rawHandler = install(client);
         rawHandler('AUTHENTICATE', {
             params: [btoa('server-first')],
         }, '', client, jest.fn());
@@ -48,12 +48,10 @@ describe('SaslMiddleware reconnect safety', () => {
 
         expect(client.raw).not.toHaveBeenCalled();
         expect(client.quit).not.toHaveBeenCalled();
-    });
 
-    test('does not quit the replacement connection after a stale failure', async() => {
-        const client = createClient();
+        client = createClient();
         let rejectFirst;
-        const scram = {
+        scram = {
             state: 'FIRST_SENT',
             handleServerFirst: jest.fn(() => new Promise((resolve, reject) => {
                 rejectFirst = reject;
@@ -61,7 +59,7 @@ describe('SaslMiddleware reconnect safety', () => {
         };
         client.sasl_scram = scram;
 
-        const rawHandler = install(client);
+        rawHandler = install(client);
         rawHandler('AUTHENTICATE', {
             params: [btoa('server-first')],
         }, '', client, jest.fn());

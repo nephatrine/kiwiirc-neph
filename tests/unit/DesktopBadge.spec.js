@@ -29,8 +29,8 @@ describe('desktop unread badge', () => {
         jest.useRealTimers();
     });
 
-    it('sends the initial summary and updates on changes', () => {
-        const state = {
+    it('sends the initial summary and updates on changes, or does nothing without a tray', () => {
+        let state = {
             networks: [{
                 buffers: [makeBuffer(2)],
             }],
@@ -57,11 +57,10 @@ describe('desktop unread badge', () => {
             highlights: 0,
             errors: 0,
         });
-    });
 
-    it('does nothing when the tray is unavailable', () => {
+        DesktopTray.setBadge.mockClear();
         DesktopTray.isAvailable.mockReturnValue(false);
-        const state = {
+        state = {
             networks: [],
             $watch: jest.fn(),
         };

@@ -50,7 +50,7 @@ describe('nickserv completion', () => {
         });
     });
 
-    it('suggests settings and setting values', () => {
+    it('suggests settings, sub-subcommands, and syntax ghosts', () => {
         const names = NICKSERV_SETTINGS.map((s) => s.name);
         expect(nickservArgSuggestions(parseNickservInput('/ns GET '), userCtx))
             .toEqual(names);
@@ -60,18 +60,24 @@ describe('nickserv completion', () => {
             .toEqual([]);
         expect(nickservArgSuggestions(parseNickservInput('/ns SASET bob DM-HISTORY '), userCtx))
             .toEqual(['off', 'ephemeral', 'on', 'default']);
-    });
 
-    it('completes sub-subcommands', () => {
         expect(nickservArgSuggestions(parseNickservInput('/ns CERT '), userCtx))
             .toEqual(['LIST', 'ADD', 'DEL']);
         expect(nickservArgSuggestions(parseNickservInput('/ns PUSH '), userCtx))
             .toEqual(['LIST', 'DELETE']);
         expect(nickservArgSuggestions(parseNickservInput('/ns SUSPEND '), userCtx))
             .toEqual(['ADD', 'DEL', 'LIST']);
+
+        expect(nickservSyntaxFor(['SET'])).toBe('SET <setting> <value>');
+        expect(nickservSyntaxFor(['CERT', 'LIST'])).toBe('CERT LIST [account]');
+        expect(nickservSyntaxFor(['SUSPEND', 'ADD']))
+            .toBe('SUSPEND ADD <nickname> [DURATION duration] [reason]');
+        expect(nickservSyntaxFor(['SASET'])).toBe('SASET <account> <setting> <value>');
+        expect(nickservSyntaxFor(['FOO'])).toBe('');
+        expect(nickservSyntaxFor([])).toBe('');
     });
 
-    it('gives own values to users and known values to opers', () => {
+    it('gives own values to users, known values to opers, and stays quiet', () => {
         expect(nickservArgSuggestions(parseNickservInput('/ns CLIENTS LIST '), userCtx))
             .toEqual(['MyNick']);
         expect(nickservArgSuggestions(parseNickservInput('/ns CLIENTS LIST '), operCtx))
@@ -86,22 +92,10 @@ describe('nickserv completion', () => {
             .toEqual(['Alice', 'Bob']);
         expect(nickservArgSuggestions(parseNickservInput('/ns RENAME alice '), operCtx))
             .toEqual([]);
-    });
 
-    it('stays out of the way without suggestions', () => {
         expect(nickservArgSuggestions(parseNickservInput('/ns DROP '), userCtx)).toEqual([]);
         expect(nickservArgSuggestions(parseNickservInput('/ns IDENTIFY '), userCtx)).toEqual([]);
         expect(nickservArgSuggestions(parseNickservInput('/ns CERT FOO '), userCtx)).toEqual([]);
         expect(nickservArgSuggestions(null, userCtx)).toEqual([]);
-    });
-
-    it('shows syntax ghosts for command paths', () => {
-        expect(nickservSyntaxFor(['SET'])).toBe('SET <setting> <value>');
-        expect(nickservSyntaxFor(['CERT', 'LIST'])).toBe('CERT LIST [account]');
-        expect(nickservSyntaxFor(['SUSPEND', 'ADD']))
-            .toBe('SUSPEND ADD <nickname> [DURATION duration] [reason]');
-        expect(nickservSyntaxFor(['SASET'])).toBe('SASET <account> <setting> <value>');
-        expect(nickservSyntaxFor(['FOO'])).toBe('');
-        expect(nickservSyntaxFor([])).toBe('');
     });
 });

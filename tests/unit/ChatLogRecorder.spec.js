@@ -20,24 +20,7 @@ describe('Chat log recorder', () => {
         delete window.kiwiDesktop;
     });
 
-    it('does not subscribe when the desktop log store is unavailable', () => {
-        window.kiwiDesktop = {
-            logs: {
-                isAvailable: () => false,
-                append: () => Promise.resolve(0),
-                search: () => Promise.resolve({ rows: [], hasMore: false }),
-            },
-        };
-        const fakeState = {
-            $on: jest.fn(),
-        };
-
-        initChatLogs(fakeState);
-
-        expect(fakeState.$on).not.toHaveBeenCalled();
-    });
-
-    it('builds a log entry for channel chat messages', () => {
+    it('builds channel entries and skips unloggable messages', () => {
         const { buffer } = makeBuffer();
         const message = {
             type: 'privmsg',
@@ -67,19 +50,29 @@ describe('Chat log recorder', () => {
             is_pending: false,
             client_id: expect.any(String),
         });
-    });
-
-    it('skips system, ignored, and redacted messages', () => {
-        const { buffer } = makeBuffer();
 
         expect(isLoggableMessage(buffer, { type: 'join' })).toBe(false);
         expect(isLoggableMessage(buffer, { type: 'privmsg', ignore: true })).toBe(false);
         expect(isLoggableMessage(buffer, { type: 'privmsg', is_redacted: true })).toBe(false);
-    });
 
-    it('skips server buffers', () => {
-        const { buffer } = makeBuffer();
         const serverBuffer = buffer.getNetwork().serverBuffer();
         expect(isLoggableMessage(serverBuffer, {})).toBe(false);
+    });
+
+    it('does not subscribe when the desktop log store is unavailable', () => {
+        window.kiwiDesktop = {
+            logs: {
+                isAvailable: () => false,
+                append: () => Promise.resolve(0),
+                search: () => Promise.resolve({ rows: [], hasMore: false }),
+            },
+        };
+        const fakeState = {
+            $on: jest.fn(),
+        };
+
+        initChatLogs(fakeState);
+
+        expect(fakeState.$on).not.toHaveBeenCalled();
     });
 });

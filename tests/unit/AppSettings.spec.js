@@ -407,21 +407,30 @@ describe('AppSettings channel defaults', () => {
         expect(getComputed('timestampTimeSystem')).toBeNull();
     });
 
-    it('binds picker and global notification settings', () => {
-        expect(getComputed('settingShowEmojiPicker')).toBe(true);
-        expect(getComputed('settingShowColorPicker')).toBe(true);
-        expect(getComputed('settingNotificationSounds')).toBe(true);
-        expect(getComputed('settingUnreadBadges')).toBe(true);
+    it('binds global settings', () => {
+        const cases = [
+            ['settingShowEmojiPicker', 'showEmojiPicker', true, false],
+            ['settingShowColorPicker', 'showColorPicker', true, false],
+            ['settingNotificationSounds', 'notificationSounds', true, false],
+            ['settingUnreadBadges', 'unreadBadges', true, false],
+            ['settingHideIgnored', 'hideIgnored', true, false],
+            ['settingShowColors', 'showColors', true, false],
+            ['settingShowPrefix', 'showPrefix', true, false],
+            ['settingGlobalShowBotMessages', 'showBotMessages', true, false],
+            ['settingShowStylePicker', 'showStylePicker', true, false],
+            ['settingShowExportButton', 'showExportButton', false, true],
+        ];
 
-        setComputed('settingShowEmojiPicker', false);
-        setComputed('settingShowColorPicker', false);
-        setComputed('settingNotificationSounds', false);
-        setComputed('settingUnreadBadges', false);
+        cases.forEach(([computedName, key, initial, next]) => {
+            expect(getComputed(computedName)).toBe(initial);
+            setComputed(computedName, next);
+            expect(s.setting(key)).toBe(next);
+        });
 
-        expect(s.setting('showEmojiPicker')).toBe(false);
-        expect(s.setting('showColorPicker')).toBe(false);
-        expect(s.setting('notificationSounds')).toBe(false);
-        expect(s.setting('unreadBadges')).toBe(false);
+        expect(getComputed('settingGlobalShowRedactions'))
+            .toBe(s.setting('buffers.show_redactions'));
+        setComputed('settingGlobalShowRedactions', 'hidden');
+        expect(s.setting('buffers.show_redactions')).toBe('hidden');
     });
 
     it('shows request history only when chathistory is available', () => {
@@ -505,43 +514,6 @@ describe('AppSettings channel defaults', () => {
 
         expect(s.setting('nicklistGrouped')).toBe(true);
         expect(getComputed('settingNicklistGrouped')).toBe(true);
-    });
-
-    it('binds global users display settings', () => {
-        expect(getComputed('settingHideIgnored')).toBe(true);
-        expect(getComputed('settingShowColors')).toBe(true);
-        expect(getComputed('settingShowPrefix')).toBe(true);
-
-        setComputed('settingHideIgnored', false);
-        setComputed('settingShowColors', false);
-        setComputed('settingShowPrefix', false);
-
-        expect(s.setting('hideIgnored')).toBe(false);
-        expect(s.setting('showColors')).toBe(false);
-        expect(s.setting('showPrefix')).toBe(false);
-    });
-
-    it('binds global message settings', () => {
-        expect(getComputed('settingGlobalShowBotMessages')).toBe(true);
-        expect(getComputed('settingGlobalShowRedactions'))
-            .toBe(s.setting('buffers.show_redactions'));
-
-        setComputed('settingGlobalShowBotMessages', false);
-        setComputed('settingGlobalShowRedactions', 'hidden');
-
-        expect(s.setting('showBotMessages')).toBe(false);
-        expect(s.setting('buffers.show_redactions')).toBe('hidden');
-    });
-
-    it('binds chat box and export settings', () => {
-        expect(getComputed('settingShowStylePicker')).toBe(true);
-        expect(getComputed('settingShowExportButton')).toBe(false);
-
-        setComputed('settingShowStylePicker', false);
-        setComputed('settingShowExportButton', true);
-
-        expect(s.setting('showStylePicker')).toBe(false);
-        expect(s.setting('showExportButton')).toBe(true);
     });
 
     it.each(bindings)('binds %s to buffers.%s', (computedName, key, value) => {

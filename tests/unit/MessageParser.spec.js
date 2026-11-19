@@ -148,87 +148,32 @@ describe('MessageParser.js', () => {
     });
 
     describe('formatting', () => {
-        it('should return underlined blocks for __text__', () => {
-            let blocks = parseMessage('__underline__', { extras: true });
-            // MessageFormatter may return an extra empty block at the end of a style range
-            let underlinedBlocks = blocks.filter((b) => b.styles.underline);
-            expect(underlinedBlocks.length).toBeGreaterThanOrEqual(1);
-            expect(underlinedBlocks[0].styles.underline).toStrictEqual(true);
-            expect(underlinedBlocks[0].content).toStrictEqual('__underline__');
-        });
+        it('should return styled blocks for supported formatting', () => {
+            const cases = [
+                ['__underline__', true, ['underline'], '__underline__'],
+                ['~~strike~~', true, ['strikethrough'], '~~strike~~'],
+                ['\x1Estrike\x1E', false, ['strikethrough'], 'strike'],
+                ['\x11mono\x11', false, ['monospace'], 'mono'],
+                ['`code`', true, ['monospace'], '`code`'],
+                ['**bold**', true, ['bold'], '**bold**'],
+                ['*italic*', true, ['italic'], '*italic*'],
+                ['_italic_', true, ['italic'], '_italic_'],
+                ['***bolditalic***', true, ['bold', 'italic'], '***bolditalic***'],
+                ['___underlineditalic___', true, ['underline', 'italic'], '___underlineditalic___'],
+            ];
 
-        it('should return strikethrough blocks for ~~text~~', () => {
-            let blocks = parseMessage('~~strike~~', { extras: true });
-            let strikeBlocks = blocks.filter((b) => b.styles.strikethrough);
-            expect(strikeBlocks.length).toBeGreaterThanOrEqual(1);
-            expect(strikeBlocks[0].styles.strikethrough).toStrictEqual(true);
-            expect(strikeBlocks[0].content).toStrictEqual('~~strike~~');
-        });
+            cases.forEach(([text, extras, styles, content]) => {
+                const blocks = parseMessage(text, extras ? { extras: true } : undefined);
+                const matching = blocks.filter((block) => (
+                    styles.every((style) => block.styles[style])
+                ));
 
-        it('should return strikethrough blocks for \x1Etext\x1E', () => {
-            let blocks = parseMessage('\x1Estrike\x1E');
-            let strikeBlocks = blocks.filter((b) => b.styles.strikethrough);
-            expect(strikeBlocks.length).toBeGreaterThanOrEqual(1);
-            expect(strikeBlocks[0].styles.strikethrough).toStrictEqual(true);
-            expect(strikeBlocks[0].content).toStrictEqual('strike');
-        });
-
-        it('should return monospace blocks for \x11text\x11', () => {
-            let blocks = parseMessage('\x11mono\x11');
-            let monoBlocks = blocks.filter((b) => b.styles.monospace);
-            expect(monoBlocks.length).toBeGreaterThanOrEqual(1);
-            expect(monoBlocks[0].styles.monospace).toStrictEqual(true);
-            expect(monoBlocks[0].content).toStrictEqual('mono');
-        });
-
-        it('should return monospace blocks for `text`', () => {
-            let blocks = parseMessage('`code`', { extras: true });
-            let monoBlocks = blocks.filter((b) => b.styles.monospace);
-            expect(monoBlocks.length).toBeGreaterThanOrEqual(1);
-            expect(monoBlocks[0].styles.monospace).toStrictEqual(true);
-            expect(monoBlocks[0].content).toStrictEqual('`code`');
-        });
-
-        it('should return bold blocks for **text**', () => {
-            let blocks = parseMessage('**bold**', { extras: true });
-            let boldBlocks = blocks.filter((b) => b.styles.bold);
-            expect(boldBlocks.length).toBeGreaterThanOrEqual(1);
-            expect(boldBlocks[0].styles.bold).toStrictEqual(true);
-            expect(boldBlocks[0].content).toStrictEqual('**bold**');
-        });
-
-        it('should return italic blocks for *text*', () => {
-            let blocks = parseMessage('*italic*', { extras: true });
-            let italicBlocks = blocks.filter((b) => b.styles.italic);
-            expect(italicBlocks.length).toBeGreaterThanOrEqual(1);
-            expect(italicBlocks[0].styles.italic).toStrictEqual(true);
-            expect(italicBlocks[0].content).toStrictEqual('*italic*');
-        });
-
-        it('should return italic blocks for _text_', () => {
-            let blocks = parseMessage('_italic_', { extras: true });
-            let italicBlocks = blocks.filter((b) => b.styles.italic);
-            expect(italicBlocks.length).toBeGreaterThanOrEqual(1);
-            expect(italicBlocks[0].styles.italic).toStrictEqual(true);
-            expect(italicBlocks[0].content).toStrictEqual('_italic_');
-        });
-
-        it('should return bold italic blocks for ***text***', () => {
-            let blocks = parseMessage('***bolditalic***', { extras: true });
-            let biBlocks = blocks.filter((b) => b.styles.bold && b.styles.italic);
-            expect(biBlocks.length).toBeGreaterThanOrEqual(1);
-            expect(biBlocks[0].styles.bold).toStrictEqual(true);
-            expect(biBlocks[0].styles.italic).toStrictEqual(true);
-            expect(biBlocks[0].content).toStrictEqual('***bolditalic***');
-        });
-
-        it('should return underlined italic blocks for ___text___', () => {
-            let blocks = parseMessage('___underlineditalic___', { extras: true });
-            let uiBlocks = blocks.filter((b) => b.styles.underline && b.styles.italic);
-            expect(uiBlocks.length).toBeGreaterThanOrEqual(1);
-            expect(uiBlocks[0].styles.underline).toStrictEqual(true);
-            expect(uiBlocks[0].styles.italic).toStrictEqual(true);
-            expect(uiBlocks[0].content).toStrictEqual('___underlineditalic___');
+                expect(matching.length).toBeGreaterThanOrEqual(1);
+                styles.forEach((style) => {
+                    expect(matching[0].styles[style]).toStrictEqual(true);
+                });
+                expect(matching[0].content).toStrictEqual(content);
+            });
         });
 
         it('should support mixed formatting', () => {
@@ -240,30 +185,32 @@ describe('MessageParser.js', () => {
             expect(underline.styles.underline).toStrictEqual(true);
         });
 
-        it('should handle extended color codes (16-98)', () => {
+        it('should parse extended, combined, greedy, and hex colors', () => {
             let blocks = parseMessage('\x0316,52Colored Text');
             expect(blocks[0].styles.color).toStrictEqual('16');
             expect(blocks[0].styles.background).toStrictEqual('52');
             expect(blocks[0].content).toStrictEqual('Colored Text');
-        });
 
-        it('should handle color reset code (99)', () => {
-            let blocks = parseMessage('\x0303,01Green on Black\x0399,99Reset');
-            expect(blocks[0].styles.color).toStrictEqual('green');
+            blocks = parseMessage('\x0301,01Spoiler');
+            expect(blocks[0].styles.color).toStrictEqual('black');
             expect(blocks[0].styles.background).toStrictEqual('black');
-            expect(blocks[1].styles.color).toBeUndefined();
-            expect(blocks[1].styles.background).toBeUndefined();
-        });
+            expect(blocks[0].content).toStrictEqual('Spoiler');
 
-        it('should handle greedy two-digit color matching', () => {
-            let blocks = parseMessage('\x03033');
-            // \x0303 is green, followed by literal '3'
+            blocks = parseMessage('\x03033');
             expect(blocks[0].styles.color).toStrictEqual('green');
             expect(blocks[0].content).toStrictEqual('3');
 
             blocks = parseMessage('\x0333');
-            // \x0333 is color 33
             expect(blocks[0].styles.color).toStrictEqual('33');
+
+            blocks = parseMessage('\x04ff0000Red Text');
+            expect(blocks[0].styles.color).toStrictEqual('#ff0000');
+            expect(blocks[0].content).toStrictEqual('Red Text');
+
+            blocks = parseMessage('\x04ff0000,00ff00Red on Green');
+            expect(blocks[0].styles.color).toStrictEqual('#ff0000');
+            expect(blocks[0].styles.background).toStrictEqual('#00ff00');
+            expect(blocks[0].content).toStrictEqual('Red on Green');
         });
 
         it('should return spoiler blocks for ||text||', () => {
@@ -275,81 +222,53 @@ describe('MessageParser.js', () => {
             expect(spoilerBlocks[0].content).toStrictEqual('||spoiler||');
         });
 
-        it('should handle color reset code (\x03)', () => {
-            let blocks = parseMessage('\x0303,01Green on Black\x03Reset');
+        it('should handle color resets', () => {
+            let blocks = parseMessage('\x0303,01Green on Black\x0399,99Reset');
             expect(blocks[0].styles.color).toStrictEqual('green');
             expect(blocks[0].styles.background).toStrictEqual('black');
             expect(blocks[1].styles.color).toBeUndefined();
             expect(blocks[1].styles.background).toBeUndefined();
-        });
 
-        it('should handle combined foreground and background codes', () => {
-            let blocks = parseMessage('\x0301,01Spoiler');
-            expect(blocks[0].styles.color).toStrictEqual('black');
+            blocks = parseMessage('\x0303,01Green on Black\x03Reset');
+            expect(blocks[0].styles.color).toStrictEqual('green');
             expect(blocks[0].styles.background).toStrictEqual('black');
-            expect(blocks[0].content).toStrictEqual('Spoiler');
-        });
+            expect(blocks[1].styles.color).toBeUndefined();
+            expect(blocks[1].styles.background).toBeUndefined();
 
-        it('should handle hex color codes (\x04)', () => {
-            let blocks = parseMessage('\x04ff0000Red Text');
-            expect(blocks[0].styles.color).toStrictEqual('#ff0000');
-            expect(blocks[0].content).toStrictEqual('Red Text');
-
-            blocks = parseMessage('\x04ff0000,00ff00Red on Green');
-            expect(blocks[0].styles.color).toStrictEqual('#ff0000');
-            expect(blocks[0].styles.background).toStrictEqual('#00ff00');
-            expect(blocks[0].content).toStrictEqual('Red on Green');
-        });
-
-        it('should handle hex color reset code (\x04)', () => {
-            let blocks = parseMessage('\x04ff0000Red\x04Reset');
+            blocks = parseMessage('\x04ff0000Red\x04Reset');
             expect(blocks[0].styles.color).toStrictEqual('#ff0000');
             expect(blocks[1].styles.color).toBeUndefined();
+
+            blocks = parseMessage('\x0304Red\x0399123');
+            expect(blocks[0].styles.color).toStrictEqual('light-red');
+            expect(blocks[0].content).toStrictEqual('Red');
+            expect(blocks[1].styles.color).toBeUndefined();
+            expect(blocks[1].content).toStrictEqual('123');
         });
 
-        it('should handle global reset code (\x0F)', () => {
+        it('should handle global resets and nested background clearing', () => {
             let blocks = parseMessage('\x02\x0303\x16Formatted\x0F Plain', { extras: true });
-            // Block 0: Bold Green Fancy text
             expect(blocks[0].styles.bold).toStrictEqual(true);
             expect(blocks[0].styles.color).toStrictEqual('green');
             expect(blocks[0].styles.reverse).toStrictEqual(true);
             expect(blocks[0].content).toStrictEqual('Formatted');
 
-            // Block 1: Reset applied, text should be plain
             let lastBlock = blocks[blocks.length - 1];
             expect(lastBlock.content).toStrictEqual(' Plain');
             expect(Object.keys(lastBlock.styles).length).toStrictEqual(0);
-        });
 
-        it('should handle global reset code (\x0F) clearing unclosed bold', () => {
-            let blocks = parseMessage('\x02bold \x0F plain', { extras: true });
-            // Block 0: bold
+            blocks = parseMessage('\x02bold \x0F plain', { extras: true });
             expect(blocks[0].styles.bold).toStrictEqual(true);
             expect(blocks[0].content).toStrictEqual('bold ');
-
-            // Block 1: plain
             expect(blocks[1].styles.bold).toBeUndefined();
             expect(blocks[1].content).toStrictEqual(' plain');
-        });
 
-        it('should handle nested background color clearing', () => {
-            // This test simulates the output of buildIrcText for nested spans
-            // Note: parseMessage is the receiver, but we can verify it parses correctly
-            let blocks = parseMessage('\x0304,02BG\x0304,99FG\x0fPlain');
+            blocks = parseMessage('\x0304,02BG\x0304,99FG\x0fPlain');
             expect(blocks[0].styles.color).toStrictEqual('light-red');
             expect(blocks[0].styles.background).toStrictEqual('blue');
             expect(blocks[1].styles.color).toStrictEqual('light-red');
             expect(blocks[1].styles.background).toBeUndefined();
             expect(blocks[2].styles.color).toBeUndefined();
-        });
-
-        it('should handle digit-safe color resets', () => {
-            // \x0399 followed by a digit should be parsed as a reset
-            let blocks = parseMessage('\x0304Red\x0399123');
-            expect(blocks[0].styles.color).toStrictEqual('light-red');
-            expect(blocks[0].content).toStrictEqual('Red');
-            expect(blocks[1].styles.color).toBeUndefined();
-            expect(blocks[1].content).toStrictEqual('123');
         });
     });
 });

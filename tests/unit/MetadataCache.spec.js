@@ -72,44 +72,21 @@ describe('MetadataCache', () => {
         jest.restoreAllMocks();
     });
 
-    test('stores a channel display-name and not its avatar', async() => {
+    test('stores channel names and users with name or avatar', async() => {
         rememberChannel(network, '#Chan', 'Lobby');
         await flush();
-
         let channels = savedNet(storage).channels;
         expect(channels['#chan']).toEqual({ name: 'Lobby', seen: now });
         expect(channels['#chan'].avatar).toBeUndefined();
-    });
 
-    test('skips an empty channel name and clear deletes the cache', async() => {
-        rememberChannel(network, '#chan', 'Lobby');
         rememberChannel(network, '#chan', '   ');
-        await flush();
-
-        expect(savedNet(storage).channels['#chan']).toBeUndefined();
-
-        await clear();
-        expect(storage.store[STORAGE_KEY]).toBe(null);
-    });
-
-    test('does not store a user with neither name nor avatar', async() => {
         rememberUser(network, {
             nick: 'Alice',
             metadata: { 'display-name': 'A' },
         });
         rememberUser(network, {
-            nick: 'Alice',
+            nick: 'Empty',
             metadata: {},
-        });
-        await flush();
-
-        expect(savedNet(storage).users['n:ALICE']).toBeUndefined();
-    });
-
-    test('stores a user with only a name or only an avatar', async() => {
-        rememberUser(network, {
-            nick: 'Alice',
-            metadata: { 'display-name': 'A' },
         });
         rememberUser(network, {
             nick: 'Bob',
@@ -117,13 +94,19 @@ describe('MetadataCache', () => {
         });
         await flush();
 
+        channels = savedNet(storage).channels;
+        expect(channels['#chan']).toBeUndefined();
         let users = savedNet(storage).users;
         expect(users['n:ALICE']).toEqual({ name: 'A', avatar: '', seen: now });
+        expect(users['n:EMPTY']).toBeUndefined();
         expect(users['n:BOB']).toEqual({
             name: '',
             avatar: 'https://cdn.example/bob.png',
             seen: now,
         });
+
+        await clear();
+        expect(storage.store[STORAGE_KEY]).toBe(null);
     });
 
     test('evicts the oldest user when the 101st is stored', async() => {

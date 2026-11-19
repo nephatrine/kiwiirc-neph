@@ -14,7 +14,7 @@ const allEmojis = Object.values(emojiData).flat();
 const allNames = Object.keys(shortcodeToChar);
 
 describe('JoyPixels emoji data', () => {
-    it('uses the JoyPixels category set and labels', () => {
+    it('uses the expected categories, counts, and exclusions', () => {
         expect(categories.map((category) => category.id)).toEqual([
             'people',
             'nature',
@@ -46,9 +46,6 @@ describe('JoyPixels emoji data', () => {
             'bx-flag',
         ]);
         expect(Object.keys(emojiData)).toEqual(categories.map((category) => category.id));
-    });
-
-    it('has the expected filtered entry counts', () => {
         expect(allEmojis).toHaveLength(1899);
         expect(Object.fromEntries(
             Object.entries(emojiData).map(([id, list]) => [id, list.length])
@@ -63,9 +60,6 @@ describe('JoyPixels emoji data', () => {
             flags: 270,
         });
         expect(allNames).toHaveLength(2566);
-    });
-
-    it('excludes skin-tone, hair, regional-indicator, and keycap components', () => {
         expect(allNames.some((name) => name.includes('_tone'))).toBe(false);
         expect(allNames).not.toContain('tone1');
         expect(allNames).not.toContain('regional_indicator_a');
@@ -80,7 +74,7 @@ describe('JoyPixels emoji data', () => {
         expect(shortcodeToChar.family_man_woman_boy).toBe('👨‍👩‍👦');
     });
 
-    it('uses JoyPixels primary names and aliases', () => {
+    it('uses JoyPixels names, aliases, and variation selectors', () => {
         expect(shortcodeToChar.thumbsup).toBe('👍');
         expect(shortcodeToChar['+1']).toBe('👍');
         expect(shortcodeToChar.poop).toBe('💩');
@@ -90,9 +84,6 @@ describe('JoyPixels emoji data', () => {
         expect(shortcodeToChar.hugs).toBeUndefined();
         expect(shortcodeToChar.cowboy_hat_face).toBeUndefined();
         expect(shortcodeToChar.bald_man).toBeUndefined();
-    });
-
-    it('matches JoyPixels names that change meaning', () => {
         expect(shortcodeToChar.pouting_face).toBe('😡');
         expect(shortcodeToChar.ok_woman).toBe('🙆');
         expect(shortcodeToChar.guardsman).toBe('💂');
@@ -101,28 +92,22 @@ describe('JoyPixels emoji data', () => {
         expect(shortcodeToChar.city_sunset).toBe('🌇');
         expect(shortcodeToChar.om).toBe('🇴🇲');
         expect(shortcodeToChar.om_symbol).toBe('🕉️');
-    });
-
-    it('uses JoyPixels variation selectors', () => {
         expect(shortcodeToChar.zap).toBe('⚡️');
         expect(shortcodeToChar.transgender_symbol).toBe('⚧');
         expect(shortcodeToChar.heart).toBe('❤️');
     });
 
-    it('keeps Unicode versions for picker filtering', () => {
+    it('tracks and filters Unicode versions', () => {
         const byShortcode = Object.fromEntries(allEmojis.map((emoji) => [
             emoji.shortcode,
             emoji,
         ]));
-
         expect(byShortcode.zap.version).toBe(4);
         expect(byShortcode.melting_face.version).toBe(14);
         expect(getEmojiVersions(emojiData)).toContain(13);
         expect(getEmojiVersions(emojiData)).toContain(13.1);
         expect(emojiVersions).toEqual(getEmojiVersions(emojiData));
-    });
 
-    it('filters emoji by maximum Unicode version', () => {
         const sample = {
             people: [
                 { shortcode: 'old', version: 13 },
@@ -130,7 +115,6 @@ describe('JoyPixels emoji data', () => {
                 { shortcode: 'newer', version: 14 },
             ],
         };
-
         expect(emojiWithinVersion({ version: 13 }, 13)).toBe(true);
         expect(emojiWithinVersion({ version: 13.1 }, 13)).toBe(false);
         expect(emojiWithinVersion({ version: 17 }, 0)).toBe(true);
@@ -161,36 +145,27 @@ describe('JoyPixels emoji data', () => {
         });
     });
 
-    it('maps every primary and alias to its entry character', () => {
+    it('maps shortcodes, validates curated entries, and powers search/replacement', () => {
         allEmojis.forEach((emoji) => {
             expect(shortcodeToChar[emoji.shortcode]).toBe(emoji.char);
             (emoji.aliases || []).forEach((alias) => {
                 expect(shortcodeToChar[alias]).toBe(emoji.char);
             });
         });
-    });
-
-    it('keeps curated shortcodes valid', () => {
         curatedEmojis.forEach((emoji) => {
             expect(shortcodeToChar[emoji.shortcode]).toBe(emoji.char);
         });
-    });
 
-    it('matches primary shortcodes, names, and aliases in picker search', () => {
         const thumbsup = emojiData.people.find((emoji) => emoji.shortcode === 'thumbsup');
         const poop = emojiData.people.find((emoji) => emoji.shortcode === 'poop');
-
         expect(emojiMatches(thumbsup, 'thumbsup')).toBe(true);
         expect(emojiMatches(thumbsup, '+1')).toBe(true);
         expect(emojiMatches(thumbsup, 'thumbs up')).toBe(true);
         expect(emojiMatches(poop, 'hankey')).toBe(true);
         expect(emojiMatches(thumbsup, 'not-an-emoji')).toBe(false);
-    });
 
-    it('replaces JoyPixels shortcodes and leaves removed names literal', () => {
         expect(replaceShortcodes(':thumbsup: :poop: :slight_smile:'))
             .toBe('👍 💩 🙂');
-        expect(replaceShortcodes(':hugs:'))
-            .toBe(':hugs:');
+        expect(replaceShortcodes(':hugs:')).toBe(':hugs:');
     });
 });

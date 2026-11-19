@@ -11,18 +11,26 @@ function makeNetwork() {
 }
 
 describe('messaging permissions', () => {
-    let s;
-    let network;
+    let created;
+
+    function fresh() {
+        const ctx = makeNetwork();
+        created.push(ctx.s);
+        return ctx;
+    }
 
     beforeEach(() => {
-        ({ s, network } = makeNetwork());
+        created = [];
     });
 
     afterEach(() => {
-        s.$destroy();
+        created.forEach((s) => s.$destroy());
+        created = [];
     });
 
-    test('resolves the global default and per-network policy', () => {
+    test('resolves the global default, per-network policy, and friends', () => {
+        const { s, network } = fresh();
+
         s.setting('buffers.block_pms', false);
         expect(network.directMessagePolicy()).toBe('allow');
 
@@ -34,92 +42,81 @@ describe('messaging permissions', () => {
 
         network.setting('blockDirectMessages', 'friends');
         expect(network.directMessagePolicy()).toBe('friends');
-    });
 
-    test('matches friends by account before nickname', () => {
         network.setting('friends', [
             { nick: 'Alice', account: 'alice' },
         ]);
-
         expect(network.isFriend({ nick: 'Alice', account: 'alice' })).toBe(true);
         expect(network.isFriend({ nick: 'Alice', account: 'other' })).toBe(false);
         expect(network.isFriend({ nick: 'Bob', account: '' })).toBe(false);
     });
 
-    test('adds an offline nickname to the local ignore list', () => {
-        const result = network.addIgnoredNick('Alice');
-
+    test('adds and removes ignore entries offline and account-first', () => {
+        let ctx = fresh();
+        let result = ctx.network.addIgnoredNick('Alice');
         expect(result.ok).toBe(true);
-        expect(network.ignoredEntries()).toEqual([
+        expect(ctx.network.ignoredEntries()).toEqual([
             { nick: 'Alice', account: '' },
         ]);
-        expect(network.isIgnoredNick('Alice')).toBe(true);
-        expect(network.isIgnoredNick('alice')).toBe(true);
-    });
+        expect(ctx.network.isIgnoredNick('Alice')).toBe(true);
+        expect(ctx.network.isIgnoredNick('alice')).toBe(true);
 
-    test('adds and removes a known account-first entry', () => {
-        const alice = s.addUser(network.id, {
+        ctx = fresh();
+        const alice = ctx.s.addUser(ctx.network.id, {
             nick: 'Alice',
             account: 'alice',
         });
-
-        expect(network.addIgnoredNick('Alice').ok).toBe(true);
+        expect(ctx.network.addIgnoredNick('Alice').ok).toBe(true);
         expect(alice.ignore).toBe(true);
-        expect(network.ignoredEntries()).toEqual([
+        expect(ctx.network.ignoredEntries()).toEqual([
             { nick: 'Alice', account: 'alice' },
         ]);
-
-        expect(network.removeIgnoredEntry({
+        expect(ctx.network.removeIgnoredEntry({
             nick: 'Alice',
             account: 'alice',
         }).ok).toBe(true);
         expect(alice.ignore).toBe(false);
-        expect(network.ignoredEntries()).toEqual([]);
+        expect(ctx.network.ignoredEntries()).toEqual([]);
     });
 
-    test('does not match the same nick on a different account', () => {
-        network.setting('ignoredUsers', [
+    test('matches identities account-first, applies to new users, and follows nicks', () => {
+        let ctx = fresh();
+        ctx.network.setting('ignoredUsers', [
             { nick: 'Alice', account: 'alice' },
         ]);
-
-        expect(network.isIgnoredIdentity({
+        expect(ctx.network.isIgnoredIdentity({
             nick: 'Alice',
             account: 'other',
         })).toBe(false);
-        expect(network.isIgnoredIdentity({
+        expect(ctx.network.isIgnoredIdentity({
             nick: 'Alicia',
             account: 'alice',
         })).toBe(true);
-    });
 
-    test('applies the local ignore list to new users', () => {
-        network.setting('ignoredUsers', [
+        ctx = fresh();
+        ctx.network.setting('ignoredUsers', [
             { nick: 'Alice', account: '' },
         ]);
-
-        const alice = s.addUser(network.id, {
+        const alice = ctx.s.addUser(ctx.network.id, {
             nick: 'Alice',
             account: 'alice',
         });
-
         expect(alice.ignore).toBe(true);
-        expect(network.ignoredEntries()).toEqual([
+        expect(ctx.network.ignoredEntries()).toEqual([
             { nick: 'Alice', account: 'alice' },
         ]);
-    });
 
-    test('updates stored nicknames when a user changes nick', () => {
-        s.addUser(network.id, { nick: 'Alice' });
-        network.addIgnoredNick('Alice');
-
-        s.changeUserNick(network.id, 'Alice', 'Alicia');
-
-        expect(network.ignoredEntries()).toEqual([
+        ctx = fresh();
+        ctx.s.addUser(ctx.network.id, { nick: 'Alice' });
+        ctx.network.addIgnoredNick('Alice');
+        ctx.s.changeUserNick(ctx.network.id, 'Alice', 'Alicia');
+        expect(ctx.network.ignoredEntries()).toEqual([
             { nick: 'Alicia', account: '' },
         ]);
     });
 
     test('requires connected users on Soju metadata networks', () => {
+        const { s, network } = fresh();
         network.ircd = 'soju';
         network.metadataCap = () => 'draft/metadata-3';
         network.setMetadata = jest.fn();

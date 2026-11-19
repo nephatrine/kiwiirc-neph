@@ -17,30 +17,16 @@ function makeMessage(overrides = {}) {
 }
 
 describe('message condensing', () => {
-    test('condenses the same author within a minute on the same day', () => {
+    test('condenses only the same author within a minute on the same day', () => {
         const previous = makeMessage({ id: 1, time: 1000 });
-        const message = makeMessage({ id: 2, time: 20000 });
-
-        expect(isConsecutiveMessage(previous, message)).toBe(true);
-    });
-
-    test('does not condense after a minute', () => {
-        const previous = makeMessage({ id: 1, time: 1000 });
-        const message = makeMessage({ id: 2, time: 61000 });
-
-        expect(isConsecutiveMessage(previous, message)).toBe(false);
-    });
-
-    test('does not condense across a day change', () => {
-        const previous = makeMessage({ id: 1, time: 1000, day_num: 1 });
-        const message = makeMessage({ id: 2, time: 2000, day_num: 2 });
-
-        expect(isConsecutiveMessage(previous, message)).toBe(false);
-    });
-
-    test('does not condense traffic or mixed message types', () => {
-        const previous = makeMessage({ id: 1, time: 1000 });
-
+        expect(isConsecutiveMessage(previous, makeMessage({ id: 2, time: 20000 })))
+            .toBe(true);
+        expect(isConsecutiveMessage(previous, makeMessage({ id: 2, time: 61000 })))
+            .toBe(false);
+        expect(isConsecutiveMessage(
+            makeMessage({ id: 1, time: 1000, day_num: 1 }),
+            makeMessage({ id: 2, time: 2000, day_num: 2 })
+        )).toBe(false);
         expect(isConsecutiveMessage(previous, makeMessage({
             id: 2,
             time: 2000,
@@ -56,9 +42,6 @@ describe('message condensing', () => {
             time: 2000,
             type: 'action',
         }))).toBe(false);
-    });
-
-    test('never condenses the first message', () => {
         expect(isConsecutiveMessage(undefined, makeMessage())).toBe(false);
     });
 });
@@ -71,7 +54,7 @@ describe('MessageList row state', () => {
         };
     }
 
-    test('unread marker sits on the first message after last_read', () => {
+    test('places the unread marker on the first message after last_read', () => {
         const messages = [
             makeMessage({ id: 1, time: 1000 }),
             makeMessage({ id: 2, time: 2000 }),
@@ -81,40 +64,20 @@ describe('MessageList row state', () => {
         expect(MessageList.computed.unreadMarkerMessageId.call(
             context(messages, 2500)
         )).toBe(3);
-    });
-
-    test('unread marker is absent without a read marker', () => {
-        const messages = [makeMessage({ id: 1 }), makeMessage({ id: 2 })];
-
         expect(MessageList.computed.unreadMarkerMessageId.call(
-            context(messages, 0)
-        )).toBeNull();
-    });
-
-    test('unread marker is absent when no message crosses last_read', () => {
-        const messages = [
-            makeMessage({ id: 1, time: 1000 }),
-            makeMessage({ id: 2, time: 2000 }),
-        ];
-
-        expect(MessageList.computed.unreadMarkerMessageId.call(
-            context(messages, 5000)
+            context([makeMessage({ id: 1 }), makeMessage({ id: 2 })], 0)
         )).toBeNull();
         expect(MessageList.computed.unreadMarkerMessageId.call(
-            context(messages, 500)
+            context([makeMessage({ id: 1, time: 1000 }), makeMessage({ id: 2, time: 2000 })], 5000)
         )).toBeNull();
-    });
+        expect(MessageList.computed.unreadMarkerMessageId.call(
+            context([makeMessage({ id: 1, time: 1000 }), makeMessage({ id: 2, time: 2000 })], 500)
+        )).toBeNull();
 
-    test('shouldShowUnreadMarker matches the computed id', () => {
-        const messages = [
-            makeMessage({ id: 1, time: 1000 }),
-            makeMessage({ id: 2, time: 2000 }),
-        ];
         const ctx = {
             ...context(messages, 1500),
             unreadMarkerMessageId: 2,
         };
-
         expect(MessageList.methods.shouldShowUnreadMarker.call(ctx, messages[1]))
             .toBe(true);
         expect(MessageList.methods.shouldShowUnreadMarker.call(ctx, messages[0]))

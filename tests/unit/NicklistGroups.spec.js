@@ -28,8 +28,8 @@ function makeUser(nick, mode, away) {
 }
 
 describe('nicklist groups', () => {
-    it('maps known channel modes to privilege groups', () => {
-        const buffer = makeBuffer();
+    it('maps modes by name or prefix rank and sorts away users by privilege', () => {
+        let buffer = makeBuffer();
 
         expect(nicklistGroupForUser(buffer, makeUser('Owner', 'q'), true))
             .toBe('owner');
@@ -41,10 +41,8 @@ describe('nicklist groups', () => {
             .toBe('halfop');
         expect(nicklistGroupForUser(buffer, makeUser('Voiced', 'v'), true))
             .toBe('voiced');
-    });
 
-    it('falls back to prefix rank for unknown modes', () => {
-        const buffer = makeBuffer([
+        buffer = makeBuffer([
             { symbol: '!', mode: 'Y' },
             { symbol: '@', mode: 'y' },
             { symbol: '%', mode: 'X' },
@@ -59,34 +57,27 @@ describe('nicklist groups', () => {
             .toBe('halfop');
         expect(nicklistGroupForUser(buffer, makeUser('Fourth', 'Z'), true))
             .toBe('voiced');
-    });
 
-    it('separates unprivileged away users only when away sorting is enabled', () => {
-        const buffer = makeBuffer();
+        buffer = makeBuffer();
         const online = makeUser('Online');
         const away = makeUser('Away', '', true);
 
         expect(nicklistGroupForUser(buffer, online, true)).toBe('users');
         expect(nicklistGroupForUser(buffer, away, true)).toBe('offline');
         expect(nicklistGroupForUser(buffer, away, false)).toBe('users');
-    });
-
-    it('keeps away privileged users in their privilege group', () => {
-        const buffer = makeBuffer();
-
         expect(nicklistGroupForUser(buffer, makeUser('AwayOp', 'o', true), true))
             .toBe('operator');
     });
 
-    it('builds ordered headings and omits empty groups', () => {
-        const buffer = makeBuffer();
-        const users = [
+    it('builds ordered headings and handles unsorted or empty lists', () => {
+        let buffer = makeBuffer();
+        let users = [
             makeUser('Owner', 'q'),
             makeUser('Online'),
             makeUser('Away', '', true),
         ];
 
-        const items = buildNicklistGroups(buffer, users, true);
+        let items = buildNicklistGroups(buffer, users, true);
 
         expect(items.map((item) => item.id)).toEqual([
             'group-owner',
@@ -102,16 +93,12 @@ describe('nicklist groups', () => {
                 'nicklist_group_online',
                 'nicklist_group_offline',
             ]);
-    });
 
-    it('uses the Users heading and no Offline group when away sorting is off', () => {
-        const buffer = makeBuffer();
-        const users = [
+        users = [
             makeUser('Online'),
             makeUser('Away', '', true),
         ];
-
-        const items = buildNicklistGroups(buffer, users, false);
+        items = buildNicklistGroups(buffer, users, false);
 
         expect(items.map((item) => item.id)).toEqual([
             'group-users',
@@ -119,9 +106,7 @@ describe('nicklist groups', () => {
             'user-Away',
         ]);
         expect(items[0].labelKey).toBe('nicklist_group_users');
-    });
 
-    it('returns no items for an empty nicklist', () => {
-        expect(buildNicklistGroups(makeBuffer(), [], true)).toEqual([]);
+        expect(buildNicklistGroups(buffer, [], true)).toEqual([]);
     });
 });

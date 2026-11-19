@@ -32,28 +32,22 @@ describe('draft/relaymsg', () => {
         });
         expect(user.nick).toBe('x2Tuff4Ux/bridged');
         expect(user.relayed_by).toBe('DiscordBot');
-    });
 
-    test('defaults to empty when no relay tag is present', () => {
-        let user = new UserState(1, { nick: 'Someone' });
+        user = new UserState(1, { nick: 'Someone' });
         expect(user.relayed_by).toBe('');
     });
 
-    test('keeps the user section for a relayed user absent from the channel', () => {
+    test('keeps the user section while relaying and falls back to the nicklist', () => {
         let sidebar = makeSidebar(channelBuffer(false));
         sidebar.sidebarUser = { nick: 'x2Tuff4Ux/bridged', relayed_by: 'DiscordBot' };
         expect(sidebar.section()).toBe('user');
         expect(sidebar.sidebarSection).toBe('user');
-    });
 
-    test('falls back to nicklist for a plain user absent from the channel', () => {
-        let sidebar = makeSidebar(channelBuffer(false));
+        sidebar = makeSidebar(channelBuffer(false));
         sidebar.sidebarUser = { nick: 'Someone', relayed_by: '' };
         expect(sidebar.section()).toBe('nicklist');
-    });
 
-    test('keeps the user section for a plain user present in the channel', () => {
-        let sidebar = makeSidebar(channelBuffer(true));
+        sidebar = makeSidebar(channelBuffer(true));
         sidebar.sidebarUser = { nick: 'Someone', relayed_by: '' };
         expect(sidebar.section()).toBe('user');
     });

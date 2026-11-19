@@ -98,16 +98,11 @@ describe('InputHandler /fakesub', () => {
         expect(message.tags['msg-param-streak-months']).toBe('3');
         expect(message.tags['subscriber']).toBe('1');
         expect(message.irc_id).toBeTruthy();
-    });
 
-    it('uses a default body when no message is given', () => {
-        const handler = makeHandler();
-        const { network, buffer } = makeContext();
-
-        handler.processLine('/fakesub', { network, buffer });
-
-        const message = network.appState.addMessage.mock.calls[0][1];
-        expect(message.raw_text).toBe('Nice stream!');
+        const defaultContext = makeContext();
+        handler.processLine('/fakesub', defaultContext);
+        const defaultMessage = defaultContext.network.appState.addMessage.mock.calls[0][1];
+        expect(defaultMessage.raw_text).toBe('Nice stream!');
     });
 
     it('does nothing outside a channel', () => {
@@ -229,68 +224,25 @@ describe('InputHandler advertised limits', () => {
         expect(state.addMessage).not.toHaveBeenCalled();
     });
 
-    it('rejects a topic over TOPICLEN', () => {
-        const { handler, state, network, buffer } =
-            makeLimitContext({ TOPICLEN: 3 });
+    it('rejects topic, kick, away, and nick values over their limits', () => {
+        const cases = [
+            ['/topic éé', { TOPICLEN: 3 }, 'setTopic', 'error_topic_too_long'],
+            ['/kick Other éé', { KICKLEN: 3 }, 'raw', 'error_kick_reason_too_long'],
+            ['/away éé', { AWAYLEN: 3 }, 'raw', 'error_away_too_long'],
+            ['/nick éé', { NICKLEN: 3 }, 'changeNick', 'error_nick_too_long'],
+        ];
 
-        handler.processLine('/topic éé', { network, buffer });
+        cases.forEach(([line, limits, method, errorKey]) => {
+            const { handler, state, network, buffer } = makeLimitContext(limits);
 
-        expect(network.ircClient.setTopic).not.toHaveBeenCalled();
-        expect(state.addMessage).toHaveBeenCalledWith(
-            buffer,
-            expect.objectContaining({
-                type: 'error',
-                message: 'error_topic_too_long',
-            })
-        );
-    });
+            handler.processLine(line, { network, buffer });
 
-    it('rejects a kick reason over KICKLEN', () => {
-        const { handler, state, network, buffer } =
-            makeLimitContext({ KICKLEN: 3 });
-
-        handler.processLine('/kick Other éé', { network, buffer });
-
-        expect(network.ircClient.raw).not.toHaveBeenCalled();
-        expect(state.addMessage).toHaveBeenCalledWith(
-            buffer,
-            expect.objectContaining({
-                type: 'error',
-                message: 'error_kick_reason_too_long',
-            })
-        );
-    });
-
-    it('rejects an away message over AWAYLEN', () => {
-        const { handler, state, network, buffer } =
-            makeLimitContext({ AWAYLEN: 3 });
-
-        handler.processLine('/away éé', { network, buffer });
-
-        expect(network.ircClient.raw).not.toHaveBeenCalled();
-        expect(state.addMessage).toHaveBeenCalledWith(
-            buffer,
-            expect.objectContaining({
-                type: 'error',
-                message: 'error_away_too_long',
-            })
-        );
-    });
-
-    it('rejects a nickname over NICKLEN', () => {
-        const { handler, state, network, buffer } =
-            makeLimitContext({ NICKLEN: 3 });
-
-        handler.processLine('/nick éé', { network, buffer });
-
-        expect(network.ircClient.changeNick).not.toHaveBeenCalled();
-        expect(state.addMessage).toHaveBeenCalledWith(
-            buffer,
-            expect.objectContaining({
-                type: 'error',
-                message: 'error_nick_too_long',
-            })
-        );
+            expect(network.ircClient[method]).not.toHaveBeenCalled();
+            expect(state.addMessage).toHaveBeenCalledWith(
+                buffer,
+                expect.objectContaining({ type: 'error', message: errorKey })
+            );
+        });
     });
 });
 

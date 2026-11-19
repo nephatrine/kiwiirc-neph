@@ -23,7 +23,7 @@ describe('raw buffer backlog', () => {
         s.$destroy();
     });
 
-    test('keeps hidden raw lines out of message state until opened', () => {
+    test('keeps hidden raw lines until opened and caps the backlog', () => {
         raw.queueRawMessage(rawMessage(1));
         raw.queueRawMessage(rawMessage(2));
 
@@ -36,9 +36,8 @@ describe('raw buffer backlog', () => {
         expect(raw.getMessages()).toHaveLength(2);
         expect(raw.getMessages()[0].message).toBe('[S] line 1');
         expect(raw.getMessages()[1].message).toBe('[S] line 2');
-    });
 
-    test('caps the backlog to the configured raw scrollback size', () => {
+        raw.isVisible = false;
         raw.setting('scrollback_size', 2);
         raw.queueRawMessage(rawMessage(1));
         raw.queueRawMessage(rawMessage(2));

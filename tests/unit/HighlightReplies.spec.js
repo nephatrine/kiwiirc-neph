@@ -1,59 +1,68 @@
 import state from '@/libs/state';
 
 describe('highlight replies', () => {
-    let s;
-    let network;
-    let buffer;
+    let created;
 
-    beforeEach(() => {
-        s = state.create();
-        network = s.addNetwork('TestNetwork', 'TestNick', {});
+    function fresh() {
+        const s = state.create();
+        const network = s.addNetwork('TestNetwork', 'TestNick', {});
         network.nick = 'TestNick';
-        buffer = s.addBuffer(network.id, '#test');
+        const buffer = s.addBuffer(network.id, '#test');
         s.addUserToBuffer(buffer, { nick: 'TestNick' });
         s.addUserToBuffer(buffer, { nick: 'OtherUser' });
+        created.push(s);
+
+        function addOriginal(nick, ircId) {
+            return s.addMessage(buffer, {
+                nick,
+                message: 'original',
+                type: 'privmsg',
+                irc_id: ircId,
+                time: 100,
+            });
+        }
+
+        function addReply(ircId) {
+            return s.addMessage(buffer, {
+                nick: 'OtherUser',
+                message: 'reply',
+                type: 'privmsg',
+                tags: { '+reply': ircId },
+                time: 200,
+            });
+        }
+
+        return {
+            s, network, buffer, addOriginal, addReply,
+        };
+    }
+
+    beforeEach(() => {
+        created = [];
     });
 
     afterEach(() => {
-        s.$destroy();
+        created.forEach((s) => s.$destroy());
+        created = [];
     });
 
-    function addOriginal(nick, ircId) {
-        return s.addMessage(buffer, {
-            nick,
-            message: 'original',
-            type: 'privmsg',
-            irc_id: ircId,
-            time: 100,
-        });
-    }
+    test('highlights replies to our own messages unless disabled per network', () => {
+        let ctx = fresh();
+        ctx.addOriginal('TestNick', 'self-msg');
 
-    function addReply(ircId) {
-        return s.addMessage(buffer, {
-            nick: 'OtherUser',
-            message: 'reply',
-            type: 'privmsg',
-            tags: { '+reply': ircId },
-            time: 200,
-        });
-    }
+        expect(ctx.addReply('self-msg').isHighlight).toBe(true);
 
-    test('highlights replies to our own messages by default', () => {
-        addOriginal('TestNick', 'self-msg');
+        ctx = fresh();
+        ctx.network.setting('highlightReplies', false);
+        ctx.addOriginal('TestNick', 'self-msg');
 
-        expect(addReply('self-msg').isHighlight).toBe(true);
-    });
-
-    test('does not highlight replies when disabled per network', () => {
-        network.setting('highlightReplies', false);
-        addOriginal('TestNick', 'self-msg');
-
-        expect(addReply('self-msg').isHighlight).toBe(false);
+        expect(ctx.addReply('self-msg').isHighlight).toBe(false);
     });
 
     test('does not highlight replies to another user', () => {
-        addOriginal('OtherUser', 'other-msg');
+        const ctx = fresh();
+        ctx.addOriginal('OtherUser', 'other-msg');
 
-        expect(addReply('other-msg').isHighlight).toBe(false);
+        expect(ctx.addReply('other-msg').isHighlight).toBe(false);
     });
 });

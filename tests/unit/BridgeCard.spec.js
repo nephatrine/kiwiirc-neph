@@ -135,8 +135,8 @@ describe('bridge card parsing', () => {
         expect(card.body).toBe('Field: missing separator\nUnknown: value\nBody');
     });
 
-    test('recognizes labels with leading spaces', () => {
-        const card = parseBridgeCard([
+    test('handles leading whitespace and indented markers', () => {
+        const spaced = parseBridgeCard([
             '[PREVIEW]',
             '  Author: Library Productions',
             '  Title: Prey (2017)',
@@ -147,17 +147,32 @@ describe('bridge card parsing', () => {
             '  Body line',
         ].join('\n'));
 
-        expect(card.author).toBe('Library Productions');
-        expect(card.title).toBe('Prey (2017)');
-        expect(card.fields).toEqual([{ key: 'Studio', value: 'Arkane' }]);
-        expect(card.thumbnails).toEqual([
+        expect(spaced.author).toBe('Library Productions');
+        expect(spaced.title).toBe('Prey (2017)');
+        expect(spaced.fields).toEqual([{ key: 'Studio', value: 'Arkane' }]);
+        expect(spaced.thumbnails).toEqual([
             'https://i.ytimg.com/vi/example/maxresdefault.jpg',
         ]);
-        expect(card.footer).toBe('A footer');
-        expect(card.body).toBe([
+        expect(spaced.footer).toBe('A footer');
+        expect(spaced.body).toBe([
             'All credit goes to the creators.',
             'Body line',
         ].join('\n'));
+
+        const tabbed = parseBridgeCard([
+            '[EMBED]',
+            '\tAuthor: Alice',
+            '\tTitle: A title',
+        ].join('\n'));
+
+        expect(tabbed.author).toBe('Alice');
+        expect(tabbed.title).toBe('A title');
+
+        const indented = parseBridgeCard('  [FWD] [PREVIEW]  \n  Title: A title');
+
+        expect(indented).not.toBeNull();
+        expect(indented.forwarded).toBe(true);
+        expect(indented.title).toBe('A title');
     });
 
     test('strips description labels and extracts safe card URLs', () => {
@@ -187,17 +202,6 @@ describe('bridge card parsing', () => {
         expect(card.body).toBe('Body line');
     });
 
-    test('recognizes labels with leading tabs', () => {
-        const card = parseBridgeCard([
-            '[EMBED]',
-            '\tAuthor: Alice',
-            '\tTitle: A title',
-        ].join('\n'));
-
-        expect(card.author).toBe('Alice');
-        expect(card.title).toBe('A title');
-    });
-
     test('trims all body lines and turns lone dots into blank lines', () => {
         const card = parseBridgeCard([
             '  [PREVIEW]  ',
@@ -210,14 +214,6 @@ describe('bridge card parsing', () => {
         ].join('\n'));
 
         expect(card.body).toBe('Body one\n\nBody two\n\n\n');
-    });
-
-    test('recognizes an indented opening marker', () => {
-        const card = parseBridgeCard('  [FWD] [PREVIEW]  \n  Title: A title');
-
-        expect(card).not.toBeNull();
-        expect(card.forwarded).toBe(true);
-        expect(card.title).toBe('A title');
     });
 
     test('keeps indented duplicate labels in the body', () => {

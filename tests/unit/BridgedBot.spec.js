@@ -28,58 +28,30 @@ describe('bridged bot messages', () => {
         expect(message.message).toBe('<Alice> hello');
     });
 
-    test('uses +display-name for a bot message', () => {
-        let message = taggedMessage('hello', {
-            'bot': 'x',
-            '+display-name': 'Alice',
-        });
-        expect(message.bridged_nick).toBe('Alice');
-        expect(message.message).toBe('hello');
-    });
-
-    test('prefers +display-name over the angle prefix while removing it', () => {
-        let message = taggedMessage('<Alice> hello', {
-            'bot': 'x',
-            '+display-name': 'Alice B',
-        });
-        expect(message.bridged_nick).toBe('Alice B');
-        expect(message.message).toBe('hello');
-    });
-
-    test('strips formatting from +display-name', () => {
+    test('resolves +display-name cases', () => {
         let c = colour();
-        let message = taggedMessage('hello', {
-            'bot': 'x',
-            '+display-name': c + '04Alice' + c,
-        });
-        expect(message.bridged_nick).toBe('Alice');
-    });
+        const cases = [
+            ['hello', 'Alice', 'Alice', 'hello'],
+            ['<Alice> hello', 'Alice B', 'Alice B', 'hello'],
+            ['hello', c + '04Alice' + c, 'Alice', 'hello'],
+            ['<Alice> hello', '', 'Alice', 'hello'],
+            ['<Alice> hello', c + '04' + c, 'Alice', 'hello'],
+        ];
 
-    test('ignores an empty +display-name and keeps the angle prefix name', () => {
-        let message = taggedMessage('<Alice> hello', {
-            'bot': 'x',
-            '+display-name': '',
+        cases.forEach(([text, displayName, expectedNick, expectedMessage]) => {
+            const message = taggedMessage(text, {
+                'bot': 'x',
+                '+display-name': displayName,
+            });
+            expect(message.bridged_nick).toBe(expectedNick);
+            expect(message.message).toBe(expectedMessage);
         });
-        expect(message.bridged_nick).toBe('Alice');
-        expect(message.message).toBe('hello');
-    });
 
-    test('ignores formatting-only +display-name', () => {
-        let c = colour();
-        let message = taggedMessage('<Alice> hello', {
-            'bot': 'x',
-            '+display-name': c + '04' + c,
-        });
-        expect(message.bridged_nick).toBe('Alice');
-        expect(message.message).toBe('hello');
-    });
-
-    test('ignores +display-name on non-bot messages', () => {
-        let message = taggedMessage('<Alice> hello', {
+        const nonBot = taggedMessage('<Alice> hello', {
             '+display-name': 'Mallory',
         });
-        expect(message.bridged_nick).toBe('');
-        expect(message.message).toBe('<Alice> hello');
+        expect(nonBot.bridged_nick).toBe('');
+        expect(nonBot.message).toBe('<Alice> hello');
     });
 
     test('leaves bot messages without a valid prefix alone', () => {
@@ -131,76 +103,51 @@ describe('bridged bot messages', () => {
         expect(message.bridged_nick).toBe('A'.repeat(64));
     });
 
-    test('condense key matches for the same bridged user', () => {
-        let first = botMessage('<Alice> one');
-        let second = botMessage('<Alice> two');
+    test('condense keys group the same author and separate different ones', () => {
+        const first = botMessage('<Alice> one');
+        const second = botMessage('<Alice> two');
+        const other = botMessage('<Mallory> two');
+        const plainBot = botMessage('plain text');
+        const plainFirst = new Message({ nick: 'Bob', message: 'one', tags: {} }, null);
+        const plainSecond = new Message({ nick: 'Bob', message: 'two', tags: {} }, null);
+
         expect(second.condenseKey()).toBe(first.condenseKey());
+        expect(other.condenseKey()).not.toBe(first.condenseKey());
+        expect(plainBot.condenseKey()).not.toBe(first.condenseKey());
+        expect(plainSecond.condenseKey()).toBe(plainFirst.condenseKey());
     });
 
-    test('condense key differs across bridged users on the same bot', () => {
-        let first = botMessage('<Alice> one');
-        let second = botMessage('<Mallory> two');
-        expect(second.condenseKey()).not.toBe(first.condenseKey());
-    });
+    test('resolves +avatar cases', () => {
+        const c = colour();
+        const safeUrl = 'https://example.com/avatars/alice.png';
 
-    test('condense key differs between bridged and plain bot messages', () => {
-        let bridged = botMessage('<Alice> one');
-        let plain = botMessage('plain text');
-        expect(plain.condenseKey()).not.toBe(bridged.condenseKey());
-    });
-
-    test('condense key still matches for plain messages from one nick', () => {
-        let first = new Message({ nick: 'Bob', message: 'one', tags: {} }, null);
-        let second = new Message({ nick: 'Bob', message: 'two', tags: {} }, null);
-        expect(second.condenseKey()).toBe(first.condenseKey());
-    });
-
-    test('uses a valid +avatar tag as the per-message avatar', () => {
-        let message = taggedMessage('<Alice> hello', {
+        expect(taggedMessage('<Alice> hello', {
             'bot': 'x',
-            '+avatar': 'https://example.com/avatars/alice.png',
-        });
-        expect(message.bridged_avatar).toBe('https://example.com/avatars/alice.png');
-    });
+            '+avatar': safeUrl,
+        }).bridged_avatar).toBe(safeUrl);
 
-    test('strips formatting from +avatar tags', () => {
-        let c = colour();
-        let message = taggedMessage('<Alice> hello', {
+        expect(taggedMessage('<Alice> hello', {
             'bot': 'x',
-            '+avatar': c + '04https://example.com/avatars/alice.png' + c,
-        });
-        expect(message.bridged_avatar).toBe('https://example.com/avatars/alice.png');
-    });
+            '+avatar': c + '04' + safeUrl + c,
+        }).bridged_avatar).toBe(safeUrl);
 
-    test('rejects unsafe +avatar tag values', () => {
-        let unsafeUrl = ['java', 'script:alert(1)'].join('');
-        let message = taggedMessage('<Alice> hello', {
+        expect(taggedMessage('<Alice> hello', {
             'bot': 'x',
-            '+avatar': unsafeUrl,
-        });
-        expect(message.bridged_avatar).toBe('');
-    });
+            '+avatar': ['java', 'script:alert(1)'].join(''),
+        }).bridged_avatar).toBe('');
 
-    test('ignores +avatar on non-bot messages', () => {
-        let message = taggedMessage('<Alice> hello', {
-            '+avatar': 'https://example.com/avatars/alice.png',
-        });
-        expect(message.bridged_avatar).toBe('');
-    });
+        expect(taggedMessage('<Alice> hello', {
+            '+avatar': safeUrl,
+        }).bridged_avatar).toBe('');
 
-    test('ignores missing or empty +avatar tags', () => {
         expect(botMessage('<Alice> hello').bridged_avatar).toBe('');
-        let message = taggedMessage('<Alice> hello', { 'bot': 'x', '+avatar': '' });
-        expect(message.bridged_avatar).toBe('');
-    });
+        expect(taggedMessage('<Alice> hello', { 'bot': 'x', '+avatar': '' })
+            .bridged_avatar).toBe('');
 
-    test('ignores formatting-only +avatar tags', () => {
-        let c = colour();
-        let message = taggedMessage('<Alice> hello', {
+        expect(taggedMessage('<Alice> hello', {
             'bot': 'x',
             '+avatar': c + '04' + c,
-        });
-        expect(message.bridged_avatar).toBe('');
+        }).bridged_avatar).toBe('');
     });
 
     test('uses +display-name and +avatar together', () => {

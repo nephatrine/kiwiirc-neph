@@ -40,7 +40,7 @@ jest.mock('electron', () => ({
 require('../../desktop/electron/preload');
 
 describe('Desktop embed error channel', () => {
-    it('uses one IPC listener for multiple handlers', () => {
+    it('uses one IPC listener, drops removed handlers, and isolates throws', () => {
         const channel = mockDesktopApi.embedErrors;
         const first = jest.fn();
         const second = jest.fn();
@@ -78,10 +78,7 @@ describe('Desktop embed error channel', () => {
         expect(first).toHaveBeenCalledTimes(1);
         expect(second).toHaveBeenCalledTimes(2);
         removeSecond();
-    });
 
-    it('keeps dispatching when a handler throws', () => {
-        const channel = mockDesktopApi.embedErrors;
         const failing = jest.fn(() => {
             throw new Error('handler failed');
         });

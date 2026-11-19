@@ -152,54 +152,38 @@ describe('link preview rendering', () => {
         expect(autoEmbed('https://example.com/article')).toBeNull();
     });
 
-    it('does not auto-embed a [PREVIEW] reply when the original preview is open', () => {
-        const original = {
+    it('handles [PREVIEW] replies based on the original preview state', () => {
+        const openOriginal = {
             embed: { payload: 'https://example.com/image.jpg' },
         };
-        expect(autoEmbedReply(
-            '[PREVIEW] https://example.com/image.jpg',
-            original,
-            { '+reply': 'original-msgid' }
-        )).toBeNull();
-    });
-
-    it('does not auto-embed a [FWD] [PREVIEW] reply when the original preview is open', () => {
-        const original = {
-            embed: { payload: 'https://example.com/image.jpg' },
-        };
-        expect(autoEmbedReply(
-            '[FWD] [PREVIEW] https://example.com/image.jpg',
-            original,
-            { '+reply': 'original-msgid' }
-        )).toBeNull();
-    });
-
-    it('auto-embeds a [PREVIEW] reply when the original preview is closed', () => {
-        const original = {
+        const closedOriginal = {
             embed: { payload: '' },
         };
+        const replyTags = { '+reply': 'original-msgid' };
+
         expect(autoEmbedReply(
             '[PREVIEW] https://example.com/image.jpg',
-            original,
-            { '+reply': 'original-msgid' }
+            openOriginal,
+            replyTags
+        )).toBeNull();
+        expect(autoEmbedReply(
+            '[FWD] [PREVIEW] https://example.com/image.jpg',
+            openOriginal,
+            replyTags
+        )).toBeNull();
+        expect(autoEmbedReply(
+            '[PREVIEW] https://example.com/image.jpg',
+            closedOriginal,
+            replyTags
         )).toBe('https://example.com/image.jpg');
-    });
-
-    it('auto-embeds a [PREVIEW] reply when the original cannot be resolved', () => {
         expect(autoEmbedReply(
             '[PREVIEW] https://example.com/image.jpg',
             null,
             { '+reply': 'missing-msgid' }
         )).toBe('https://example.com/image.jpg');
-    });
-
-    it('auto-embeds a [PREVIEW] message without a reply tag', () => {
-        const original = {
-            embed: { payload: 'https://example.com/image.jpg' },
-        };
         expect(autoEmbedReply(
             '[PREVIEW] https://example.com/image.jpg',
-            original,
+            openOriginal,
             {}
         )).toBe('https://example.com/image.jpg');
     });
@@ -229,28 +213,18 @@ describe('link preview rendering', () => {
         expect(autoEmbed('https://notx.com/images/media-preview/2115941753798692948')).toBeNull();
     });
 
-    it('does not add a preview handle to a spoiler URL', () => {
+    it('suppresses spoiler URLs', () => {
         let html = toHtml(spoilerBlock('https://example.com/image.jpg'), false);
         expect(html).toContain('kiwi-spoiler');
         expect(html).not.toContain('data-url');
-    });
 
-    it('does not auto-embed a spoiler URL', () => {
         expect(autoEmbed('||https://example.com/image.jpg||', true)).toBeNull();
-    });
-
-    it('does not auto-embed a colour-coded spoiler URL', () => {
         expect(autoEmbed('\x0301,01https://example.com/image.jpg\x03')).toBeNull();
-    });
-
-    it('auto-embeds a normal URL after a spoiler URL', () => {
         expect(autoEmbed(
             '||https://example.com/spoiler.jpg|| https://example.com/image.jpg',
             true
         )).toBe('https://example.com/image.jpg');
-    });
 
-    it('excludes spoiler URLs from mentioned_urls', () => {
         const message = new Message({
             message: '||https://example.com/spoiler.jpg|| https://example.com/image.jpg',
             nick: 'tester',

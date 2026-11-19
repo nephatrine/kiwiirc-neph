@@ -44,21 +44,30 @@ function driveRawLine(client, command, params) {
     });
 }
 
-describe('Welcome register startup', () => {
-    let s;
-    let comp;
-    let vm;
+function inputByLabel(comp, label) {
+    // Inputs render inside startup-layout slots, so walk the tree
+    const stack = [...comp.$children];
+    while (stack.length) {
+        const child = stack.shift();
+        if (child.label === label) {
+            return child;
+        }
+        stack.push(...child.$children);
+    }
+    return undefined;
+}
 
-    beforeEach(() => {
-        s = state.create();
+describe('Welcome register startup', () => {
+    function mountWelcome() {
+        const s = state.create();
         s.settings.startupOptions = {};
         Vue.prototype.$state = s;
 
-        vm = new Vue({
+        const vm = new Vue({
             el: document.createElement('div'),
             render: (h) => h(Welcome),
         });
-        comp = vm.$children[0];
+        const comp = vm.$children[0];
 
         comp.tabs.anonymous.nick = 'RegNick';
         comp.tabs.anonymous.channel = '#testchan';
@@ -73,18 +82,20 @@ describe('Welcome register startup', () => {
         comp.activeTab = 'register';
         comp.tabs.register.email = 'reg@example.com';
         comp.tabs.register.password = 'secret123';
-    });
+
+        return { s, vm, comp };
+    }
 
     afterEach(() => {
-        vm.$destroy();
         delete Vue.prototype.$state;
     });
 
-    it('arms pre-connect registration on a fresh network without throwing', () => {
+    it('arms registration and connects with the register account', () => {
         // The register branch must work when startUp itself is the first code
         // to touch net.ircClient (production lazy-init ordering). This threw
         // `armPreConnectRegistration is not a function` before the ircClient
         // access was moved ahead of the arm call.
+        let { vm, comp } = mountWelcome();
         expect(() => comp.startUp('register')).not.toThrow();
 
         const net = comp.network;
@@ -92,23 +103,26 @@ describe('Welcome register startup', () => {
         expect(net.password).toBe('');
         expect(net.connection.password).toBe('');
         expect(net.ircClient.connect).toHaveBeenCalledTimes(1);
-    });
+        vm.$destroy();
 
-    it('connects with the register account without touching other tabs', () => {
         // Without custom-account-name the account IS the nick, and the
         // nick field is hidden: the typed account goes out directly and
         // no other tab's field is modified.
+        ({ vm, comp } = mountWelcome());
         comp.tabs.anonymous.nick = 'UnrelatedNick';
         comp.tabs.register.account = 'NewAccount';
         comp.startUp('register');
+
         expect(comp.tabs.anonymous.nick).toBe('UnrelatedNick');
         expect(comp.network.connection.nick).toBe('NewAccount');
         expect(comp.network.ircClient.connect).toHaveBeenCalledTimes(1);
+        vm.$destroy();
     });
 
     it('sends REGISTER and holds CAP END once the cap is ACKed', async() => {
         jest.useFakeTimers();
         try {
+            const { vm, comp } = mountWelcome();
             comp.startUp('register');
             const net = comp.network;
             net.state = 'connecting';
@@ -129,36 +143,26 @@ describe('Welcome register startup', () => {
             ));
             expect(ends).toHaveLength(0);
             rawSpy.mockRestore();
+            vm.$destroy();
         } finally {
             jest.useRealTimers();
         }
     });
 
     describe('username autofill token placement', () => {
-        function inputByLabel(label) {
-            // Inputs render inside startup-layout slots, so walk the tree
-            const stack = [...comp.$children];
-            while (stack.length) {
-                const child = stack.shift();
-                if (child.label === label) {
-                    return child;
-                }
-                stack.push(...child.$children);
-            }
-            return undefined;
-        }
-
-        it('keeps the token on the account field when the probe has not run', async() => {
+        it('keeps the username token on the account field', async() => {
+            let { vm, comp } = mountWelcome();
             comp.serverInfo = null;
             comp.activeTab = 'account';
             comp.showAdvanced = true;
             await comp.$nextTick();
-            expect(comp.nickIsLoginUsername).toBe(false);
-            expect(inputByLabel('nick_name').autocomplete).not.toBe('username');
-            expect(inputByLabel('account_name').autocomplete).toBe('username');
-        });
 
-        it('keeps the username token on the register account field', async() => {
+            expect(comp.nickIsLoginUsername).toBe(false);
+            expect(inputByLabel(comp, 'nick_name').autocomplete).not.toBe('username');
+            expect(inputByLabel(comp, 'account_name').autocomplete).toBe('username');
+            vm.$destroy();
+
+            ({ vm, comp } = mountWelcome());
             comp.serverInfo = {
                 caps: {
                     'draft/account-registration': 'before-connect,email-required',
@@ -167,17 +171,18 @@ describe('Welcome register startup', () => {
             };
             comp.activeTab = 'register';
             await comp.$nextTick();
+
             expect(comp.nickIsLoginUsername).toBe(true);
             // The account field is authoritative: it always carries the
             // token and never a nick-derived placeholder, and no nick
             // field exists to carry it either.
-            expect(inputByLabel('account_name')).not.toBeUndefined();
-            expect(inputByLabel('account_name').autocomplete).toBe('username');
-            expect(inputByLabel('account_name').placeholder).toBeUndefined();
-            expect(inputByLabel('nick_name')).toBeUndefined();
-        });
+            expect(inputByLabel(comp, 'account_name')).not.toBeUndefined();
+            expect(inputByLabel(comp, 'account_name').autocomplete).toBe('username');
+            expect(inputByLabel(comp, 'account_name').placeholder).toBeUndefined();
+            expect(inputByLabel(comp, 'nick_name')).toBeUndefined();
+            vm.$destroy();
 
-        it('keeps the token on the account field with custom-account-name', async() => {
+            ({ vm, comp } = mountWelcome());
             comp.serverInfo = {
                 caps: {
                     'sasl': 'PLAIN',
@@ -188,9 +193,11 @@ describe('Welcome register startup', () => {
             comp.activeTab = 'account';
             comp.showAdvanced = true;
             await comp.$nextTick();
+
             expect(comp.nickIsLoginUsername).toBe(false);
-            expect(inputByLabel('nick_name').autocomplete).not.toBe('username');
-            expect(inputByLabel('account_name').autocomplete).toBe('username');
+            expect(inputByLabel(comp, 'nick_name').autocomplete).not.toBe('username');
+            expect(inputByLabel(comp, 'account_name').autocomplete).toBe('username');
+            vm.$destroy();
         });
     });
 });

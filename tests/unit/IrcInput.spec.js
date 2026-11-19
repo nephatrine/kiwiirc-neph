@@ -1,17 +1,18 @@
 import IrcInput from '@/components/utils/IrcInput';
 
 describe('IrcInput paste handling', () => {
-    test('emits files for pasted clipboard images', () => {
+    test('emits pasted clipboard images once', () => {
         const image = {
             name: 'image.png',
             type: 'image/png',
             size: 10,
             lastModified: 1,
         };
-        const context = {
+        const methods = (IrcInput.options || IrcInput).methods;
+        let context = {
             $emit: jest.fn(),
         };
-        const event = {
+        let event = {
             preventDefault: jest.fn(),
             clipboardData: {
                 files: [],
@@ -23,30 +24,21 @@ describe('IrcInput paste handling', () => {
             },
         };
 
-        const methods = (IrcInput.options || IrcInput).methods;
         methods.onPaste.call(context, event);
 
         expect(event.preventDefault).toHaveBeenCalled();
         expect(context.$emit).toHaveBeenCalledWith('files', [image]);
-    });
 
-    test('does not emit duplicate pasted images from files and items', () => {
-        const image = {
-            name: 'image.png',
-            type: 'image/png',
-            size: 10,
-            lastModified: 1,
-        };
         const duplicate = {
             name: 'image.png',
             type: 'image/png',
             size: 10,
             lastModified: 2,
         };
-        const context = {
+        context = {
             $emit: jest.fn(),
         };
-        const event = {
+        event = {
             preventDefault: jest.fn(),
             clipboardData: {
                 files: [image],
@@ -58,7 +50,6 @@ describe('IrcInput paste handling', () => {
             },
         };
 
-        const methods = (IrcInput.options || IrcInput).methods;
         methods.onPaste.call(context, event);
 
         expect(context.$emit).toHaveBeenCalledWith('files', [image]);

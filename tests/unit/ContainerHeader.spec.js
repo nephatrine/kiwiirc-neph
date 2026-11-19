@@ -14,14 +14,14 @@ describe('ContainerHeader link handling', () => {
         };
     }
 
-    test('opens topic preview handles in the pinned media area', () => {
+    test('opens media handles and joins channel links in the topic', () => {
         const url = 'https://example.com/image.jpg';
         const handle = {
             getAttribute: jest.fn((name) => (
                 name === 'data-url' ? url : null
             )),
         };
-        const event = {
+        const mediaEvent = {
             target: {
                 closest: jest.fn((selector) => (
                     selector === 'a[data-url]' ? handle : null
@@ -30,52 +30,15 @@ describe('ContainerHeader link handling', () => {
             preventDefault: jest.fn(),
             stopPropagation: jest.fn(),
         };
-        const context = makeContext();
+        let context = makeContext();
 
-        ContainerHeader.methods.onHeaderClick.call(context, event);
+        ContainerHeader.methods.onHeaderClick.call(context, mediaEvent);
 
         expect(context.$state.$emit).toHaveBeenCalledWith('mediaviewer.show', url);
-        expect(event.preventDefault).toHaveBeenCalled();
-        expect(event.stopPropagation).toHaveBeenCalled();
+        expect(mediaEvent.preventDefault).toHaveBeenCalled();
+        expect(mediaEvent.stopPropagation).toHaveBeenCalled();
         expect(context.$state.addBuffer).not.toHaveBeenCalled();
-    });
 
-    test('enables search when the network supports server search', () => {
-        const context = makeContext({
-            state: 'connected',
-            ircClient: {
-                search: {
-                    isSupported: () => true,
-                },
-            },
-        });
-
-        expect(ContainerHeader.computed.canSearch.call(context)).toBe(true);
-    });
-
-    test('disables search without local logs or server search', () => {
-        const context = makeContext({
-            state: 'connected',
-            ircClient: {
-                search: {
-                    isSupported: () => false,
-                },
-            },
-        });
-
-        expect(ContainerHeader.computed.canSearch.call(context)).toBe(false);
-    });
-
-    test('does not open search when it is unavailable', () => {
-        const context = makeContext();
-        context.canSearch = false;
-
-        ContainerHeader.methods.searchMessages.call(context);
-
-        expect(context.$state.$emit).not.toHaveBeenCalled();
-    });
-
-    test('still joins channel links in the topic', () => {
         const channel = {
             getAttribute: jest.fn((name) => (
                 name === 'data-channel-name' ? '#other' : null
@@ -86,7 +49,7 @@ describe('ContainerHeader link handling', () => {
                 join: jest.fn(),
             },
         };
-        const event = {
+        const channelEvent = {
             target: {
                 closest: jest.fn((selector) => {
                     if (selector === 'a[data-url]') {
@@ -98,12 +61,42 @@ describe('ContainerHeader link handling', () => {
             preventDefault: jest.fn(),
             stopPropagation: jest.fn(),
         };
-        const context = makeContext(network);
+        context = makeContext(network);
 
-        ContainerHeader.methods.onHeaderClick.call(context, event);
+        ContainerHeader.methods.onHeaderClick.call(context, channelEvent);
 
         expect(context.$state.addBuffer).toHaveBeenCalledWith(1, '#other');
         expect(network.ircClient.join).toHaveBeenCalledWith('#other');
+        expect(context.$state.$emit).not.toHaveBeenCalled();
+    });
+
+    test('enables search only with server support and ignores clicks without it', () => {
+        let context = makeContext({
+            state: 'connected',
+            ircClient: {
+                search: {
+                    isSupported: () => true,
+                },
+            },
+        });
+
+        expect(ContainerHeader.computed.canSearch.call(context)).toBe(true);
+
+        context = makeContext({
+            state: 'connected',
+            ircClient: {
+                search: {
+                    isSupported: () => false,
+                },
+            },
+        });
+
+        expect(ContainerHeader.computed.canSearch.call(context)).toBe(false);
+
+        context.canSearch = false;
+
+        ContainerHeader.methods.searchMessages.call(context);
+
         expect(context.$state.$emit).not.toHaveBeenCalled();
     });
 });

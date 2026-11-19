@@ -10,7 +10,7 @@ function makeContext(buffer, settings) {
 }
 
 describe('Container message list refresh key', () => {
-    test('changes with the buffer, theme, layout, and font settings', () => {
+    test('changes with the buffer, theme, layout, and font settings, or uses the global layout', () => {
         const buffer = {
             name: '#kiwiirc',
             setting: jest.fn(() => 'inline'),
@@ -38,17 +38,14 @@ describe('Container message list refresh key', () => {
         buffer.name = '#other';
         const bufferKey = Container.computed.messageListKey.call(context);
         expect(bufferKey).not.toBe(fontKey);
-    });
 
-    test('falls back to the global layout when the buffer has no override', () => {
-        const settings = {
+        const globalContext = makeContext({ name: '#kiwiirc' }, {
             'buffers.messageLayout': 'modern',
             'theme': 'Default',
             'useMonospace': false,
-        };
-        const context = makeContext({ name: '#kiwiirc' }, settings);
+        });
 
-        expect(Container.computed.messageListKey.call(context))
+        expect(Container.computed.messageListKey.call(globalContext))
             .toBe('#kiwiirc|Default|modern|sans');
     });
 });

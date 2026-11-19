@@ -130,7 +130,7 @@ describe('profile archive', () => {
         )).toBe('window.kiwi.plugin();');
     });
 
-    it('omits local assets when they are excluded', async() => {
+    it('omits local assets when excluded and skips installed ones', async() => {
         const archive = await writeProfileArchive(userData, profileBundle(), {
             includeAssets: false,
         });
@@ -153,40 +153,37 @@ describe('profile archive', () => {
             skipped: 0,
         });
         expect(await fs.readdir(destination)).toEqual([]);
-    });
 
-    it('skips themes, packs, and plugins that are already installed', async() => {
-        const archive = await writeProfileArchive(userData, profileBundle(), {
+        const fullArchive = await writeProfileArchive(userData, profileBundle(), {
             includeAssets: true,
         });
-
-        const destination = path.join(root, 'destination');
-        await fs.mkdir(path.join(destination, 'themes', 'custom'), {
+        const existing = path.join(root, 'existing');
+        await fs.mkdir(path.join(existing, 'themes', 'custom'), {
             recursive: true,
         });
-        await fs.mkdir(path.join(destination, 'emoji-packs', 'testpack'), {
+        await fs.mkdir(path.join(existing, 'emoji-packs', 'testpack'), {
             recursive: true,
         });
-        await fs.mkdir(path.join(destination, 'plugins', 'testplugin'), {
+        await fs.mkdir(path.join(existing, 'plugins', 'testplugin'), {
             recursive: true,
         });
         await fs.writeFile(
-            path.join(destination, 'themes', 'custom', 'theme.css'),
+            path.join(existing, 'themes', 'custom', 'theme.css'),
             'local theme'
         );
 
-        const prepared = await prepareProfileArchive(archive, destination);
-        const summary = await applyPendingImport(
-            prepared.pendingDir,
-            destination
+        const preparedExisting = await prepareProfileArchive(fullArchive, existing);
+        const existingSummary = await applyPendingImport(
+            preparedExisting.pendingDir,
+            existing
         );
 
-        expect(summary.themes).toBe(0);
-        expect(summary.emojiPacks).toBe(0);
-        expect(summary.plugins).toBe(0);
-        expect(summary.skipped).toBe(3);
+        expect(existingSummary.themes).toBe(0);
+        expect(existingSummary.emojiPacks).toBe(0);
+        expect(existingSummary.plugins).toBe(0);
+        expect(existingSummary.skipped).toBe(3);
         expect(await fs.readFile(
-            path.join(destination, 'themes', 'custom', 'theme.css'),
+            path.join(existing, 'themes', 'custom', 'theme.css'),
             'utf8'
         )).toBe('local theme');
     });

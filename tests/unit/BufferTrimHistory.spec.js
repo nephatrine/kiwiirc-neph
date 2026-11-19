@@ -14,27 +14,35 @@ function addMessages(s, buffer, count) {
 }
 
 describe('buffer history trimming', () => {
-    let s;
-    let network;
-    let buffer;
+    let created;
 
-    beforeEach(() => {
-        s = state.create();
+    function makeContext(options = {}) {
+        const s = state.create();
         s.setting('buffers.scrollback_size', 2);
-        network = s.addNetwork('TestNetwork', 'TestNick', {
+        const network = s.addNetwork('TestNetwork', 'TestNick', {
             server: 'irc.example.com',
         });
-        network.enabled_caps = ['draft/chathistory'];
-        buffer = s.addBuffer(network.id, '#channel');
+        if (options.chathistory !== false) {
+            network.enabled_caps = ['draft/chathistory'];
+        }
+        const buffer = s.addBuffer(network.id, '#channel');
+        created.push(s);
+        return { s, network, buffer };
+    }
+
+    beforeEach(() => {
+        created = [];
     });
 
     afterEach(() => {
         jest.useRealTimers();
-        s.$destroy();
+        created.forEach((s) => s.$destroy());
+        created = [];
     });
 
-    test('restores chathistory after trimming and anchors from the oldest remaining message', () => {
+    test('restores chathistory after trimming and anchors from the oldest message', () => {
         jest.useFakeTimers();
+        let { s, network, buffer } = makeContext();
         addMessages(s, buffer, 4);
         buffer.flag('chathistory_available', false);
         buffer.chathistory_cursor = { irc_id: 'hidden-before-trim' };
@@ -53,10 +61,8 @@ describe('buffer history trimming', () => {
         buffer.requestScrollback();
 
         expect(history.before).toHaveBeenCalledWith('#channel', 'id2');
-    });
 
-    test('does not restore chathistory when the server does not support it', () => {
-        network.enabled_caps = [];
+        ({ s, network, buffer } = makeContext({ chathistory: false }));
         addMessages(s, buffer, 4);
         buffer.flag('chathistory_available', false);
 
@@ -64,8 +70,9 @@ describe('buffer history trimming', () => {
         expect(buffer.flags.chathistory_available).toBe(false);
     });
 
-    test('delays trimming and can be cancelled while scrolled up', () => {
+    test('delays trimming, can be cancelled, and skips while scrolled up', () => {
         jest.useFakeTimers();
+        const { s, buffer } = makeContext();
         addMessages(s, buffer, 4);
 
         buffer.scheduleTrim();
@@ -81,22 +88,21 @@ describe('buffer history trimming', () => {
         jest.advanceTimersByTime(30000);
         expect(buffer.trim_timeout).toBeNull();
         expect(buffer.getMessages()).toHaveLength(2);
-    });
 
-    test('does not schedule trimming while scrolled up', () => {
-        jest.useFakeTimers();
-        buffer.isMessageTrimming = false;
-        addMessages(s, buffer, 4);
+        const scrolled = makeContext();
+        scrolled.buffer.isMessageTrimming = false;
+        addMessages(scrolled.s, scrolled.buffer, 4);
 
-        buffer.scheduleTrim();
+        scrolled.buffer.scheduleTrim();
 
-        expect(buffer.trim_timeout).toBeNull();
+        expect(scrolled.buffer.trim_timeout).toBeNull();
         jest.advanceTimersByTime(30000);
-        expect(buffer.getMessages()).toHaveLength(4);
+        expect(scrolled.buffer.getMessages()).toHaveLength(4);
     });
 
     test('marks the message list changed when a forced trim removes messages', () => {
         jest.useFakeTimers();
+        const { s, buffer } = makeContext();
         addMessages(s, buffer, 4);
         buffer.isMessageTrimming = false;
 
@@ -106,11 +112,11 @@ describe('buffer history trimming', () => {
         expect(buffer.message_count).toBe(countBefore + 1);
     });
 
-    test.each(['*raw', '*help', '*'])(
-        'trims %s immediately without waiting for the grace period',
-        (bufferName) => {
-            jest.useFakeTimers();
+    test('trims internal buffers immediately without the grace period', () => {
+        jest.useFakeTimers();
+        const { s, network } = makeContext();
 
+        ['*raw', '*help', '*'].forEach((bufferName) => {
             const internalBuffer = s.addBuffer(network.id, bufferName);
             if (internalBuffer.isRaw()) {
                 network.setting('raw_scrollback_size', 2);
@@ -121,11 +127,12 @@ describe('buffer history trimming', () => {
 
             expect(internalBuffer.getMessages()).toHaveLength(2);
             expect(internalBuffer.trim_timeout).toBeNull();
-        }
-    );
+        });
+    });
 
     test('does not build live history segments for internal buffers', () => {
         jest.useFakeTimers();
+        const { s, network } = makeContext();
 
         const raw = s.addBuffer(network.id, '*raw');
         network.setting('raw_scrollback_size', 5000);

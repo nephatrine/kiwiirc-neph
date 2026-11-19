@@ -128,35 +128,29 @@ describe('read markers', () => {
         expect(buffer.read_marker_pending).toBeNull();
     });
 
-    test('ignores an older external marker while a marker is pending', () => {
-        const { appState, network, buffer } = makeNetwork();
+    test('handles older and newer external markers while pending', () => {
+        let { appState, network, buffer } = makeNetwork();
         addMessage(appState, buffer, 1000, 'm1');
         network.ircClient.readMarker.set.mockReturnValue('label-1');
         buffer.markAsRead(false);
-
         network.ircClient.emit('read-marker', {
             target: '#test',
             timestamp: 'timestamp=1970-01-01T00:00:00.999Z',
             tags: {},
         });
-
         expect(buffer.last_read).toBe(1000);
         expect(buffer.read_marker_pending).not.toBeNull();
-    });
 
-    test('adopts a newer external marker and clears the pending one', () => {
-        const { appState, network, buffer } = makeNetwork();
+        ({ appState, network, buffer } = makeNetwork());
         addMessage(appState, buffer, 1000, 'm1');
         addMessage(appState, buffer, 2000, 'm2');
         network.ircClient.readMarker.set.mockReturnValue('label-1');
         buffer.markAsRead(false);
-
         network.ircClient.emit('read-marker', {
             target: '#test',
             timestamp: 'timestamp=1970-01-01T00:00:02.000Z',
             tags: {},
         });
-
         expect(buffer.last_read).toBe(2000);
         expect(buffer.flags.last_read_authoritative).toBe(2000);
         expect(buffer.read_marker_pending).toBeNull();
@@ -177,28 +171,23 @@ describe('read markers', () => {
         expect(buffer.last_read).toBe(1000);
     });
 
-    test('accepts an older server marker and lowers the display marker', () => {
-        const { buffer } = makeNetwork();
+    test('adopts server and client-event markers', () => {
+        let { buffer } = makeNetwork();
         buffer.last_read = 9000;
         buffer.flags.last_read_authoritative = 0;
-
         buffer.applyServerReadMarker(3000);
-
         expect(buffer.flags.last_read_authoritative).toBe(3000);
         expect(buffer.last_read).toBe(3000);
         expect(buffer.flags.unread).toBe(0);
-    });
 
-    test('adopts an incoming server marker from the client event', () => {
-        const { network, buffer } = makeNetwork();
+        let network;
+        ({ network, buffer } = makeNetwork());
         buffer.last_read = 9000;
-
         network.ircClient.emit('read-marker', {
             target: '#test',
             timestamp: 'timestamp=1970-01-01T00:00:03.000Z',
             tags: {},
         });
-
         expect(buffer.flags.last_read_authoritative).toBe(3000);
         expect(buffer.last_read).toBe(3000);
     });
@@ -225,18 +214,16 @@ describe('read markers', () => {
         );
     });
 
-    test('reverts the display marker after a MARKREAD failure', () => {
-        const { buffer } = makeNetwork();
+    test('handles marker failures', () => {
+        let { buffer } = makeNetwork();
         buffer.last_read = 9000;
         buffer.flags.last_read_authoritative = 4000;
-
         buffer.readMarkerFailed();
-
         expect(buffer.last_read).toBe(4000);
-    });
 
-    test('clears a matching pending marker on failure', () => {
-        const { appState, network, buffer } = makeNetwork();
+        let appState;
+        let network;
+        ({ appState, network, buffer } = makeNetwork());
         addMessage(appState, buffer, 1000, 'm1');
         network.ircClient.readMarker.set.mockReturnValue('label-1');
         buffer.markAsRead(false);

@@ -72,7 +72,7 @@ describe('desktop notification service', () => {
         jest.useRealTimers();
     });
 
-    it('normalizes valid notification payloads', () => {
+    it('normalizes valid payloads and rejects invalid ones', () => {
         expect(normalizeNotificationPayload({
             id: ' n1 ',
             title: ' Title ',
@@ -86,9 +86,7 @@ describe('desktop notification service', () => {
             tag: 'tag',
             ttl: 2500,
         });
-    });
 
-    it('rejects invalid notification payloads', () => {
         expect(normalizeNotificationPayload(null)).toBeNull();
         expect(normalizeNotificationPayload({ id: '', title: 'Title', body: 'Body' }))
             .toBeNull();
@@ -98,11 +96,11 @@ describe('desktop notification service', () => {
             .toBeNull();
     });
 
-    it('shows a notification and focuses the window when clicked', () => {
+    it('shows, focuses on click, replaces by tag, and closes all', () => {
         const window = makeWindow();
         const onActivate = jest.fn();
         const onClose = jest.fn();
-        const service = createNotificationService({
+        let service = createNotificationService({
             Notification: FakeNotification,
             getWindow: () => window,
             onActivate,
@@ -129,11 +127,10 @@ describe('desktop notification service', () => {
         expect(window.focus).toHaveBeenCalled();
         expect(onActivate).toHaveBeenCalledWith('n1');
         expect(onClose).toHaveBeenCalledWith('n1', 'click');
-    });
 
-    it('replaces an existing notification with the same tag', () => {
-        const onClose = jest.fn();
-        const service = makeService({ onClose });
+        FakeNotification.instances = [];
+        onClose.mockClear();
+        service = makeService({ onClose });
 
         service.show({ id: 'n1', title: 'One', body: 'Body', tag: 'tag' });
         service.show({ id: 'n2', title: 'Two', body: 'Body', tag: 'tag' });
@@ -141,6 +138,15 @@ describe('desktop notification service', () => {
         expect(FakeNotification.instances[0].closed).toBe(true);
         expect(FakeNotification.instances[1].closed).toBe(false);
         expect(onClose).toHaveBeenCalledWith('n1', 'replaced');
+
+        FakeNotification.instances = [];
+        service = makeService();
+        service.show({ id: 'n1', title: 'One', body: 'Body' });
+        service.show({ id: 'n2', title: 'Two', body: 'Body' });
+        service.closeAll();
+
+        expect(FakeNotification.instances[0].closed).toBe(true);
+        expect(FakeNotification.instances[1].closed).toBe(true);
     });
 
     it('closes a notification after its TTL', () => {
@@ -167,16 +173,5 @@ describe('desktop notification service', () => {
         expect(service.show({ id: 'n1', title: 'Title', body: 'Body' }))
             .toEqual({ shown: false, reason: 'unsupported' });
         expect(FakeNotification.instances).toHaveLength(0);
-    });
-
-    it('closes all active notifications', () => {
-        const service = makeService();
-
-        service.show({ id: 'n1', title: 'One', body: 'Body' });
-        service.show({ id: 'n2', title: 'Two', body: 'Body' });
-        service.closeAll();
-
-        expect(FakeNotification.instances[0].closed).toBe(true);
-        expect(FakeNotification.instances[1].closed).toBe(true);
     });
 });

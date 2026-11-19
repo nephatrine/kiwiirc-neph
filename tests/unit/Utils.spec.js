@@ -3,17 +3,11 @@ import * as Utils from '@/helpers/Utils';
 describe('Utils.getPath', () => {
     const obj = { a: { b: { c: 5 } }, arr: [{ x: 1 }, { x: 2 }] };
 
-    test('reads dotted paths', () => {
+    test('reads dotted and array paths and returns undefined for missing paths', () => {
         expect(Utils.getPath(obj, 'a.b.c')).toBe(5);
         expect(Utils.getPath(obj, 'arr.1.x')).toBe(2);
-    });
-
-    test('reads array paths', () => {
         expect(Utils.getPath(obj, ['a', 'b', 'c'])).toBe(5);
         expect(Utils.getPath(obj, ['arr', '0', 'x'])).toBe(1);
-    });
-
-    test('returns undefined for missing paths', () => {
         expect(Utils.getPath(obj, 'a.x.y')).toBeUndefined();
         expect(Utils.getPath(obj, 'a.b.c.d')).toBeUndefined();
         expect(Utils.getPath(null, 'a')).toBeUndefined();
@@ -21,31 +15,20 @@ describe('Utils.getPath', () => {
 });
 
 describe('Utils.setPath', () => {
-    test('creates missing objects', () => {
+    test('creates nested objects and arrays and replaces intermediates', () => {
         let obj = {};
-        Utils.setPath(obj, ['a', 'b', 'c'], 42);
+        expect(Utils.setPath(obj, 'a.b.c', 42)).toBe(obj);
         expect(obj).toEqual({ a: { b: { c: 42 } } });
-    });
 
-    test('creates nested keys from a dotted string', () => {
-        let obj = {};
+        obj = {};
         Utils.setPath(obj, 'x.y.z', 1);
         expect(obj).toEqual({ x: { y: { z: 1 } } });
-    });
 
-    test('creates arrays for numeric keys', () => {
-        let obj = {};
+        obj = {};
         Utils.setPath(obj, ['list', '0', 'name'], 'bob');
         expect(obj).toEqual({ list: [{ name: 'bob' }] });
-    });
 
-    test('returns the original object', () => {
-        let obj = {};
-        expect(Utils.setPath(obj, 'a', 1)).toBe(obj);
-    });
-
-    test('replaces non-object intermediates', () => {
-        let obj = { a: 5 };
+        obj = { a: 5 };
         Utils.setPath(obj, ['a', 'b', 'c'], 1);
         expect(obj).toEqual({ a: { b: { c: 1 } } });
     });
@@ -64,9 +47,7 @@ describe('Utils.find / findIndex / filter / each', () => {
         expect(Utils.find(users, ['nick', 'sam'])).toEqual(users[2]);
         expect(Utils.find(users, { admin: true })).toEqual(users[1]);
         expect(Utils.find(users, ['nick', 'nobody'])).toBeUndefined();
-    });
 
-    test('find works on objects', () => {
         const networks = { n1: { id: 1 }, n2: { id: 2 } };
         expect(Utils.find(networks, ['id', 2])).toEqual({ id: 2 });
         expect(Utils.find(networks, { id: 1 })).toEqual({ id: 1 });
@@ -108,13 +89,10 @@ describe('Utils.find / findIndex / filter / each', () => {
 });
 
 describe('Utils.escapeHtml', () => {
-    test('escapes the HTML characters', () => {
+    test('escapes HTML characters and leaves safe values untouched', () => {
         expect(Utils.escapeHtml('a & b')).toBe('a &amp; b');
         expect(Utils.escapeHtml('<b>"x"</b>')).toBe('&lt;b&gt;&quot;x&quot;&lt;/b&gt;');
         expect(Utils.escapeHtml('it\'s')).toBe('it&#39;s');
-    });
-
-    test('leaves safe strings untouched', () => {
         expect(Utils.escapeHtml('plain text')).toBe('plain text');
         expect(Utils.escapeHtml(0)).toBe('0');
         expect(Utils.escapeHtml(null)).toBe('');
@@ -131,13 +109,10 @@ describe('Utils.escapeRegExp', () => {
 });
 
 describe('Utils.trim', () => {
-    test('trims whitespace by default', () => {
+    test('trims whitespace or the given characters', () => {
         expect(Utils.trim('  hi  ')).toBe('hi');
         expect(Utils.trim('\n hi \t')).toBe('hi');
         expect(Utils.trim(null)).toBe('');
-    });
-
-    test('trims the given characters', () => {
         expect(Utils.trim('.,!hi!,.', '.,!')).toBe('hi');
         expect(Utils.trim('))nick((', '()')).toBe('nick');
         expect(Utils.trim('no-trim', '.,!')).toBe('no-trim');
@@ -152,13 +127,11 @@ describe('Utils.sortBy / orderBy', () => {
         { name: 'a', n: 4 },
     ];
 
-    test('sortBy sorts ascending and is stable', () => {
+    test('sortBy sorts ascending, is stable, and returns a new array', () => {
         expect(Utils.sortBy(list, 'n').map((item) => item.n)).toEqual([1, 2, 3, 4]);
         expect(Utils.sortBy(list, 'name').map((item) => item.name)).toEqual(['a', 'a', 'b', 'c']);
         expect(Utils.sortBy(list, 'name').map((item) => item.n)).toEqual([1, 4, 3, 2]);
-    });
 
-    test('sortBy returns a new array', () => {
         let sorted = Utils.sortBy(list, 'n');
         expect(sorted).not.toBe(list);
         expect(list[0].n).toBe(3);
@@ -172,7 +145,7 @@ describe('Utils.sortBy / orderBy', () => {
 });
 
 describe('Utils.deepClone', () => {
-    test('clones nested arrays and objects', () => {
+    test('clones nested structures, primitives, and dates', () => {
         const sample = { a: 1, b: [1, 2, { c: 3 }], d: { e: { f: 'g' } } };
         const copy = Utils.deepClone(sample);
         expect(copy).toStrictEqual(sample);
@@ -180,32 +153,25 @@ describe('Utils.deepClone', () => {
         expect(copy.b).not.toBe(sample.b);
         expect(copy.b[2]).not.toBe(sample.b[2]);
         expect(copy.d.e).not.toBe(sample.d.e);
-    });
 
-    test('passes primitives through', () => {
         expect(Utils.deepClone(5)).toBe(5);
         expect(Utils.deepClone(null)).toBeNull();
         expect(Utils.deepClone('x')).toBe('x');
-    });
 
-    test('clones dates', () => {
         const date = new Date(1000);
-        const copy = Utils.deepClone(date);
-        expect(copy).not.toBe(date);
-        expect(copy.getTime()).toBe(1000);
+        const dateCopy = Utils.deepClone(date);
+        expect(dateCopy).not.toBe(date);
+        expect(dateCopy.getTime()).toBe(1000);
     });
 });
 
 describe('Utils.toTimestamp', () => {
-    test('converts numbers, dates, and IRC time strings', () => {
+    test('converts supported values and falls back to zero', () => {
         expect(Utils.toTimestamp(1234)).toBe(1234);
         expect(Utils.toTimestamp('5678')).toBe(5678);
         expect(Utils.toTimestamp(new Date(91011))).toBe(91011);
         expect(Utils.toTimestamp('2026-11-10T20:06:05.166Z'))
             .toBe(Date.parse('2026-11-10T20:06:05.166Z'));
-    });
-
-    test('returns zero for missing or invalid values', () => {
         expect(Utils.toTimestamp()).toBe(0);
         expect(Utils.toTimestamp(null)).toBe(0);
         expect(Utils.toTimestamp('')).toBe(0);
@@ -215,13 +181,10 @@ describe('Utils.toTimestamp', () => {
 });
 
 describe('Utils.isPlainObject', () => {
-    test('identifies plain objects', () => {
+    test('identifies plain objects and rejects other values', () => {
         expect(Utils.isPlainObject({})).toBe(true);
         expect(Utils.isPlainObject({ a: 1 })).toBe(true);
         expect(Utils.isPlainObject(Object.create(null))).toBe(true);
-    });
-
-    test('rejects other values', () => {
         expect(Utils.isPlainObject([])).toBe(false);
         expect(Utils.isPlainObject(null)).toBe(false);
         expect(Utils.isPlainObject(1)).toBe(false);

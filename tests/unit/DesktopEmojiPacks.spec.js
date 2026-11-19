@@ -187,8 +187,8 @@ describe('desktop emoji pack installation', () => {
         expect(await listEmojiPacks(userDataDir)).toEqual([]);
     });
 
-    test('accepts emoji.json inside one top-level folder', async() => {
-        const archivePath = writeArchive([
+    test('accepts a wrapper folder and rejects unsafe or missing images', async() => {
+        const wrapped = await installEmojiPack(userDataDir, writeArchive([
             {
                 ...manifest(packDocument()),
                 name: 'my-pack/emoji.json',
@@ -201,15 +201,11 @@ describe('desktop emoji pack installation', () => {
                 name: 'my-pack/images/vector.svg',
                 contents: '<svg></svg>',
             },
-        ]);
+        ]));
+        expect(wrapped.packs).toHaveLength(1);
+        expect(wrapped.packs[0].emoji.kiwi.url)
+            .toBe(`kiwi-emoji://${wrapped.id}/images/kiwi.png`);
 
-        const installed = await installEmojiPack(userDataDir, archivePath);
-        expect(installed.packs).toHaveLength(1);
-        expect(installed.packs[0].emoji.kiwi.url)
-            .toBe(`kiwi-emoji://${installed.id}/images/kiwi.png`);
-    });
-
-    test('rejects unsafe or missing local emoji images', async() => {
         const traversal = writeArchive([
             manifest(packDocument({
                 emoji: {
@@ -235,7 +231,7 @@ describe('desktop emoji pack installation', () => {
             .rejects.toThrow('invalid image');
     });
 
-    test('rejects unsupported extensions and required extensions', async() => {
+    test('rejects unsupported extensions, required extensions, and duplicates', async() => {
         const unsupported = writeArchive([
             manifest(packDocument({
                 emoji: {
@@ -268,10 +264,8 @@ describe('desktop emoji pack installation', () => {
         ]);
         await expect(installEmojiPack(userDataDir, required))
             .rejects.toThrow('unsupported extensions');
-    });
 
-    test('rejects duplicate pack ids within one document', async() => {
-        const archivePath = writeArchive([
+        const duplicate = writeArchive([
             manifest([
                 ...packDocument(),
                 ...packDocument({ name: 'Duplicate' }),
@@ -285,8 +279,7 @@ describe('desktop emoji pack installation', () => {
                 contents: '<svg></svg>',
             },
         ]);
-
-        await expect(installEmojiPack(userDataDir, archivePath))
+        await expect(installEmojiPack(userDataDir, duplicate))
             .rejects.toThrow('duplicated');
     });
 

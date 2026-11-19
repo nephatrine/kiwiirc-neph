@@ -72,17 +72,15 @@ describe('bouncer control connection metadata', () => {
         jest.useRealTimers();
     });
 
-    it('identifies the unbound control connection', () => {
+    it('identifies the control connection and skips metadata on connect', () => {
         expect(controller.isBouncerController()).toBe(true);
         expect(normal.isBouncerController()).toBe(false);
 
-        let bound = s.addNetwork('Bound', 'TestNick', {});
+        const bound = s.addNetwork('Bound', 'TestNick', {});
         bound.is_bnc = true;
         bound.connection.bncnetid = '5';
         expect(bound.isBouncerController()).toBe(false);
-    });
 
-    it('sends no metadata when the control connection reports connected', () => {
         let { client, rawEvents, parsedEvents } = makeClient();
         metadataMiddleware(controller)(client, rawEvents, parsedEvents);
 
@@ -90,10 +88,8 @@ describe('bouncer control connection metadata', () => {
 
         expect(metadataCommands(client)).toHaveLength(0);
         expect(metadataCapReqs(client)).toHaveLength(0);
-    });
 
-    it('still requests metadata when a normal network reports connected', () => {
-        let { client, rawEvents, parsedEvents } = makeClient();
+        ({ client, rawEvents, parsedEvents } = makeClient());
         metadataMiddleware(normal)(client, rawEvents, parsedEvents);
 
         client.emit('connected');
@@ -102,7 +98,7 @@ describe('bouncer control connection metadata', () => {
         expect(metadataCapReqs(client)[0][2]).toBe('draft/metadata-3');
     });
 
-    it('requests no metadata cap on cap new for the control connection', () => {
+    it('requests a metadata cap on cap new only for a normal network', () => {
         let requestSpy = jest.spyOn(controller.ircClient, 'requestCap').mockImplementation(() => {});
         controller.ircClient.emit('cap new', {
             capabilities: { 'draft/metadata-3': '', 'draft/metadata-2': '' },
@@ -110,10 +106,8 @@ describe('bouncer control connection metadata', () => {
         expect(requestSpy).not.toHaveBeenCalledWith('draft/metadata-3');
         expect(requestSpy).not.toHaveBeenCalledWith('draft/metadata-2');
         requestSpy.mockRestore();
-    });
 
-    it('still requests a metadata cap on cap new for a normal network', () => {
-        let requestSpy = jest.spyOn(normal.ircClient, 'requestCap').mockImplementation(() => {});
+        requestSpy = jest.spyOn(normal.ircClient, 'requestCap').mockImplementation(() => {});
         normal.ircClient.emit('cap new', {
             capabilities: { 'draft/metadata-3': '', 'draft/metadata-2': '' },
         });
@@ -121,7 +115,7 @@ describe('bouncer control connection metadata', () => {
         requestSpy.mockRestore();
     });
 
-    it('does not fold a metadata cap for the control connection', async() => {
+    it('folds a metadata cap on CAP LS only for a normal network', async() => {
         let rawSpy = jest.spyOn(controller.ircClient, 'raw').mockImplementation(() => {});
         await emitRawLs(controller.ircClient, [
             '*',
@@ -132,10 +126,8 @@ describe('bouncer control connection metadata', () => {
         expect(controller.ircClient.request_extra_caps).not.toContain('draft/metadata-3');
         expect(controller.ircClient.request_extra_caps).not.toContain('draft/metadata-2');
         rawSpy.mockRestore();
-    });
 
-    it('still folds a metadata cap for a normal network', async() => {
-        let rawSpy = jest.spyOn(normal.ircClient, 'raw').mockImplementation(() => {});
+        rawSpy = jest.spyOn(normal.ircClient, 'raw').mockImplementation(() => {});
         await emitRawLs(normal.ircClient, [
             '*',
             'LS',

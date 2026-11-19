@@ -22,60 +22,65 @@ function targetMessage(isRedacted = false) {
     };
 }
 
+function makeLocalContext(msgid = 'local-msgid') {
+    const s = state.create();
+    const network = s.addNetwork('TestNetwork', 'TestNick', {});
+    network.nick = 'TestNick';
+    network.enabled_caps = ['draft/message-redaction'];
+    const buffer = s.addBuffer(network.id, '#test');
+    const message = new Message({
+        nick: 'Other',
+        message: 'https://example.com/image.jpg',
+        type: 'privmsg',
+        tags: { msgid },
+    });
+    message.embed.payload = 'https://example.com/image.jpg';
+    jest.spyOn(network.ircClient, 'raw').mockImplementation(() => {});
+    return {
+        s, network, buffer, message,
+    };
+}
+
+const redactionEvent = (params, nick = 'Other') => ({
+    params,
+    tags: {},
+    nick,
+});
+
+const middlewareClient = () => ({
+    user: { nick: 'TestNick' },
+    caseCompare: (left, right) => (
+        String(left).toLowerCase() === String(right).toLowerCase()
+    ),
+});
+
 describe('redaction previews', () => {
-    it('closes an open inline preview when a message is redacted locally', () => {
-        let s = state.create();
-        let network = s.addNetwork('TestNetwork', 'TestNick', {});
-        network.nick = 'TestNick';
-        network.enabled_caps = ['draft/message-redaction'];
-        let buffer = s.addBuffer(network.id, '#test');
-        let message = new Message({
-            nick: 'Other',
-            message: 'https://example.com/image.jpg',
-            type: 'privmsg',
-            tags: { msgid: 'local-msgid' },
-        });
-        message.embed.payload = 'https://example.com/image.jpg';
-        jest.spyOn(network.ircClient, 'raw').mockImplementation(() => {});
-        const emit = jest.spyOn(s, '$emit');
+    it('closes an open inline preview on local redaction unless reopened', () => {
+        let ctx = makeLocalContext();
+        let emit = jest.spyOn(ctx.s, '$emit');
 
-        buffer.redact(message, 'reason');
+        ctx.buffer.redact(ctx.message, 'reason');
 
-        expect(message.is_redacted).toBe(true);
-        expect(message.embed.payload).toBe('');
+        expect(ctx.message.is_redacted).toBe(true);
+        expect(ctx.message.embed.payload).toBe('');
         expect(emit).toHaveBeenCalledWith(
             'message.redaction',
             expect.objectContaining({
-                networkId: network.id,
+                networkId: ctx.network.id,
                 ircId: 'local-msgid',
                 redactedBy: 'TestNick',
                 redactionReason: 'reason',
             })
         );
+
+        ctx = makeLocalContext();
+        ctx.buffer.redact(ctx.message, 'reason');
+        ctx.message.embed.payload = 'https://example.com/reopened.jpg';
+        ctx.buffer.redact(ctx.message, 'again');
+        expect(ctx.message.embed.payload).toBe('https://example.com/reopened.jpg');
     });
 
-    it('keeps a preview manually reopened after local redaction', () => {
-        let s = state.create();
-        let network = s.addNetwork('TestNetwork', 'TestNick', {});
-        network.nick = 'TestNick';
-        network.enabled_caps = ['draft/message-redaction'];
-        let buffer = s.addBuffer(network.id, '#test');
-        let message = new Message({
-            nick: 'Other',
-            message: 'https://example.com/image.jpg',
-            type: 'privmsg',
-            tags: { msgid: 'local-msgid' },
-        });
-        jest.spyOn(network.ircClient, 'raw').mockImplementation(() => {});
-
-        buffer.redact(message, 'reason');
-        message.embed.payload = 'https://example.com/reopened.jpg';
-        buffer.redact(message, 'again');
-
-        expect(message.embed.payload).toBe('https://example.com/reopened.jpg');
-    });
-
-    it('closes an open inline preview when an incoming redaction arrives', () => {
+    it('closes, logs, or keeps previews for incoming redactions', () => {
         let target = targetMessage();
         let buffer = { messagesObj: { messageIds: { 'remote-msgid': target } } };
         let network = {
@@ -88,25 +93,16 @@ describe('redaction previews', () => {
             },
         };
 
-        redactionMiddleware(network, 'REDACT', {
-            params: ['#test', 'remote-msgid', 'reason'],
-            tags: {},
-            nick: 'Other',
-        }, {
-            user: { nick: 'TestNick' },
-            caseCompare: (left, right) => (
-                String(left).toLowerCase() === String(right).toLowerCase()
-            ),
-        }, jest.fn());
+        redactionMiddleware(network, 'REDACT', redactionEvent(
+            ['#test', 'remote-msgid', 'reason']
+        ), middlewareClient(), jest.fn());
 
         expect(target.is_redacted).toBe(true);
         expect(target.closeEmbed).toHaveBeenCalledTimes(1);
         expect(target.embed.payload).toBe('');
-    });
 
-    it('emits a log redaction when the target is not loaded', () => {
-        const emit = jest.fn();
-        const network = {
+        let emit = jest.fn();
+        network = {
             id: 1,
             bufferByName: () => undefined,
             resolveMessage: () => null,
@@ -115,17 +111,9 @@ describe('redaction previews', () => {
                 promotePendingLabel: jest.fn(),
             },
         };
-
-        redactionMiddleware(network, 'REDACT', {
-            params: ['#test', 'missing-msgid', 'reason'],
-            tags: {},
-            nick: 'Other',
-        }, {
-            user: { nick: 'TestNick' },
-            caseCompare: (left, right) => (
-                String(left).toLowerCase() === String(right).toLowerCase()
-            ),
-        }, jest.fn());
+        redactionMiddleware(network, 'REDACT', redactionEvent(
+            ['#test', 'missing-msgid', 'reason']
+        ), middlewareClient(), jest.fn());
 
         expect(emit).toHaveBeenCalledWith(
             'message.redaction',
@@ -136,13 +124,11 @@ describe('redaction previews', () => {
                 redactionReason: 'reason',
             })
         );
-    });
 
-    it('keeps a preview manually reopened after an incoming redaction', () => {
-        let target = targetMessage(true);
+        target = targetMessage(true);
         target.embed.payload = 'https://example.com/reopened.jpg';
-        let buffer = { messagesObj: { messageIds: { 'remote-msgid': target } } };
-        let network = {
+        buffer = { messagesObj: { messageIds: { 'remote-msgid': target } } };
+        network = {
             id: 1,
             bufferByName: () => buffer,
             resolveMessage: () => ({ message: target, buffer }),
@@ -151,24 +137,16 @@ describe('redaction previews', () => {
                 promotePendingLabel: jest.fn(),
             },
         };
-
-        redactionMiddleware(network, 'REDACT', {
-            params: ['#test', 'remote-msgid', 'again'],
-            tags: {},
-            nick: 'Other',
-        }, {
-            user: { nick: 'TestNick' },
-            caseCompare: (left, right) => (
-                String(left).toLowerCase() === String(right).toLowerCase()
-            ),
-        }, jest.fn());
+        redactionMiddleware(network, 'REDACT', redactionEvent(
+            ['#test', 'remote-msgid', 'again']
+        ), middlewareClient(), jest.fn());
 
         expect(target.closeEmbed).not.toHaveBeenCalled();
         expect(target.embed.payload).toBe('https://example.com/reopened.jpg');
     });
 
     it('does not auto-embed media on a redacted message', () => {
-        let message = new Message({
+        const message = new Message({
             nick: 'Other',
             message: 'https://example.com/image.jpg',
             type: 'privmsg',
@@ -180,7 +158,7 @@ describe('redaction previews', () => {
         expect(message.embed.payload).toBeNull();
     });
 
-    it('closes an open inline preview when a Twitch message is deleted', () => {
+    it('closes a Twitch-deleted preview unless reopened', () => {
         let target = targetMessage();
         let buffer = { messagesObj: { messageIds: { 'twitch-msgid': target } } };
         let network = {
@@ -197,18 +175,15 @@ describe('redaction previews', () => {
         expect(target.is_redacted).toBe(true);
         expect(target.closeEmbed).toHaveBeenCalledTimes(1);
         expect(target.embed.payload).toBe('');
-    });
 
-    it('keeps a preview manually reopened after a Twitch deletion', () => {
-        let target = targetMessage(true);
+        target = targetMessage(true);
         target.embed.payload = 'https://example.com/reopened.jpg';
-        let buffer = { messagesObj: { messageIds: { 'twitch-msgid': target } } };
-        let network = {
+        buffer = { messagesObj: { messageIds: { 'twitch-msgid': target } } };
+        network = {
             hasTwitchCommands: () => true,
             bufferByName: () => buffer,
             appState: { $emit: jest.fn() },
         };
-
         twitchMiddleware(network, 'CLEARMSG', {
             params: ['#test'],
             tags: { 'target-msg-id': 'twitch-msgid' },

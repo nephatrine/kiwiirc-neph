@@ -15,20 +15,18 @@ describe('desktop chat log availability', () => {
         delete window.kiwiDesktop;
     });
 
-    it('is unavailable when the main store failed', () => {
+    it('reports availability from the bridge and the main store', () => {
         window.kiwiDesktop = bridge(false);
 
         expect(ChatLogs.isBridgeAvailable()).toBe(true);
         expect(ChatLogs.isAvailable()).toBe(false);
-    });
 
-    it('is available when the main store opened', () => {
         window.kiwiDesktop = bridge(true);
 
         expect(ChatLogs.isAvailable()).toBe(true);
-    });
 
-    it('is unavailable without the desktop bridge', () => {
+        delete window.kiwiDesktop;
+
         expect(ChatLogs.isAvailable()).toBe(false);
     });
 });

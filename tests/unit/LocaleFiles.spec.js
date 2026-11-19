@@ -36,21 +36,17 @@ describe('locale files', () => {
         Object.keys(en).forEach((key) => {
             expect(dev[key]).toBe(en[key]);
         });
-    });
 
-    it('uses the requested lowercase bot user label', () => {
         expect(en.bot_user).toBe('bot user');
         expect(dev.bot_user).toBe('bot user');
     });
 
-    it('does not contain stale cheatsheet entries', () => {
+    it('contains no stale cheatsheet or orphaned settings entries', () => {
         expect(en).not.toHaveProperty('hostserv_cheatsheet_title');
         expect(dev).not.toHaveProperty('hostserv_cheatsheet_title');
         expect(en).not.toHaveProperty('histserv_cheatsheet_title');
         expect(dev).not.toHaveProperty('histserv_cheatsheet_title');
-    });
 
-    it('does not contain orphaned settings strings', () => {
         [
             'settings_ignore_bots',
             'settings_notify_mentioned',
@@ -63,7 +59,7 @@ describe('locale files', () => {
         });
     });
 
-    it('uses i18next double-brace interpolation placeholders', () => {
+    it('uses double-brace placeholders and translates autocomplete labels', () => {
         // The avatar hint tells the user what to type into the URL field, so its
         // single-brace placeholder is literal text and must stay that way.
         const intentional = ['settings_avatar_fallback_url_hint'];
@@ -81,9 +77,7 @@ describe('locale files', () => {
                 expect({ key, singles }).toEqual({ key, singles: [] });
             });
         });
-    });
 
-    it('keeps autocomplete command labels translated', () => {
         autocompleteCommands.forEach((command) => {
             if (command.description.indexOf('locale_id_') !== 0) {
                 return;

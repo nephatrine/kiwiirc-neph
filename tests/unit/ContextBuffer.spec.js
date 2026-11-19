@@ -1,7 +1,7 @@
 import state from '@/libs/state';
 
 describe('read-only context buffers', () => {
-    it('creates a temporary special buffer and excludes it from persistence', () => {
+    it('creates a temporary special buffer, excludes it from persistence, and closes quietly', () => {
         const s = state.create();
         const network = s.addNetwork('TestNet', 'TestNick', {
             server: 'irc.example.com',
@@ -17,6 +17,13 @@ describe('read-only context buffers', () => {
         const exported = JSON.parse(s.exportState(true, false));
         const exportedNames = exported.networks[0].buffers.map((buffer) => buffer.name);
         expect(exportedNames).not.toContain(context.name);
+
+        const part = jest.spyOn(network.ircClient, 'part').mockImplementation(() => {});
+
+        s.removeBuffer(context);
+
+        expect(part).not.toHaveBeenCalled();
+        expect(network.buffers).not.toContain(context);
     });
 
     it('creates a read-only server context using the real buffer name', () => {
@@ -40,19 +47,5 @@ describe('read-only context buffers', () => {
         expect(context.contextSource).toBe('');
         expect(context.contextTarget).toBe('');
         expect(context.show_input).toBe(true);
-    });
-
-    it('does not PART a context buffer when it is closed', () => {
-        const s = state.create();
-        const network = s.addNetwork('TestNet', 'TestNick', {
-            server: 'irc.example.com',
-        });
-        const context = s.addContextBuffer(network.id, '#old');
-        const part = jest.spyOn(network.ircClient, 'part').mockImplementation(() => {});
-
-        s.removeBuffer(context);
-
-        expect(part).not.toHaveBeenCalled();
-        expect(network.buffers).not.toContain(context);
     });
 });

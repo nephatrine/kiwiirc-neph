@@ -7,7 +7,7 @@ import {
 } from '@/libs/ErgoHostServ';
 
 describe('hostserv completion', () => {
-    it('limits subcommand completion to the subcommand token', () => {
+    it('limits subcommand completion, transcribes syntax, and shows ghosts', () => {
         expect(isHostservSubcommandPosition('/hs ')).toBe(true);
         expect(isHostservSubcommandPosition('/hs S')).toBe(true);
         expect(isHostservSubcommandPosition('/HS sta')).toBe(true);
@@ -20,13 +20,17 @@ describe('hostserv completion', () => {
         expect(isHostservSubcommandPosition('/ns STATUS ')).toBe(false);
         expect(isHostservSubcommandPosition('')).toBe(false);
         expect(isHostservSubcommandPosition(null)).toBe(false);
-    });
 
-    it('transcribes upstream syntax', () => {
         expect(HOSTSERV_SYNTAX.ON).toBe('ON');
         expect(HOSTSERV_SYNTAX.STATUS).toBe('STATUS [user]');
         expect(HOSTSERV_SYNTAX.SET).toBe('SET <user> <vhost>');
         expect(HOSTSERV_SYNTAX.SETCLOAKSECRET).toBe('SETCLOAKSECRET <secret> [code]');
+
+        expect(hostservSyntaxFor(['ON'])).toBe('ON');
+        expect(hostservSyntaxFor(['STATUS'])).toBe('STATUS [user]');
+        expect(hostservSyntaxFor(['SET'])).toBe('SET <user> <vhost>');
+        expect(hostservSyntaxFor(['FOO'])).toBe('');
+        expect(hostservSyntaxFor([])).toBe('');
     });
 });
 
@@ -61,34 +65,22 @@ describe('hostserv argument completion', () => {
         });
     });
 
-    it('gives own account to users and known accounts to opers', () => {
+    it('suggests accounts by role and stays quiet otherwise', () => {
         expect(hostservArgSuggestions(parseHostservInput('/hs STATUS '), ctx))
             .toEqual(['myaccount']);
         expect(hostservArgSuggestions(parseHostservInput('/hs STATUS '), operCtx))
             .toEqual(['alice', 'bob']);
-    });
 
-    it('suggests known accounts for oper commands', () => {
         expect(hostservArgSuggestions(parseHostservInput('/hs SET '), ctx))
             .toEqual(['alice', 'bob']);
         expect(hostservArgSuggestions(parseHostservInput('/hs DEL b'), ctx))
             .toEqual(['alice', 'bob']);
         expect(hostservArgSuggestions(parseHostservInput('/hs SET alice '), ctx))
             .toEqual([]);
-    });
 
-    it('stays out of the way without suggestions', () => {
         expect(hostservArgSuggestions(parseHostservInput('/hs ON '), ctx)).toEqual([]);
         expect(hostservArgSuggestions(parseHostservInput('/hs OFF '), ctx)).toEqual([]);
         expect(hostservArgSuggestions(parseHostservInput('/hs SETCLOAKSECRET '), ctx)).toEqual([]);
         expect(hostservArgSuggestions(null, ctx)).toEqual([]);
-    });
-
-    it('shows syntax ghosts for commands', () => {
-        expect(hostservSyntaxFor(['ON'])).toBe('ON');
-        expect(hostservSyntaxFor(['STATUS'])).toBe('STATUS [user]');
-        expect(hostservSyntaxFor(['SET'])).toBe('SET <user> <vhost>');
-        expect(hostservSyntaxFor(['FOO'])).toBe('');
-        expect(hostservSyntaxFor([])).toBe('');
     });
 });

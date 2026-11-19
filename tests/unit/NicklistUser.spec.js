@@ -56,19 +56,17 @@ describe('nicklist user prefix colour', () => {
         return el;
     }
 
-    it('colours the mode prefix the same as the nick', () => {
-        const el = mountEl({ coloured: true, prefix: '@' });
-        const prefixEl = el.querySelector('.kiwi-nicklist-user-prefix');
-        const nickEl = el.querySelector('.kiwi-nicklist-user-nick');
+    it('colours the mode prefix with the nick, or leaves both plain when off', () => {
+        let el = mountEl({ coloured: true, prefix: '@' });
+        let prefixEl = el.querySelector('.kiwi-nicklist-user-prefix');
+        let nickEl = el.querySelector('.kiwi-nicklist-user-nick');
         expect(prefixEl.textContent).toBe('@');
         expect(prefixEl.style.color).toBe('rgb(1, 2, 3)');
         expect(prefixEl.style.color).toBe(nickEl.style.color);
-    });
 
-    it('leaves both uncoloured when coloured nicks are off', () => {
-        const el = mountEl({ coloured: false, prefix: '@' });
-        const prefixEl = el.querySelector('.kiwi-nicklist-user-prefix');
-        const nickEl = el.querySelector('.kiwi-nicklist-user-nick');
+        el = mountEl({ coloured: false, prefix: '@' });
+        prefixEl = el.querySelector('.kiwi-nicklist-user-prefix');
+        nickEl = el.querySelector('.kiwi-nicklist-user-nick');
         expect(prefixEl.style.color).toBe('');
         expect(nickEl.style.color).toBe('');
     });

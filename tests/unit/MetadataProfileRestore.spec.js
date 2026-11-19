@@ -59,7 +59,7 @@ describe('saved profile metadata', () => {
         jest.useRealTimers();
     });
 
-    it('records self SETs and ignores channel SETs', () => {
+    it('records self SETs, ignores channel SETs, and keeps cleared fields blank', () => {
         let { client } = attach(network);
         network.setMetadata('avatar', 'http://example.com/a.png');
         network.setMetadata('TestNick', 'pronouns', 'they/them');
@@ -69,10 +69,7 @@ describe('saved profile metadata', () => {
         expect(network.saved_profile_metadata.description).toBe(undefined);
         // Sanity: the SETs themselves still went out
         expect(rawCommands(client, 'SET')).toHaveLength(3);
-    });
 
-    it('remembers a cleared field as blank so it stays cleared', () => {
-        attach(network);
         network.setMetadata('status', 'busy');
         network.setMetadata('status', '');
         expect(network.saved_profile_metadata.status).toBe('');
@@ -113,7 +110,7 @@ describe('saved profile metadata', () => {
         expect(sets).toEqual([['avatar', 'http://example.com/a.png']]);
     });
 
-    it('does not restore twice and cancels the fallback timer', () => {
+    it('restores once on ACK and falls back to a timer', () => {
         let { client, getParsed } = attach(network);
         network.setMetadata('avatar', 'http://example.com/a.png');
         client.raw.mockClear();
@@ -137,21 +134,22 @@ describe('saved profile metadata', () => {
         }, client, () => {});
         jest.advanceTimersByTime(10000);
         expect(rawCommands(client, 'SET')).toHaveLength(1);
-    });
 
-    it('falls back to a timer without labeled-response', () => {
-        let { client } = attach(network);
-        network.enabled_caps = ['draft/metadata-3'];
-        network.setMetadata('avatar', 'http://example.com/a.png');
-        client.raw.mockClear();
+        const timerNetwork = s.addNetwork('TimerNetwork', 'TestNick', {});
+        timerNetwork.state = 'connected';
+        const timer = attach(timerNetwork);
+        timerNetwork.enabled_caps = ['draft/metadata-3'];
+        timerNetwork.setMetadata('avatar', 'http://example.com/a.png');
+        timer.client.raw.mockClear();
 
-        client.emit('connected');
-        expect(rawCommands(client, 'SET')).toHaveLength(0);
+        timer.client.emit('connected');
+        expect(rawCommands(timer.client, 'SET')).toHaveLength(0);
         jest.advanceTimersByTime(3000);
-        expect(rawCommands(client, 'SET')).toEqual([['avatar', 'http://example.com/a.png']]);
+        expect(rawCommands(timer.client, 'SET'))
+            .toEqual([['avatar', 'http://example.com/a.png']]);
     });
 
-    it('wipes the saved profile when the identity changes', () => {
+    it('wipes the saved profile on identity change and persists it', () => {
         let { client } = attach(network);
         network.saved_profile_metadata = { avatar: 'http://example.com/a.png' };
         network.saved_profile_owner = '';
@@ -164,12 +162,8 @@ describe('saved profile metadata', () => {
         client.emit('connecting');
         expect(network.saved_profile_metadata).toEqual({});
         expect(network.saved_profile_owner).toBe('somebody');
-    });
 
-    it('persists the saved profile through exportState', () => {
-        attach(network);
-        network.setMetadata('avatar', 'http://example.com/a.png');
-        network.saved_profile_owner = 'somebody';
+        network.saved_profile_metadata = { avatar: 'http://example.com/a.png' };
         let exported = JSON.parse(s.exportState(true));
         expect(exported.networks[0].saved_profile_metadata).toEqual({
             avatar: 'http://example.com/a.png',

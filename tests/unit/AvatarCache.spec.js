@@ -78,7 +78,7 @@ describe('avatar cache', () => {
         expect(images).toHaveLength(5);
     });
 
-    test('does not retry failures before the TTL expires', () => {
+    test('does not retry failures before the TTL, and marks failed URLs', () => {
         const url = 'https://example.com/missing.svg';
 
         start(url);
@@ -93,43 +93,35 @@ describe('avatar cache', () => {
         requestAvatarLoad(url);
         jest.advanceTimersByTime(100);
         expect(images).toHaveLength(2);
-    });
 
-    test('marks loaded URLs failed and stops pending loads', () => {
-        const url = 'https://example.com/alice.svg';
+        const loadedUrl = 'https://example.com/alice.svg';
+        start(loadedUrl);
+        images[images.length - 1].onload();
+        expect(avatarLoadState(loadedUrl)).toBe('loaded');
 
-        start(url);
-        images[0].onload();
-        expect(avatarLoadState(url)).toBe('loaded');
+        markAvatarFailed(loadedUrl);
+        expect(avatarLoadState(loadedUrl)).toBe('failed');
 
-        markAvatarFailed(url);
-        expect(avatarLoadState(url)).toBe('failed');
-
-        requestAvatarLoad(url);
+        const before = images.length;
+        requestAvatarLoad(loadedUrl);
         jest.advanceTimersByTime(100);
-        expect(images).toHaveLength(1);
+        expect(images).toHaveLength(before);
 
         const pendingUrl = 'https://example.com/pending.svg';
-        start(pendingUrl);
+        requestAvatarLoad(pendingUrl);
+        jest.advanceTimersByTime(100);
+        const pendingImage = images[images.length - 1];
         markAvatarFailed(pendingUrl);
-        images[1].onload();
+        pendingImage.onload();
         expect(avatarLoadState(pendingUrl)).toBe('failed');
     });
 
-    test('times out stuck loads and releases the queue', () => {
+    test('times out stuck loads and clears cached state', () => {
         const url = 'https://example.com/slow.svg';
 
         start(url);
         jest.advanceTimersByTime(15 * 1000);
         expect(avatarLoadState(url)).toBe('failed');
-    });
-
-    test('clears cached state', () => {
-        const url = 'https://example.com/alice.svg';
-
-        start(url);
-        images[0].onload();
-        expect(avatarLoadState(url)).toBe('loaded');
 
         clearAvatarCache();
         expect(avatarLoadState(url)).toBe('idle');

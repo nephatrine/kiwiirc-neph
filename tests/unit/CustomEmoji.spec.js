@@ -21,7 +21,7 @@ describe('Custom emoji', () => {
         setCustomEmojis({});
     });
 
-    test('matches custom tokens before unicode shortcodes', () => {
+    test('matches custom tokens before unicode and falls back when unconfigured', () => {
         setCustomEmojis({
             kiwi: customEmoji,
             thumbsup: customEmoji,
@@ -34,6 +34,10 @@ describe('Custom emoji', () => {
 
         const collision = matchEmoji(':thumbsup:')[0];
         expect(collision.meta.customEmojiUrl).toBe(customEmoji);
+
+        setCustomEmojis({});
+        expect(matchEmoji(':thumbsup:')[0].meta.emoji).toBe('👍');
+        expect(reactionDisplay(':thumbsup:').text).toBe('👍');
     });
 
     test('renders a custom image with escaped attributes', () => {
@@ -52,11 +56,6 @@ describe('Custom emoji', () => {
         expect(html).toContain('title=":kiwi:"');
     });
 
-    test('falls back to unicode when no custom emoji is configured', () => {
-        expect(matchEmoji(':thumbsup:')[0].meta.emoji).toBe('👍');
-        expect(reactionDisplay(':thumbsup:').text).toBe('👍');
-    });
-
     test('leaves custom tokens literal when conversion is disabled', () => {
         setCustomEmojis({ kiwi: customEmoji });
         getState().setting('buffers.emoji_convert_incoming', false);
@@ -72,15 +71,11 @@ describe('Custom emoji', () => {
     test('parses custom tokens into emoji blocks', () => {
         setCustomEmojis({ kiwi: customEmoji });
 
-        const blocks = parseMessage('hello :kiwi:');
-        const emoji = blocks.find((block) => block.type === 'emoji');
+        let blocks = parseMessage('hello :kiwi:');
+        let emoji = blocks.find((block) => block.type === 'emoji');
 
         expect(emoji.content).toBe(':kiwi:');
         expect(emoji.meta.customEmojiUrl).toBe(customEmoji);
-    });
-
-    test('matches custom tokens after punctuation', () => {
-        setCustomEmojis({ kiwi: customEmoji });
 
         const match = matchEmoji('ten-:kiwi:')[0];
         expect(match).toMatchObject({
@@ -92,11 +87,13 @@ describe('Custom emoji', () => {
             },
         });
 
-        const blocks = parseMessage('ten-:kiwi:');
-        const emoji = blocks.find((block) => block.type === 'emoji');
-
+        blocks = parseMessage('ten-:kiwi:');
+        emoji = blocks.find((block) => block.type === 'emoji');
         expect(emoji).toBeDefined();
         expect(emoji.meta.customEmojiUrl).toBe(customEmoji);
+
+        blocks = parseMessage(':smile: :kiwi:');
+        expect(blocks.filter((block) => block.type === 'emoji')).toHaveLength(2);
     });
 
     test('leaves punctuation around converted shortcodes in place', () => {
@@ -104,7 +101,7 @@ describe('Custom emoji', () => {
         expect(replaceShortcodes('ten:joy:')).toBe('ten😂');
     });
 
-    test('leaves shortcodes literal inside monospace blocks', () => {
+    test('keeps shortcodes literal but renders unicode inside monospace blocks', () => {
         setCustomEmojis({ kiwi: customEmoji });
 
         const backtickBlocks = parseMessage('`:smile: :kiwi:`', { extras: true });
@@ -116,35 +113,17 @@ describe('Custom emoji', () => {
             .toContain(':smile: :kiwi:');
         expect(ircBlocks.map((block) => block.content).join(''))
             .toContain(':smile: :kiwi:');
-    });
 
-    test('still renders literal unicode emoji inside monospace blocks', () => {
-        const blocks = parseMessage('\x11😀\x11');
-        const html = render(blocks, true);
-
+        const html = render(parseMessage('\x11😀\x11'), true);
         expect(html).toContain('kiwi-emoji');
         expect(html).toContain('😀');
     });
 
-    test('still matches shortcodes in normal text', () => {
-        setCustomEmojis({ kiwi: customEmoji });
-
-        const blocks = parseMessage(':smile: :kiwi:');
-        const emoji = blocks.filter((block) => block.type === 'emoji');
-
-        expect(emoji).toHaveLength(2);
-    });
-
-    test('does not convert custom tokens while sending', () => {
+    test('does not convert or offer unicode replacements for custom tokens', () => {
         setCustomEmojis({ thumbsup: customEmoji });
 
         expect(replaceShortcodes(':thumbsup:')).toBe(':thumbsup:');
         expect(replaceShortcodes(':joy:')).toBe('😂');
-    });
-
-    test('does not offer a unicode replacement for custom tokens', () => {
-        setCustomEmojis({ thumbsup: customEmoji });
-
         expect(getEmojis(':thumbsup:')).toEqual([]);
         expect(getEmojis(':joy:')[0].char).toBe('😂');
     });
@@ -186,7 +165,7 @@ describe('Custom emoji', () => {
             .toBe(new URL('/static/emotes/kiwi.png', window.location.href).href);
         expect(match.meta.customEmojiUrl.startsWith(window.location.origin)).toBe(true);
     });
-    test('builds autocomplete items for custom and unicode shortnames', () => {
+    test('builds autocomplete items and does not duplicate custom tokens', () => {
         setCustomEmojis({ kiwi: '/static/emotes/kiwi.png' });
 
         const items = getEmojiAutocompleteItems(':ki');
@@ -204,13 +183,11 @@ describe('Custom emoji', () => {
             char: '💋',
             sourceType: 'unicode',
         });
-    });
 
-    test('does not duplicate custom tokens with unicode shortnames', () => {
         setCustomEmojis({ thumbsup: '/static/emotes/thumbsup.png' });
 
-        const items = getEmojiAutocompleteItems(':thumbsup');
-        const matches = items.filter((item) => item.text === ':thumbsup:');
+        const matches = getEmojiAutocompleteItems(':thumbsup')
+            .filter((item) => item.text === ':thumbsup:');
 
         expect(matches).toHaveLength(1);
         expect(matches[0].url).toContain('/static/emotes/thumbsup.png');

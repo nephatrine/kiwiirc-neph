@@ -26,11 +26,11 @@ describe('raw buffer messages', () => {
         return buffer.getMessages()[buffer.getMessages().length - 1];
     }
 
-    test('keeps shortcodes, URLs, and other message content literal', () => {
-        const message = addRawMessage(
+    test('keeps raw content literal, printable, escaped, and leaves other buffers alone', () => {
+        let message = addRawMessage(
             '[S] :smile: https://example.com/' + 'a'.repeat(120)
         );
-        const html = message.toHtml({
+        let html = message.toHtml({
             buffer,
             useExtraFormatting: true,
         });
@@ -47,11 +47,9 @@ describe('raw buffer messages', () => {
         expect(html).not.toContain('<a ');
         expect(html).not.toContain('kiwi-emoji');
         expect(html).not.toContain('...');
-    });
 
-    test('makes formatting control characters printable without applying them', () => {
-        const message = addRawMessage('[S] \x02bold\x02 \x0304,1red');
-        const html = message.toHtml({
+        message = addRawMessage('[S] \x02bold\x02 \x0304,1red');
+        html = message.toHtml({
             buffer,
             useExtraFormatting: true,
         });
@@ -61,33 +59,29 @@ describe('raw buffer messages', () => {
         expect(html).toContain('␂bold␂');
         expect(html).toContain('␃04,1red');
         expect(html).not.toContain('font-weight:bold');
-    });
 
-    test('escapes raw HTML', () => {
-        const message = addRawMessage('[S] <script>alert(1)</script>');
-        const html = message.toHtml({
+        message = addRawMessage('[S] <script>alert(1)</script>');
+        html = message.toHtml({
             buffer,
             useExtraFormatting: true,
         });
 
         expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
         expect(html).not.toContain('<script>');
-    });
 
-    test('does not change regular buffers', () => {
         const channel = s.addBuffer(network.id, '#channel');
         s.addMessage(channel, {
             time: Date.now(),
             nick: 'alice',
             message: 'see https://example.com',
         });
-        const message = channel.getMessages()[0];
-        const html = message.toHtml({
+        const regular = channel.getMessages()[0];
+        const channelHtml = regular.toHtml({
             buffer: channel,
             useExtraFormatting: false,
         });
 
-        expect(html).toContain('<a ');
+        expect(channelHtml).toContain('<a ');
     });
 
     function mountRaw(showTimestamps) {
@@ -115,9 +109,9 @@ describe('raw buffer messages', () => {
         return vm;
     }
 
-    test('renders a compact raw row with timestamps when enabled', () => {
-        const vm = mountRaw(true);
-        const el = vm.$el;
+    test('renders a compact raw row with or without timestamps', () => {
+        let vm = mountRaw(true);
+        let el = vm.$el;
 
         expect(el.classList.contains('kiwi-messagelist-message--raw')).toBe(true);
         expect(el.querySelector('.kiwi-messagelist-raw-time').textContent)
@@ -127,12 +121,11 @@ describe('raw buffer messages', () => {
         expect(el.querySelector('.kiwi-messagelist-actions')).toBeNull();
 
         vm.$destroy();
-    });
 
-    test('omits the raw timestamp when timestamps are disabled', () => {
-        const vm = mountRaw(false);
+        vm = mountRaw(false);
+        el = vm.$el;
 
-        expect(vm.$el.querySelector('.kiwi-messagelist-raw-time')).toBeNull();
+        expect(el.querySelector('.kiwi-messagelist-raw-time')).toBeNull();
 
         vm.$destroy();
     });

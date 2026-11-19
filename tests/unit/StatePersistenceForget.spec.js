@@ -28,21 +28,19 @@ function makePersistence() {
 }
 
 describe('StatePersistence cleanup', () => {
-    test('clears stored state without resetting the live state', async() => {
-        const { appState, storage, persistence } = makePersistence();
+    test('clears stored state, and resets live state only when forgetting', async() => {
+        let ctx = makePersistence();
 
-        await persistence.clearStoredState();
+        await ctx.persistence.clearStoredState();
 
-        expect(appState.networks).toHaveLength(1);
-        expect(storage.set).toHaveBeenCalledWith('test-key', null);
-    });
+        expect(ctx.appState.networks).toHaveLength(1);
+        expect(ctx.storage.set).toHaveBeenCalledWith('test-key', null);
 
-    test('forgetState clears storage and resets the live state', async() => {
-        const { appState, storage, persistence } = makePersistence();
+        ctx = makePersistence();
 
-        await persistence.forgetState();
+        await ctx.persistence.forgetState();
 
-        expect(appState.networks).toHaveLength(0);
-        expect(storage.set).toHaveBeenCalledWith('test-key', null);
+        expect(ctx.appState.networks).toHaveLength(0);
+        expect(ctx.storage.set).toHaveBeenCalledWith('test-key', null);
     });
 });

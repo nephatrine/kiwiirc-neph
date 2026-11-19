@@ -8,29 +8,6 @@ import {
 } from '@/libs/ErgoChanServ';
 
 describe('chanserv completion', () => {
-    it('limits subcommand completion to the subcommand token', () => {
-        expect(isChanservSubcommandPosition('/cs ')).toBe(true);
-        expect(isChanservSubcommandPosition('/cs R')).toBe(true);
-        expect(isChanservSubcommandPosition('/CS reg')).toBe(true);
-        expect(isChanservSubcommandPosition('/msg ChanServ ')).toBe(true);
-        expect(isChanservSubcommandPosition('/msg ChanServ INFO')).toBe(true);
-        expect(isChanservSubcommandPosition('/cs INFO ')).toBe(false);
-        expect(isChanservSubcommandPosition('/cs INFO #chan')).toBe(false);
-        expect(isChanservSubcommandPosition('/cs')).toBe(false);
-        expect(isChanservSubcommandPosition('/msg ChanServ')).toBe(false);
-        expect(isChanservSubcommandPosition('/ns INFO ')).toBe(false);
-        expect(isChanservSubcommandPosition('')).toBe(false);
-        expect(isChanservSubcommandPosition(null)).toBe(false);
-    });
-
-    it('transcribes upstream syntax', () => {
-        expect(CHANSERV_SYNTAX.TRANSFER).toBe('TRANSFER [accept] #channel user [code]');
-        expect(CHANSERV_SYNTAX.SET).toBe('SET #channel <setting> <value>');
-        expect(CHANSERV_SYNTAX.PURGE).toBe('PURGE <ADD | DEL | LIST> #channel [code] [reason]');
-    });
-});
-
-describe('chanserv argument completion', () => {
     const ctx = {
         channels: {
             ops: ['#ops'],
@@ -47,6 +24,31 @@ describe('chanserv argument completion', () => {
             '#owned': [],
         },
     };
+
+    it('limits subcommand completion, transcribes syntax, and shows ghosts', () => {
+        expect(isChanservSubcommandPosition('/cs ')).toBe(true);
+        expect(isChanservSubcommandPosition('/cs R')).toBe(true);
+        expect(isChanservSubcommandPosition('/CS reg')).toBe(true);
+        expect(isChanservSubcommandPosition('/msg ChanServ ')).toBe(true);
+        expect(isChanservSubcommandPosition('/msg ChanServ INFO')).toBe(true);
+        expect(isChanservSubcommandPosition('/cs INFO ')).toBe(false);
+        expect(isChanservSubcommandPosition('/cs INFO #chan')).toBe(false);
+        expect(isChanservSubcommandPosition('/cs')).toBe(false);
+        expect(isChanservSubcommandPosition('/msg ChanServ')).toBe(false);
+        expect(isChanservSubcommandPosition('/ns INFO ')).toBe(false);
+        expect(isChanservSubcommandPosition('')).toBe(false);
+        expect(isChanservSubcommandPosition(null)).toBe(false);
+
+        expect(CHANSERV_SYNTAX.TRANSFER).toBe('TRANSFER [accept] #channel user [code]');
+        expect(CHANSERV_SYNTAX.SET).toBe('SET #channel <setting> <value>');
+        expect(CHANSERV_SYNTAX.PURGE).toBe('PURGE <ADD | DEL | LIST> #channel [code] [reason]');
+
+        expect(chanservSyntaxFor(['SET'])).toBe('SET #channel <setting> <value>');
+        expect(chanservSyntaxFor(['TRANSFER', 'ACCEPT'])).toBe('TRANSFER accept #channel');
+        expect(chanservSyntaxFor(['CLEAR'])).toBe('CLEAR #channel target');
+        expect(chanservSyntaxFor(['FOO'])).toBe('');
+        expect(chanservSyntaxFor([])).toBe('');
+    });
 
     it('parses command paths and argument slots', () => {
         expect(parseChanservInput('/cs ')).toBe(null);
@@ -88,7 +90,7 @@ describe('chanserv argument completion', () => {
         });
     });
 
-    it('suggests channels by privilege', () => {
+    it('suggests channels by privilege, then nicks and accounts', () => {
         expect(chanservArgSuggestions(parseChanservInput('/cs OP '), ctx))
             .toEqual(['#ops']);
         expect(chanservArgSuggestions(parseChanservInput('/cs DEOP '), ctx))
@@ -99,9 +101,7 @@ describe('chanserv argument completion', () => {
             .toEqual(['#ops', '#owned', '#public']);
         expect(chanservArgSuggestions(parseChanservInput('/cs TRANSFER ACCEPT '), ctx))
             .toEqual(['#ops', '#public']);
-    });
 
-    it('suggests nicks and accounts from the named channel', () => {
         expect(chanservArgSuggestions(parseChanservInput('/cs OP #ops '), ctx))
             .toEqual(['Alice', 'Bob']);
         expect(chanservArgSuggestions(parseChanservInput('/cs AMODE #ops '), ctx))
@@ -112,7 +112,7 @@ describe('chanserv argument completion', () => {
             .toEqual(['Carol']);
     });
 
-    it('suggests settings and setting values', () => {
+    it('suggests settings, values, subcommands, and keywords', () => {
         const names = CHANSERV_SETTINGS.map((s) => s.name);
         expect(chanservArgSuggestions(parseChanservInput('/cs GET #a '), ctx))
             .toEqual(names);
@@ -122,9 +122,7 @@ describe('chanserv argument completion', () => {
             .toEqual(['none', 'registration-time', 'join-time', 'default']);
         expect(chanservArgSuggestions(parseChanservInput('/cs SET #a BOGUS '), ctx))
             .toEqual([]);
-    });
 
-    it('completes subcommands and keywords', () => {
         expect(chanservArgSuggestions(parseChanservInput('/cs PURGE '), ctx))
             .toEqual(['ADD', 'DEL', 'LIST']);
         expect(chanservArgSuggestions(parseChanservInput('/cs CLEAR '), ctx))
@@ -136,13 +134,5 @@ describe('chanserv argument completion', () => {
         expect(chanservArgSuggestions(parseChanservInput('/cs LIST '), ctx)).toEqual([]);
         expect(chanservArgSuggestions(parseChanservInput('/cs PURGE FOO '), ctx)).toEqual([]);
         expect(chanservArgSuggestions(null, ctx)).toEqual([]);
-    });
-
-    it('shows syntax ghosts for command paths', () => {
-        expect(chanservSyntaxFor(['SET'])).toBe('SET #channel <setting> <value>');
-        expect(chanservSyntaxFor(['TRANSFER', 'ACCEPT'])).toBe('TRANSFER accept #channel');
-        expect(chanservSyntaxFor(['CLEAR'])).toBe('CLEAR #channel target');
-        expect(chanservSyntaxFor(['FOO'])).toBe('');
-        expect(chanservSyntaxFor([])).toBe('');
     });
 });

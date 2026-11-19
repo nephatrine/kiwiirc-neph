@@ -53,41 +53,37 @@ describe('TwitchUserNotice', () => {
         document.body.innerHTML = '';
     });
 
-    it('renders a rich subscription card', async() => {
-        const tags = {
+    it('renders rich subscription cards and generic events', async() => {
+        let { vm, ml } = mountNotice({
             'msg-id': 'resub',
             'system-msg': 'Streamer subscribed at Tier 2.',
             'msg-param-sub-plan': '2000',
             'msg-param-cumulative-months': '12',
-        };
-        const { vm, ml } = mountNotice(tags);
+        });
         await Vue.nextTick();
 
-        const comp = vm.$children[0];
-        const el = comp.$el;
-        expect(el.classList.contains('kiwi-twitch-usernotice--resub')).toBe(true);
-        expect(el.textContent).toContain('twitch_usernotice_resub');
-        expect(el.textContent).toContain('Streamer subscribed at Tier 2.');
-        expect(el.textContent).toContain('twitch_usernotice_tier');
-        expect(el.textContent).toContain('twitch_usernotice_total_months');
-        expect(el.textContent).toContain('12');
-        expect(el.querySelector('.kiwi-twitch-usernotice-body').innerHTML)
+        let comp = vm.$children[0];
+        expect(comp.$el.classList.contains('kiwi-twitch-usernotice--resub')).toBe(true);
+        expect(comp.$el.textContent).toContain('twitch_usernotice_resub');
+        expect(comp.$el.textContent).toContain('Streamer subscribed at Tier 2.');
+        expect(comp.$el.textContent).toContain('twitch_usernotice_tier');
+        expect(comp.$el.textContent).toContain('twitch_usernotice_total_months');
+        expect(comp.$el.textContent).toContain('12');
+        expect(comp.$el.querySelector('.kiwi-twitch-usernotice-body').innerHTML)
             .toBe('<strong>Nice stream</strong>');
         expect(ml.formatMessage).toHaveBeenCalledWith(expect.objectContaining({
             type: 'twitch_usernotice',
         }));
 
         vm.$destroy();
-    });
 
-    it('uses the generic event card for unknown notice types', async() => {
-        const { vm } = mountNotice({
+        ({ vm } = mountNotice({
             'msg-id': 'future-event',
             'system-msg': 'Something happened.',
-        });
+        }));
         await Vue.nextTick();
 
-        const comp = vm.$children[0];
+        comp = vm.$children[0];
         expect(comp.noticeType.key).toBe('event');
         expect(comp.$el.classList.contains('kiwi-twitch-usernotice--event')).toBe(true);
         expect(comp.$el.textContent).toContain('twitch_usernotice_event');
@@ -95,8 +91,8 @@ describe('TwitchUserNotice', () => {
         vm.$destroy();
     });
 
-    it('applies the theme fancy style to the notice actor', async() => {
-        const { vm } = mountNotice({
+    it('styles the fancy actor and prefixes it when the system message omits it', async() => {
+        let { vm } = mountNotice({
             'msg-id': 'resub',
             'login': 'streamer',
             'display-name': 'Streamer',
@@ -104,27 +100,25 @@ describe('TwitchUserNotice', () => {
         });
         await Vue.nextTick();
 
-        const comp = vm.$children[0];
-        const actor = comp.$el.querySelector('.kiwi-twitch-usernotice-actor');
+        let comp = vm.$children[0];
+        let actor = comp.$el.querySelector('.kiwi-twitch-usernotice-actor');
         expect(actor.textContent).toBe('STREAMER');
         expect(actor.classList.contains('kiwi-formatting-reverse')).toBe(true);
         expect(comp.$el.querySelector('.kiwi-twitch-usernotice-headline').textContent)
             .toBe('STREAMER subscribed at Tier 2.');
 
         vm.$destroy();
-    });
 
-    it('prefixes the fancy actor when the system message omits it', async() => {
-        const { vm } = mountNotice({
+        ({ vm } = mountNotice({
             'msg-id': 'raid',
             'login': 'streamer',
             'display-name': 'Streamer',
             'system-msg': 'A raid has arrived.',
-        });
+        }));
         await Vue.nextTick();
 
-        const comp = vm.$children[0];
-        const actor = comp.$el.querySelector('.kiwi-twitch-usernotice-actor');
+        comp = vm.$children[0];
+        actor = comp.$el.querySelector('.kiwi-twitch-usernotice-actor');
         expect(actor.textContent).toBe('Streamer');
         expect(comp.$el.querySelector('.kiwi-twitch-usernotice-headline').textContent)
             .toBe('Streamer A raid has arrived.');
@@ -132,8 +126,8 @@ describe('TwitchUserNotice', () => {
         vm.$destroy();
     });
 
-    it('plays a one-shot entrance animation for fresh notices', async() => {
-        const { vm } = mountNotice({
+    it('plays the entrance animation only for fresh, unseen notices', async() => {
+        let { vm } = mountNotice({
             'msg-id': 'resub',
             'system-msg': 'Streamer subscribed.',
         }, {
@@ -142,14 +136,12 @@ describe('TwitchUserNotice', () => {
         });
         await Vue.nextTick();
 
-        const comp = vm.$children[0];
+        let comp = vm.$children[0];
         expect(comp.playEntrance).toBe(true);
         expect(comp.$el.classList.contains('kiwi-twitch-usernotice--fresh')).toBe(true);
 
         vm.$destroy();
-    });
 
-    it('does not replay the entrance animation for old or seen notices', async() => {
         const oldNotice = mountNotice({
             'msg-id': 'resub',
             'system-msg': 'Streamer subscribed.',

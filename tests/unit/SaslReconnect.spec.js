@@ -16,33 +16,31 @@ function emitRawLine(client, command, params) {
 }
 
 describe('sasl account across reconnects', () => {
-    let s;
-    let network;
-
-    beforeEach(() => {
-        s = state.create();
-        network = s.addNetwork('TestNetwork', 'TestNick', {});
-        // Touching ircClient builds the client and its middleware
-        expect(network.ircClient).toBeTruthy();
-        jest.spyOn(network.ircClient, 'raw').mockImplementation(() => {});
-    });
-
     afterEach(() => {
         jest.restoreAllMocks();
     });
 
-    async function loginAs(account) {
+    function makeNetwork() {
+        const s = state.create();
+        const network = s.addNetwork('TestNetwork', 'TestNick', {});
+        // Touching ircClient builds the client and its middleware
+        expect(network.ircClient).toBeTruthy();
+        jest.spyOn(network.ircClient, 'raw').mockImplementation(() => {});
+        return { s, network };
+    }
+
+    async function loginAs(network, account) {
         const client = network.ircClient;
         client.emit('loggedin', { account });
         await emitRawLine(client, '903', [network.nick, account, 'SASL ok']);
     }
 
-    it('sets sasl_account on 900 then 903', async() => {
-        await loginAs('ankle');
+    it('sets sasl_account on 900 then 903, including after registration', async() => {
+        let { network } = makeNetwork();
+        await loginAs(network, 'ankle');
         expect(network.sasl_account).toBe('ankle');
-    });
 
-    it('captures 900 when it arrives after registration', async() => {
+        ({ network } = makeNetwork());
         const client = network.ircClient;
         await emitRawLine(client, '903', [network.nick, 'SASL ok']);
         expect(network.sasl_account).toBe('');
@@ -54,7 +52,8 @@ describe('sasl account across reconnects', () => {
     });
 
     it('restores sasl_account on the next connection after a reconnect', async() => {
-        await loginAs('ankle');
+        const { network } = makeNetwork();
+        await loginAs(network, 'ankle');
         expect(network.sasl_account).toBe('ankle');
 
         // First registration completes
@@ -65,7 +64,7 @@ describe('sasl account across reconnects', () => {
         expect(network.sasl_account).toBe('');
 
         // The new connection re-authenticates with the same account
-        await loginAs('ankle');
+        await loginAs(network, 'ankle');
         expect(network.sasl_account).toBe('ankle');
     });
 });

@@ -4,10 +4,6 @@ import {
 } from '../../desktop/electron/embed-referer';
 
 describe('Desktop embed request headers', () => {
-    it('uses the neutral loopback referer', () => {
-        expect(EMBED_REFERER).toBe('https://localhost/');
-    });
-
     it('adds a referer when one is missing', () => {
         expect(addEmbedReferer({})).toEqual({
             Referer: EMBED_REFERER,

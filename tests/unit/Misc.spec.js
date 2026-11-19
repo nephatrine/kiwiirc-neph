@@ -265,39 +265,24 @@ describe('Misc.js', () => {
     });
 
     describe('errorMessage', () => {
-        test('falls back for empty values', () => {
-            expect(Misc.errorMessage(undefined)).toBe('Unknown error');
-            expect(Misc.errorMessage('')).toBe('Unknown error');
-        });
-
-        test('returns a plain string unchanged', () => {
-            expect(Misc.errorMessage('plain string')).toBe('plain string');
-        });
-
-        test('prefers a string reason', () => {
-            expect(Misc.errorMessage({ reason: 'readonly database' })).toBe('readonly database');
-        });
-
-        test('uses a message when there is no reason', () => {
-            expect(Misc.errorMessage({ message: 'boom' })).toBe('boom');
-        });
-
-        test('prefers the reason over the message', () => {
-            expect(Misc.errorMessage({ reason: 'reason wins', message: 'message' })).toBe('reason wins');
-        });
-
-        test('reads an Error message', () => {
-            expect(Misc.errorMessage(new Error('nope'))).toBe('nope');
-        });
-
-        test('stringifies an object with neither reason nor message', () => {
-            expect(Misc.errorMessage({ error: 'UNKNOWN_ERROR' })).toBe('{"error":"UNKNOWN_ERROR"}');
-        });
-
-        test('falls back to String() when the value cannot be stringified', () => {
+        test('resolves errors, reasons, messages, and fallbacks', () => {
             let circular = {};
             circular.self = circular;
-            expect(Misc.errorMessage(circular)).toBe('[object Object]');
+            const cases = [
+                [undefined, 'Unknown error'],
+                ['', 'Unknown error'],
+                ['plain string', 'plain string'],
+                [{ reason: 'readonly database' }, 'readonly database'],
+                [{ message: 'boom' }, 'boom'],
+                [{ reason: 'reason wins', message: 'message' }, 'reason wins'],
+                [new Error('nope'), 'nope'],
+                [{ error: 'UNKNOWN_ERROR' }, '{"error":"UNKNOWN_ERROR"}'],
+                [circular, '[object Object]'],
+            ];
+
+            cases.forEach(([value, expected]) => {
+                expect(Misc.errorMessage(value)).toBe(expected);
+            });
         });
     });
 });
@@ -388,16 +373,14 @@ describe('Misc.js helpers', () => {
             clickSpy.mockRestore();
         });
 
-        test('resolves quietly when the fetch fails', async() => {
+        test('resolves quietly when the fetch fails or returns an error', async() => {
             global.fetch = jest.fn(() => Promise.reject(new Error('offline')));
+            await expect(Misc.downloadUrl('https://kiwi.example/a.png'))
+                .resolves.toBeUndefined();
 
-            await expect(Misc.downloadUrl('https://kiwi.example/a.png')).resolves.toBeUndefined();
-        });
-
-        test('resolves quietly when the response is not ok', async() => {
             global.fetch = jest.fn(() => Promise.resolve({ ok: false }));
-
-            await expect(Misc.downloadUrl('https://kiwi.example/a.png')).resolves.toBeUndefined();
+            await expect(Misc.downloadUrl('https://kiwi.example/a.png'))
+                .resolves.toBeUndefined();
         });
 
         test('ignores an unparseable url without fetching', async() => {
@@ -556,30 +539,24 @@ describe('Misc.js helpers', () => {
     });
 
     describe('compareVersions', () => {
-        test('orders plain release versions', () => {
-            expect(Misc.compareVersions('2.0.0', '1.5.0')).toBe(1);
-            expect(Misc.compareVersions('1.5.0', '2.0.0')).toBe(-1);
-            expect(Misc.compareVersions('2.0.0', '2.0.0')).toBe(0);
-        });
+        test('orders releases, prereleases, segment counts, and metadata', () => {
+            const cases = [
+                ['2.0.0', '1.5.0', 1],
+                ['1.5.0', '2.0.0', -1],
+                ['2.0.0', '2.0.0', 0],
+                ['2.1', '2.0.9', 1],
+                ['v2.0.0', '2.0.0', 0],
+                ['2.0.0-rc.1', '2.0.0', -1],
+                ['2.0.0', '2.0.0-rc.1', 1],
+                ['1.0.0-alpha', '1.0.0-alpha.1', -1],
+                ['1.0.0-1', '1.0.0-alpha', -1],
+                ['1.0.0-beta', '1.0.0-alpha', 1],
+                ['1.2.3+build.5', '1.2.3+build.9', 0],
+            ];
 
-        test('handles differing segment counts and a leading v', () => {
-            expect(Misc.compareVersions('2.1', '2.0.9')).toBe(1);
-            expect(Misc.compareVersions('v2.0.0', '2.0.0')).toBe(0);
-        });
-
-        test('ranks a prerelease below its release', () => {
-            expect(Misc.compareVersions('2.0.0-rc.1', '2.0.0')).toBe(-1);
-            expect(Misc.compareVersions('2.0.0', '2.0.0-rc.1')).toBe(1);
-        });
-
-        test('applies semver prerelease ordering', () => {
-            expect(Misc.compareVersions('1.0.0-alpha', '1.0.0-alpha.1')).toBe(-1);
-            expect(Misc.compareVersions('1.0.0-1', '1.0.0-alpha')).toBe(-1);
-            expect(Misc.compareVersions('1.0.0-beta', '1.0.0-alpha')).toBe(1);
-        });
-
-        test('ignores build metadata', () => {
-            expect(Misc.compareVersions('1.2.3+build.5', '1.2.3+build.9')).toBe(0);
+            cases.forEach(([left, right, expected]) => {
+                expect(Misc.compareVersions(left, right)).toBe(expected);
+            });
         });
     });
 });

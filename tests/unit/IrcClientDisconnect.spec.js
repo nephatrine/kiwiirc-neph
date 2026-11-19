@@ -1,28 +1,27 @@
 import state from '@/libs/state';
 
-describe('IrcClient socket close', () => {
-    let s;
-    let network;
-    let client;
-    let channel;
-
-    beforeEach(() => {
-        s = state.create();
-        network = s.addNetwork('TestNetwork', 'TestNick', {
-            server: 'irc.example.com',
-            port: 6697,
-            tls: true,
-        });
-        network.state = 'connected';
-        network.nick = 'TestNick';
-        network.enabled_caps = [];
-        client = network.ircClient;
-        channel = s.addBuffer(network.id, '#test');
-        channel.joined = true;
-        channel.flags.reconnect_known = false;
+function makeContext() {
+    const s = state.create();
+    const network = s.addNetwork('TestNetwork', 'TestNick', {
+        server: 'irc.example.com',
+        port: 6697,
+        tls: true,
     });
+    network.state = 'connected';
+    network.nick = 'TestNick';
+    network.enabled_caps = [];
+    const client = network.ircClient;
+    const channel = s.addBuffer(network.id, '#test');
+    channel.joined = true;
+    channel.flags.reconnect_known = false;
+    return {
+        s, network, client, channel,
+    };
+}
 
-    it('marks the network disconnected when the live socket closes', () => {
+describe('IrcClient socket close', () => {
+    it('marks the network disconnected on close, quit, and direct sockets', () => {
+        let { network, client, channel } = makeContext();
         client.connection.requested_disconnect = false;
 
         client.emit('socket close');
@@ -30,9 +29,8 @@ describe('IrcClient socket close', () => {
         expect(network.state).toBe('disconnected');
         expect(channel.joined).toBe(false);
         expect(channel.flags.reconnect_known).toBe(true);
-    });
 
-    it('runs the same cleanup after a manual quit', () => {
+        ({ network, client, channel } = makeContext());
         client.connection.requested_disconnect = true;
 
         client.emit('socket close');
@@ -40,19 +38,8 @@ describe('IrcClient socket close', () => {
         expect(network.state).toBe('disconnected');
         expect(channel.joined).toBe(false);
         expect(channel.flags.reconnect_known).toBe(true);
-    });
 
-    it('ignores a replacement close while still connecting', () => {
-        network.state = 'connecting';
-        client.connection.requested_disconnect = false;
-
-        client.emit('socket close');
-
-        expect(network.state).toBe('connecting');
-        expect(channel.joined).toBe(true);
-    });
-
-    it('marks a direct websocket disconnected when a connecting attempt closes', () => {
+        ({ network, client, channel } = makeContext());
         network.connection.direct = true;
         network.state = 'connecting';
         client.connection.requested_disconnect = false;
@@ -64,7 +51,17 @@ describe('IrcClient socket close', () => {
         expect(channel.flags.reconnect_known).toBe(true);
     });
 
-    it('marks the network disconnected when the framework gives up while connecting', () => {
+    it('ignores a replacement close while connecting unless the framework gives up', () => {
+        let { network, client, channel } = makeContext();
+        network.state = 'connecting';
+        client.connection.requested_disconnect = false;
+
+        client.emit('socket close');
+
+        expect(network.state).toBe('connecting');
+        expect(channel.joined).toBe(true);
+
+        ({ network, client, channel } = makeContext());
         network.state = 'connecting';
         client.connection.requested_disconnect = false;
 
@@ -75,6 +72,7 @@ describe('IrcClient socket close', () => {
     });
 
     it('cancels a direct websocket handshake', () => {
+        const { network, client } = makeContext();
         network.connection.direct = true;
         network.state = 'connecting';
         client.connection.requested_disconnect = false;

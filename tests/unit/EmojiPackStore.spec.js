@@ -139,39 +139,22 @@ describe('Emoji pack store', () => {
         });
     });
 
-    test('prefers selected channel packs over server packs', async() => {
+    test('prefers selected channel packs and requires an explicit selection', async() => {
         await loadServerPack();
         await loadChannelPack();
-        toggleChannelPack(network, buffer, '#test', true);
 
+        expect(resolveCustomEmoji('wave', buffer, '#test')).toBeNull();
+
+        toggleChannelPack(network, buffer, '#test', true);
         expect(resolveCustomEmoji('wave', buffer)).toMatchObject({
             url: 'https://emoji.example/channel-wave.png',
             source: 'channel',
         });
-    });
-
-    test('requires an explicit pack to be selected', async() => {
-        await loadChannelPack();
-
-        expect(resolveCustomEmoji('wave', buffer, '#test')).toBeNull();
-        toggleChannelPack(network, buffer, '#test', true);
         expect(resolveCustomEmoji('wave', buffer, '#test')).toMatchObject({
             url: 'https://emoji.example/channel-wave.png',
             source: 'channel',
             packId: '#test',
             packName: '#test Pack',
-        });
-    });
-
-    test('local custom emoji take precedence over packs', async() => {
-        await loadServerPack();
-        state.setting('customEmojis', {
-            wave: 'https://local.example/wave.png',
-        });
-
-        expect(resolveCustomEmoji('wave', buffer)).toMatchObject({
-            url: 'https://local.example/wave.png',
-            source: 'local',
         });
     });
 

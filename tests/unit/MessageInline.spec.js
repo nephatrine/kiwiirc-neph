@@ -139,19 +139,17 @@ function mountLayout({
 }
 
 describe('MessageListMessageInline', () => {
-    it('applies the nickname color to the nested nickname link', () => {
-        const { vm } = mountLayout();
-        const nick = vm.$el.querySelector('.kiwi-messagelist-nick');
-        const link = nick.querySelector('.kiwi-messagelist-nick-link');
+    it('applies the nickname color and renders actions before the timestamp', () => {
+        let { vm } = mountLayout();
+        let nick = vm.$el.querySelector('.kiwi-messagelist-nick');
+        let link = nick.querySelector('.kiwi-messagelist-nick-link');
 
         expect(nick.style.color).toBe('rgb(18, 52, 86)');
         expect(link.style.color).toBe('rgb(18, 52, 86)');
 
         vm.$destroy();
-    });
 
-    it('renders message actions before the timestamp', () => {
-        const { vm } = mountLayout({ showActions: true });
+        ({ vm } = mountLayout({ showActions: true }));
         const meta = vm.$el.querySelector('.kiwi-messagelist-inline-meta');
         const children = [...meta.children];
 
