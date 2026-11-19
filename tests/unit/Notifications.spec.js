@@ -1,3 +1,6 @@
+import appState from '@/libs/state';
+import { AudioManager } from '@/libs/AudioManager';
+
 const originalNotification = window.Notification;
 
 function loadNotifications() {
@@ -252,5 +255,238 @@ describe('desktop notifications', () => {
         jest.advanceTimersByTime(1000);
 
         expect(browser.instances[0].close).toHaveBeenCalled();
+    });
+});
+
+describe('notification settings', () => {
+    let s;
+    let network;
+    let buffer;
+    let notifications;
+
+    beforeEach(() => {
+        s = appState.create();
+        network = s.addNetwork('TestNetwork', 'TestNick', {});
+        network.nick = 'TestNick';
+        buffer = s.addBuffer(network.id, '#test');
+        buffer.setting('alert_on', 'message');
+        s.ui.app_has_focus = false;
+        notifications = [];
+        s.$on('notification.show', (message, opts) => {
+            notifications.push({ message, opts });
+        });
+    });
+
+    afterEach(() => {
+        s.$destroy();
+    });
+
+    function addMessage(target, message) {
+        return s.addMessage(target, Object.assign({
+            nick: 'OtherUser',
+            time: Date.now(),
+        }, message));
+    }
+
+    test('global desktop notifications gate message notifications', () => {
+        s.setting('buffers.show_notifications', false);
+        addMessage(buffer, {
+            message: 'hello',
+            type: 'privmsg',
+        });
+        expect(notifications).toHaveLength(0);
+
+        s.setting('buffers.show_notifications', true);
+        addMessage(buffer, {
+            message: 'hello again',
+            type: 'privmsg',
+        });
+        expect(notifications).toHaveLength(1);
+    });
+
+    test('global notification sounds gate message and startup sounds', () => {
+        let ctx = { s, network, buffer, addMessage };
+        let audio = { play: jest.fn() };
+        let manager = new AudioManager(audio);
+        manager.watchForMessages(ctx.s);
+        manager.listen(ctx.s);
+
+        ctx.s.setting('notificationSounds', false);
+        ctx.addMessage(ctx.buffer, {
+            message: 'quiet',
+            type: 'privmsg',
+        });
+        ctx.s.$emit('audio.play', 'startup', ctx.network);
+        expect(audio.play).not.toHaveBeenCalled();
+
+        ctx = {
+            s: appState.create(),
+            network: null,
+            buffer: null,
+            addMessage: null,
+        };
+        ctx.network = ctx.s.addNetwork('TestNetwork', 'TestNick', {});
+        ctx.network.nick = 'TestNick';
+        ctx.buffer = ctx.s.addBuffer(ctx.network.id, '#test');
+        ctx.buffer.setting('alert_on', 'message');
+        ctx.s.ui.app_has_focus = false;
+        ctx.addMessage = (target, message) => ctx.s.addMessage(target, Object.assign({
+            nick: 'OtherUser',
+            time: Date.now(),
+        }, message));
+        audio = { play: jest.fn() };
+        manager = new AudioManager(audio);
+        manager.watchForMessages(ctx.s);
+        manager.listen(ctx.s);
+        ctx.s.setting('notificationSounds', true);
+        ctx.addMessage(ctx.buffer, {
+            message: 'loud',
+            type: 'privmsg',
+        });
+        ctx.s.$emit('audio.play', 'startup', ctx.network);
+        expect(audio.play).toHaveBeenCalledWith('startup');
+        ctx.s.$destroy();
+    });
+
+    test('per-buffer Never and do not disturb gate message sounds', () => {
+        function fresh() {
+            const app = appState.create();
+            const net = app.addNetwork('TestNetwork', 'TestNick', {});
+            net.nick = 'TestNick';
+            const buf = app.addBuffer(net.id, '#test');
+            buf.setting('alert_on', 'message');
+            app.ui.app_has_focus = false;
+            const audio = { play: jest.fn() };
+            const manager = new AudioManager(audio);
+            manager.watchForMessages(app);
+            const send = (message) => app.addMessage(buf, {
+                nick: 'OtherUser',
+                time: Date.now(),
+                message,
+                type: 'privmsg',
+            });
+            return {
+                appState: app, buf, audio, send,
+            };
+        }
+
+        let ctx = fresh();
+        ctx.buf.setting('alert_on', 'never');
+        ctx.send('quiet');
+        expect(ctx.audio.play).not.toHaveBeenCalled();
+
+        ctx = fresh();
+        ctx.buf.setting('alert_on', 'message');
+        ctx.send('loud');
+        expect(ctx.audio.play).toHaveBeenCalled();
+
+        ctx = fresh();
+        ctx.appState.ui.notifications_enabled = false;
+        ctx.send('quiet');
+        expect(ctx.audio.play).not.toHaveBeenCalled();
+
+        ctx = fresh();
+        ctx.appState.ui.notifications_enabled = true;
+        ctx.send('loud');
+        expect(ctx.audio.play).toHaveBeenCalled();
+    });
+
+    test('traffic and server activity follow the alert level', () => {
+        s.setting('buffers.traffic_as_activity', true);
+        addMessage(buffer, {
+            message: 'OtherUser joined',
+            type: 'traffic',
+        });
+        expect(notifications).toHaveLength(1);
+
+        buffer.setting('alert_on', 'highlight');
+        addMessage(buffer, {
+            message: 'OtherUser left',
+            type: 'traffic',
+        });
+        expect(notifications).toHaveLength(1);
+
+        s.setting('buffers.server_as_activity', true);
+        const server = network.serverBuffer();
+        server.setting('alert_on', 'message');
+        addMessage(server, {
+            message: 'server message',
+            type: 'notice',
+        });
+        expect(notifications).toHaveLength(2);
+    });
+});
+
+describe('CTCP notifications', () => {
+    let s;
+    let network;
+    let buffer;
+    let notifications;
+    let titleFlashes;
+
+    beforeEach(() => {
+        s = appState.create();
+        network = s.addNetwork('TestNetwork', 'TestNick', {});
+        network.nick = 'TestNick';
+        buffer = network.serverBuffer();
+        buffer.setting('alert_on', 'message');
+        buffer.setting('flash_title', 'message');
+        s.setting('buffers.server_as_activity', true);
+        s.ui.app_has_focus = false;
+
+        notifications = [];
+        titleFlashes = [];
+        s.$on('notification.show', (message, opts) => {
+            notifications.push({ message, opts });
+        });
+        s.$on('notification.title', () => {
+            titleFlashes.push(true);
+        });
+    });
+
+    it('ignores CTCP messages but notifies for normal ones', () => {
+        s.addMessage(buffer, {
+            nick: '',
+            message: '[CTCP Other reply] TIME Fri Oct 30 12:00:00 2026',
+            type: 'ctcp',
+            time: Date.now(),
+        });
+
+        expect(notifications).toHaveLength(0);
+        expect(titleFlashes).toHaveLength(0);
+        expect(buffer.flags.unread || 0).toBe(0);
+
+        s.addMessage(buffer, {
+            nick: 'Other',
+            message: 'hello',
+            type: 'notice',
+            time: Date.now(),
+        });
+
+        expect(notifications).toHaveLength(1);
+        expect(titleFlashes).toHaveLength(1);
+        expect(buffer.flags.unread).toBe(1);
+    });
+
+    it('does not play an alert sound for CTCP messages', () => {
+        const audio = { play: jest.fn() };
+        const manager = new AudioManager(audio);
+        manager.watchForMessages(s);
+
+        s.addMessage(buffer, {
+            nick: '',
+            message: '[CTCP Other reply] TIME Fri Oct 30 12:00:00 2026',
+            type: 'ctcp',
+            time: Date.now(),
+        });
+        expect(audio.play).not.toHaveBeenCalled();
+
+        s.addMessage(buffer, {
+            nick: 'Other',
+            message: 'hello',
+            type: 'notice',
+            time: Date.now(),
+        });
+        expect(audio.play).toHaveBeenCalledWith('message');
     });
 });

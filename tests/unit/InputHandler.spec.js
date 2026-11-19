@@ -5,8 +5,11 @@ jest.mock('@/libs/desktop/ChatLogs', () => ({
 import { TextEncoder } from 'util';
 import InputHandler from '@/libs/InputHandler';
 import GlobalApi from '@/libs/GlobalApi';
+import appState from '@/libs/state';
 import * as ChatLogs from '@/libs/desktop/ChatLogs';
 import * as TextFormatting from '@/helpers/TextFormatting';
+import { configTemplates } from '@/res/configTemplates';
+import AliasRewriter from '@/libs/AliasRewriter';
 
 /* eslint-disable no-underscore-dangle */
 
@@ -336,5 +339,96 @@ describe('InputHandler /search', () => {
             'chatlogs.open',
             expect.anything()
         );
+    });
+});
+
+describe('special buffer message pending', () => {
+    let s;
+    let network;
+    let handler;
+
+    beforeEach(() => {
+        s = appState.create();
+        network = s.addNetwork('TestNetwork', 'TestNick', {});
+        network.enabled_caps = ['labeled-response', 'echo-message'];
+        handler = new InputHandler(s);
+        jest.spyOn(network.ircClient, 'say').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    function lastMessage(buffer) {
+        const messages = buffer.getMessages();
+        return messages[messages.length - 1];
+    }
+
+    it('sends without label in *raw but labels and pends normal channels', () => {
+        let buffer = s.getOrAddBufferByName(network.id, '*raw');
+        handler.processLine('oops test', { network, buffer });
+
+        expect(network.ircClient.say).toHaveBeenCalledTimes(1);
+        let [target, , tags] = network.ircClient.say.mock.calls[0];
+        expect(target).toBe('*raw');
+        expect(tags.label).toBeUndefined();
+        expect(lastMessage(buffer).is_pending).toBe(false);
+
+        network.ircClient.say.mockClear();
+        buffer = s.getOrAddBufferByName(network.id, '#chan');
+        handler.processLine('hello', { network, buffer });
+
+        expect(network.ircClient.say).toHaveBeenCalledTimes(1);
+        [, , tags] = network.ircClient.say.mock.calls[0];
+        expect(tags.label).toEqual(expect.any(String));
+        const message = lastMessage(buffer);
+        expect(message.is_pending).toBe(true);
+        expect(buffer.messagesObj.messageLabels[tags.label]).toBe(message);
+    });
+
+    it('keeps label and pending state in query buffers', () => {
+        const buffer = s.getOrAddBufferByName(network.id, 'SomeNick');
+        handler.processLine('hello', { network, buffer });
+
+        const [, , tags] = network.ircClient.say.mock.calls[0];
+        expect(tags.label).toEqual(expect.any(String));
+        expect(lastMessage(buffer).is_pending).toBe(true);
+    });
+});
+
+describe('default aliases', () => {
+    function makeRewriter() {
+        const rewriter = new AliasRewriter();
+        rewriter.importFromString(configTemplates.default.aliases);
+        return rewriter;
+    }
+
+    const vars = {
+        channel: '#chan',
+        destination: '#chan',
+        nick: 'TestNick',
+    };
+
+    it('routes service aliases and topic commands', () => {
+        const rewriter = makeRewriter();
+        expect(rewriter.process('/ns register hunter2', vars))
+            .toBe('/msg NickServ register hunter2');
+        expect(rewriter.process('/cs register #chan', vars))
+            .toBe('/msg ChanServ register #chan');
+        expect(rewriter.process('/hs request myhost', vars))
+            .toBe('/msg HostServ request myhost');
+        expect(rewriter.process('/ms TestNick hello', vars))
+            .toBe('/msg MemoServ TestNick hello');
+        expect(rewriter.process('/t a brand new topic', vars))
+            .toBe('/topic #chan a brand new topic');
+        expect(rewriter.process('/t', vars)).toBe('/topic #chan');
+    });
+
+    it('leaves removed aliases alone and keeps existing shorthand', () => {
+        const rewriter = makeRewriter();
+        expect(rewriter.process('/connect irc.example.com', vars))
+            .toBe('/connect irc.example.com');
+        expect(rewriter.process('/j #chan', vars)).toBe('/join #chan');
+        expect(rewriter.process('/q TestNick', vars)).toBe('/query TestNick');
     });
 });

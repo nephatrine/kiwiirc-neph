@@ -1,8 +1,15 @@
+import Vue from 'vue';
+import state from '@/libs/state';
+import UserState from '@/libs/state/UserState';
+import SidebarState from '@/components/SidebarState';
 import * as RelayMeta from '@/libs/RelayMeta';
 import { MAX_ATTEMPTS, PUMP_MS, RESPONSE_TIMEOUT } from '@/libs/RelayMeta';
 import { rememberUser } from '@/libs/MetadataCache';
 
-jest.mock('@/libs/MetadataCache', () => ({ rememberUser: jest.fn() }));
+jest.mock('@/libs/MetadataCache', () => ({
+    ...jest.requireActual('@/libs/MetadataCache'),
+    rememberUser: jest.fn(),
+}));
 
 const BOT = 'DiscordBot';
 const SPOOF = 'x2Tuff4Ux/bridged';
@@ -277,5 +284,108 @@ describe('relaymeta', () => {
             type: 'VERSION',
             message: 'x',
         })).toBe(false);
+    });
+});
+
+describe('draft/relaymsg', () => {
+    function makeSidebar(activeBuffer) {
+        Vue.prototype.listen = () => {};
+        Vue.prototype.$state = {
+            setting: () => false,
+            ui: { app_width: 1024 },
+            getActiveBuffer: () => activeBuffer,
+        };
+        let sidebar = new SidebarState();
+        sidebar.sidebarOpen = true;
+        sidebar.sidebarSection = 'user';
+        return sidebar;
+    }
+
+    function channelBuffer(hasNick) {
+        return {
+            id: 1,
+            isQuery: () => false,
+            isChannel: () => true,
+            hasNick: () => hasNick,
+        };
+    }
+
+    test('keeps the relayer nick on the spoofed user', () => {
+        let user = new UserState(1, {
+            nick: 'x2Tuff4Ux/bridged',
+            relayed_by: 'DiscordBot',
+        });
+        expect(user.nick).toBe('x2Tuff4Ux/bridged');
+        expect(user.relayed_by).toBe('DiscordBot');
+
+        user = new UserState(1, { nick: 'Someone' });
+        expect(user.relayed_by).toBe('');
+    });
+
+    test('keeps the user section while relaying and falls back to the nicklist', () => {
+        let sidebar = makeSidebar(channelBuffer(false));
+        sidebar.sidebarUser = { nick: 'x2Tuff4Ux/bridged', relayed_by: 'DiscordBot' };
+        expect(sidebar.section()).toBe('user');
+        expect(sidebar.sidebarSection).toBe('user');
+
+        sidebar = makeSidebar(channelBuffer(false));
+        sidebar.sidebarUser = { nick: 'Someone', relayed_by: '' };
+        expect(sidebar.section()).toBe('nicklist');
+
+        sidebar = makeSidebar(channelBuffer(true));
+        sidebar.sidebarUser = { nick: 'Someone', relayed_by: '' };
+        expect(sidebar.section()).toBe('user');
+    });
+});
+
+describe('relayed nick tracking', () => {
+    let s;
+    let network;
+    let buffer;
+
+    beforeEach(() => {
+        s = state.create();
+        network = s.addNetwork('TestNetwork', 'TestNick', {
+            server: 'irc.example.com',
+        });
+        buffer = s.addBuffer(network.id, '#channel');
+    });
+
+    afterEach(() => {
+        s.$destroy();
+    });
+
+    test('records relayed authors per buffer and ignores ordinary ones', () => {
+        s.addMessage(buffer, {
+            time: Date.now(),
+            nick: 'nephatrine/bridged',
+            message: 'hello',
+            tags: {
+                'draft/relaymsg': 'DiscordBot',
+            },
+            type: 'privmsg',
+        });
+
+        expect(buffer.relayNicks['NEPHATRINE/BRIDGED'])
+            .toBe('nephatrine/bridged');
+        expect(Object.keys(buffer)).not.toContain('relayNicks');
+
+        const exported = JSON.parse(s.exportState(true, false));
+        const exportedBuffer = exported.networks[0].buffers.find((item) => (
+            item.name === '#channel'
+        ));
+        expect(exportedBuffer.relayNicks).toBeUndefined();
+
+        s.addMessage(buffer, {
+            time: Date.now(),
+            nick: 'ordinary',
+            message: 'hello',
+            tags: {},
+            type: 'privmsg',
+        });
+
+        expect(buffer.relayNicks.ORDINARY).toBeUndefined();
+        expect(buffer.relayNicks['NEPHATRINE/BRIDGED'])
+            .toBe('nephatrine/bridged');
     });
 });

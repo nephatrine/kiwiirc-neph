@@ -1,3 +1,7 @@
+import Vue from 'vue';
+import state from '@/libs/state';
+import TwitchUserNotice from '@/components/TwitchUserNotice';
+import { theMiddleware } from '@/libs/TwitchMiddleware';
 import {
     formatTwitchMessage,
     twitchMessageTime,
@@ -223,5 +227,334 @@ describe('Twitch actions', () => {
             '/me waves',
             { 'client-nonce': 'abc' }
         );
+    });
+});
+
+describe('TwitchUserNotice', () => {
+    Vue.mixin({
+        computed: {
+            $t() {
+                return (key) => key;
+            },
+        },
+    });
+
+    function mountNotice(tags = {}, messageOverrides = {}, exactMessage = null) {
+        const message = exactMessage || Object.assign({
+            id: 123,
+            type: 'twitch_usernotice',
+            type_extra: tags['msg-id'] || 'event',
+            time: new Date(1700000000000),
+            nick: 'streamer',
+            tags,
+            message: '<strong>Nice stream</strong>',
+            user: null,
+        }, messageOverrides);
+        const buffer = {
+            getNetwork: () => ({}),
+        };
+        const ml = {
+            formatMessage: jest.fn(() => '<strong>Nice stream</strong>'),
+            bufferSetting: jest.fn(() => true),
+            isMessageHighlight: jest.fn(() => false),
+            formatTime: jest.fn(() => '12:00'),
+            formatTimeFull: jest.fn(() => 'full time'),
+        };
+        const mountEl = document.createElement('div');
+        document.body.appendChild(mountEl);
+
+        const vm = new Vue({
+            el: mountEl,
+            render: (h) => h(TwitchUserNotice, {
+                props: {
+                    buffer,
+                    message,
+                    idx: 0,
+                    ml,
+                },
+            }),
+        });
+
+        return { vm, ml };
+    }
+
+    afterEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    it('renders rich subscription cards and generic events', async() => {
+        let { vm, ml } = mountNotice({
+            'msg-id': 'resub',
+            'system-msg': 'Streamer subscribed at Tier 2.',
+            'msg-param-sub-plan': '2000',
+            'msg-param-cumulative-months': '12',
+        });
+        await Vue.nextTick();
+
+        let comp = vm.$children[0];
+        expect(comp.$el.classList.contains('kiwi-twitch-usernotice--resub')).toBe(true);
+        expect(comp.$el.textContent).toContain('twitch_usernotice_resub');
+        expect(comp.$el.textContent).toContain('Streamer subscribed at Tier 2.');
+        expect(comp.$el.textContent).toContain('twitch_usernotice_tier');
+        expect(comp.$el.textContent).toContain('twitch_usernotice_total_months');
+        expect(comp.$el.textContent).toContain('12');
+        expect(comp.$el.querySelector('.kiwi-twitch-usernotice-body').innerHTML)
+            .toBe('<strong>Nice stream</strong>');
+        expect(ml.formatMessage).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'twitch_usernotice',
+        }));
+
+        vm.$destroy();
+
+        ({ vm } = mountNotice({
+            'msg-id': 'future-event',
+            'system-msg': 'Something happened.',
+        }));
+        await Vue.nextTick();
+
+        comp = vm.$children[0];
+        expect(comp.noticeType.key).toBe('event');
+        expect(comp.$el.classList.contains('kiwi-twitch-usernotice--event')).toBe(true);
+        expect(comp.$el.textContent).toContain('twitch_usernotice_event');
+
+        vm.$destroy();
+    });
+
+    it('styles the fancy actor and prefixes it when the system message omits it', async() => {
+        let { vm } = mountNotice({
+            'msg-id': 'resub',
+            'login': 'streamer',
+            'display-name': 'Streamer',
+            'system-msg': 'STREAMER subscribed at Tier 2.',
+        });
+        await Vue.nextTick();
+
+        let comp = vm.$children[0];
+        let actor = comp.$el.querySelector('.kiwi-twitch-usernotice-actor');
+        expect(actor.textContent).toBe('STREAMER');
+        expect(actor.classList.contains('kiwi-formatting-reverse')).toBe(true);
+        expect(comp.$el.querySelector('.kiwi-twitch-usernotice-headline').textContent)
+            .toBe('STREAMER subscribed at Tier 2.');
+
+        vm.$destroy();
+
+        ({ vm } = mountNotice({
+            'msg-id': 'raid',
+            'login': 'streamer',
+            'display-name': 'Streamer',
+            'system-msg': 'A raid has arrived.',
+        }));
+        await Vue.nextTick();
+
+        comp = vm.$children[0];
+        actor = comp.$el.querySelector('.kiwi-twitch-usernotice-actor');
+        expect(actor.textContent).toBe('Streamer');
+        expect(comp.$el.querySelector('.kiwi-twitch-usernotice-headline').textContent)
+            .toBe('Streamer A raid has arrived.');
+
+        vm.$destroy();
+    });
+
+    it('plays the entrance animation only for fresh, unseen notices', async() => {
+        let { vm } = mountNotice({
+            'msg-id': 'resub',
+            'system-msg': 'Streamer subscribed.',
+        }, {
+            is_new: true,
+            time: new Date(),
+        });
+        await Vue.nextTick();
+
+        let comp = vm.$children[0];
+        expect(comp.playEntrance).toBe(true);
+        expect(comp.$el.classList.contains('kiwi-twitch-usernotice--fresh')).toBe(true);
+
+        vm.$destroy();
+
+        const oldNotice = mountNotice({
+            'msg-id': 'resub',
+            'system-msg': 'Streamer subscribed.',
+        }, {
+            is_new: true,
+            time: new Date(1700000000000),
+        });
+        await Vue.nextTick();
+
+        expect(oldNotice.vm.$children[0].playEntrance).toBe(false);
+        oldNotice.vm.$destroy();
+
+        const seenMessage = {
+            id: 456,
+            type: 'twitch_usernotice',
+            is_new: true,
+            time: new Date(),
+            nick: 'streamer',
+            tags: {
+                'msg-id': 'resub',
+                'system-msg': 'Streamer subscribed.',
+            },
+            message: '',
+            user: null,
+        };
+        const first = mountNotice({}, {}, seenMessage);
+        await Vue.nextTick();
+        expect(first.vm.$children[0].playEntrance).toBe(true);
+        first.vm.$destroy();
+
+        const second = mountNotice({}, {}, seenMessage);
+        await Vue.nextTick();
+        expect(second.vm.$children[0].playEntrance).toBe(false);
+        second.vm.$destroy();
+    });
+});
+
+describe('Twitch channel topic on join', () => {
+    let s;
+    let network;
+    let client;
+    let buffer;
+
+    function emitParsed(target, command, event) {
+        return new Promise((resolve, reject) => {
+            target.parsed_middleware.handle(
+                [command, event, target],
+                (err) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve();
+                    }
+                }
+            );
+        });
+    }
+
+    function joinEvent(channel = '#test') {
+        return {
+            command: 'JOIN',
+            nick: 'TestNick',
+            channel,
+            ident: 'testnick',
+            hostname: 'testnick.tmi.twitch.tv',
+            gecos: '',
+            account: '',
+            params: [channel],
+            tags: {},
+            time: Date.now(),
+        };
+    }
+
+    function setup(server) {
+        s = state.create();
+        network = s.addNetwork('Network', 'TestNick', {
+            server,
+            port: 6697,
+            tls: true,
+        });
+        network.state = 'connected';
+        client = network.ircClient;
+        client.user.nick = 'TestNick';
+        jest.spyOn(client, 'raw').mockImplementation(() => {});
+        buffer = s.addBuffer(network.id, '#test');
+    }
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('adds a join topic message on a Twitch channel only once', async() => {
+        setup('irc.chat.twitch.tv');
+
+        await emitParsed(client, 'JOIN', joinEvent());
+
+        let topics = buffer.messagesObj.messages.filter((msg) => msg.type === 'topic');
+        expect(topics).toHaveLength(1);
+        expect(topics[0].type_extra).toBe('topic_join');
+        expect(topics[0].nick).toBe('');
+        expect(topics[0].message).toContain('https://twitch.tv/test');
+
+        await emitParsed(client, 'JOIN', joinEvent());
+
+        topics = buffer.messagesObj.messages.filter((msg) => msg.type === 'topic');
+        expect(topics).toHaveLength(1);
+    });
+
+    it('leaves non-Twitch channels unchanged', async() => {
+        setup('irc.example.com');
+
+        await emitParsed(client, 'JOIN', joinEvent());
+
+        const topics = buffer.messagesObj.messages.filter((msg) => msg.type === 'topic');
+        expect(topics).toHaveLength(0);
+    });
+});
+
+describe('Twitch channel prefixes', () => {
+    function makeTwitchNetwork() {
+        const s = state.create();
+        const network = s.addNetwork('Twitch', 'TestNick', {
+            server: 'irc.chat.twitch.tv',
+            port: 6697,
+            tls: true,
+        });
+        network.nick = 'TestNick';
+        network.enabled_caps = ['twitch.tv/commands'];
+        const self = s.addUser(network, { nick: 'TestNick' });
+        return { s, network, self };
+    }
+
+    it('applies USERSTATE modes and marks the channel owner from NAMES', async() => {
+        let { s, network, self } = makeTwitchNetwork();
+        let buffer = s.addBuffer(network.id, '#channel');
+        let next = jest.fn();
+
+        theMiddleware(network, 'unknown command', {
+            command: 'USERSTATE',
+            params: ['#channel'],
+            tags: {
+                mod: '1',
+                subscriber: '1',
+            },
+        }, {}, next);
+
+        expect(buffer.userModePrefix(self)).toBe('@+');
+        expect(next).not.toHaveBeenCalled();
+
+        ({ s, network } = makeTwitchNetwork());
+        const client = network.ircClient;
+        client.user.nick = 'TestNick';
+        jest.spyOn(client, 'raw').mockImplementation(() => {});
+        buffer = s.addBuffer(network.id, '#Streamer');
+
+        const founder = s.addUser(network, { nick: 'Streamer' });
+        s.addUserToBuffer(buffer, founder, []);
+        network.applyTwitchUserModes(buffer, founder, { mod: '1' });
+
+        await new Promise((resolve, reject) => {
+            client.parsed_middleware.handle(['USERLIST', {
+                command: 'USERLIST',
+                channel: '#Streamer',
+                users: [
+                    {
+                        nick: 'Streamer',
+                        ident: 'streamer',
+                        hostname: 'streamer.tmi.twitch.tv',
+                        modes: [],
+                    },
+                    {
+                        nick: 'Viewer',
+                        ident: 'viewer',
+                        hostname: 'viewer.tmi.twitch.tv',
+                        modes: [],
+                    },
+                ],
+                tags: {},
+            }, client], (err) => (err ? reject(err) : resolve()));
+        });
+
+        const viewer = network.userByName('Viewer');
+        expect(buffer.userModePrefix(founder)).toBe('~@');
+        expect(buffer.userModePrefix(viewer)).toBe('');
+        jest.restoreAllMocks();
     });
 });

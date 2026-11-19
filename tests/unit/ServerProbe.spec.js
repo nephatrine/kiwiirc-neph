@@ -1,5 +1,10 @@
 import EventEmitter from 'eventemitter3';
-import { probeServerCaps } from '@/libs/ServerProbe';
+import WsTransport from 'irc-framework/src/transports/websocket';
+import state from '@/libs/state';
+import { probeServerCaps, createProbeTransport } from '@/libs/ServerProbe';
+import { IRC_WEBSOCKET_PROTOCOL } from '@/libs/WebSocketProtocol';
+
+jest.mock('irc-framework/src/transports/websocket');
 
 function makeTransport() {
     const transport = new EventEmitter();
@@ -172,5 +177,40 @@ describe('server probe', () => {
         expect(factory).toHaveBeenCalledTimes(2);
         expect(secondInfo.capsComplete).toBe(true);
         expect(secondInfo.caps.sasl).toBe('');
+    });
+});
+
+describe('IRCv3 WebSocket protocol', () => {
+    beforeEach(() => {
+        WsTransport.mockClear();
+    });
+
+    it('configures direct clients and probes with the text subprotocol', () => {
+        const s = state.create();
+        const network = s.addNetwork('TestNetwork', 'TestNick', {
+            server: 'irc.example.net',
+            port: 6697,
+            tls: true,
+            direct: true,
+        });
+
+        expect(network.ircClient.options.websocket_protocol)
+            .toBe(IRC_WEBSOCKET_PROTOCOL);
+
+        createProbeTransport({
+            direct: true,
+            host: 'irc.example.net',
+            port: 6697,
+            tls: true,
+            path: '/webirc',
+        });
+
+        expect(WsTransport).toHaveBeenCalledWith({
+            host: 'irc.example.net',
+            port: 6697,
+            tls: true,
+            path: '/webirc',
+            websocket_protocol: IRC_WEBSOCKET_PROTOCOL,
+        });
     });
 });

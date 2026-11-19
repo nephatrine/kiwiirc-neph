@@ -1,4 +1,5 @@
 import { messageHostName, shouldShowHostName } from '@/helpers/MessageAuthor';
+import { shouldDisplayAvatar } from '@/helpers/MessageAvatar';
 
 function makeBuffer(settings = {}) {
     return {
@@ -71,5 +72,71 @@ describe('message author host names', () => {
             showHostNames: true,
         })).toBe(true);
         expect(buffer.setting).not.toHaveBeenCalled();
+    });
+});
+
+describe('message avatars', () => {
+    function makeAvatarBuffer(options = {}) {
+        return {
+            isServer: () => options.server === true,
+            isSpecial: () => options.special === true,
+        };
+    }
+
+    function makeAvatarMessage(options = {}) {
+        return {
+            type: options.type || 'privmsg',
+            nick: options.nick,
+            user: options.user || null,
+        };
+    }
+
+    test('shows avatars when a nick exists and the setting allows it', () => {
+        let message = makeAvatarMessage({
+            type: 'notice',
+            nick: '',
+            user: null,
+        });
+        expect(shouldDisplayAvatar(message, makeAvatarBuffer(), {
+            showWithoutUser: true,
+        })).toBe(false);
+
+        message = makeAvatarMessage({
+            nick: 'Alice',
+            user: null,
+        });
+        expect(shouldDisplayAvatar(message, makeAvatarBuffer(), {
+            showWithoutUser: true,
+        })).toBe(true);
+        expect(shouldDisplayAvatar(message, makeAvatarBuffer(), {
+            showWithoutUser: false,
+        })).toBe(false);
+
+        message = makeAvatarMessage({
+            nick: 'Alice',
+            user: { nick: 'Alice' },
+        });
+        expect(shouldDisplayAvatar(message, makeAvatarBuffer(), {
+            showWithoutUser: false,
+        })).toBe(true);
+    });
+
+    test('hides avatars for non-message types, special buffers, and repeats', () => {
+        let message = makeAvatarMessage({
+            type: 'traffic',
+            nick: 'Alice',
+            user: { nick: 'Alice' },
+        });
+        expect(shouldDisplayAvatar(message, makeAvatarBuffer())).toBe(false);
+
+        message = makeAvatarMessage({
+            nick: 'Alice',
+            user: { nick: 'Alice' },
+        });
+        expect(shouldDisplayAvatar(message, makeAvatarBuffer({ server: true }))).toBe(false);
+        expect(shouldDisplayAvatar(message, makeAvatarBuffer({ special: true }))).toBe(false);
+        expect(shouldDisplayAvatar(message, makeAvatarBuffer(), {
+            repeat: true,
+        })).toBe(false);
     });
 });

@@ -1,4 +1,6 @@
 import * as Utils from '@/helpers/Utils';
+import { hash32 } from '@/helpers/MurmurHash3';
+import { v4Source, v6Source } from '@/helpers/IpRegex';
 
 describe('Utils.getPath', () => {
     const obj = { a: { b: { c: 5 } }, arr: [{ x: 1 }, { x: 2 }] };
@@ -191,5 +193,76 @@ describe('Utils.isPlainObject', () => {
         expect(Utils.isPlainObject('x')).toBe(false);
         expect(Utils.isPlainObject(new Date())).toBe(false);
         expect(Utils.isPlainObject(() => {})).toBe(false);
+    });
+});
+
+describe('IpRegex', () => {
+    test('matches and rejects IPv4 addresses', () => {
+        const v4 = new RegExp('^' + v4Source + '$');
+
+        ['0.0.0.0', '127.0.0.1', '192.168.1.1', '255.255.255.255', '8.8.8.8'].forEach((ip) => {
+            expect(v4.test(ip)).toBe(true);
+        });
+
+        ['256.0.0.1', '1.2.3', '1.2.3.4.5', 'a.b.c.d', '1.2.3.256'].forEach((ip) => {
+            expect(v4.test(ip)).toBe(false);
+        });
+    });
+
+    test('matches and rejects IPv6 addresses', () => {
+        const v6 = new RegExp('^' + v6Source + '$');
+
+        [
+            '::1',
+            '::',
+            '2001:db8::1',
+            'fe80::1',
+            '2001:0db8:0000:0000:0000:0000:0000:0001',
+            '::ffff:192.168.1.1',
+            '2001:db8::7%eth0',
+        ].forEach((ip) => {
+            expect(v6.test(ip)).toBe(true);
+        });
+
+        ['notanip', '12345::', ':::1', 'g::1', '1.2.3.4'].forEach((ip) => {
+            expect(v6.test(ip)).toBe(false);
+        });
+    });
+});
+
+describe('MurmurHash3.hash32', () => {
+    test('hashes known inputs, multi-block data, and seeds', () => {
+        const known = {
+            '': 0,
+            'a': 1009084850,
+            'ab': 2613040991,
+            'abc': 3017643002,
+            'abcd': 1139631978,
+            'abcde': 3902511862,
+            'foo': 4138058784,
+            'bar': 1158584717,
+            'nick': 1833562727,
+            'JohnDoe': 4256835724,
+            'test123': 2983061069,
+            'Kiwi IRC': 2463734224,
+        };
+
+        Object.keys(known).forEach((input) => {
+            expect(hash32(input)).toBe(known[input]);
+        });
+
+        // 100 chars exercises the block loop and the remainder switch.
+        expect(hash32('x'.repeat(100))).toBe(2625171602);
+
+        const value = hash32('some longer string that covers several blocks');
+        expect(value).toBeGreaterThanOrEqual(0);
+        expect(value).toBeLessThanOrEqual(0xffffffff);
+
+        expect(hash32('foo', 1)).not.toBe(hash32('foo'));
+    });
+
+    test('treats missing input as an empty string', () => {
+        expect(hash32()).toBe(0);
+        expect(hash32('', 0)).toBe(0);
     });
 });

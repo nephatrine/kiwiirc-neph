@@ -1,3 +1,6 @@
+import { TextEncoder } from 'util';
+import state from '@/libs/state';
+import metadataMiddleware from '@/libs/MetadataMiddleware';
 import {
     clear,
     flush,
@@ -7,6 +10,10 @@ import {
     rememberChannel,
     rememberUser
 } from '@/libs/MetadataCache';
+
+if (typeof global.TextEncoder === 'undefined') {
+    global.TextEncoder = TextEncoder;
+}
 
 const STORAGE_KEY = 'kiwi-metadata-cache';
 const DAY = 24 * 60 * 60 * 1000;
@@ -314,5 +321,171 @@ describe('MetadataCache', () => {
             waiting.splice(0).forEach((release) => release());
             storage.set = originalSet;
         }
+    });
+});
+
+describe('saved profile metadata', () => {
+    let s;
+    let network;
+
+    function makeClient() {
+        let handlers = {};
+        let parsed = null;
+        let client = {
+            user: { nick: 'TestNick' },
+            raw: jest.fn(),
+            on: jest.fn((event, fn) => {
+                handlers[event] = handlers[event] || [];
+                handlers[event].push(fn);
+            }),
+            emit(event, data) {
+                (handlers[event] || []).forEach((fn) => fn(data));
+            },
+        };
+        let rawEvents = { use: jest.fn() };
+        let parsedEvents = {
+            use: jest.fn((fn) => {
+                parsed = fn;
+            }),
+        };
+        return { client, rawEvents, parsedEvents, getParsed: () => parsed };
+    }
+
+    function rawCommands(client, subcommand) {
+        return client.raw.mock.calls
+            .map((call) => call[0])
+            .filter((msg) => msg && msg.command === 'METADATA' && msg.params[1] === subcommand)
+            .map((msg) => msg.params.slice(2));
+    }
+
+    function attach(target) {
+        let { client, rawEvents, parsedEvents, getParsed } = makeClient();
+        target.nick = 'TestNick';
+        target.enabled_caps = ['draft/metadata-3', 'labeled-response'];
+        metadataMiddleware(target)(client, rawEvents, parsedEvents);
+        return { client, getParsed };
+    }
+
+    beforeEach(() => {
+        jest.useFakeTimers();
+        s = state.create();
+        network = s.addNetwork('TestNetwork', 'TestNick', {});
+        network.state = 'connected';
+    });
+
+    afterEach(() => {
+        jest.useRealTimers();
+    });
+
+    it('records self SETs, ignores channel SETs, and keeps cleared fields blank', () => {
+        let { client } = attach(network);
+        network.setMetadata('avatar', 'http://example.com/a.png');
+        network.setMetadata('TestNick', 'pronouns', 'they/them');
+        network.setMetadata('#chan', 'description', 'nope');
+        expect(network.saved_profile_metadata.avatar).toBe('http://example.com/a.png');
+        expect(network.saved_profile_metadata.pronouns).toBe('they/them');
+        expect(network.saved_profile_metadata.description).toBe(undefined);
+        // Sanity: the SETs themselves still went out
+        expect(rawCommands(client, 'SET')).toHaveLength(3);
+
+        network.setMetadata('status', 'busy');
+        network.setMetadata('status', '');
+        expect(network.saved_profile_metadata.status).toBe('');
+    });
+
+    it('restores only blank keys once the initial GET is ACKed', () => {
+        let { client, getParsed } = attach(network);
+        network.setMetadata('avatar', 'http://example.com/a.png');
+        network.setMetadata('pronouns', 'they/them');
+        client.raw.mockClear();
+
+        client.emit('connected');
+        let getCall = client.raw.mock.calls
+            .map((call) => call[0])
+            .find((msg) => msg && msg.command === 'METADATA' && msg.params[1] === 'GET');
+        expect(getCall.tags && getCall.tags.label).toBeTruthy();
+        let label = getCall.tags.label;
+
+        // Server has pronouns (different value: another client set it) but
+        // no avatar for us.
+        getParsed()('761', {
+            command: '761',
+            params: ['TestNick', 'TestNick', 'pronouns', '*', 'she/her'],
+            tags: {},
+        }, client, () => {});
+        getParsed()('766', {
+            command: '766',
+            params: ['TestNick', 'TestNick', 'avatar'],
+            tags: {},
+        }, client, () => {});
+
+        // The server value wins over our remembered one.
+        expect(network.saved_profile_metadata.pronouns).toBe('she/her');
+
+        getParsed()('ACK', { command: 'ACK', params: [], tags: { label } }, client, () => {});
+
+        let sets = rawCommands(client, 'SET');
+        expect(sets).toEqual([['avatar', 'http://example.com/a.png']]);
+    });
+
+    it('restores once on ACK and falls back to a timer', () => {
+        let { client, getParsed } = attach(network);
+        network.setMetadata('avatar', 'http://example.com/a.png');
+        client.raw.mockClear();
+        client.emit('connected');
+
+        let getCall = client.raw.mock.calls
+            .map((call) => call[0])
+            .find((msg) => msg && msg.command === 'METADATA' && msg.params[1] === 'GET');
+        getParsed()('ACK', {
+            command: 'ACK',
+            params: [],
+            tags: { label: getCall.tags.label },
+        }, client, () => {});
+        expect(rawCommands(client, 'SET')).toHaveLength(1);
+
+        // Unknown labels and the fallback timer must not re-run the pass.
+        getParsed()('ACK', {
+            command: 'ACK',
+            params: [],
+            tags: { label: 'nope' },
+        }, client, () => {});
+        jest.advanceTimersByTime(10000);
+        expect(rawCommands(client, 'SET')).toHaveLength(1);
+
+        const timerNetwork = s.addNetwork('TimerNetwork', 'TestNick', {});
+        timerNetwork.state = 'connected';
+        const timer = attach(timerNetwork);
+        timerNetwork.enabled_caps = ['draft/metadata-3'];
+        timerNetwork.setMetadata('avatar', 'http://example.com/a.png');
+        timer.client.raw.mockClear();
+
+        timer.client.emit('connected');
+        expect(rawCommands(timer.client, 'SET')).toHaveLength(0);
+        jest.advanceTimersByTime(3000);
+        expect(rawCommands(timer.client, 'SET'))
+            .toEqual([['avatar', 'http://example.com/a.png']]);
+    });
+
+    it('wipes the saved profile on identity change and persists it', () => {
+        let { client } = attach(network);
+        network.saved_profile_metadata = { avatar: 'http://example.com/a.png' };
+        network.saved_profile_owner = '';
+
+        network.connection.account = '';
+        client.emit('connecting');
+        expect(network.saved_profile_metadata).toEqual({ avatar: 'http://example.com/a.png' });
+
+        network.connection.account = 'somebody';
+        client.emit('connecting');
+        expect(network.saved_profile_metadata).toEqual({});
+        expect(network.saved_profile_owner).toBe('somebody');
+
+        network.saved_profile_metadata = { avatar: 'http://example.com/a.png' };
+        let exported = JSON.parse(s.exportState(true));
+        expect(exported.networks[0].saved_profile_metadata).toEqual({
+            avatar: 'http://example.com/a.png',
+        });
+        expect(exported.networks[0].saved_profile_owner).toBe('somebody');
     });
 });
