@@ -132,6 +132,33 @@ Plugin files execute before the Vue application is mounted. Do not assume the
 main interface exists while the file is being evaluated. Use the callback, or
 listen for `kiwi.on('ready', ...)`, before querying or modifying the DOM.
 
+### Installed Desktop Plugins
+
+Desktop builds can install local plugin ZIP packages from **Settings → General →
+Plugins**. Web builds keep the block but hide install controls. Web users can
+still see built-in plugins and disable them; restricted mode hides the block
+entirely.
+
+The archive must contain `plugin.json` at its root or in one top-level folder.
+`name` is required; `description`, `version`, and `entry` are optional.
+`entry` defaults to `plugin.js` and must be a `.js` or `.html` file inside the
+package:
+
+```json
+{
+  "name": "My Plugin",
+  "entry": "plugin.js"
+}
+```
+
+Installed packages are copied into the desktop user-data directory and served
+through `kiwi-plugin://`. They are appended after configured plugins and load in
+order, so configured plugins win when registration order matters. Disabling a
+plugin adds its name to the `plugins_disabled` setting; startup filters that list
+before loading. Installing, uninstalling, or toggling a plugin requires a reload,
+which the settings block offers directly. Installed plugins use the same trust
+boundary as configured plugins and are included in desktop profile archives.
+
 ## Plugin Anatomy
 
 An HTML plugin is a normal HTML fragment with optional template, script, and
@@ -830,6 +857,8 @@ may contain plaintext passwords when the user explicitly includes them.
   page privileges. Only install trusted plugins. Desktop builds allow inline
   scripts and `eval` for plugin and captcha compatibility; plugin trust, not the
   CSP script policy, is the boundary.
+- Installed desktop plugin packages are trusted code. The installer validates
+  the archive layout and file types, but it does not sandbox the plugin.
 - Native HTTP blocks private and loopback addresses by default and strips
   credentials and request bodies on cross-origin redirects.
 - Do not put secrets in plugin configuration; the browser can read it.

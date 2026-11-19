@@ -450,6 +450,74 @@ msgstr "Uninstall"
 msgid "settings_no_installed_themes"
 msgstr "No installed themes."
 
+#: Plugins block heading
+msgid "settings_plugins"
+msgstr "Plugins"
+
+#: Plugins trust hint
+msgid "settings_plugins_hint"
+msgstr "Plugins run with full access to this app. Only install plugins you trust."
+
+#: Installed plugin marker
+msgid "settings_plugin_installed"
+msgstr "Installed"
+
+#: Plugin loaded
+msgid "settings_plugin_status_loaded"
+msgstr "Loaded"
+
+#: Plugin failed
+msgid "settings_plugin_status_failed"
+msgstr "Failed"
+
+#: Plugin disabled
+msgid "settings_plugin_status_disabled"
+msgstr "Disabled"
+
+#: Plugin not loaded
+msgid "settings_plugin_status_pending"
+msgstr "Not loaded"
+
+#: Install Plugin…
+msgid "settings_install_plugin"
+msgstr "Install Plugin…"
+
+#: Installing…
+msgid "settings_plugin_installing"
+msgstr "Installing…"
+
+#: Uninstall
+msgid "settings_uninstall_plugin"
+msgstr "Uninstall"
+
+#: No configured plugins
+msgid "settings_no_plugins"
+msgstr "No plugins are configured."
+
+#: Reload to apply plugin changes
+msgid "settings_plugins_reload"
+msgstr "Reload to apply plugin changes."
+
+#: Reload
+msgid "settings_plugins_reload_button"
+msgstr "Reload"
+
+#: Plugin install confirmation
+msgid "settings_plugin_install_confirm"
+msgstr "Plugins run with full access to this app. Install this plugin only if you trust its author."
+
+#: Plugin installation failed
+msgid "settings_plugin_install_failed"
+msgstr "Plugin Installation Failed: {{reason}}"
+
+#: Plugin uninstall confirmation
+msgid "settings_plugin_uninstall_confirm"
+msgstr "Uninstall the {{name}} plugin?"
+
+#: Plugin uninstallation failed
+msgid "settings_plugin_uninstall_failed"
+msgstr "Plugin Uninstallation Failed: {{reason}}"
+
 #: Theme installation failed: {{reason}}
 msgid "settings_theme_install_failed"
 msgstr "Theme Installation Failed: {{reason}}"
@@ -1993,6 +2061,12 @@ msgstr "Import this profile? It will replace your current networks and settings.
 
 msgid "profile_import_passwords_confirm"
 msgstr "Import this profile and its plaintext passwords? It will replace your current networks and settings."
+
+msgid "profile_import_plugins_confirm"
+msgstr "Import this profile and install its plugins? Plugins run with full access to this app. It will replace your current networks and settings."
+
+msgid "profile_import_plugins_passwords_confirm"
+msgstr "Import this profile with its plaintext passwords and install its plugins? Plugins run with full access to this app. It will replace your current networks and settings."
 
 msgid "profile_import_too_large"
 msgstr "The profile file is too large."

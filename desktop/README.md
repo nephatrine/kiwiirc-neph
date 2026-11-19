@@ -251,6 +251,48 @@ unsupported compression, excessive expansion, invalid `emoji.json` files, unsafe
 or missing image paths, unsupported image formats, duplicate pack IDs within one
 document, and archives without a supported `emoji.json` layout.
 
+## Installed Plugins
+
+Desktop users can install local plugin archives from **Settings → General →
+Plugins**. The block is hidden in restricted mode, and built-in plugins remain
+listed and can be disabled there.
+
+Choose a `.zip` containing either `plugin.json` at the archive root or one
+top-level folder containing it:
+
+```text
+my-plugin.zip
+└── my-plugin/
+    ├── plugin.json
+    ├── plugin.js
+    └── assets/
+        └── icon.png
+```
+
+`plugin.json` requires `name`; `description`, `version`, and `entry` are
+optional. `entry` defaults to `plugin.js` and must be a `.js` or `.html` file
+inside the package:
+
+```json
+{
+  "name": "My Plugin",
+  "description": "Does a thing",
+  "version": "1.0.0",
+  "entry": "plugin.js"
+}
+```
+
+Installed packages are copied into the desktop user-data directory and served
+through the dedicated `kiwi-plugin://` protocol. Local plugin files can use
+relative assets, and desktop profile archives include installed plugins.
+Changes to the plugin list or enabled state apply after a reload, which the
+settings block offers with a **Reload** button.
+
+Plugin packages are trusted code. Do not install a plugin unless you trust its
+author. The installer rejects path traversal, symlinks, encrypted entries,
+ZIP64, unsupported compression, excessive expansion, invalid `plugin.json`
+files, and archives without a supported layout.
+
 ## Profile Data
 
 Desktop state is stored in one default profile:
@@ -372,14 +414,14 @@ to restore it when troubleshooting.
 
 The **Profile Transfer** section in App Settings exports and imports a portable
 profile. The desktop build writes a ZIP archive containing `profile.json` plus
-any installed themes, emoji packs, and custom network or station icons; a JSON
-export is also offered for moving state into a browser build. Export is
+any installed themes, emoji packs, plugins, and custom network or station icons;
+a JSON export is also offered for moving state into a browser build. Export is
 available in every setup; import is only available in Personal setup mode.
 Password export is optional; when enabled, the profile contains plaintext
 passwords and requires confirmation. The desktop build uses native save/open
 dialogs and backs up the current profile before importing. Browser builds use a
-download and file picker. Importing skips themes and emoji packs that are
-already installed.
+download and file picker. Importing skips themes, emoji packs, and plugins that
+are already installed.
 
 ## Icons
 

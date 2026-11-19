@@ -181,6 +181,32 @@ describe('GlobalApi plugin surface', () => {
         expect(window.console.error).toHaveBeenCalled();
     });
 
+    it('tracks the loading entry alongside the plugin callback name', () => {
+        api.isReady = true;
+        api.pluginEntryName = 'desktop-plugin:abc';
+        api.plugin('tiny', () => {});
+        api.pluginEntryName = null;
+
+        expect(api.pluginStatus().loaded).toEqual(['tiny']);
+        expect(api.pluginStatus().loadedEntries)
+            .toEqual(['desktop-plugin:abc']);
+    });
+
+    it('attributes callback failures to the loading entry', () => {
+        api.isReady = true;
+        api.pluginEntryName = 'desktop-plugin:abc';
+        api.plugin('tiny', () => {
+            throw new Error('nope');
+        });
+        api.pluginEntryName = null;
+
+        expect(api.pluginStatus()).toMatchObject({
+            loaded: [],
+            loadedEntries: [],
+            failed: [{ name: 'desktop-plugin:abc' }],
+        });
+    });
+
     it('require resolves modules out of _kiwi_exports', () => {
         window._kiwi_exports = { helpers: { Misc: { hello: 'world' } } };
         let fresh = new GlobalApi();

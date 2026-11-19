@@ -25,6 +25,7 @@ import { mergeInstalledThemes } from '@/libs/InstalledThemes';
 import InputHandler from '@/libs/InputHandler';
 import IPC from '@/libs/IPC';
 import desktop from '@/libs/desktop';
+import { mergeInstalledPlugins } from '@/libs/InstalledPlugins';
 import StatePersistence from '@/libs/StatePersistence';
 import { initChatLogs } from '@/libs/ChatLogRecorder';
 import * as MetadataCache from '@/libs/MetadataCache';
@@ -298,6 +299,7 @@ async function loadApp() {
         .then(initLocales)
         .then(initThemes)
         .then(initJson5)
+        .then(initPlugins)
         .then(loadPlugins)
         .then(initSound)
         .then(startApp)
@@ -339,9 +341,23 @@ function applyConfigObj(obj, target) {
     });
 }
 
+async function initPlugins() {
+    if (desktop.isDesktop() && desktop.plugins.isAvailable()) {
+        try {
+            const installed = await desktop.plugins.list();
+            mergeInstalledPlugins(getState(), installed);
+        } catch (err) {
+            log.error('Unable to load installed plugins: ' + (err.stack || err));
+        }
+    }
+}
+
 function loadPlugins() {
     return new Promise((_resolve, reject) => {
-        let plugins = getState().settings.plugins || [];
+        const disabled = getState().setting('plugins_disabled');
+        const disabledNames = new Set(Array.isArray(disabled) ? disabled : []);
+        let plugins = (getState().settings.plugins || [])
+            .filter((plugin) => plugin && !disabledNames.has(plugin.name));
         let pluginIdx = -1;
 
         loadNextScript();
@@ -372,6 +388,7 @@ function loadPlugins() {
                         log.error(
                             `Error loading plugin script '${src}' from '${plugin.url}'`
                         );
+                        api.pluginFailed(plugin.name, 'Unable to load plugin script');
                         resolve();
                     };
                 } else {
@@ -396,13 +413,17 @@ function loadPlugins() {
                 // The plugin is a .js file so inject it as a script
                 let scr = document.createElement('script');
                 scr.onerror = () => {
+                    api.pluginEntryName = null;
                     log.error(`Error loading plugin '${plugin.name}' from '${plugin.url}'`);
+                    api.pluginFailed(plugin.name, 'Unable to load plugin');
                     loadNextScript();
                 };
                 scr.onload = () => {
+                    api.pluginEntryName = null;
                     loadNextScript();
                 };
 
+                api.pluginEntryName = plugin.name;
                 document.body.appendChild(scr);
                 scr.src = plugin.url;
             } else {
@@ -428,9 +449,14 @@ function loadPlugins() {
                         // The browser won't execute scripts inserted with innerHTML, so
                         // move them into live script elements. External scripts are
                         // resolved relative to the plugin HTML and loaded in order.
-                        loadHtmlPluginScripts(el, plugin).then(loadNextScript);
+                        api.pluginEntryName = plugin.name;
+                        loadHtmlPluginScripts(el, plugin).then(() => {
+                            api.pluginEntryName = null;
+                            loadNextScript();
+                        });
                     }).catch(() => {
                         log.error(`Error loading plugin '${plugin.name}' from '${plugin.url}'`);
+                        api.pluginFailed(plugin.name, 'Unable to load plugin');
                         loadNextScript();
                     });
             }

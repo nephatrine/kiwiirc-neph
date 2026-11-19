@@ -11,13 +11,14 @@ const {
 } = require('./network-icons');
 const { listThemes, themesRoot, validThemeId } = require('./themes');
 const { emojiPacksRoot, listEmojiPacks, validPackageId } = require('./emoji-packs');
+const { listPlugins, pluginsRoot, validPluginId } = require('./plugins');
 
 const BUNDLE_ENTRY = 'profile.json';
 const ICON_URL_PREFIX = 'kiwi-icon://network-icon/';
 const MAX_ARCHIVE_BYTES = 128 * 1024 * 1024;
 const MAX_BUNDLE_BYTES = 64 * 1024 * 1024;
 const SAFE_NAME = /^[A-Za-z0-9._-]{1,120}$/;
-const TOP_LEVEL = new Set([BUNDLE_ENTRY, 'icons', 'themes', 'emoji-packs']);
+const TOP_LEVEL = new Set([BUNDLE_ENTRY, 'icons', 'themes', 'emoji-packs', 'plugins']);
 
 function isProfileArchive(buffer) {
     return Buffer.isBuffer(buffer) &&
@@ -249,6 +250,22 @@ async function collectEmojiPackEntries(userDataDir, packs) {
     return lists.reduce((all, list) => all.concat(list), []);
 }
 
+async function collectPluginEntries(userDataDir, plugins) {
+    const root = pluginsRoot(userDataDir);
+    const lists = await Promise.all(plugins.map(async(plugin) => {
+        if (!validPluginId(plugin.id)) {
+            return [];
+        }
+        const files = await collectDirectoryFiles(path.join(root, plugin.id));
+        return files.map((file) => ({
+            name: `plugins/${plugin.id}/${file.path}`,
+            data: file.data,
+        }));
+    }));
+
+    return lists.reduce((all, list) => all.concat(list), []);
+}
+
 async function writeProfileArchive(userDataDir, bundle, options = {}) {
     const cleanBundle = { ...bundle };
     delete cleanBundle.assets;
@@ -266,8 +283,10 @@ async function writeProfileArchive(userDataDir, bundle, options = {}) {
 
         const themes = await listThemes(userDataDir);
         const emojiPacks = await listEmojiPacks(userDataDir);
+        const plugins = await listPlugins(userDataDir);
         entries.push(...await collectThemeEntries(userDataDir, themes));
         entries.push(...await collectEmojiPackEntries(userDataDir, emojiPacks));
+        entries.push(...await collectPluginEntries(userDataDir, plugins));
     }
 
     const total = entries.reduce((sum, entry) => sum + entry.data.length, 0);
@@ -404,6 +423,38 @@ async function installEmojiPackDirs(sourceDir, userDataDir, summary) {
     }));
 }
 
+async function installPluginDirs(sourceDir, userDataDir, summary) {
+    let entries;
+    try {
+        entries = await fs.readdir(sourceDir, { withFileTypes: true });
+    } catch (err) {
+        return;
+    }
+
+    const root = pluginsRoot(userDataDir);
+    await fs.mkdir(root, { recursive: true });
+
+    await Promise.all(entries.map(async(entry) => {
+        if (!entry.isDirectory() || !validPluginId(entry.name)) {
+            return;
+        }
+
+        const source = path.join(sourceDir, entry.name);
+        if (!await existingPath(path.join(source, 'plugin.json'))) {
+            return;
+        }
+
+        const target = path.join(root, entry.name);
+        if (await existingPath(target)) {
+            summary.skipped += 1;
+            return;
+        }
+
+        await fs.rename(source, target);
+        summary.plugins += 1;
+    }));
+}
+
 async function prepareProfileArchive(buffer, userDataDir) {
     if (!isProfileArchive(buffer)) {
         throw new Error('not a profile archive');
@@ -435,7 +486,11 @@ async function prepareProfileArchive(buffer, userDataDir) {
         const text = await fs.readFile(bundlePath, 'utf8');
         JSON.parse(text);
 
-        return { text, pendingDir };
+        const hasPlugins = top.some((entry) => (
+            entry.name === 'plugins' && entry.isDirectory()
+        ));
+
+        return { text, pendingDir, hasPlugins };
     } catch (err) {
         await fs.rm(pendingDir, { recursive: true, force: true });
         throw err;
@@ -452,7 +507,7 @@ async function applyPendingImport(pendingDir, userDataDir) {
         throw new Error('invalid pending profile import');
     }
 
-    const summary = { themes: 0, emojiPacks: 0, icons: 0, skipped: 0 };
+    const summary = { themes: 0, emojiPacks: 0, plugins: 0, icons: 0, skipped: 0 };
     try {
         await installIconFiles(path.join(target, 'icons'), userDataDir, summary);
         await installThemeDirs(path.join(target, 'themes'), userDataDir, summary);
@@ -461,6 +516,7 @@ async function applyPendingImport(pendingDir, userDataDir) {
             userDataDir,
             summary
         );
+        await installPluginDirs(path.join(target, 'plugins'), userDataDir, summary);
     } finally {
         await fs.rm(target, { recursive: true, force: true });
     }

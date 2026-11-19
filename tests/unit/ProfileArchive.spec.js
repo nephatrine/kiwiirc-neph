@@ -29,6 +29,7 @@ async function populate(userData) {
     await fs.mkdir(path.join(userData, 'network-icons'), { recursive: true });
     await fs.mkdir(path.join(userData, 'themes', 'custom'), { recursive: true });
     await fs.mkdir(path.join(userData, 'emoji-packs', 'testpack'), { recursive: true });
+    await fs.mkdir(path.join(userData, 'plugins', 'testplugin'), { recursive: true });
 
     await fs.writeFile(
         path.join(userData, 'network-icons', 'example.png'),
@@ -58,6 +59,14 @@ async function populate(userData) {
         path.join(userData, 'emoji-packs', 'testpack', 'kiwi.png'),
         Buffer.from('fake-emoji')
     );
+    await fs.writeFile(
+        path.join(userData, 'plugins', 'testplugin', 'plugin.json'),
+        JSON.stringify({ name: 'Test Plugin', entry: 'plugin.js' })
+    );
+    await fs.writeFile(
+        path.join(userData, 'plugins', 'testplugin', 'plugin.js'),
+        'window.kiwi.plugin();'
+    );
 }
 
 describe('profile archive', () => {
@@ -74,7 +83,7 @@ describe('profile archive', () => {
         await fs.rm(root, { recursive: true, force: true });
     });
 
-    it('round-trips icons, themes, and emoji packs', async() => {
+    it('round-trips icons, themes, emoji packs, and plugins', async() => {
         const archive = await writeProfileArchive(userData, profileBundle(), {
             includeAssets: true,
         });
@@ -85,6 +94,7 @@ describe('profile archive', () => {
 
         const prepared = await prepareProfileArchive(archive, destination);
         expect(JSON.parse(prepared.text).format).toBe('kiwi-profile');
+        expect(prepared.hasPlugins).toBe(true);
 
         const summary = await applyPendingImport(
             prepared.pendingDir,
@@ -94,6 +104,7 @@ describe('profile archive', () => {
         expect(summary).toEqual({
             themes: 1,
             emojiPacks: 1,
+            plugins: 1,
             icons: 1,
             skipped: 0,
         });
@@ -113,6 +124,10 @@ describe('profile archive', () => {
             path.join(destination, 'emoji-packs', 'testpack', 'kiwi.png'),
             'utf8'
         )).toBe('fake-emoji');
+        expect(await fs.readFile(
+            path.join(destination, 'plugins', 'testplugin', 'plugin.js'),
+            'utf8'
+        )).toBe('window.kiwi.plugin();');
     });
 
     it('omits local assets when they are excluded', async() => {
@@ -124,6 +139,7 @@ describe('profile archive', () => {
         await fs.mkdir(destination, { recursive: true });
 
         const prepared = await prepareProfileArchive(archive, destination);
+        expect(prepared.hasPlugins).toBe(false);
         const summary = await applyPendingImport(
             prepared.pendingDir,
             destination
@@ -132,13 +148,14 @@ describe('profile archive', () => {
         expect(summary).toEqual({
             themes: 0,
             emojiPacks: 0,
+            plugins: 0,
             icons: 0,
             skipped: 0,
         });
         expect(await fs.readdir(destination)).toEqual([]);
     });
 
-    it('skips themes and packs that are already installed', async() => {
+    it('skips themes, packs, and plugins that are already installed', async() => {
         const archive = await writeProfileArchive(userData, profileBundle(), {
             includeAssets: true,
         });
@@ -148,6 +165,9 @@ describe('profile archive', () => {
             recursive: true,
         });
         await fs.mkdir(path.join(destination, 'emoji-packs', 'testpack'), {
+            recursive: true,
+        });
+        await fs.mkdir(path.join(destination, 'plugins', 'testplugin'), {
             recursive: true,
         });
         await fs.writeFile(
@@ -163,7 +183,8 @@ describe('profile archive', () => {
 
         expect(summary.themes).toBe(0);
         expect(summary.emojiPacks).toBe(0);
-        expect(summary.skipped).toBe(2);
+        expect(summary.plugins).toBe(0);
+        expect(summary.skipped).toBe(3);
         expect(await fs.readFile(
             path.join(destination, 'themes', 'custom', 'theme.css'),
             'utf8'

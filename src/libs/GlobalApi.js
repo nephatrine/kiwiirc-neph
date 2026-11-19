@@ -70,6 +70,10 @@ export default class GlobalApi extends EventEmitter {
         this.services = Object.create(null);
         this.commands = Object.create(null);
         this.autocompleteProviders = Object.create(null);
+        this.loadedPlugins = [];
+        this.loadedPluginEntries = [];
+        this.failedPlugins = [];
+        this.pluginEntryName = null;
         this.isReady = false;
         /** Reactive media playback state reported by plugins */
         this.media = Vue.observable({
@@ -113,7 +117,11 @@ export default class GlobalApi extends EventEmitter {
      * @param {Function} fn A callback function to start the plugin. function(kiwi, logger)
      */
     plugin(pluginName, fn) {
-        let plugin = { name: pluginName, fn: fn };
+        let plugin = {
+            name: pluginName,
+            fn: fn,
+            entryName: this.pluginEntryName || pluginName,
+        };
         if (this.isReady) {
             this.initPlugin(plugin);
         } else {
@@ -131,10 +139,42 @@ export default class GlobalApi extends EventEmitter {
         let pluginLogger = Logger.namespace(`Plugin ${plugin.name}`);
         try {
             plugin.fn(this, pluginLogger);
-            this.state.$emit('plugin.loaded', { name: plugin.name });
+            if (this.loadedPlugins.indexOf(plugin.name) === -1) {
+                this.loadedPlugins.push(plugin.name);
+            }
+            if (this.loadedPluginEntries.indexOf(plugin.entryName) === -1) {
+                this.loadedPluginEntries.push(plugin.entryName);
+            }
+            this.state.$emit('plugin.loaded', {
+                name: plugin.name,
+                entry: plugin.entryName,
+            });
         } catch (err) {
             pluginLogger.error(err.stack);
+            this.pluginFailed(plugin.entryName || plugin.name, err);
         }
+    }
+
+    pluginFailed(name, error) {
+        const entry = {
+            name: String(name || 'unknown'),
+            error: error ? String(error.message || error) : '',
+        };
+
+        if (!this.failedPlugins.some((item) => item.name === entry.name)) {
+            this.failedPlugins.push(entry);
+        }
+        if (this.state) {
+            this.state.$emit('plugin.failed', entry);
+        }
+    }
+
+    pluginStatus() {
+        return {
+            loaded: this.loadedPlugins.slice(),
+            loadedEntries: this.loadedPluginEntries.slice(),
+            failed: this.failedPlugins.map((entry) => ({ ...entry })),
+        };
     }
 
     /**

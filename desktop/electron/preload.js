@@ -189,6 +189,11 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
             networkName
         ),
     },
+    plugins: {
+        list: () => ipcRenderer.invoke('kiwi:plugins-list'),
+        install: () => ipcRenderer.invoke('kiwi:plugins-install'),
+        uninstall: (id) => ipcRenderer.invoke('kiwi:plugins-uninstall', id),
+    },
     logs: {
         isAvailable: () => logsSupported,
         append: (entries) => ipcRenderer.invoke('kiwi:logs-append', entries),

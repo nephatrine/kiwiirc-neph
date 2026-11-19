@@ -181,7 +181,11 @@ export default {
                     if (!result || result.canceled) {
                         return null;
                     }
-                    return this.importProfileText(result.text, result.pending);
+                    return this.importProfileText(
+                        result.text,
+                        result.pending,
+                        result.hasPlugins
+                    );
                 }).catch((err) => {
                     this.setStatus(
                         'profile_import_failed',
@@ -220,7 +224,7 @@ export default {
                 );
             }
         },
-        async importProfileText(text, pending = null) {
+        async importProfileText(text, pending = null, hasPlugins = false) {
             if (!this.isPersonalMode) {
                 this.setStatus('profile_import_personal_only', {}, 'error');
                 return;
@@ -228,9 +232,14 @@ export default {
             const bundle = parseProfileBundleText(text);
             const hasSecrets = !!bundle.secrets &&
                 Object.keys(bundle.secrets).length > 0;
-            const confirmKey = hasSecrets ?
-                'profile_import_passwords_confirm' :
-                'profile_import_confirm';
+            let confirmKey = 'profile_import_confirm';
+            if (hasPlugins && hasSecrets) {
+                confirmKey = 'profile_import_plugins_passwords_confirm';
+            } else if (hasPlugins) {
+                confirmKey = 'profile_import_plugins_confirm';
+            } else if (hasSecrets) {
+                confirmKey = 'profile_import_passwords_confirm';
+            }
             if (!window.confirm(this.$t(confirmKey))) {
                 if (pending && this.isDesktop) {
                     await desktop.profile.cancelImport(pending);

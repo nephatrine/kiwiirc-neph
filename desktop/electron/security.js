@@ -7,12 +7,12 @@ const APP_CSP = [
     // Plugins are trusted code and bundled HTML plugins may contain inline
     // scripts. Captcha providers may also use eval, so script-src cannot use a
     // nonce-only policy here.
-    "script-src 'self' https: 'unsafe-inline' 'unsafe-eval'",
-    "style-src 'self' 'unsafe-inline' https: kiwi-theme:",
-    "img-src 'self' data: blob: https: kiwi-media: kiwi-theme: kiwi-emoji: kiwi-icon:",
-    "font-src 'self' data: https: kiwi-theme:",
-    "media-src 'self' data: blob: https: kiwi-media:",
-    "connect-src 'self' https: wss: ws:",
+    "script-src 'self' https: 'unsafe-inline' 'unsafe-eval' kiwi-plugin:",
+    "style-src 'self' 'unsafe-inline' https: kiwi-theme: kiwi-plugin:",
+    "img-src 'self' data: blob: https: kiwi-media: kiwi-theme: kiwi-emoji: kiwi-icon: kiwi-plugin:",
+    "font-src 'self' data: https: kiwi-theme: kiwi-plugin:",
+    "media-src 'self' data: blob: https: kiwi-media: kiwi-plugin:",
+    "connect-src 'self' https: wss: ws: kiwi-plugin:",
     "frame-src 'self' https:",
     "worker-src 'self' blob:",
     "child-src 'self' blob:",

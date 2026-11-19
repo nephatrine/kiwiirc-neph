@@ -42,6 +42,12 @@ import {
     uninstall as uninstallEmojiPack
 } from './EmojiPacks';
 import {
+    install as installPlugin,
+    isAvailable as isPluginInstallAvailable,
+    list as listPlugins,
+    uninstall as uninstallPlugin
+} from './Plugins';
+import {
     close as closeNotification,
     isAvailable as isNativeNotificationAvailable,
     onClose as onNotificationClose,
@@ -92,6 +98,12 @@ const desktop = {
         install: installEmojiPack,
         uninstall: uninstallEmojiPack,
         isAvailable: isEmojiPackInstallAvailable,
+    },
+    plugins: {
+        list: listPlugins,
+        install: installPlugin,
+        uninstall: uninstallPlugin,
+        isAvailable: isPluginInstallAvailable,
     },
     notifications: {
         show: showNotification,

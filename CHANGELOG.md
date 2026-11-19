@@ -110,11 +110,16 @@ and this project adheres to
 - **Desktop Profile Transfer**: Added portable browser/desktop profile export
   and import, with optional password-included files and a desktop profile backup
   before import. Desktop exports are ZIP archives that carry installed themes,
-  emoji packs, and custom network or station icons, with a JSON export for
-  browser transfer.
+  emoji packs, plugins, and custom network or station icons, with a JSON export
+  for browser transfer.
 - **Desktop Themes**: Added local theme installation from ZIP archives, with
   installed theme listing and uninstall controls in Appearance. Themes are
   stored in the desktop user-data directory and served through `kiwi-theme://`.
+- **Desktop Plugins**: Added local plugin installation from ZIP archives in
+  Settings → General → Plugins, with loaded, failed, and disabled status,
+  per-plugin toggles, uninstall controls, and a reload prompt. Installed plugins
+  are stored in the desktop user-data directory and served through
+  `kiwi-plugin://`.
 - **Plugins**: Added `kiwi.addSettingsBlock()` so plugins can append a settings
   block to General or the active-network App Settings tab without creating
   another tab. Added `kiwi.registerCommand()` for client input commands,
@@ -414,10 +419,10 @@ and this project adheres to
   pacman package, which made it uninstallable on stock Arch Linux and Manjaro,
   and added `libsecret` so password storage can use the system keyring.
 - **Profile Transfer**: Desktop exports are now ZIP archives containing the
-  profile state plus installed themes, emoji packs, and custom network or
-  station icons, so a transferred profile keeps its look and icons. Import skips
-  themes and packs that are already installed, and profile backups include the
-  icon directory.
+  profile state plus installed themes, emoji packs, plugins, and custom network
+  or station icons, so a transferred profile keeps its look and icons. Import
+  skips themes, packs, and plugins that are already installed, and profile
+  backups include the icon directory.
 - **Avatars**: Keep a stable avatar root element so swapping from the local
   identicon to the metadata avatar no longer drops the layout's scoped CSS
   attribute, which left the new image unsized and stretched to the message row

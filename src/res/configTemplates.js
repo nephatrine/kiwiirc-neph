@@ -25,6 +25,7 @@ export const configTemplates = {
             { name: 'radio', url: 'static/plugins/radio.html' },
             { name: 'suggest-limnoria', url: 'static/plugins/suggest-limnoria.html' },
         ],
+        plugins_disabled: [],
         windowTitle: 'Kiwi IRC - The web IRC client',
         useMonospace: false,
         showPresetSwitcher: true,

@@ -747,6 +747,98 @@
                             </label>
                         </div>
                     </div>
+
+                    <div v-if="!pluginSettingsRestricted" class="kiwi-appsettings-block">
+                        <h3>{{ $t('settings_plugins') }}</h3>
+                        <div class="kiwi-appsettings-section kiwi-appsettings-plugins">
+                            <p class="kiwi-appsettings-hint">
+                                {{ $t('settings_plugins_hint') }}
+                            </p>
+                            <ul
+                                v-if="pluginEntries.length"
+                                class="kiwi-appsettings-plugin-list"
+                            >
+                                <li
+                                    v-for="plugin in pluginEntries"
+                                    :key="plugin.name"
+                                    class="kiwi-appsettings-plugin"
+                                >
+                                    <label class="u-checkbox-wrapper">
+                                        <span>
+                                            {{ plugin.label }}
+                                            <em
+                                                v-if="plugin.installed"
+                                                class="kiwi-appsettings-plugin-source"
+                                            >{{ $t('settings_plugin_installed') }}</em>
+                                        </span>
+                                        <input
+                                            type="checkbox"
+                                            :checked="!plugin.disabled"
+                                            @change="setPluginEnabled(
+                                                plugin,
+                                                $event.target.checked
+                                            )"
+                                        >
+                                    </label>
+                                    <span
+                                        class="kiwi-appsettings-plugin-status"
+                                        :class="'kiwi-appsettings-plugin-status--' + plugin.status"
+                                    >
+                                        {{ $t(plugin.statusKey) }}
+                                    </span>
+                                    <button
+                                        v-if="plugin.installed"
+                                        type="button"
+                                        class="u-button u-button-secondary"
+                                        @click="removePlugin(plugin)"
+                                    >
+                                        {{ $t('settings_uninstall_plugin') }}
+                                    </button>
+                                </li>
+                            </ul>
+                            <p v-else class="kiwi-appsettings-hint">
+                                {{ $t('settings_no_plugins') }}
+                            </p>
+                            <div
+                                v-if="desktopPluginsAvailable"
+                                class="kiwi-appsettings-plugin-actions"
+                            >
+                                <button
+                                    type="button"
+                                    class="u-button u-button-primary"
+                                    :disabled="pluginInstallBusy"
+                                    @click="installPlugin"
+                                >
+                                    {{
+                                        pluginInstallBusy ?
+                                            $t('settings_plugin_installing') :
+                                            $t('settings_install_plugin')
+                                    }}
+                                </button>
+                            </div>
+                            <p
+                                v-if="pluginError"
+                                class="kiwi-appsettings-theme-error"
+                                role="alert"
+                            >
+                                {{ pluginError }}
+                            </p>
+                            <p
+                                v-if="pluginReloadNeeded"
+                                class="kiwi-appsettings-plugin-reload"
+                            >
+                                {{ $t('settings_plugins_reload') }}
+                                <button
+                                    type="button"
+                                    class="u-button"
+                                    @click="reloadForPlugins"
+                                >
+                                    {{ $t('settings_plugins_reload_button') }}
+                                </button>
+                            </p>
+                        </div>
+                    </div>
+
                     <profile-settings />
 
                     <div
@@ -1061,6 +1153,7 @@
 
 import ThemeManager from '@/libs/ThemeManager';
 import { mergeInstalledThemes } from '@/libs/InstalledThemes';
+import { mergeInstalledPlugins } from '@/libs/InstalledPlugins';
 import { availableLayoutPresets } from '@/helpers/LayoutPresets';
 import {
     listUploadServices,
@@ -1148,6 +1241,10 @@ export default {
             pluginUiElements: GlobalApi.singleton().appSettingsPlugins,
             generalSettingsBlocks: GlobalApi.singleton().generalSettingsBlocks,
             networkSettingsBlocks: GlobalApi.singleton().networkSettingsBlocks,
+            pluginStatusVersion: 0,
+            pluginReloadNeeded: false,
+            pluginInstallBusy: false,
+            pluginError: '',
             localesList,
         };
     },
@@ -1198,6 +1295,59 @@ export default {
         },
         settings() {
             return this.$state.settings;
+        },
+        pluginSettingsRestricted() {
+            return !!this.$state.setting('restricted');
+        },
+        desktopPluginsAvailable() {
+            return desktop.isDesktop() &&
+                desktop.plugins &&
+                desktop.plugins.isAvailable();
+        },
+        pluginEntries() {
+            // eslint-disable-next-line no-unused-vars
+            const statusVersion = this.pluginStatusVersion;
+            const status = GlobalApi.singleton().pluginStatus();
+            const loaded = new Set(
+                Array.isArray(status.loadedEntries) ?
+                    status.loadedEntries :
+                    status.loaded
+            );
+            const failed = new Set(status.failed.map((entry) => entry.name));
+            const disabledSetting = this.$state.setting('plugins_disabled');
+            const disabled = new Set(
+                Array.isArray(disabledSetting) ? disabledSetting : []
+            );
+
+            return (this.settings.plugins || [])
+                .filter((plugin) => plugin && typeof plugin.name === 'string')
+                .map((plugin) => {
+                    const isDisabled = disabled.has(plugin.name);
+                    let statusName = 'pending';
+                    let statusKey = 'settings_plugin_status_pending';
+
+                    if (isDisabled) {
+                        statusName = 'disabled';
+                        statusKey = 'settings_plugin_status_disabled';
+                    } else if (failed.has(plugin.name)) {
+                        statusName = 'failed';
+                        statusKey = 'settings_plugin_status_failed';
+                    } else if (loaded.has(plugin.name)) {
+                        statusName = 'loaded';
+                        statusKey = 'settings_plugin_status_loaded';
+                    }
+
+                    return {
+                        name: plugin.name,
+                        url: plugin.url,
+                        installed: !!plugin.installed,
+                        desktopPluginId: plugin.desktopPluginId || '',
+                        disabled: isDisabled,
+                        label: plugin.displayName || plugin.name,
+                        status: statusName,
+                        statusKey,
+                    };
+                });
         },
         activeNetwork() {
             return this.$state.getActiveNetwork();
@@ -1490,6 +1640,16 @@ export default {
     created() {
         this.listenForThemeSettings();
 
+        this.pluginStatusListener = () => {
+            this.pluginStatusVersion += 1;
+        };
+        this.$state.$on('plugin.loaded', this.pluginStatusListener);
+        this.$state.$on('plugin.failed', this.pluginStatusListener);
+        this.$once('hook:destroyed', () => {
+            this.$state.$off('plugin.loaded', this.pluginStatusListener);
+            this.$state.$off('plugin.failed', this.pluginStatusListener);
+        });
+
         this.desktopTrayAvailable = DesktopTray.isAvailable();
         this.desktopSettingsAvailable = DesktopSettings.isAvailable();
         if (this.desktopSettingsAvailable) {
@@ -1635,6 +1795,74 @@ export default {
         },
         refreshTheme() {
             ThemeManager.instance().reload();
+        },
+        setPluginEnabled(plugin, enabled) {
+            const current = this.$state.setting('plugins_disabled');
+            const disabled = new Set(Array.isArray(current) ? current : []);
+
+            if (enabled) {
+                disabled.delete(plugin.name);
+            } else {
+                disabled.add(plugin.name);
+            }
+
+            this.$state.setting('plugins_disabled', Array.from(disabled).sort());
+            this.pluginReloadNeeded = true;
+        },
+        async refreshInstalledPlugins() {
+            const installed = await desktop.plugins.list();
+            mergeInstalledPlugins(this.$state, installed);
+        },
+        async installPlugin() {
+            if (!this.desktopPluginsAvailable) {
+                return;
+            }
+            if (!window.confirm(this.$t('settings_plugin_install_confirm'))) {
+                return;
+            }
+
+            this.pluginError = '';
+            this.pluginInstallBusy = true;
+
+            try {
+                const result = await desktop.plugins.install();
+                if (!result || result.canceled) {
+                    return;
+                }
+                await this.refreshInstalledPlugins();
+                this.pluginReloadNeeded = true;
+            } catch (err) {
+                this.pluginError = this.$t('settings_plugin_install_failed', {
+                    reason: err.message || String(err),
+                });
+            } finally {
+                this.pluginInstallBusy = false;
+            }
+        },
+        async removePlugin(plugin) {
+            if (!plugin.installed || !plugin.desktopPluginId) {
+                return;
+            }
+            if (!window.confirm(this.$t('settings_plugin_uninstall_confirm', {
+                name: plugin.label,
+            }))) {
+                return;
+            }
+
+            this.pluginError = '';
+
+            try {
+                await desktop.plugins.uninstall(plugin.desktopPluginId);
+                await this.refreshInstalledPlugins();
+                this.pluginReloadNeeded = true;
+            } catch (err) {
+                this.pluginError = this.$t('settings_plugin_uninstall_failed', {
+                    reason: err.message || String(err),
+                });
+            }
+        },
+        reloadForPlugins() {
+            window.location.reload();
         },
         async refreshInstalledThemes() {
             const installed = await desktop.themes.list();
@@ -1878,6 +2106,56 @@ export default {
 .kiwi-appsettings-theme-error {
     color: var(--brand-error);
     font-size: 0.9em;
+}
+
+.kiwi-appsettings-plugin-list {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+}
+
+.kiwi-appsettings-plugin {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0;
+
+    .u-checkbox-wrapper {
+        flex: 1;
+        margin: 0;
+    }
+
+    .u-button {
+        margin: 0;
+    }
+}
+
+.kiwi-appsettings-plugin-source {
+    font-style: normal;
+    margin-left: 6px;
+    opacity: 0.7;
+}
+
+.kiwi-appsettings-plugin-status {
+    font-size: 0.85em;
+    opacity: 0.8;
+}
+
+.kiwi-appsettings-plugin-status--loaded {
+    color: var(--brand-online);
+}
+
+.kiwi-appsettings-plugin-status--failed {
+    color: var(--brand-error);
+}
+
+.kiwi-appsettings-plugin-status--disabled {
+    opacity: 0.6;
+}
+
+.kiwi-appsettings-plugin-actions,
+.kiwi-appsettings-plugin-reload {
+    margin-top: 10px;
 }
 
 .kiwi-appsettings-setting-showjoinpart span {

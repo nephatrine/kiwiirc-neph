@@ -39,6 +39,14 @@ const {
     installNetworkIcon,
     resolveNetworkIconFile,
 } = require('./network-icons');
+const {
+    MAX_ARCHIVE_BYTES: MAX_PLUGIN_ARCHIVE_BYTES,
+    PLUGIN_SCHEME,
+    installPlugin,
+    listPlugins,
+    resolvePluginFile,
+    uninstallPlugin,
+} = require('./plugins');
 const httpService = require('./http');
 const { handleMediaRequest } = require('./media');
 const { MEDIA_SCHEME } = require('./media-url');
@@ -136,6 +144,16 @@ protocol.registerSchemesAsPrivileged([
     },
     {
         scheme: ICON_SCHEME,
+        privileges: {
+            standard: true,
+            secure: true,
+            supportFetchAPI: true,
+            corsEnabled: true,
+            stream: true,
+        },
+    },
+    {
+        scheme: PLUGIN_SCHEME,
         privileges: {
             standard: true,
             secure: true,
@@ -306,6 +324,7 @@ if (!app.requestSingleInstanceLock()) {
         registerThemeIpc();
         registerEmojiPackIpc();
         registerNetworkIconIpc();
+        registerPluginIpc();
         registerPresetIpc();
         registerNotificationIpc();
         registerDesktopSettingsIpc();
@@ -341,6 +360,7 @@ if (!app.requestSingleInstanceLock()) {
         registerThemeProtocol();
         registerEmojiPackProtocol();
         registerNetworkIconProtocol();
+        registerPluginProtocol();
         registerMediaProtocol();
         registerEmbedRequestHeaders();
         registerTwitchFramePolicy();
@@ -600,6 +620,7 @@ function registerDesktopConfigIpc() {
                 path: filePath,
                 text: prepared.text,
                 pending: prepared.pendingDir,
+                hasPlugins: prepared.hasPlugins,
             };
         }
 
@@ -612,6 +633,7 @@ function registerDesktopConfigIpc() {
             path: filePath,
             text: buffer.toString('utf8'),
             pending: null,
+            hasPlugins: false,
         };
     });
 
@@ -823,6 +845,37 @@ function registerEmojiPackIpc() {
 
     handleIpc('kiwi:emoji-packs-uninstall', (event, id) => (
         uninstallEmojiPack(app.getPath('userData'), id)
+    ));
+}
+
+function registerPluginIpc() {
+    handleIpc('kiwi:plugins-list', () => (
+        listPlugins(app.getPath('userData'))
+    ));
+
+    handleIpc('kiwi:plugins-install', async() => {
+        const result = await dialog.showOpenDialog(mainWindow, {
+            properties: ['openFile'],
+            filters: [{ name: 'Plugin Archive', extensions: ['zip'] }],
+        });
+        if (result.canceled || !result.filePaths.length) {
+            return { canceled: true };
+        }
+
+        const stat = await fs.stat(result.filePaths[0]);
+        if (!stat.isFile() || stat.size > MAX_PLUGIN_ARCHIVE_BYTES) {
+            throw new Error('Plugin archive is too large');
+        }
+
+        const plugin = await installPlugin(
+            app.getPath('userData'),
+            result.filePaths[0]
+        );
+        return { canceled: false, plugin };
+    });
+
+    handleIpc('kiwi:plugins-uninstall', (event, id) => (
+        uninstallPlugin(app.getPath('userData'), id)
     ));
 }
 
@@ -1497,6 +1550,33 @@ function registerNetworkIconProtocol() {
             );
             const headers = new Headers(response.headers);
             headers.set('Content-Type', resolved.mimeType);
+            return new Response(response.body, {
+                status: response.status,
+                headers,
+            });
+        } catch (err) {
+            return new Response('Not found', { status: 404 });
+        }
+    });
+}
+
+function registerPluginProtocol() {
+    protocol.handle(PLUGIN_SCHEME, async(request) => {
+        try {
+            const resolved = await resolvePluginFile(
+                app.getPath('userData'),
+                request.url
+            );
+            if (!resolved) {
+                return new Response('Not found', { status: 404 });
+            }
+
+            const response = await net.fetch(
+                pathToFileURL(resolved.filePath).toString()
+            );
+            const headers = new Headers(response.headers);
+            headers.set('Content-Type', resolved.mimeType);
+            headers.set('X-Content-Type-Options', 'nosniff');
             return new Response(response.body, {
                 status: response.status,
                 headers,
