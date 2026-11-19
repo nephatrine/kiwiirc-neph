@@ -22,8 +22,8 @@ IRC. Capability support depends on the IRC server version.
     [Account Registration](https://ircv3.net/specs/extensions/account-registration)
   - [IRC v3.1 SASL](https://ircv3.net/specs/extensions/sasl-3.1)
   - [IRC v3.2 SASL](https://ircv3.net/specs/extensions/sasl-3.2)
-  - [SASL PLAIN](https://tools.ietf.org/html/rfc4616)
-  - [SASL SCRAM-SHA-256](https://tools.ietf.org/html/rfc7677)
+  - [SASL PLAIN](https://www.rfc-editor.org/rfc/rfc4616)
+  - [SASL SCRAM-SHA-256](https://www.rfc-editor.org/rfc/rfc7677)
 - Account Tracking
   - [Account Extended Ban](https://ircv3.net/specs/extensions/account-extban)
   - [Account Notify](https://ircv3.net/specs/extensions/account-notify)
@@ -36,7 +36,7 @@ IRC. Capability support depends on the IRC server version.
   - [Netsplit & Netjoin Batch Types](https://ircv3.net/specs/batches/netsplit)
   - [Chathistory Batch Type](https://ircv3.net/specs/batches/chathistory)
 - [Bot Mode](https://ircv3.net/specs/extensions/bot-mode)
-- (draft) [Chanel Renaming](https://ircv3.net/specs/extensions/channel-rename)
+- (draft) [Channel Renaming](https://ircv3.net/specs/extensions/channel-rename)
 - Persistence
   - (draft) [Chat History](https://ircv3.net/specs/extensions/chathistory)
   - (draft)
@@ -176,12 +176,10 @@ NOTICE <client> :\x01RELAYMETA DATA <target> <key>=<value> ...\x01
 
 Kiwi IRC applies these keys:
 
-| Key            | Behavior                                          |
-| -------------- | ------------------------------------------------- |
-| `avatar`       | Sanitized URL used for the relayed user's avatar. |
-| `display-name` | Display name for the relayed user.                |
-| `bot`          | Bot label for the relayed user.                   |
-| `color`        | Sanitized colour value for the relayed user.      |
+- `avatar` — Sanitized URL used for the relayed user's avatar.
+- `display-name` — Display name for the relayed user.
+- `bot` — Bot label for the relayed user.
+- `color` — Sanitized colour value for the relayed user.
 
 **Example Response:**
 
@@ -193,13 +191,11 @@ NOTICE kiwi :\x01RELAYMETA DATA username/bridged display-name=Some\sOne avatar=h
 
 Values use IRCv3 message-tag value escaping:
 
-| Escape | Decodes to      |
-| ------ | --------------- |
-| `\\`   | Backslash       |
-| `\s`   | Space           |
-| `\:`   | Semicolon       |
-| `\r`   | Carriage return |
-| `\n`   | Line feed       |
+- `\\` — Backslash.
+- `\s` — Space.
+- `\:` — Semicolon.
+- `\r` — Carriage return.
+- `\n` — Line feed.
 
 Kiwi IRC decodes an unknown `\x` sequence as `x`. A sender must escape spaces;
 an unescaped space splits the pair. Kiwi IRC drops the preceding pair rather

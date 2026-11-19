@@ -17,7 +17,7 @@ trust.
 1. Copy `static/plugins/customise.html.example` to
    `static/plugins/my-plugin.html`.
 2. Add a `kiwi.plugin()` callback and a small component.
-3. Add the plugin to the `plugins` array in `config.json`.
+3. Add the plugin to the `plugins` array in `static/config.json`.
 4. Reload the client and check the browser console.
 
 A minimal channel-header button:
@@ -67,14 +67,8 @@ During development, `npm run dev` serves `static/` directly. A production
 
 ## How Plugins Load
 
-The `plugins` array is processed in order. Each entry is an object:
-
-```json
-{
-  "name": "my-plugin",
-  "url": "static/plugins/my-plugin.html"
-}
-```
+The `plugins` array is processed in order. Each entry has a `name` and `url`, as
+shown in the Quick Start.
 
 A URL containing `.js` is loaded as a script. Every other URL is treated as an
 HTML plugin.
@@ -101,7 +95,7 @@ A `.js` plugin is inserted as a normal script tag. It has no HTML template or
 style injection, so it must define its own component templates and add any
 styles itself.
 
-### Errors and Ordering
+### Errors & Ordering
 
 Plugin loading is sequential. A failed fetch or script load is logged and the
 next plugin is attempted. Errors thrown by a plugin callback are logged and do
@@ -140,24 +134,18 @@ still see built-in plugins and disable them; restricted mode hides the block
 entirely.
 
 The archive must contain `plugin.json` at its root or in one top-level folder.
-`name` is required; `description`, `version`, and `entry` are optional.
-`entry` defaults to `plugin.js` and must be a `.js` or `.html` file inside the
-package:
-
-```json
-{
-  "name": "My Plugin",
-  "entry": "plugin.js"
-}
-```
+`name` is required; `description`, `version`, and `entry` are optional. `entry`
+defaults to `plugin.js` and must be a `.js` or `.html` file inside the package.
+See [desktop/README.md](desktop/README.md) for the full package layout.
 
 Installed packages are copied into the desktop user-data directory and served
 through `kiwi-plugin://`. They are appended after configured plugins and load in
 order, so configured plugins win when registration order matters. Disabling a
-plugin adds its name to the `plugins_disabled` setting; startup filters that list
-before loading. Installing, uninstalling, or toggling a plugin requires a reload,
-which the settings block offers directly. Installed plugins use the same trust
-boundary as configured plugins and are included in desktop profile archives.
+plugin adds its name to the `plugins_disabled` setting; startup filters that
+list before loading. Installing, uninstalling, or toggling a plugin requires a
+reload, which the settings block offers directly. Installed plugins use the same
+trust boundary as configured plugins and are included in desktop profile
+archives.
 
 ## Plugin Anatomy
 
@@ -211,30 +199,49 @@ reactive object keys need `kiwi.Vue.set()` or `kiwi.Vue.delete()`. Use
 
 ## Core API
 
-| Member                                         | Description                                          |
-| ---------------------------------------------- | ---------------------------------------------------- |
-| `kiwi.version`                                 | Kiwi IRC version string.                             |
-| `kiwi.commithash`                              | Build commit hash.                                   |
-| `kiwi.versionMatches(version)`                 | True when the running version is at least `version`. |
-| `kiwi.Vue`                                     | Vue 2 constructor and helpers.                       |
-| `kiwi.JSON5`                                   | JSON5 parser, loaded before plugin scripts run.      |
-| `kiwi.state`                                   | Running application state singleton.                 |
-| `kiwi.themes`                                  | Theme manager.                                       |
-| `kiwi.i18n`                                    | i18next instance.                                    |
-| `kiwi.vueI18n`                                 | Vue I18n instance.                                   |
-| `kiwi.media`                                   | Reactive aggregate media state.                      |
-| `kiwi.layout.insets`                           | Reactive viewport-edge chrome insets.                |
-| `kiwi.setLayoutInsets(source, insets)`         | Reserve viewport edges for a chrome provider.        |
-| `kiwi.clearLayoutInsets(source)`               | Remove a chrome provider's insets.                   |
-| `kiwi.getLayoutInsets()`                       | Read a copy of the combined insets.                  |
-| `kiwi.log`                                     | Shared logger.                                       |
-| `kiwi.logLevel(level)`                         | Set the global log level.                            |
-| `kiwi.require(path)`                           | Load an exported application module.                 |
-| `kiwi.plugin(name, callback)`                  | Register a plugin.                                   |
-| `kiwi.registerCommand(name, handler)`          | Register an input command.                           |
-| `kiwi.addAutocompleteProvider(name, provider)` | Register local completion.                           |
-| `kiwi.addSettingsBlock(type, component, args)` | Add a settings block.                                |
-| `kiwi.on/off/once/emit`                        | Event emitter methods.                               |
+Commonly used members, grouped by purpose:
+
+**Version & Environment**
+
+- `kiwi.version` — Kiwi IRC version string.
+- `kiwi.commithash` — Build commit hash.
+- `kiwi.versionMatches(version)` — True when the running version is at least
+  `version`.
+- `kiwi.Vue` — Vue 2 constructor and helpers.
+- `kiwi.JSON5` — JSON5 parser, loaded before plugin scripts run.
+
+**State & UI**
+
+- `kiwi.state` — Running application state singleton.
+- `kiwi.themes` — Theme manager.
+- `kiwi.i18n` — i18next instance.
+- `kiwi.vueI18n` — Vue I18n instance.
+- `kiwi.media` — Reactive aggregate media state.
+- `kiwi.layout.insets` — Reactive viewport-edge chrome insets.
+- `kiwi.setLayoutInsets(source, insets)` — Reserve viewport edges for a chrome
+  provider.
+- `kiwi.clearLayoutInsets(source)` — Remove a chrome provider's insets.
+- `kiwi.getLayoutInsets()` — Read a copy of the combined insets.
+- `kiwi.desktop` — Optional desktop adapter. `isDesktop()` is false in browser
+  builds.
+
+**Logging & Modules**
+
+- `kiwi.log` — Shared logger.
+- `kiwi.logLevel(level)` — Set the global log level.
+- `kiwi.require(path)` — Load an exported application module.
+
+**Registration**
+
+- `kiwi.plugin(name, callback)` — Register a plugin.
+- `kiwi.registerCommand(name, handler)` — Register an input command.
+- `kiwi.addAutocompleteProvider(name, provider)` — Register local completion.
+- `kiwi.addSettingsBlock(type, component, args)` — Add a settings block.
+- UI, tab, view, sidebar, startup, and service hooks are described below.
+
+**Events**
+
+- `kiwi.on`, `kiwi.off`, `kiwi.once`, and `kiwi.emit` — Event emitter methods.
 
 ### Importing Modules
 
@@ -267,7 +274,7 @@ Useful modules include:
 Do not add npm dependencies for a static plugin. Use browser APIs and the
 in-house helpers exposed through `kiwi.require()`.
 
-## State and Buffers
+## State & Buffers
 
 Read configuration through `kiwi.state.setting()`:
 
@@ -350,18 +357,26 @@ remainder as the translation key.
 Host components add context props in addition to `args.props`. They also pass a
 single `pluginProps` object containing the same context in one place.
 
-| Type             | Where it renders                            | Host props                                   | `pluginProps`                          |
-| ---------------- | ------------------------------------------- | -------------------------------------------- | -------------------------------------- |
-| `app`            | App root, across buffers and settings views | `network`, `buffer`                          | `{ network, buffer, activeComponent }` |
-| `input`          | Chat input button row                       | `network`, `buffer`                          | `{ buffer, controlinput }`             |
-| `browser`        | State browser tools                         | `networks`, `sidebar-state`                  | `{ statebrowser }`                     |
-| `header_channel` | Channel header                              | `network`, `buffer`, `sidebar-state`         | `{ buffer, containerheader }`          |
-| `header_query`   | Query header                                | `network`, `buffer`, `sidebar-state`         | `{ buffer, containerheader }`          |
-| `userbox_button` | User profile actions                        | `network`, `buffer`, `user`, `sidebar-state` | `{ user, userbox }`                    |
-| `userbox_info`   | User profile information                    | `network`, `buffer`, `user`, `sidebar-state` | `{ user, userbox }`                    |
-| `userbox_whois`  | User profile WHOIS area                     | `network`, `buffer`, `user`, `sidebar-state` | `{ user, userbox }`                    |
-| `about_buffer`   | Buffer About pane                           | `network`, `buffer`, `sidebar-state`         | `{ buffer, aboutbuffer }`              |
-| `message_info`   | Message info panel                          | `buffer`, `message`                          | `{ buffer, message }`                  |
+- **`app`** — App root, across buffers and settings views. Host props:
+  `network`, `buffer`. `pluginProps`: `{ network, buffer, activeComponent }`.
+- **`input`** — Chat input button row. Host props: `network`, `buffer`.
+  `pluginProps`: `{ buffer, controlinput }`.
+- **`browser`** — State browser tools. Host props: `networks`, `sidebar-state`.
+  `pluginProps`: `{ statebrowser }`.
+- **`header_channel`** — Channel header. Host props: `network`, `buffer`,
+  `sidebar-state`. `pluginProps`: `{ buffer, containerheader }`.
+- **`header_query`** — Query header. Host props: `network`, `buffer`,
+  `sidebar-state`. `pluginProps`: `{ buffer, containerheader }`.
+- **`userbox_button`** — User profile actions. Host props: `network`, `buffer`,
+  `user`, `sidebar-state`. `pluginProps`: `{ user, userbox }`.
+- **`userbox_info`** — User profile information. Host props: `network`,
+  `buffer`, `user`, `sidebar-state`. `pluginProps`: `{ user, userbox }`.
+- **`userbox_whois`** — User profile WHOIS area. Host props: `network`,
+  `buffer`, `user`, `sidebar-state`. `pluginProps`: `{ user, userbox }`.
+- **`about_buffer`** — Buffer About pane. Host props: `network`, `buffer`,
+  `sidebar-state`. `pluginProps`: `{ buffer, aboutbuffer }`.
+- **`message_info`** — Message info panel. Host props: `buffer`, `message`.
+  `pluginProps`: `{ buffer, message }`.
 
 Unknown slot types are ignored. Hosts also apply layout classes such as
 `kiwi-header-option`, `kiwi-controlinput-button`, `kiwi-statebrowser-tool`, and
@@ -371,30 +386,26 @@ Unknown slot types are ignored. Hosts also apply layout classes such as
 
 Adds a tab to a tabbed view:
 
-- `channel` — channel sidebar tab.
-- `settings` — application settings tab.
-- `server` — server view tab.
+- **`channel`** — Channel sidebar tab. Host props: `network`, `buffer`,
+  `sidebar-state`. Rendered in the channel sidebar.
+- **`settings`** — Application settings tab. Host props: none. Only `props` are
+  bound; read state through `kiwi.state`.
+- **`server`** — Server view tab. Host props: `network`. Rendered in the server
+  view.
 
 `title` is used as the tab header and tab name. A title beginning with `t_` is
-translated with the remainder as the translation key.
-
-| Type       | Host props                           | Notes                                                    |
-| ---------- | ------------------------------------ | -------------------------------------------------------- |
-| `channel`  | `network`, `buffer`, `sidebar-state` | Rendered in the channel sidebar.                         |
-| `settings` | none                                 | Only `props` are bound; read state through `kiwi.state`. |
-| `server`   | `network`                            | Rendered in the server view.                             |
-
-Unknown tab types are ignored.
+translated with the remainder as the translation key. Unknown tab types are
+ignored.
 
 ### `addSettingsBlock(type, component, args)`
 
 Adds a plugin-owned block to the bottom of an existing settings tab without
 creating a new tab. Use this when a plugin only has a few settings.
 
-- `general` — bottom of the General settings tab. The component receives no
+- **`general`** — Bottom of the General settings tab. The component receives no
   `network` prop, and `pluginProps` is an empty object.
-- `network` — bottom of the active-network settings tab. The component receives
-  the active `network` prop and `pluginProps.network`.
+- **`network`** — Bottom of the active-network settings tab. The component
+  receives the active `network` prop and `pluginProps.network`.
 
 `args.title` is optional and uses the same `t_` translation convention. An empty
 title omits the heading. `args.props` binds additional props. Blocks render in
@@ -445,7 +456,7 @@ using `.kiwi-appsettings-section` so the block matches the built-in settings.
 Register blocks during plugin startup, like other UI hooks. Unknown block types
 are ignored.
 
-### `addView` and `showView`
+### `addView` & `showView`
 
 `kiwi.addView(name, component, props)` registers a full-workspace component.
 `kiwi.showView(name)` shows it, and `kiwi.showView(null)` closes it and returns
@@ -628,14 +639,14 @@ kiwi.setMediaPlaying('my-player', false);
 `display` is an optional ready-to-render string for status bars. Consumers use
 `kiwi.getMediaDisplay(source)`, which falls back to `title` and then `station`.
 
-- `kiwi.media.playing` is true while any registered source is playing.
-- `kiwi.media.sources` is the reactive source map.
-- `kiwi.isMediaPlaying()` returns the aggregate state.
-- `kiwi.getMediaSource(source)` returns one source's metadata.
-- `kiwi.getMediaDisplay(source)` returns the display string with fallbacks.
-- `kiwi.getMediaSources()` returns the source map.
-- `kiwi.clearMediaSource(source)` removes a source.
-- `kiwi.on('media.playing', handler)` fires when the aggregate state changes.
+- `kiwi.media.playing` — True while any registered source is playing.
+- `kiwi.media.sources` — Reactive source map.
+- `kiwi.isMediaPlaying()` — Aggregate state.
+- `kiwi.getMediaSource(source)` — One source's metadata.
+- `kiwi.getMediaDisplay(source)` — Display string with fallbacks.
+- `kiwi.getMediaSources()` — Source map.
+- `kiwi.clearMediaSource(source)` — Remove a source.
+- `kiwi.on('media.playing', handler)` — Fires when the aggregate state changes.
 
 Multiple plugins may report playback at once. The aggregate stays true until
 every source has stopped. The `media.playing` event fires only when the
@@ -728,23 +739,22 @@ State events are forwarded through `kiwi`.
 
 Common events:
 
-| Event                                   | Payload                                |
-| --------------------------------------- | -------------------------------------- |
-| `message.new`                           | `{ message, buffer }`                  |
-| `message.render`                        | `{ message }`                          |
-| `message.prestyle`, `message.poststyle` | `{ message, blocks }`                  |
-| `message.blocks`                        | `{ message, blocks }`                  |
-| `message.reaction`, `message.redaction` | `{ message, buffer }`                  |
-| `input.activity`                        | `{ network, buffer, textLength }`      |
-| `media.playing`                         | `{ playing, source, metadata }`        |
-| `layout.insets`                         | `{ top, right, bottom, left }`         |
-| `plugin.loaded`                         | `{ name }`                             |
-| `network.new`, `network.removed`        | `{ network }` or `{ network, source }` |
-| `buffer.new`, `buffer.close`            | `{ buffer }`                           |
-| `theme.change`                          | `(nextTheme, previousTheme)`           |
-| `theme.failed`                          | `(failedTheme, activeTheme)`           |
-| `active.component`                      | `(component, props)`                   |
-| `irc.raw.<COMMAND>`                     | `(command, event, network)`            |
+- `message.new` — `{ message, buffer }`.
+- `message.render` — `{ message }`.
+- `message.prestyle` and `message.poststyle` — `{ message, blocks }`.
+- `message.blocks` — `{ message, blocks }`.
+- `message.reaction` and `message.redaction` — `{ message, buffer }`.
+- `input.activity` — `{ network, buffer, textLength }`.
+- `media.playing` — `{ playing, source, metadata }`.
+- `layout.insets` — `{ top, right, bottom, left }`.
+- `plugin.loaded` — `{ name, entry }`.
+- `plugin.failed` — `{ name, error }`.
+- `network.new` and `network.removed` — `{ network }` or `{ network, source }`.
+- `buffer.new` and `buffer.close` — `{ buffer }`.
+- `theme.change` — `(nextTheme, previousTheme)`.
+- `theme.failed` — `(failedTheme, activeTheme)`.
+- `active.component` — `(component, props)`.
+- `irc.raw.<COMMAND>` — `(command, event, network)`.
 
 Twitch-specific events include `twitch.notice`, `twitch.usernotice`,
 `twitch.roomstate`, `twitch.reconnect`, `twitch.clearchat`, `twitch.clearmsg`,
@@ -760,17 +770,17 @@ plugin needs to query or modify the rendered interface.
 
 `kiwi.themes` is the theme manager:
 
-- `currentTheme()` returns the active theme object.
-- `availableThemes()` returns the configured theme list.
-- `setTheme(nameOrTheme)` switches themes.
-- `reload()` reloads the current theme.
-- `activeTheme` and `previousTheme` expose the current and previous themes.
+- `currentTheme()` — Active theme object.
+- `availableThemes()` — Configured theme list.
+- `setTheme(nameOrTheme)` — Switch themes.
+- `reload()` — Reload the current theme.
+- `activeTheme` and `previousTheme` — Current and previous themes.
 
 Listen for `theme.change` and `theme.failed` when the plugin depends on a
 specific theme. The initial theme load does not emit `theme.change`, so check
 `currentTheme()` or the `data-theme` attribute at startup as well.
 
-## Styling and Assets
+## Styling & Assets
 
 - Prefer theme variables such as `--brand-primary`, `--brand-default-fg`,
   `--brand-midtone`, and `--brand-input-bg`.
@@ -905,18 +915,27 @@ feature-detect optional methods before calling them.
 
 ## Bundled Plugins
 
-The default configuration enables these plugins:
+The default configuration enables:
 
-| Plugin              | Documentation                                            | Demonstrates                                                                       |
-| ------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `channels-sidebar`  | [Channels Sidebar](static/plugins/channels-sidebar.md)   | Header slot, `kiwi.require()`, sidebar toggling.                                   |
-| `nephnet-cyberdeck` | [NephNET Cyberdeck](static/plugins/nephnet-cyberdeck.md) | Direct DOM chrome, theme events, Web Audio.                                        |
-| `nephwave-desktop`  | [NephWave Desktop](static/plugins/nephwave-desktop.md)   | Direct DOM chrome, theme events, media display, service consumption.               |
-| `bongo-cat`         | [Bongo Companions](static/plugins/bongo-cat.md)          | App UI, settings tab, translations, event listeners, asset loading.                |
-| `radio`             | [Radio](static/plugins/radio.md)                         | Config defaults, media playback, service registration, translations, browser slot. |
+- **`channels-sidebar`** —
+  [Channels Sidebar](static/plugins/channels-sidebar.md) — header slot,
+  `kiwi.require()`, sidebar toggling.
+- **`nephnet-cyberdeck`** —
+  [NephNET Cyberdeck](static/plugins/nephnet-cyberdeck.md) — direct DOM chrome,
+  theme events, Web Audio.
+- **`nephwave-desktop`** —
+  [NephWave Desktop](static/plugins/nephwave-desktop.md) — direct DOM chrome,
+  theme events, media display, service consumption.
+- **`bongo-cat`** — [Bongo Companions](static/plugins/bongo-cat.md) — app UI,
+  settings tab, translations, event listeners, asset loading.
+- **`radio`** — [Radio](static/plugins/radio.md) — config defaults, media
+  playback, service registration, translations, browser slot.
+- **`suggest-limnoria`** —
+  [Limnoria Suggestions](static/plugins/suggest-limnoria.md) — command
+  registration, autocomplete providers, settings blocks, command tree.
 
 The customise starter is not loaded by default:
 
-| Starter                  | Documentation                                    | Use                                                                          |
-| ------------------------ | ------------------------------------------------ | ---------------------------------------------------------------------------- |
-| `customise.html.example` | [Customise Starter](static/plugins/customise.md) | Copy to `customise.html` for site-specific CSS and small JavaScript changes. |
+- **`customise.html.example`** —
+  [Customise Starter](static/plugins/customise.md) — copy to `customise.html`
+  for site-specific CSS and small JavaScript changes.

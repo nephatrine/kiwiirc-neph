@@ -25,8 +25,8 @@ package pages are available from `master` builds.
 - [Unstable Debian Package](https://code.nephatrine.net/nephatrine/-/packages/debian/kiwiirc-desktop-git)
 - [Unstable Arch Package](https://code.nephatrine.net/nephatrine/-/packages/arch/kiwiirc-desktop-git)
 
-See [desktop/README.md](desktop/README.md) for repository setup and installation
-commands.
+See [desktop/README.md](desktop/README.md) for desktop installation, build,
+packaging, and customization instructions.
 
 ## Features
 
@@ -40,32 +40,35 @@ commands.
 
 ### Themes & Interface
 
-- 38 built-in themes, including Catppuccin, Tokyo Night, Solarized, NephDeck,
-  NephWave, and Radioactive.
-- Custom theme URLs, light/dark variants, an emoji picker, modern, corporate,
-  compact, inline, or Cyberdeck message layouts, and preset menus for common
-  theme/layout/font combinations in browsers and the Electron app.
-- Configurable per-network settings and desktop notifications.
+- 38 themes enabled by default, including Catppuccin, Tokyo Night, Solarized,
+  NephDeck, NephWave, and Radioactive.
+- Configurable theme URLs, light/dark variants, an emoji picker, modern,
+  corporate, compact, inline, or Cyberdeck message layouts, and preset menus for
+  common theme/layout/font combinations in browsers and the Electron app.
+- Per-network settings and notification filters, plus global desktop
+  notifications.
 
 ### Media & Previews
 
 - Image, audio, and video embeds, with previews for YouTube, Twitch, SoundCloud,
-  Spotify, Streamable, Giphy, and RedGifs.
+  Spotify, and other supported services.
 - Imgur image handling, link previews, and per-buffer preview controls.
-- Uploads through Litterbox or the server `FILEHOST`.
+- Uploads through Litterbox, desktop-only file services, or the server
+  `FILEHOST`.
 
 ### Accounts, Bouncers & Notifications
 
 - SASL login, account registration, and per-network persistence preferences.
 - Bouncer-managed networks with explicit Save and Connect/Reconnect actions.
-- Per-network Web Push, desktop notifications, and synthesized sounds.
+- Per-network Web Push and notification filters, plus global desktop
+  notifications and synthesized sounds.
 
 ### Plugins & Extensibility
 
 - Plugin API for UI hooks, tabs, settings blocks, input commands, autocomplete
   providers, views, sidebars, startup screens, translations, and media playback.
-- Bundled channels sidebar, radio, Bongo Companion, NephDeck, NephWave, and
-  `suggest-limnoria` plugins.
+- Bundled channels sidebar, radio, Bongo Companion, and Limnoria plugins, plus
+  the NephDeck and NephWave theme companions.
 - See [PLUGINS.md](PLUGINS.md) for plugin authoring and API details.
 
 ## Requirements
@@ -99,14 +102,16 @@ additionally requires HTTPS and service worker support.
 No IRCv3 capability is mandatory. Kiwi IRC detects support per connection and
 degrades gracefully. For the best experience, servers should support:
 
-- `message-tags`, `echo-message`, `labeled-response`, `server-time`, `batch`
-- `draft/chathistory`, `draft/multiline`, `draft/message-redaction`,
-  `draft/read-marker`
-- SASL, `account-tag`, `account-notify`, `extended-join`, `chghost`, `setname`
-- `draft/metadata-2` or `draft/metadata-3`
-- `draft/FILEHOST` or `soju.im/FILEHOST` for uploads
-- `draft/webpush` or `soju.im/webpush` for push notifications
-- `draft/bouncer-networks` or `soju.im/bouncer-networks` for bouncers
+- **Core Tags & Replies:** `message-tags`, `echo-message`, `labeled-response`,
+  `server-time`, `batch`
+- **History & Messaging:** `draft/chathistory`, `draft/multiline`,
+  `draft/message-redaction`, `draft/read-marker`
+- **Identity:** SASL, `account-tag`, `account-notify`, `extended-join`,
+  `chghost`, `setname`
+- **Metadata:** `draft/metadata-2` or `draft/metadata-3`
+- **Uploads, Web Push & Bouncers:** `draft/FILEHOST` or `soju.im/FILEHOST`,
+  `draft/webpush` or `soju.im/webpush`, and `draft/bouncer-networks` or
+  `soju.im/bouncer-networks`
 
 See [IRCv3.md](IRCv3.md) for the complete capability matrix.
 
@@ -180,15 +185,15 @@ feature coverage.
   networks behave like ordinary IRC connections.
 - File uploads require a completed SASL login and a server `FILEHOST` token.
   Plain HTTP is refused when the client connection uses TLS.
-- Web Push is a per-network opt-in and requires HTTPS plus server support.
+- In browser builds, Web Push is a per-network opt-in and requires HTTPS plus
+  server support; desktop builds use native notifications.
 - Twitch connections use Twitch-specific tags and commands and suppress
   unsupported client commands.
 - Bridge and relay users are not real IRC users; their profiles may come from
   `RELAYMETA`.
 - Kiwi IRC handles incoming `RENAME` but never sends it.
-- Bouncer-managed network changes use explicit Save and Connect/Reconnect
-  actions.
-- Configuration is public, and user settings are stored in browser storage.
+- User settings are stored in browser storage; desktop builds use local
+  profiles.
 
 ## Development & Testing
 

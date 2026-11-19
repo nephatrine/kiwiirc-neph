@@ -8,559 +8,191 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-11-19
+
 ### Added
 
-- **Desktop Context Menu**: Right-clicking links, images, media, and selected
-  text now offers copy actions, including Copy Link Address, Copy Image Address,
-  and Copy Image, plus opening links in the system browser. Editable fields keep
-  the spellcheck menu.
-- **Desktop Notifications**: Added native system notifications with
-  click-to-open behavior, tag replacement, TTL handling, and focused-window
-  suppression.
-- **Desktop Tray**: Added a system tray icon with show/hide, unread badges,
-  highlight tooltips, close-to-tray, and an explicit Quit action.
-- **Desktop Integrations**: Added launch-at-login support on Linux and Windows,
-  native spellcheck suggestions with Add to Dictionary, and clipboard image
-  paste through the existing upload services.
-- **Messaging Permissions**: Added a global Block Direct Messages setting and a
-  per-network Default/Block/Allow/Friends Only policy. Added per-network Ignored
-  Accounts management with nickname suggestions, account-first matching, and
-  new-query blocking. Ignored messages remain visible in an explicitly opened
-  query.
-- **Notifications**: Added global Desktop Notifications, Notification Sounds,
-  and Unread Badges settings. Added per-network Message Notifications, Reaction
-  Notifications, Highlight Replies, and Highlight Group Mentions settings.
-  Reaction notifications only cover reactions to your own messages.
-- **Do Not Disturb**: Added a state-browser bell toggle that pauses desktop
-  notifications, Web Push notifications, and notification sounds without
-  changing their settings. The state-browser search icon now hides while the
-  remembered-state user menu is open.
-- **Settings**: Added Default to per-buffer notifications, renamed Mentions Only
-  to Only Highlights, moved Simple Markdown into the global Messages block, and
-  removed the per-buffer Simple Markdown and Share Typing controls.
-- **Unread Badges**: Added a per-buffer Unread Badge Default/Hide/Show setting
-  and replaced the legacy `hide_message_counts` option. Favorite and muted are
-  now mutually exclusive; muted requires Never notifications, hidden unread
-  badges, and a non-favorite buffer, and uses the same state for local styling,
-  ordering, and Soju muted metadata.
-- **Messages**: Added an Unknown Avatars setting for Modern, Corporate, and
-  Cyberdeck layouts, exposing `avatars.show_without_user` and defaulting it to
-  enabled.
-- **Messages**: Added a global Show Host Names setting and a secondary
-  `ident@host` line in Modern, Corporate, and Cyberdeck layouts when Show Real
-  Names is disabled.
-- **Messages**: Added Bot Messages, Mode Changes, Nickname Changes, Presence
-  Changes, Topic Changes, and User Traffic to the global and network Show
-  Messages sections. Network settings use Default/No/Yes; per-buffer controls
-  were removed. Nickname Changes and User Traffic now default to off.
-- **Channel Settings**: Split per-buffer Preferences from actual channel
-  Settings. The Preferences tab now contains user buffer preferences and
-  notification settings, and the Settings tab is hidden when it has no channel
-  settings to show.
-- **Desktop Updates**: Added check-only update notifications using the Gitea
-  releases API, with manual and automatic checks, a tray indicator, and a
-  release-page link. Updates are never downloaded or installed automatically.
-- **Desktop Releases**: Tag and manual releases now build the web bundle,
-  Linux/Windows desktop artifacts, and stable Linux packages, validate the tag,
-  and attach the release assets with a combined `SHA256SUMS`. The test workflow
-  builds git packages on pushes to `master`.
-- **Desktop Packaging**: Linux AppImage builds now support arm64. The container
-  installs Wine and Xvfb only on x86_64, and the build scripts use them when
-  available to produce the Windows portable build.
-- **Nicklist**: Added an optional Grouped Nicklists setting that shows Owner,
-  Operator, Half-Op, Voiced, Users/Online, and Offline headings based on each
-  user's highest channel privilege.
-- **Chat Logs**: Added an Open Channel Logs action when server chathistory is
-  unavailable or exhausted, with the desktop log search filtered to the current
-  network and buffer.
-- **Message Search**: Added server-side history search for servers advertising
-  `draft/search` or `soju.im/search`, with a source selector for server history
-  or desktop local logs, server-side pagination, one channel/nick target per
-  server search, and read-only server context for results in unopened buffers.
-- **Message Search**: Added `/search <terms>` for the current channel or query,
-  preferring server history and falling back to desktop local logs when needed.
-- **Message Layouts**: Added a Corporate layout with aligned chat bubbles, muted
-  metadata, and grouped author rows. Added a Cyberdeck layout with avatar
-  plates, timestamp rails, grouped author rows, and theme-variable support.
-  NephDeck and NephWave provide matching Cyberdeck styling.
-- **Presets**: Added a header menu in browsers and a native application menu in
-  the Electron app for one-click NephNET, AIM, Discord, IRC, and Teams
-  combinations of theme, message layout, and monospace font.
-- **Autocomplete**: Nick completion now includes known relayed users from the
-  current buffer, including their display names as searchable labels. Display
-  names are never inserted into the message.
-- **IRC Links**: Personal startup now handles `irc://` and `ircs://` links by
-  focusing an existing network or opening a prefilled Add Network page. Initial
-  channel lists can be captured in network settings, and existing networks
-  prompt before joining channels from a link.
-- **Emoji Packs**: Added a global Emoji Packs settings block with a Local
-  Packs/Remote Packs preference, moved Load Remote Emoji out of Chat Messages,
-  moved the per-channel pack controls into the network App Settings tab, and
-  added desktop emoji pack installation from ZIP archives with installed pack
-  management and the `kiwi-emoji://` image protocol.
-- **Desktop**: Added an optional Electron shell with a secure `app://` bridge, a
-  desktop-only JSON5 configuration overlay, the Personal startup screen, native
-  HTTP for emoji packs, downloads, and uploads, a direct-media proxy with Range
-  support, and Linux/Windows packaging.
-- **Desktop Profiles**: Added filesystem-backed state and metadata storage,
-  legacy localStorage migration, OS-backed password storage through
-  `safeStorage`, and a warned plaintext fallback when encryption is unavailable.
-  Personal startup remembers passwords by default, with a per-network opt-out in
-  Server Details.
-- **Desktop Profile Transfer**: Added portable browser/desktop profile export
-  and import, with optional password-included files and a desktop profile backup
-  before import. Desktop exports are ZIP archives that carry installed themes,
-  emoji packs, plugins, and custom network or station icons, with a JSON export
-  for browser transfer.
-- **Desktop Themes**: Added local theme installation from ZIP archives, with
-  installed theme listing and uninstall controls in Appearance. Themes are
-  stored in the desktop user-data directory and served through `kiwi-theme://`.
-- **Desktop Plugins**: Added local plugin installation from ZIP archives in
-  Settings → General → Plugins, with loaded, failed, and disabled status,
-  per-plugin toggles, uninstall controls, and a reload prompt. Installed plugins
-  are stored in the desktop user-data directory and served through
-  `kiwi-plugin://`.
-- **Plugins**: Added `kiwi.addSettingsBlock()` so plugins can append a settings
-  block to General or the active-network App Settings tab without creating
-  another tab. Added `kiwi.registerCommand()` for client input commands,
-  `kiwi.addAutocompleteProvider()` for local completion and syntax hints, and
-  the data-free `helpers/CommandTree` module for `suggest-*` plugins.
-- **Limnoria**: Moved `/lim`, command suggestions, syntax hints, settings, and
-  all command data into the bundled `suggest-limnoria` plugin. Core no longer
-  contains Limnoria command names, syntax, or delivery rules. Without the
-  plugin, `/lim` is not a client command.
-- **Network List**: Added per-network move-up controls and the OFTC fallback
-  network icon.
-- **Network Icons**: Added a per-network icon URL in Server Details → Advanced
-  that overrides server-provided and built-in icons. Desktop users can choose a
-  local image, which is copied into the app data directory and served through
-  `kiwi-icon://`. Added the nightride fallback for `NETWORK=RektNetwork`.
-- **Plugin Layout API**: Added viewport-edge layout chrome insets that framing
-  plugins can register and other plugins can consume. NephWave and NephDeck now
-  report their frame insets, and Bongo Companion positions itself from the
-  combined insets instead of assuming a specific theme. Sidebar tracking now
-  clears while a full-page active view is open, with
-  `kiwi.state.ui.active_view_open` exposing that state.
-- **Bongo Companion**: Automatic sizing now returns to Normal while a full-page
-  view covers the sidebar, and automatic positioning uses Bottom Right while a
-  full-page view is open regardless of the sidebar underneath.
-- **Bongo Companion**: Added Automatic placement, which uses Bottom Right while
-  a right sidebar is open and Top Right when it is closed. Automatic is now the
-  default position. Added a Size selector with Automatic, Normal, and Larger
-  options; Automatic uses the larger companion only while the nicklist is
-  visible. The stats card closes when clicking outside, shows explicit position
-  and size controls independently, and animates position and size changes when
-  reduced-motion preferences allow it.
-- **Radio**: The player and station browser now remain available when no
-  stations are defined. Added a General settings block for Enable Radio, Show
-  Now Playing, and Show Waveform, plus Show Station Icons for hiding artwork and
-  the empty artwork column in the station browser. Added station management for
-  adding, editing, removing, and restoring user stations and hidden station-file
-  entries, with URL or desktop-local icons. Stations can have a homepage URL and
-  multiple ordered stream URLs with automatic fallback. The station channels
-  field was removed; channel names in descriptions remain clickable. Waveform
-  styles include None, Bars, Mirror Bars, Wave, Area Wave, LED Spectrum, Pulse,
-  and Peak Caps. The player favorite button was removed; stations are starred
-  from the station browser. Desktop builds now use native HTTP for station and
-  now-playing metadata, fetch station details in a staggered background queue,
-  show genre, bitrate, and listener details, and support manual details lookup.
-  Failed metadata requests back off instead of retrying continuously. Added a
-  MilkDrop-inspired station-browser visualizer with layered WebGL feedback,
-  reactive spectrum ribbons, spiral arms, beat shockwaves, a 2D fallback,
-  fullscreen mode, and playback controls. The browser header toggles back to the
-  station list without closing the pane.
-- **App Settings**: Added a Channel Defaults section for global per-channel
-  defaults such as joins/parts, topic/nick/mode changes, formatting, nicklist
-  colors, notification level, sound, and unread counts. Added the remaining
-  global display, input, history, and notification controls that were previously
-  config-only.
-- **Chat Input**: Added a visible warning when a space-prefixed command is
-  cancelled, with actions to edit it or send it as a message. Added App Settings
-  controls for the emoji and color pickers.
-- **Remote Autocomplete**: Added the `/auto` input command. Tab requests are
-  opt-in per message, can target the current channel or query, and merge
-  responses from multiple bots with each suggestion attributed to its source.
-  The `/auto` prefix is stripped from the sent message. Running `/auto` by
-  itself toggles a session-only, per-network always-auto mode that highlights
-  the input bar and removes the need to prefix each request.
-- **Notifications**: Added a Team Highlights setting for `@here`, `@channel`,
-  and `@everyone`.
-- **Avatars**: Added an Avatars settings category with fallback style, custom
-  fallback URL, image background, and away status position controls. Fallbacks
-  include local initials, a local identicon, and remote DiceBear Identicon,
-  Rings, Bottts, Cameo, and animated Gaze styles.
-- **Desktop Window**: Remember the window size, position, and maximized state
-  across launches.
-- **Link Previews**: Added provider-owned players and embeds for TED, Mixcloud,
-  Wistia, Loom, Art19, Pinterest, TikTok, Prezi, OpenStreetMap, Yandex Maps,
-  YouTube playlists, and Twitch VODs. Vimeo uses its official player and
-  supports channel, showcase, and player URLs. Imgur gallery/album pages use a
-  curated iframe; single-image Imgur links remain direct media. OpenStreetMap
-  uses its `export/embed.html` endpoint and Yandex Maps uses the public map
-  widget, both keyless. Prezi uses its public embed URL. SlideShare
-  presentations use its oEmbed iframe on desktop, while Flickr, Dailymotion,
-  Reddit, and Speaker Deck provide oEmbed/API cards. Reddit is oEmbed-only
-  because Reddit no longer serves unauthenticated JSON. Providers use browser
-  fetch on web and the native HTTP bridge on desktop; unsupported or blocked
-  requests fall back to the plain chat link.
-- **Amazon Previews**: Added URL-derived Amazon product cards on web and
-  desktop. The card uses the product ASIN and URL slug, links to the canonical
-  product page, and never fetches the Amazon page or uses PA-API/Creators API.
-- **Web Metadata Previews**: Added verified generic web allowlisting for NPR,
-  Fox News, The Independent, DW, W3C, and Apache. Added CORS-compatible named
-  cards for Wikipedia, Internet Archive, Stack Overflow, Fandom, X, Write.as,
-  and Lemma. Generic web pages outside the allowlist are not fetched.
-- **Tier D Previews**: Added desktop metadata cards for public pages using Open
-  Graph, Twitter Card, and JSON-LD fields. Manual previews are always available;
-  Show Media Previews controls automatic Tier A/C previews and Show Metadata
-  Previews controls automatic Tier B/D previews and is available on web for
-  named web-capable providers and the generic allowlist. Added desktop JSON/XML
-  oEmbed discovery, GitHub repository cards using the public API, Gitea/Forgejo,
-  Bitbucket, and GitLab repository cards, itch.io game cards, and GameTracker
-  server cards using the page title and full-width server banner. Tier B
-  failures fall back to page metadata, Tier C player failures fall back to Tier
-  B oEmbed cards and then Tier D page metadata on desktop or allowlisted web
-  hosts, and failed Tier D cards remove their preview handles.
+- **Desktop App**: Added an optional Electron shell with a secure `app://`
+  bridge, a desktop-only JSON5 configuration overlay, native HTTP for emoji
+  packs, downloads, and uploads, a direct-media proxy with Range support, and
+  Linux/Windows packaging. Desktop builds use native notifications instead of
+  Web Push.
+- **Desktop Profiles & Transfer**: Added filesystem-backed state and metadata
+  storage, legacy localStorage migration, OS-backed password storage through
+  `safeStorage` with a warned plaintext fallback, and Personal startup password
+  memory with a per-network opt-out. Added portable profile export/import as a
+  ZIP carrying state, themes, emoji packs, plugins, and custom icons, with an
+  optional plaintext-password export.
+- **Desktop Updates & Distribution**: Added check-only Gitea release
+  notifications with manual and automatic checks, a tray indicator, and a
+  release-page link; updates are never downloaded or installed. Release
+  workflows validate tags, build the web bundle, Linux AppImage, and Windows
+  portable executable for release assets with a combined `SHA256SUMS`, and build
+  stable packages for the Debian and Arch registries.
+- **Desktop Local Content**: Added local theme, emoji pack, and plugin
+  installation from ZIP archives, with installed-content listing, uninstall
+  controls, plugin loaded/failed/disabled status, enable toggles, and a reload
+  prompt. Added the `kiwi-theme://`, `kiwi-emoji://`, `kiwi-icon://`, and
+  `kiwi-plugin://` protocols. Installed content is stored in the desktop
+  user-data directory and included in profile archives.
 - **Desktop Chat Logs**: Added local SQLite chat history with FTS search,
-  configurable retention, redaction handling, and a desktop search dialog.
-  Redacted messages retain their local text and are marked in search results.
-  Search results load historical context around the target, with gap markers and
-  controls to load missing context in either direction. Unjoined channels use a
-  temporary read-only local-log History buffer rather than rejoining, and
-  exhausted server-history gaps can open local log context.
+  configurable retention, redaction handling, word-prefix matching, a desktop
+  search dialog, historical context loading with gap markers, and an Open
+  Channel Logs action for unavailable or exhausted server history. The desktop
+  log search is filtered to the current network and buffer. Unjoined channels
+  use a read-only local-log History buffer instead of rejoining, and searched
+  messages are briefly highlighted.
+- **File Uploads**: Added desktop-only Catbox, Filebin, ShareBin.eu, Uguu~, and
+  WebDAV services alongside Litterbox, with Catbox user hashes, ShareBin
+  retention and chunked uploads, WebDAV access URLs and optional Basic auth, a
+  WebDAV password stored in the desktop secret store, and unique
+  timestamp-and-random upload names.
+- **Message Layouts & Presets**: Added Corporate and Cyberdeck message layouts
+  and refined timestamp, action, and status spacing in the inline and
+  traditional layouts so 12-hour times and narrow rows stay aligned. Added
+  preset menus in the browser and Electron app for one-click NephNET, AIM,
+  Discord, IRC, and Teams combinations; the browser switcher is optional and
+  both menus list only presets whose themes are enabled.
+- **Nicklist & Channel Settings**: Added optional grouped nicklists with Owner,
+  Operator, Half-Op, Voiced, Users/Online, and Offline headings. Split
+  per-buffer Preferences from channel Settings and hid the Settings tab when the
+  channel has no settings to show.
+- **Message Search**: Added server-side history search for `draft/search` and
+  `soju.im/search`, with a source selector for server history or desktop local
+  logs, pagination, one channel/nick target per server search, read-only context
+  for unopened buffers, and `/search <terms>` with server-first and local-log
+  fallback. The search dialog follows the theme; results load context on first
+  click, and unloaded local results become Open Log when server history cannot
+  reach them.
+- **Link Previews**: Expanded link previews with provider players and embeds for
+  major video, audio, map, and presentation services. Added verified generic web
+  metadata cards for selected news, standards, archive, developer, and wiki
+  sites; pages outside the allowlist are not fetched.
+- **Preview Cards**: Reworked link preview and bridged cards into a consistent
+  content-first card with thumbnails, lightbox galleries, safe wrapping, and
+  clickable links. Added desktop metadata cards from Open Graph, Twitter Card,
+  JSON-LD, and oEmbed. Fallbacks degrade from players to oEmbed cards to page
+  metadata and failed cards remove their handles. Desktop player embeds send
+  valid HTTPS Referer values and a desktop-specific Twitch `parent`, so they
+  work under the `app://` origin.
+- **Emoji Packs**: Added a global Emoji Packs settings block with a Local/Remote
+  preference, added network and channel Default/Always/Never policies, and added
+  desktop emoji pack installation from ZIP archives with installed-pack
+  management and the `kiwi-emoji://` protocol.
+- **Remote Autocomplete**: Added `/auto`, which sends
+  `+draft/autocomplete-request` TAGMSGs for the current channel or query and
+  merges responses from multiple bots with each suggestion attributed to its
+  source. The `/auto` prefix is stripped from the sent message, bare `/auto`
+  toggles session-only always-auto mode for the network, and an open list
+  accepts Enter to send or Tab to complete.
+- **IRC Links & Connections**: Added `irc://` and `ircs://` handling in Personal
+  startup, focusing an existing network or opening a prefilled Add Network page,
+  with initial channel lists captured in network settings and a prompt before
+  joining link channels. Added an HTTPS mixed-content warning when a direct
+  `ws://` endpoint is configured, and desktop protocol-handler registration
+  defaults on.
+- **Plugins**: Added `kiwi.addSettingsBlock()`, `kiwi.registerCommand()`,
+  `kiwi.addAutocompleteProvider()`, the data-free `helpers/CommandTree`, layout
+  chrome insets for framing plugins, and sidebar active-view state. These let
+  plugins append settings blocks, register client commands, provide local
+  completion, and consume combined frame insets without assuming a specific
+  theme.
+- **Bongo Companion**: Added automatic placement, using Bottom Right while a
+  right sidebar is open and Top Right when it is closed, plus automatic sizing
+  that grows while the nicklist is visible; both are now the default. Added
+  independent position and size controls, outside-click dismissal for the stats
+  card, reduced-motion-aware animations, positioning that accounts for full-page
+  views and frame insets, and theme-aware popup colors.
+- **Radio**: Added station management for adding, editing, removing, and
+  restoring user stations and hidden station entries, with homepage links,
+  multiple ordered stream URLs and fallback, URL or desktop-local icons, and
+  settings for Enable Radio, Show Now Playing, Show Waveform, and Show Station
+  Icons. Expanded waveform styles, added a MilkDrop-inspired WebGL visualizer
+  with fullscreen and playback controls, and moved desktop metadata fetching to
+  native HTTP with genre, bitrate, listener details, manual lookup, and backoff.
+  The station browser remains available with no stations, and the header toggles
+  back to the station list.
+- **Chat Input**: Added a visible warning when a space-prefixed command is
+  cancelled, with actions to edit it or send it as a message. Added a Time
+  System selector for 12-hour, 24-hour, and decimal time. Custom
+  `timestamp_format` values still render as configured and hide the selector.
+- **Network List & Icons**: Added per-network move-up controls, OFTC and Rekt
+  fallback icons, and a per-network icon URL in Server Details → Advanced that
+  overrides server-provided and built-in icons. Desktop users can select a local
+  image, which is copied into the app data directory and served through
+  `kiwi-icon://`.
 
 ### Changed
 
-- **Settings**: Renamed the Show Messages toggles to Channel Changes, Nickname
-  Changes, Topic Changes, and User JOIN/PARTs, and removed the Close to Tray,
-  Launch at Login, and Spellcheck descriptions from the General block.
-- **Themes**: Softened the message-list date and unread separator line in the
-  dark themes that inherit `common/base.css` from a 2px dashed accent to a 1px
-  dashed accent at 25% opacity. Kiwi Dark keeps its original separator.
-- **Desktop Packaging**: Debian and Arch packages are now published to the Gitea
-  package registries by the test and release workflows. Release commits publish
-  `kiwiirc-desktop`; pushes to `master` publish `kiwiirc-desktop-git`. The
-  stable and git packages conflict in both package managers. Releases now
-  contain the web ZIP/TGZ, Linux AppImage, Windows portable executable, and
-  `SHA256SUMS`; NSIS installers, blockmaps, and `latest*.yml` files were
-  removed. Packaging now uses the committed icon assets instead of regenerating
-  them, so ImageMagick and librsvg are no longer required for desktop builds.
-- **Desktop Packaging**: AppImage and Windows portable artifact names now
-  include the architecture (`x86_64`/`arm64` for AppImage, `x64`/`arm64` for
-  portable).
-- **Desktop Web Push**: Desktop builds now use native notifications and no
-  longer negotiate or expose browser Web Push.
-- **Desktop Window**: Closing the window now hides it to the system tray by
-  default when the tray is available, keeping IRC connections alive. The General
-  settings page and tray menu provide a Close to Tray toggle.
-- **Avatars**: The default away-status indicator position is now bottom-right.
-- **Messaging Permissions**: Block Direct Messages now applies to all new direct
-  messages except the existing channel-op and network-oper exemptions, rather
-  than only messages from unknown users. The per-network dropdown overrides the
-  global default. The internal friends list is stored for the future Friends
-  Only policy; it has no add/remove UI yet.
-- **Notifications**: Desktop Notifications are global rather than per-network.
-  JOIN/PART and Server activity counting are global. Group mentions moved from a
-  global setting to per-network Highlight Group Mentions. Per-buffer Mute
-  Notifications and Hide Unread Count controls were removed; the per-buffer
-  Notify level remains as an override.
-- **Settings**: Reorganized General settings into Theme, Previews, Channels, and
-  Users blocks. Added global Show Colors, Show Prefix, and Hide Ignored. Show
-  Prefix applies to nicklist and message author prefixes. Removed the per-buffer
-  Color Nicklist options.
-- **Settings**: Added a Chat Box block and moved the chat-input options into it.
-  Added Show Style Picker and the Channels Export Button. Export Buffer is
-  hidden by default.
-- **Settings**: Added a Messages block with message layout, timestamps,
-  redactions, bot messages, and presence changes. Added network-level
-  Default/No/Yes message filters. Show Colors now controls nick colours in both
-  the nicklist and messages.
-- **Settings**: Moved Request History to per-network Channels settings, ungated
-  global emoji settings, gated Highlight Replies by reply-tag support, treated
-  metadata bots as bots, and listed network emoji packs alongside channel packs.
-  Renamed Lax Message Rerouting to Permissive Rerouting.
-- **Emoji Packs**: Added a network pack policy row and Default/Always/Never
-  channel policies. Always packs load even when global remote emoji is disabled;
-  Default follows the global setting. Channel rows remain visible while global
-  remote emoji is off. Empty gated network settings blocks are now hidden.
-- **Presets**: The browser header preset switcher is now optional through a
-  default-on Show Preset Switcher setting in Appearance. The Electron app keeps
-  its native Presets menu independent of that setting, and both menus list only
-  presets whose themes are enabled.
+- **Settings**: Reorganized settings and made many buffer-specific and some
+  network-specific settings global settings now. Many defaults changed. Please
+  go through your appsettings page and re-adjust to match your preferences if
+  needed.
+- **Themes**: Softened the message-list date and unread separator from a 2px
+  dashed accent to a 1px dashed accent at 25% opacity in the dark themes that
+  inherit `common/base.css`; Kiwi Dark keeps its original separator.
 - **Raw Buffer**: Raw protocol lines now bypass message formatting, URL,
-  channel, user, emoji, and preview processing, and use a compact monospace row
+  channel, user, emoji, and preview processing and use a compact monospace row
   instead of the normal message layouts. Timestamps, `[S]`/`[C]` prefixes, and
   visible control glyphs are preserved.
 - **WHO Polling**: The away-status fallback now runs every three minutes instead
-  of every 30 seconds and skips channels with more than 100 users. A stale loop
-  also stops when its buffer has been removed and replaced by another buffer
-  with the same name.
-- **Chat Logs**: Jumping to a searched or linked message now briefly highlights
-  the target message so it is easy to find in the buffer.
-- **Tooling**: `npm run lint` and `npm run format` now include the desktop
-  Electron and desktop script code.
-- **Message Search**: The search dialog now follows the selected theme. The
-  header search button is hidden when no search source is available. The state
-  browser button now appears only on desktop layouts while a special buffer is
-  selected; it is hidden in restricted single-network mode without a source and
-  disabled otherwise. Unloaded local results use the same load flow as server
-  results; if server history cannot reach a local result, the result changes to
-  Open Log and opens a local context buffer.
+  of every 30 seconds, skips channels with more than 100 users, and stops stale
+  loops when a buffer has been removed and replaced by one with the same name.
 - **History**: Hidden-only chathistory batches now advance a separate cursor and
-  continue loading older batches automatically. Trimming clears that cursor so
-  the next request starts from the oldest remaining message.
-- **History**: Trimming now restores Load Previous Messages and requests older
-  history from the oldest remaining message. Trimming is delayed briefly after
-  returning to the bottom and cancelled if the user scrolls back up.
-- **File Uploads**: Upload results are appended to the originating buffer's chat
-  input instead of being sent immediately, preserving any existing draft.
-- **Desktop**: `allowRegisterProtocolHandler` now defaults to `true` for desktop
-  installations. The default IRC client action still requires Personal startup
-  and a configured gateway.
-- **App Settings**: Reordered Channel Defaults and shortened its labels.
-- **Chat Messages**: Reorganized message settings, renamed preview and nickname
-  labels, defaulted presence changes off, and defaulted desktop scrollback to
-  500 messages.
-- **App Settings**: Moved preview controls to Appearance and the direct-message
-  block control to General, with shorter labels.
-- **Chat Messages**: The Show Message Info on Touch setting now only appears on
-  devices that report touch input.
-- **Timestamps**: Added a Time System selector for 12-hour, 24-hour, and decimal
-  time. Custom `timestamp_format` values continue to render as configured and
-  hide the selector.
-- **Autocomplete**: Tab accepts the highlighted suggestion, while Enter accepts
-  it and sends the message. Space and punctuation type normally instead of
-  selecting it, while the arrow keys and Shift+Tab navigate the list.
-- **App Settings**: Added an Appearance category for theme and monospaced font
-  controls in the General tab, and a per-network tab named after the active
-  network for persistence, typing, bot, rerouting, redaction, and notification
-  controls. Renamed the network controls to Redacted Messages, Desktop
-  Notifications, and Register Web Push.
+  continue loading older batches automatically. Trimming restores Load Previous
+  Messages, requests older history from the oldest remaining message, and is
+  briefly delayed after returning to the bottom.
 - **File Uploads**: The preferred upload service and service-specific retention
-  settings are now global. Added desktop-only Catbox, Filebin, ShareBin.eu,
-  Uguu~, and WebDAV services alongside Litterbox, including Catbox user hashes,
-  ShareBin retention, chunked ShareBin uploads, and WebDAV access URLs, optional
-  Basic auth, and unique timestamp-and-random upload names. Networks default to
-  preferring FILEHOST when available, with a per-network Use FILEHOST setting.
-  Per-network service and retention overrides were removed.
-- **Notifications**: Server messages no longer count as activity by default, and
-  team highlights are enabled by default.
-- **Chat Input**: The color picker is shown by default. Emoji shortcode
-  conversion while typing is now off by default and its control moved to the
-  Chat Input section.
-- **Nicklist**: Away users are grouped and nicklist avatars are enabled by
-  default.
-- **Desktop**: Channel topics are shown in the header by default.
-- **Avatars**: Local identicons remain the default fallback, with local initials
-  available as another fallback style. Local initials and identicons use the
-  nickname colour when Show Avatar Background is disabled.
-- **Link Preview Cards**: Native link preview cards now follow the bridge card
-  layout with a left accent border, content-first hierarchy, and thumbnails
-  below the text. Thumbnails open in the media lightbox instead of navigating
-  away from the chat. Descriptions wrap without a line clamp and remain subject
-  to the 600-character content cap.
-- **Bridge Cards**: `Description:` labels are stripped from bridge card bodies.
-  `URL:` lines become the card link instead of visible text, and clicking the
-  card outside its thumbnails or body links opens that URL. `Image:` lines are
-  parsed as media: a single image with no thumbnail becomes the card thumbnail,
-  while additional or multiple images render outside the card in a lightbox
-  gallery.
-- **Desktop Previews**: Desktop now defaults to hiding bridged preview cards.
-  Set `buffers.hide_preview_cards` to `false` in `config.json5` to show them by
-  default.
-- **App Settings**: Renamed “Hide Preview Cards” to “Hide Bridged Previews” on
-  desktop and web.
-- **Profile Transfer**: Profile import is limited to Personal setup mode. Export
-  remains available in every setup for migration to a personal installation.
+  settings are now global, and networks default to preferring FILEHOST when
+  available with a per-network Use FILEHOST setting. Per-network service and
+  retention overrides were removed, and file upload results append to the
+  originating buffer's draft instead of sending immediately.
+- **Autocomplete**: Nick completion now includes known relayed users from the
+  current buffer, including their display names as searchable labels; display
+  names are never inserted into the message. Tab accepts the highlighted
+  suggestion, Enter accepts it and sends, Space and punctuation type normally,
+  and the arrow keys and Shift+Tab navigate the list.
+- **Limnoria**: `/lim`, command suggestions, syntax hints, settings, and command
+  data now come from the bundled `suggest-limnoria` plugin. Core no longer
+  contains Limnoria command names, syntax, or delivery rules.
+- **Radio**: Stations are now starred from the station browser instead of the
+  player.
+- **Performance**: Reduced message-list reactivity and renderer memory growth by
+  caching avatar and host-name settings per buffer, avoiding per-message setting
+  reads, scoping row reactivity, precomputing author-repeat and unread state,
+  and bounding avatar caches. Coalesced scroll and tick work, avoided redundant
+  scrollback sorting, shared batch timers, cached radio waveform colors, bounded
+  hidden raw buffers, and reduced IRC ping-timeout churn.
 
 ### Removed
 
-- Removed `buffers.mute_sound`; per-buffer Never now suppresses message sounds
-  and drives Soju muted metadata.
-- Removed dead `buffers.ignore_bots`, global `buffers.auto_request_history`,
-  unused `textFormats` keys, and orphaned settings locale strings.
-- **Avatars**: Removed the DiceBear Rings fallback style and shortened the
-  DiceBear Gaze label to “DiceBear Gaze” so long option labels no longer widen
-  settings dropdowns.
-- **Network Settings**: Removed the Network Preferences block. Its persistence,
-  typing, rerouting, bot filtering, redaction, FILEHOST, notification, and Web
-  Push controls now live in the active network's App Settings tab. Limnoria
-  settings are provided by the `suggest-limnoria` plugin block.
-- **App Settings**: Removed the redundant Export State troubleshooting action.
-  `kiwi.log.getLogBuffer()` remains available for raw log diagnostics.
-- **Legacy Bouncer Config**: Removed the unused top-level `bnc` object,
-  `startupOptions.bouncer`, the `kiwiBnc` and `znc` startup aliases, and the
-  `znc` preset-network type alias. Personal startup now restores a saved bouncer
-  control connection automatically.
-- **App Settings**: Removed the Show User Hostnames control. The
-  `buffers.show_hostnames` setting remains available through config.
-- **Themes**: Removed the special Custom Theme URL field. Theme URLs are always
-  loaded as `<url>/theme.css`, and a theme named `Custom` is treated like any
-  other theme.
-- **Limnoria**: Removed the Limnoria Prefix setting. Channel-delivered commands
-  now use `<LimnoriaName>: <command>`, and commands typed in a PM with Limnoria
-  are sent without a prefix.
-- **Autocomplete**: Removed the Limnoria-specific remote autocomplete path.
-  `/lim`, `/msg <bot>`, and channel commands now use only local suggestions;
-  remote requests use `/auto` or always-auto mode.
+- Removed the Network Preferences block; its controles now live in the active
+  network's App Settings tab.
+- Removed the Export State troubleshooting action; `kiwi.log.getLogBuffer()`
+  remains available for raw log diagnostics.
+- Removed the unused top-level `bnc` object, `startupOptions.bouncer`, the
+  `kiwiBnc` and `znc` startup aliases, and the `znc` preset-network type alias.
+  Personal startup now restores a saved bouncer control connection
+  automatically.
+- Removed the special Custom Theme URL field. Theme URLs are always loaded as
+  `<url>/theme.css`, and a theme named `Custom` is treated like any other theme.
+- Removed the Limnoria Prefix setting and the Limnoria-specific remote
+  autocomplete path.
 
 ### Fixed
 
-- **Localization**: Fixed update-check, account registration, and registration
-  password messages that displayed literal `{version}`, `{account}`, `{min}`,
-  and `{max}` placeholders. The strings used single-brace placeholders, but the
-  app interpolates with i18next, which requires double braces.
-- **Avatars**: Render image avatars as plain HTML instead of SVG content, so the
-  message list and nicklist no longer recalculate style or lay out on every
-  avatar animation frame. Animated SVG avatars still animate inside their own
-  image document, so their cost scales with the number of visible animated
-  avatars.
-- **Arch Packages**: Removed the AUR-only `http-parser` dependency from the
-  pacman package, which made it uninstallable on stock Arch Linux and Manjaro,
-  and added `libsecret` so password storage can use the system keyring.
-- **Profile Transfer**: Desktop exports are now ZIP archives containing the
-  profile state plus installed themes, emoji packs, plugins, and custom network
-  or station icons, so a transferred profile keeps its look and icons. Import
-  skips themes, packs, and plugins that are already installed, and profile
-  backups include the icon directory.
-- **Avatars**: Keep a stable avatar root element so swapping from the local
-  identicon to the metadata avatar no longer drops the layout's scoped CSS
-  attribute, which left the new image unsized and stretched to the message row
-  height.
-- **Themes**: Extended the Nightswatch and Radioactive user-menu avatar hover
-  tint to the HTML avatar background.
-- **Desktop Icons**: Strip timestamp metadata from the generated badge PNG so
-  repeated icon builds produce byte-identical files.
-- **Fallback Avatars**: Shared fallback avatar load state across buffers and
-  components, deduplicated in-flight requests, and limited concurrent fallback
-  preloads through the image queue. Failed fallback URLs are remembered for ten
-  minutes instead of being retried on every channel switch.
-- **Desktop HTTP**: Native HTTP failures now log to `main.log` with a sanitized
-  URL, request purpose, and error code. Preview requests reject non-2xx and
-  non-HTML responses before reading the body, use a shorter timeout, and run at
-  most four at a time. Malformed or prematurely closed responses now settle
-  cleanly instead of leaving pending requests.
-- **Unknown Avatars**: No longer generates avatars for server notices without a
-  sender nick, and uses the configured fallback avatar URL for unknown senders
-  instead of always using the local identicon.
-- **Desktop Lifecycle**: Canceling the quit warning no longer closes the tray,
-  notifications, or local chat logs. Added a rotating main-process log under the
-  app logs directory and suppressed Chromium verbose media logging in packaged
-  builds.
-- **Clipboard Images**: Prefer `clipboardData.files` and use file items only as
-  a fallback, so a pasted image is uploaded once instead of once per clipboard
-  representation.
-- **Raw Log**: Internal buffers such as `*raw`, the server buffer, and special
-  buffers now trim immediately instead of waiting for the history grace period.
-  Their rendered rows are capped to the configured scrollback, and the message
-  list refreshes after trimming, so opening `*raw` no longer stalls the UI.
-- **Chat History**: Parse IRCv3 server-time tags when building chathistory
-  cursors and history windows, include queued messages when checking whether a
-  batch is displayable, and paginate from the oldest event in a batch. Loading
-  previous history no longer re-fetches the same window or hides the control on
-  busy channels. Preserve chathistory metadata through nested labeled-response
-  batches, treat `draft/chathistory-end` per request direction, suppress false
-  latest-to-live gaps, and request automatic history for channels created after
-  the network is ready. Internal buffers no longer maintain live history
-  segments, unloaded server search results load their context on first click and
-  jump on the next, and gap controls expand the intended older or newer side.
-- **Chat History**: The LATEST-to-live boundary now uses the newest stored
-  message rather than non-displayable events such as reaction TAGMSGs, so a
-  history batch ending with reactions no longer creates a false gap after
-  reconnect.
-- **Presets**: Switching presets now refreshes the message list so theme and
-  layout changes do not leave stale nickname colors, timestamps, or avatar
-  sizing behind.
-- **Inline Layout**: Message actions now sit before the timestamp with a small
-  fixed gap. Timestamps size to their content without extra padding or minimum
-  width, and the hover reserve is 110px for default/decimal formats, 130px for
-  12-hour/custom formats, and 40px when timestamps are disabled. Traffic and
-  mode timestamps stay inside that group instead of using the legacy absolute
-  traffic-timestamp positioning.
-- **Inline Layout**: Nicknames now use the same nickname colour as the nicklist
-  instead of a theme's generic link colour.
-- **Traditional Layout**: Timestamp, action-button, and status-icon offsets now
-  follow separate narrow, wide, and timestamps-disabled spacing, so longer
-  `AM`/`PM` times no longer collide with the `...` button or icons. The nickname
-  column now starts at `2px` and is `116px` wide, keeping its right edge aligned
-  with the message body. Mobile rows now contain their floated nickname and
-  body, fixing collapsed rows, missing timestamps, and overlapping messages on
-  narrow screens.
-- **Cyberdeck Layout**: 12-hour and custom timestamps now widen the avatar
-  gutter and remain on one line instead of wrapping `AM`/`PM`.
-- **Avatars**: Constrained SVG intrinsic sizing and avatar wrappers so avatars
-  cannot expand to fill the message list during theme or preset changes.
-- **Bongo Companion**: Popup action and icon-button text now follows the theme
-  surface and foreground colors, fixing unreadable buttons on light themes
-  without input color tokens.
-- **File Uploads**: Uploaded links are now tracked as pending messages and
-  confirmed by the server echo, so the sender no longer sees a duplicate copy.
-- **Desktop Settings**: The default IRC handler action is only offered on
-  HTTP(S) origins, and registration failures are ignored instead of surfacing an
-  unexpected error in the desktop shell.
-- **WebDAV Uploads**: The WebDAV password is now retained in the desktop secret
-  store and restored on startup instead of being dropped from the saved secrets.
-- **Desktop Connection**: Disabled renderer background throttling so IRC
-  keepalives and reconnect timers keep running while the window is minimized or
-  behind another application. Stalled connection attempts now time out instead
-  of leaving the UI on **Connecting…** indefinitely.
-- **Remote Autocomplete**: The first bot response now starts a clean suggestion
-  list, so stale local commands no longer hide remote completions.
-- **Channel Header**: Topic preview handles now open previews in the pinned
-  media area.
-- **Avatars**: Center the local identicon grid within circular avatars.
-- **Real Names**: Realnames shown in the modern message list now render IRC
-  formatting, links, and emoji, matching the user box.
-- **Link Preview Cards**: Description text now wraps up to four lines instead of
-  truncating to one line. Long unbroken tokens wrap safely, and the existing
-  600-character limit remains as the content cap.
-- **Reddit Previews**: Extensionless `share.redd.it/preview/post` and
-  `/preview/comment` links now render as direct image previews.
-- **Amazon Previews**: Removed the ASIN image fallback. The legacy
-  `/images/P/<ASIN>` endpoint can return a 1×1 tracking pixel, and the real
-  product image ID cannot be derived from the ASIN without fetching the page or
-  using a gated API. Amazon cards are now text-only.
-- **Desktop Media**: Fixed native HTTP address lookups on Node runtimes that
-  request all DNS addresses, restoring direct image/audio/video previews.
-- **Desktop Embeds**: Added a valid HTTPS Referer for YouTube, Twitch, and Vimeo
-  embed requests, and a desktop-specific Twitch `parent` value, so those players
-  work under the `app://` origin. Twitch player `frame-ancestors` responses now
-  allow the `app:` origin without disabling the rest of Twitch's CSP, restoring
-  desktop channels, clips, and VODs.
-
-### Fixed
-
-- **Network Settings**: Show direct WebSocket paths in the main server field and
-  select WebSocket transport with the protocol picker instead of a redundant
-  advanced checkbox.
-- **Desktop Chat Logs**: Match word prefixes in search so `otter` finds
-  `otters`.
-- **Desktop Menus**: Fixed Reload and Force Reload being blocked by the exit
-  warning, added a native close confirmation, removed the nonfunctional Window
-  menu on Linux and Windows, and open the configuration folder instead of
-  relying on a JSON5 file association.
-- **Desktop Startup**: Prevented sidebar state errors when the Welcome screen
-  has no active buffer.
-- **Message List**: Cache avatar and host-name settings per buffer, avoid
-  per-message setting reads during rendering, scope message-row reactivity with
-  a stateful row wrapper, precompute author-repeat, reply-preview, and unread
-  marker state instead of scanning the message list per row, and bound avatar
-  image caches to reduce Vue reactivity overhead and renderer memory growth when
-  switching channels.
-- **IRC Protocol**: Casefold user and channel state with the negotiated
-  `CASEMAPPING`, apply negated `RPL_ISUPPORT` tokens, and fall back to the
-  modern `(ov)@+` `PREFIX` only when the server does not advertise one.
-- **Chat & Input**: Preserve empty trailing IRC parameters, enforce advertised
-  byte limits for `/join`, `/topic`, `/kick`, `/away`, and `/nick`, and send
-  long multiline messages in grapheme-safe chunks so emoji and ZWJ sequences are
-  never split.
-- **History**: `CHATHISTORY` timeouts now start when a request is sent, retry
-  with backoff, and keep manual history loading available instead of disabling
-  it.
+- **Chat & IRC Protocol**: Casefold user and channel state with the negotiated
+  `CASEMAPPING`, apply negated `RPL_ISUPPORT` tokens, fall back to the modern
+  `(ov)@+` `PREFIX` only when the server advertises none, preserve empty
+  trailing parameters, enforce advertised byte limits for `/join`, `/topic`,
+  `/kick`, `/away`, and `/nick`, and send long multiline messages in
+  grapheme-safe chunks.
+- **Messages**: Real names in the Modern layout now render IRC formatting,
+  links, and emoji, matching the user box.
 - **Read Markers**: Read state now follows the exact sent `MARKREAD` timestamp,
-  correlates labeled responses with pending markers, reuses the message's local
-  time to avoid clock-offset drift, uses timestamp references when no `msgid` is
-  available, treats `MARKREAD *` as no stored marker, and ignores stale server
+  correlates labeled responses with pending markers, uses the message's local
+  time to avoid clock-offset drift, falls back to timestamp references without a
+  `msgid`, treats `MARKREAD *` as no stored marker, and ignores stale server
   markers.
 - **Connection Lifecycle**: Reconnects now reset connection-scoped state, cancel
   stale timers and batch queues, ignore late socket and SASL callbacks, scope
@@ -569,48 +201,25 @@ and this project adheres to
 - **Startup Connect**: Temporary and Remember Me off flows no longer reset the
   live network after connecting, duplicate connect calls are ignored during
   negotiation, and probe channels cannot collide with network channel IDs.
-
-### Fixed
-
-- **Desktop Embeds**: Embed load errors now share one IPC listener, avoiding
-  listener-limit warnings when many embeds are open. Removed duplicate
-  `allowfullscreen` attributes in favor of `allow="… fullscreen …"`.
-- **Performance**: Hidden raw buffers now keep a bounded lightweight backlog
-  instead of creating full messages and trim timers for every raw line. Batch
-  tick timers are shared per tick, empty trim timers are no longer cleared, IRC
-  ping-timeout resets are coalesced during event bursts, in-order messages no
-  longer trigger a full scrollback sort, and late messages are inserted in order
-  instead of re-sorting the scrollback. Radio waveform colours are cached
-  between theme changes, and message-list scroll checks are coalesced per
-  animation frame.
+- **History**: `CHATHISTORY` timeouts now start when a request is sent, retry
+  with backoff, and keep manual loading available. The LATEST-to-live boundary
+  uses the newest stored message, nested labeled-response batches preserve
+  chathistory metadata, history-end is tracked per request direction, and
+  reaction-only batches no longer create false gaps after reconnect.
+- **Mobile Layout**: Limited the mobile state-browser drawer width, updated
+  NephDeck and NephWave chrome offsets to follow the drawer width, and moved
+  NephDeck app settings inside its mobile chrome.
 - **Shutdown**: Replaced the deprecated `unload` handler with `pagehide`, so
   connection shutdown no longer triggers the Chromium unload policy violation.
-- **Mobile Layout**: Limited the mobile state-browser drawer width, stacked the
-  search dialog controls for narrow screens, and updated the bundled NephDeck
-  and NephWave chrome offsets to follow the new drawer width. NephDeck app
-  settings now sit inside its mobile chrome instead of under it.
-- **Connections**: Added an HTTPS mixed-content warning when a direct ws://
-  endpoint is configured, recommending wss:// or an IRC gateway instead.
 - **Link Previews**: Failed previews no longer trigger message re-rendering
-  loops that repeatedly refetched the same URL. Concurrent preview requests are
-  shared, and failed previews are cached briefly before retrying.
-- **Plugins**: Exposed the Link Preview module to plugins, fixing the Radio
-  plugin's missing-module warning during startup.
-
-### Security
-
-- **Profile Transfer**: Profile icon import resolves symlinks against the local
-  icon directory and creates files exclusively, so an imported profile cannot
-  read or write outside it.
-- **Desktop Shell**: Added a restrictive `app://` Content-Security-Policy,
-  default-deny permission handlers, top-frame IPC sender validation, and
-  Electron fuses for ASAR-only loading, ASAR integrity where supported, and
-  disabled run-as-Node, `NODE_OPTIONS`, and CLI inspection.
-- **Desktop Updates**: Update checks now require HTTPS endpoints and release
-  links and still never download or install updates automatically.
-- **Desktop HTTP**: Cross-origin redirects now drop authorization, cookie, and
-  proxy-authorization headers and request bodies. HTTPS-to-HTTP redirects are
-  refused, and caller-supplied Host headers are ignored.
+  loops that refetched the same URL. Concurrent preview requests are shared,
+  failed previews are cached briefly before retrying, and topic preview handles
+  now open in the pinned media area.
+- **Avatars**: Image avatars now render as plain HTML and keep a stable wrapper,
+  so the message list no longer re-lays out on every animation frame and avatars
+  no longer stretch during theme or preset changes.
+- **Localization**: Fixed account-registration messages that displayed literal
+  `{version}`, `{account}`, `{min}`, and `{max}` placeholders.
 
 ## [2.1.0] - 2026-11-03
 
