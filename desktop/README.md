@@ -189,8 +189,8 @@ relative to `theme.css`.
 
 Installed themes are copied into the desktop user-data directory and served
 through the dedicated `kiwi-theme://` protocol. They are not available in the
-web client and are not included in profile exports. Uninstalling the active
-theme switches back to the default theme.
+web client, but desktop profile archives include installed themes. Uninstalling
+the active theme switches back to the default theme.
 
 The installer rejects path traversal, symlinks, encrypted entries, ZIP64,
 unsupported compression, excessive expansion, invalid `theme.json` files, and
@@ -242,8 +242,9 @@ Supported formats are PNG, JPEG, GIF, WebP, AVIF, and SVG. Non-empty `required`
 extension lists are rejected because no pack extensions are implemented.
 
 Installed packs are copied into the desktop user-data directory and are not
-available in the web client or included in profile exports. All installed packs
-are active, and newer packages win when two packages use the same pack ID.
+available in the web client, but desktop profile archives include installed
+packs. All installed packs are active, and newer packages win when two packages
+use the same pack ID.
 
 The installer rejects path traversal, symlinks, encrypted entries, ZIP64,
 unsupported compression, excessive expansion, invalid `emoji.json` files, unsafe
@@ -370,11 +371,15 @@ to restore it when troubleshooting.
 ## Profile Transfer
 
 The **Profile Transfer** section in App Settings exports and imports a portable
-JSON profile containing networks and settings. Export is available in every
-setup; import is only available in Personal setup mode. Password export is
-optional; when enabled, the file contains plaintext passwords and requires
-confirmation. The desktop build uses native save/open dialogs and backs up the
-current profile before importing. Browser builds use a download and file picker.
+profile. The desktop build writes a ZIP archive containing `profile.json` plus
+any installed themes, emoji packs, and custom network or station icons; a JSON
+export is also offered for moving state into a browser build. Export is
+available in every setup; import is only available in Personal setup mode.
+Password export is optional; when enabled, the profile contains plaintext
+passwords and requires confirmation. The desktop build uses native save/open
+dialogs and backs up the current profile before importing. Browser builds use a
+download and file picker. Importing skips themes and emoji packs that are
+already installed.
 
 ## Icons
 

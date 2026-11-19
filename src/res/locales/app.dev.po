@@ -1945,6 +1945,12 @@ msgstr "Include Passwords"
 msgid "profile_include_passwords_warning"
 msgstr "Passwords will be stored in plaintext in the exported file. Keep it secure."
 
+msgid "profile_include_assets"
+msgstr "Include Themes and Emoji Packs"
+
+msgid "profile_include_assets_hint"
+msgstr "Adds installed themes, emoji packs, and custom network or station icons to the archive."
+
 msgid "profile_include_passwords_confirm"
 msgstr "Include passwords in the exported profile? The file will contain plaintext passwords."
 

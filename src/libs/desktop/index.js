@@ -21,7 +21,9 @@ import {
     status as secretStorageStatus
 } from './Secrets';
 import {
+    applyImport as applyProfileImport,
     backup as backupProfile,
+    cancelImport as cancelProfileImport,
     exportBundle as exportProfileBundle,
     importBundle as importProfileBundle,
     isAvailable as isProfileTransferAvailable,
@@ -73,6 +75,8 @@ const desktop = {
     profile: {
         exportBundle: exportProfileBundle,
         importBundle: importProfileBundle,
+        applyImport: applyProfileImport,
+        cancelImport: cancelProfileImport,
         backup: backupProfile,
         openFolder: openProfileFolder,
         isAvailable: isProfileTransferAvailable,

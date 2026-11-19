@@ -109,7 +109,9 @@ and this project adheres to
   Server Details.
 - **Desktop Profile Transfer**: Added portable browser/desktop profile export
   and import, with optional password-included files and a desktop profile backup
-  before import.
+  before import. Desktop exports are ZIP archives that carry installed themes,
+  emoji packs, and custom network or station icons, with a JSON export for
+  browser transfer.
 - **Desktop Themes**: Added local theme installation from ZIP archives, with
   installed theme listing and uninstall controls in Appearance. Themes are
   stored in the desktop user-data directory and served through `kiwi-theme://`.
@@ -408,9 +410,11 @@ and this project adheres to
   avatar animation frame. Animated SVG avatars still animate inside their own
   image document, so their cost scales with the number of visible animated
   avatars.
-- **Profile Transfer**: Exported profiles now embed locally installed network
-  and radio station icons and importing restores them, so custom icons no longer
-  break after a transfer. Profile backups include the icon directory.
+- **Profile Transfer**: Desktop exports are now ZIP archives containing the
+  profile state plus installed themes, emoji packs, and custom network or
+  station icons, so a transferred profile keeps its look and icons. Import skips
+  themes and packs that are already installed, and profile backups include the
+  icon directory.
 - **Avatars**: Keep a stable avatar root element so swapping from the local
   identicon to the metadata avatar no longer drops the layout's scoped CSS
   attribute, which left the new image unsized and stretched to the message row
@@ -587,6 +591,9 @@ and this project adheres to
 
 ### Security
 
+- **Profile Transfer**: Profile icon import resolves symlinks against the local
+  icon directory and creates files exclusively, so an imported profile cannot
+  read or write outside it.
 - **Desktop Shell**: Added a restrictive `app://` Content-Security-Policy,
   default-deny permission handlers, top-frame IPC sender validation, and
   Electron fuses for ASAR-only loading, ASAR integrity where supported, and

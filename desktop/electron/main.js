@@ -50,7 +50,13 @@ const { createAutoLaunchService } = require('./auto-launch');
 const { createTrayService } = require('./tray');
 const { createUpdateService } = require('./updates');
 const { buildContextMenuTemplate } = require('./spellcheck-menu');
-const { collectProfileAssets, installProfileAssets } = require('./profile-assets');
+const {
+    MAX_ARCHIVE_BYTES,
+    applyPendingImport,
+    isProfileArchive,
+    prepareProfileArchive,
+    writeProfileArchive,
+} = require('./profile-archive');
 const { createMainLog } = require('./main-log');
 const { createChatLogStore } = require('./chat-log-store');
 const { addEmbedReferer } = require('./embed-referer');
@@ -514,53 +520,64 @@ function registerDesktopConfigIpc() {
         secretStore.clear(stateKey)
     ));
 
-    handleIpc('kiwi:profile-export', async(event, text, filename) => {
-        if (typeof text !== 'string' || !text ||
-            Buffer.byteLength(text, 'utf8') > MAX_STORAGE_BYTES
-        ) {
+    handleIpc('kiwi:profile-export', async(event, text, options) => {
+        if (typeof text !== 'string' || !text) {
             throw new Error('invalid profile data');
         }
 
-        let output = text;
+        let bundle;
         try {
-            const bundle = JSON.parse(text);
-            const assets = await collectProfileAssets(
-                app.getPath('userData'),
-                bundle
-            );
-            if (assets) {
-                bundle.assets = assets;
-                output = JSON.stringify(bundle, null, 2);
-            }
+            bundle = JSON.parse(text);
         } catch (err) {
-            // Not a JSON bundle; write it unchanged.
+            throw new Error('invalid profile data');
         }
 
-        if (Buffer.byteLength(output, 'utf8') > MAX_STORAGE_BYTES) {
-            throw new Error('profile data is too large');
-        }
-
+        const settings = typeof options === 'string' ?
+            { filename: options } :
+            (options || {});
+        const includeAssets = settings.includeAssets !== false;
         const defaultName = path.basename(
-            typeof filename === 'string' && filename ?
-                filename :
-                'kiwi-profile.json'
+            typeof settings.filename === 'string' && settings.filename ?
+                settings.filename :
+                'kiwi-profile.zip'
         );
+
         const result = await dialog.showSaveDialog(mainWindow, {
             defaultPath: defaultName,
-            filters: [{ name: 'Kiwi Profile', extensions: ['json'] }],
+            filters: [
+                { name: 'Kiwi Profile Archive', extensions: ['zip'] },
+                { name: 'Kiwi Profile JSON', extensions: ['json'] },
+            ],
         });
         if (result.canceled || !result.filePath) {
             return { saved: false };
         }
 
-        await fs.writeFile(result.filePath, output, { mode: 0o600 });
+        if (path.extname(result.filePath).toLowerCase() === '.json') {
+            delete bundle.assets;
+            const json = JSON.stringify(bundle, null, 2);
+            if (Buffer.byteLength(json, 'utf8') > MAX_STORAGE_BYTES) {
+                throw new Error('profile data is too large');
+            }
+            await fs.writeFile(result.filePath, json, { mode: 0o600 });
+            return { saved: true, path: result.filePath };
+        }
+
+        const archive = await writeProfileArchive(
+            app.getPath('userData'),
+            bundle,
+            { includeAssets }
+        );
+        await fs.writeFile(result.filePath, archive, { mode: 0o600 });
         return { saved: true, path: result.filePath };
     });
 
     handleIpc('kiwi:profile-import', async() => {
         const result = await dialog.showOpenDialog(mainWindow, {
             properties: ['openFile'],
-            filters: [{ name: 'Kiwi Profile', extensions: ['json'] }],
+            filters: [
+                { name: 'Kiwi Profile', extensions: ['zip', 'json'] },
+            ],
         });
         if (result.canceled || !result.filePaths.length) {
             return { canceled: true };
@@ -568,27 +585,52 @@ function registerDesktopConfigIpc() {
 
         const filePath = result.filePaths[0];
         const stat = await fs.stat(filePath);
-        if (!stat.isFile() || stat.size > MAX_STORAGE_BYTES) {
+        if (!stat.isFile() || stat.size > MAX_ARCHIVE_BYTES) {
             throw new Error('profile file is too large');
         }
 
-        let text = await fs.readFile(filePath, 'utf8');
-        try {
-            const bundle = JSON.parse(text);
-            if (bundle && bundle.assets && typeof bundle.assets === 'object') {
-                await installProfileAssets(app.getPath('userData'), bundle);
-                delete bundle.assets;
-                text = JSON.stringify(bundle, null, 2);
-            }
-        } catch (err) {
-            // Not a JSON bundle; hand it back unchanged.
+        const buffer = await fs.readFile(filePath);
+        if (isProfileArchive(buffer)) {
+            const prepared = await prepareProfileArchive(
+                buffer,
+                app.getPath('userData')
+            );
+            return {
+                canceled: false,
+                path: filePath,
+                text: prepared.text,
+                pending: prepared.pendingDir,
+            };
+        }
+
+        if (buffer.length > MAX_STORAGE_BYTES) {
+            throw new Error('profile file is too large');
         }
 
         return {
             canceled: false,
             path: filePath,
-            text,
+            text: buffer.toString('utf8'),
+            pending: null,
         };
+    });
+
+    handleIpc('kiwi:profile-import-apply', async(event, pending) => (
+        applyPendingImport(pending, app.getPath('userData'))
+    ));
+
+    handleIpc('kiwi:profile-import-cancel', async(event, pending) => {
+        const root = path.resolve(app.getPath('userData'));
+        const target = path.resolve(String(pending || ''));
+        const prefix = root.endsWith(path.sep) ? root : root + path.sep;
+        if (!target.startsWith(prefix) ||
+            !path.basename(target).startsWith('profile-import-')
+        ) {
+            return false;
+        }
+
+        await fs.rm(target, { recursive: true, force: true });
+        return true;
     });
 
     handleIpc('kiwi:profile-backup', () => profileStore.backup());

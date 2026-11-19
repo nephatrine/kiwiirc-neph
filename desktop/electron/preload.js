@@ -166,8 +166,10 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
         clear: (stateKey) => ipcRenderer.invoke('kiwi:secrets-clear', stateKey),
     },
     profile: {
-        export: (text, filename) => ipcRenderer.invoke('kiwi:profile-export', text, filename),
+        export: (text, options) => ipcRenderer.invoke('kiwi:profile-export', text, options),
         import: () => ipcRenderer.invoke('kiwi:profile-import'),
+        applyImport: (pending) => ipcRenderer.invoke('kiwi:profile-import-apply', pending),
+        cancelImport: (pending) => ipcRenderer.invoke('kiwi:profile-import-cancel', pending),
         backup: () => ipcRenderer.invoke('kiwi:profile-backup'),
         openFolder: () => ipcRenderer.invoke('kiwi:profile-open-folder'),
     },

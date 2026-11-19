@@ -12,6 +12,15 @@
             <div v-if="includePasswords" class="kiwi-profile-warning">
                 {{ $t('profile_include_passwords_warning') }}
             </div>
+            <template v-if="isDesktop">
+                <label class="u-checkbox-wrapper">
+                    <span>{{ $t('profile_include_assets') }}</span>
+                    <input v-model="includeLocalAssets" type="checkbox">
+                </label>
+                <p class="kiwi-appsettings-hint">
+                    {{ $t('profile_include_assets_hint') }}
+                </p>
+            </template>
             <div
                 v-if="statusMessage"
                 class="kiwi-profile-status"
@@ -78,6 +87,7 @@ export default {
     data() {
         return {
             includePasswords: false,
+            includeLocalAssets: true,
             busy: false,
             statusMessage: '',
             statusType: 'success',
@@ -137,7 +147,8 @@ export default {
                 if (this.isDesktop) {
                     const result = await desktop.profile.exportBundle(
                         bundle,
-                        profileBundleFilename()
+                        profileBundleFilename('zip'),
+                        { includeAssets: this.includeLocalAssets }
                     );
                     if (result && result.saved) {
                         this.setStatus('profile_export_success');
@@ -170,7 +181,7 @@ export default {
                     if (!result || result.canceled) {
                         return null;
                     }
-                    return this.importProfileText(result.text);
+                    return this.importProfileText(result.text, result.pending);
                 }).catch((err) => {
                     this.setStatus(
                         'profile_import_failed',
@@ -209,7 +220,7 @@ export default {
                 );
             }
         },
-        async importProfileText(text) {
+        async importProfileText(text, pending = null) {
             if (!this.isPersonalMode) {
                 this.setStatus('profile_import_personal_only', {}, 'error');
                 return;
@@ -221,6 +232,9 @@ export default {
                 'profile_import_passwords_confirm' :
                 'profile_import_confirm';
             if (!window.confirm(this.$t(confirmKey))) {
+                if (pending && this.isDesktop) {
+                    await desktop.profile.cancelImport(pending);
+                }
                 return;
             }
 
@@ -231,6 +245,10 @@ export default {
                 }
                 if (this.isDesktop) {
                     await desktop.profile.backup();
+                }
+
+                if (pending && this.isDesktop) {
+                    await desktop.profile.applyImport(pending);
                 }
 
                 applyProfileBundle(this.$state, bundle);

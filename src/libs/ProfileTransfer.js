@@ -238,8 +238,8 @@ export function applyProfileBundle(state, bundle) {
     return { appliedSecrets };
 }
 
-export function profileBundleFilename() {
-    return `kiwi-profile-${new Date().toISOString().slice(0, 10)}.json`;
+export function profileBundleFilename(extension = 'json') {
+    return `kiwi-profile-${new Date().toISOString().slice(0, 10)}.${extension}`;
 }
 
 export function downloadProfileBundle(bundle) {
