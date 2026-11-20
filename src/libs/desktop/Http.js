@@ -70,6 +70,9 @@ function requestFromOptions(url, options) {
     if (options.failOnHttpError) {
         request.failOnHttpError = true;
     }
+    if (options.truncateAtMaxBytes) {
+        request.truncateAtMaxBytes = true;
+    }
     return request;
 }
 

@@ -778,6 +778,8 @@ function registerDesktopConfigIpc() {
         const requestOptions = Object.assign({}, request, {
             maxResponseBytes,
             timeoutMs: requestTimeoutMs(request, policy),
+            allowInsecureHttpParser: request.purpose === 'page-preview',
+            closeConnection: request.purpose === 'page-preview',
         });
 
         try {
@@ -1024,6 +1026,7 @@ function logHttpFailure(kind, options, err) {
         purpose: typeof request.purpose === 'string' ? request.purpose : '',
         code: err && err.code ? String(err.code) : '',
         status: err && Number.isInteger(err.statusCode) ? err.statusCode : undefined,
+        contentType: err && err.contentType ? String(err.contentType) : undefined,
         message: err && err.message ? err.message : String(err),
     });
 }

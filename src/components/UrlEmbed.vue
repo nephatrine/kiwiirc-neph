@@ -554,7 +554,7 @@ export default {
                     this.onLoad();
                 });
             }).catch(() => {
-                if (this.media.type === 'metadata') {
+                if (this.media.type === 'metadata' || this.media.type === 'oembed') {
                     Misc.markPreviewFailed(this.media.url);
                     this.$state.$emit('link-preview.failed', this.media.url);
                 }

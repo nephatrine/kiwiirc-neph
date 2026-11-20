@@ -1046,6 +1046,7 @@ function fetchHtml(url) {
             Accept: 'text/html,application/xhtml+xml',
         },
         maxResponseBytes: MAX_HTML_BYTES,
+        truncateAtMaxBytes: true,
         timeoutMs: PREVIEW_TIMEOUT_MS,
         purpose: 'page-preview',
         acceptContentTypes: HTML_TYPES,

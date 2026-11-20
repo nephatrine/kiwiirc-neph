@@ -21,7 +21,12 @@ import {
     parseItchGame
 } from '@/libs/PagePreview';
 
-const failedPreviewUrls = new Set();
+// Vue observes `version`, so rendered message HTML that calls canPreviewUrl()
+// re-renders and drops its preview handle as soon as a URL fails.
+const failedPreviewUrls = Vue.observable({
+    urls: {},
+    version: 0,
+});
 
 const styleStripRegexp = new RegExp(
     // Decimal Colours
@@ -422,17 +427,23 @@ export function getMediaInfo(url) {
  * @returns {boolean}
  */
 export function markPreviewFailed(url) {
-    if (url) {
-        failedPreviewUrls.add(url);
+    if (!url || failedPreviewUrls.urls[url] === true) {
+        return;
     }
+    failedPreviewUrls.urls[url] = true;
+    failedPreviewUrls.version += 1;
 }
 
 export function isPreviewFailed(url) {
-    return !!url && failedPreviewUrls.has(url);
+    // Reading the version registers the reactive dependency for Vue renders.
+    return failedPreviewUrls.version >= 0 &&
+        !!url &&
+        failedPreviewUrls.urls[url] === true;
 }
 
 export function clearPreviewFailures() {
-    failedPreviewUrls.clear();
+    failedPreviewUrls.urls = {};
+    failedPreviewUrls.version += 1;
 }
 
 export function canPreviewUrl(url) {

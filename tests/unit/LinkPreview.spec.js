@@ -1,7 +1,12 @@
+import Vue from 'vue';
 import getState from '@/libs/state';
 import Message from '@/libs/Message';
 import toHtml from '@/libs/renderers/Html';
-import { clearPreviewFailures, markPreviewFailed } from '@/helpers/Misc';
+import {
+    clearPreviewFailures,
+    isPreviewFailed,
+    markPreviewFailed
+} from '@/helpers/Misc';
 import {
     clearLinkPreviewCache,
     resolveLinkPreview
@@ -102,6 +107,23 @@ describe('link preview rendering', () => {
         expect(toHtml(urlBlock(url), false)).toContain('data-url');
         markPreviewFailed(url);
         expect(toHtml(urlBlock(url), false)).not.toContain('data-url');
+    });
+
+    it('notifies reactive consumers when a preview fails', () => {
+        const url = 'https://example.com/article';
+        const vm = new Vue({
+            computed: {
+                failed() {
+                    return isPreviewFailed(url);
+                },
+            },
+        });
+
+        expect(vm.failed).toBe(false);
+        markPreviewFailed(url);
+        expect(vm.failed).toBe(true);
+        clearPreviewFailures();
+        expect(vm.failed).toBe(false);
     });
 
     it('does not auto-embed non-media links', () => {

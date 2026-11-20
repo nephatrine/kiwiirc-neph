@@ -174,6 +174,9 @@ function requestOnce(target, options, policy) {
         if (!Object.keys(headers).some((key) => key.toLowerCase() === 'user-agent')) {
             headers['User-Agent'] = 'KiwiIRC-Desktop';
         }
+        if (options.closeConnection) {
+            headers.Connection = 'close';
+        }
 
         const requestOptions = {
             protocol: target.url.protocol,
@@ -185,6 +188,10 @@ function requestOnce(target, options, policy) {
             lookup: pinnedLookup(target.addresses || target.address, target.family),
             agent: false,
         };
+
+        if (options.insecureHTTPParser === true) {
+            requestOptions.insecureHTTPParser = true;
+        }
 
         if (timeoutMs > 0) {
             requestOptions.timeout = timeoutMs;
@@ -234,27 +241,41 @@ function requestOnce(target, options, policy) {
                 return;
             }
 
-            if (options.acceptContentTypes &&
-                !contentTypeMatches(response.headers['content-type'], options.acceptContentTypes)
-            ) {
-                const err = new Error('unexpected response content type');
-                err.code = 'ERR_UNEXPECTED_CONTENT_TYPE';
-                err.contentType = String(response.headers['content-type'] || '');
-                fail(err, response);
-                return;
-            }
-
             const chunks = [];
             let total = 0;
+            let truncated = false;
 
             response.on('data', (chunk) => {
-                total += chunk.length;
-                if (total > maxResponseBytes) {
-                    const err = new Error('response is too large');
-                    err.code = 'ERR_RESPONSE_TOO_LARGE';
-                    fail(err, response);
+                if (truncated) {
                     return;
                 }
+
+                const remaining = maxResponseBytes - total;
+                if (chunk.length > remaining) {
+                    if (options.truncateAtMaxBytes !== true) {
+                        const err = new Error('response is too large');
+                        err.code = 'ERR_RESPONSE_TOO_LARGE';
+                        fail(err, response);
+                        return;
+                    }
+
+                    if (remaining > 0) {
+                        chunks.push(chunk.subarray(0, remaining));
+                    }
+                    total = maxResponseBytes;
+                    truncated = true;
+                    finish(resolve, {
+                        status,
+                        statusText: response.statusMessage || '',
+                        headers: responseHeaders(response.headers),
+                        body: Buffer.concat(chunks),
+                        truncated: true,
+                    });
+                    response.destroy();
+                    return;
+                }
+
+                total += chunk.length;
                 chunks.push(chunk);
             });
 
@@ -264,6 +285,7 @@ function requestOnce(target, options, policy) {
                     statusText: response.statusMessage || '',
                     headers: responseHeaders(response.headers),
                     body: Buffer.concat(chunks),
+                    truncated,
                 });
             });
         });
@@ -305,19 +327,39 @@ async function request(options, policy) {
 
     const maxRedirects = Math.min(MAX_REDIRECTS, policy.maxRedirects || MAX_REDIRECTS);
 
-    async function follow(target, currentMethod, currentBody, currentHeaders, redirects) {
+    async function follow(
+        target,
+        currentMethod,
+        currentBody,
+        currentHeaders,
+        redirects,
+        insecureParser
+    ) {
         const response = await requestOnce(target, {
             method: currentMethod,
             headers: currentHeaders,
             body: currentBody,
             timeoutMs: options.timeoutMs,
             maxResponseBytes: options.maxResponseBytes,
-            acceptContentTypes: options.acceptContentTypes,
             failOnHttpError: options.failOnHttpError,
+            truncateAtMaxBytes: options.truncateAtMaxBytes,
+            insecureHTTPParser: insecureParser,
+            closeConnection: options.closeConnection,
         }, policy);
         response.url = target.url.href;
 
         if (!REDIRECT_CODES.has(response.status) || !response.headers.location) {
+            // Content types describe the final resource, not redirect hops.
+            // Many servers omit or mislabel the type on 301/302/308 responses.
+            if (options.acceptContentTypes &&
+                !contentTypeMatches(response.headers['content-type'], options.acceptContentTypes)
+            ) {
+                const err = new Error('unexpected response content type');
+                err.code = 'ERR_UNEXPECTED_CONTENT_TYPE';
+                err.contentType = String(response.headers['content-type'] || '');
+                throw err;
+            }
+
             return response;
         }
 
@@ -362,11 +404,34 @@ async function request(options, policy) {
             );
         }
 
-        return follow(nextTarget, nextMethod, nextBody, nextHeaders, redirects + 1);
+        return follow(
+            nextTarget,
+            nextMethod,
+            nextBody,
+            nextHeaders,
+            redirects + 1,
+            insecureParser
+        );
     }
 
+    const headers = normalizeHeaders(options.headers);
     const target = await resolveTarget(options.url, policy.allowPrivateNetworks);
-    return follow(target, method, body, normalizeHeaders(options.headers), 0);
+
+    try {
+        return await follow(target, method, body, headers, 0, false);
+    } catch (err) {
+        // Legacy servers occasionally emit invalid framing (for example both
+        // Content-Length and Transfer-Encoding). Retry once with Node's lenient
+        // parser, but only when the caller opted in for an inert page preview.
+        if (options.allowInsecureHttpParser !== true ||
+            !/^HPE_/.test(String(err.code || ''))
+        ) {
+            throw err;
+        }
+
+        const retryTarget = await resolveTarget(options.url, policy.allowPrivateNetworks);
+        return follow(retryTarget, method, body, headers, 0, true);
+    }
 }
 
 async function upload(options, policy) {

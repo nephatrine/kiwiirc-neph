@@ -98,6 +98,7 @@ describe('Desktop HTTP adapter', () => {
             timeoutMs: 8000,
             maxResponseBytes: 2048,
             acceptContentTypes: ['text/html'],
+            truncateAtMaxBytes: true,
             failOnHttpError: true,
         });
         expect(nativeRequest).toHaveBeenLastCalledWith({
@@ -109,6 +110,7 @@ describe('Desktop HTTP adapter', () => {
             timeoutMs: 8000,
             purpose: 'page-preview',
             acceptContentTypes: ['text/html'],
+            truncateAtMaxBytes: true,
             failOnHttpError: true,
         });
     });
@@ -269,6 +271,26 @@ describe('Desktop native HTTP transport', () => {
                 res.end('bad request');
                 return;
             }
+            if (req.url === '/redirect-no-type') {
+                res.writeHead(302, { Location: '/html' });
+                res.end();
+                return;
+            }
+            if (req.url === '/redirect-no-type-audio') {
+                res.writeHead(302, { Location: '/audio' });
+                res.end();
+                return;
+            }
+            if (req.url === '/html') {
+                res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+                res.end('<html><head><title>Redirected</title></head></html>');
+                return;
+            }
+            if (req.url === '/large-html') {
+                res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+                res.end('x'.repeat(4096));
+                return;
+            }
             if (req.url === '/audio') {
                 res.writeHead(200, { 'Content-Type': 'audio/mpeg' });
                 res.end('audio');
@@ -359,6 +381,79 @@ describe('Desktop native HTTP transport', () => {
             headers: { Host: 'evil.example' },
         }, policy());
         expect(captured.headers.host).not.toBe('evil.example');
+    });
+
+    it('checks accepted content types on the final response only', async() => {
+        const response = await request({
+            url: `${baseUrl}/redirect-no-type`,
+            acceptContentTypes: ['text/html'],
+            failOnHttpError: true,
+        }, policy());
+
+        expect(response.status).toBe(200);
+        expect(response.body.toString()).toContain('Redirected');
+
+        await expect(request({
+            url: `${baseUrl}/redirect-no-type-audio`,
+            acceptContentTypes: ['text/html'],
+            failOnHttpError: true,
+        }, policy())).rejects.toMatchObject({
+            code: 'ERR_UNEXPECTED_CONTENT_TYPE',
+            contentType: 'audio/mpeg',
+        });
+    });
+
+    it('truncates oversized responses only when requested', async() => {
+        await expect(request({
+            url: `${baseUrl}/large-html`,
+            maxResponseBytes: 16,
+        }, policy())).rejects.toMatchObject({
+            code: 'ERR_RESPONSE_TOO_LARGE',
+        });
+
+        const response = await request({
+            url: `${baseUrl}/large-html`,
+            maxResponseBytes: 16,
+            truncateAtMaxBytes: true,
+        }, policy());
+
+        expect(response.truncated).toBe(true);
+        expect(response.body.toString()).toBe('x'.repeat(16));
+    });
+
+    it('retries malformed framing with a lenient parser when allowed', async() => {
+        const rawServer = net.createServer((socket) => {
+            socket.once('data', () => {
+                socket.end(
+                    'HTTP/1.1 200 OK\r\n' +
+                    'Content-Type: text/html\r\n' +
+                    'Content-Length: 5\r\n' +
+                    'Transfer-Encoding: chunked\r\n\r\n' +
+                    '5\r\nhello\r\n0\r\n\r\n'
+                );
+            });
+        });
+        await new Promise((resolve) => {
+            rawServer.listen(0, '127.0.0.1', resolve);
+        });
+        const url = `http://127.0.0.1:${rawServer.address().port}/`;
+
+        try {
+            await expect(request({ url }, policy())).rejects.toMatchObject({
+                code: expect.stringMatching(/^HPE_/),
+            });
+
+            const response = await request({
+                url,
+                allowInsecureHttpParser: true,
+            }, policy());
+            expect(response.status).toBe(200);
+            expect(response.body.toString()).toBe('hello');
+        } finally {
+            await new Promise((resolve) => {
+                rawServer.close(resolve);
+            });
+        }
     });
 
     it('rejects private networks, oversized/error responses, and closed connections', async() => {
