@@ -1,7 +1,8 @@
 jest.mock('@/libs/desktop/ChatLogs', () => ({
-    search: jest.fn(),
     isAvailable: jest.fn(() => true),
     onOpenSearch: jest.fn(() => () => {}),
+    context: jest.fn(),
+    search: jest.fn(),
 }));
 
 jest.mock('@/libs/MessageSearch', () => {
@@ -14,6 +15,7 @@ jest.mock('@/libs/MessageSearch', () => {
 });
 
 import * as ChatLogs from '@/libs/desktop/ChatLogs';
+import * as ChatLogContext from '@/libs/ChatLogContext';
 import * as MessageSearch from '@/libs/MessageSearch';
 import ChatLogSearch from '@/components/ChatLogSearch';
 
@@ -453,5 +455,258 @@ describe('ChatLogSearch buffer filters', () => {
 
         expect(context.bufferName).toBe('');
         expect(context.search).toHaveBeenCalledWith(true);
+    });
+});
+
+describe('ChatLogSearch source and network switching', () => {
+    test('enables server history only for a supporting network', () => {
+        const context = makeContext({
+            serverNetworks: [{ id: 2 }, { id: 3 }],
+            networkId: 2,
+        });
+
+        expect(ChatLogSearch.computed.canUseServerSearch.call(context)).toBe(true);
+
+        context.networkId = 1;
+        expect(ChatLogSearch.computed.canUseServerSearch.call(context)).toBe(false);
+
+        context.networkId = 0;
+        expect(ChatLogSearch.computed.canUseServerSearch.call(context)).toBe(false);
+    });
+
+    test('clears the target when the network changes', () => {
+        const context = makeContext({
+            source: 'server',
+            networkId: 3,
+            bufferName: '#old',
+            serverNetworks: [{ id: 3 }, { id: 4 }],
+            defaultServerTarget: jest.fn(() => '#active'),
+        });
+
+        ChatLogSearch.methods.onNetworkChange.call(context);
+
+        expect(context.bufferName).toBe('');
+        expect(context.defaultServerTarget).not.toHaveBeenCalled();
+        expect(context.search).toHaveBeenCalledWith(true);
+    });
+
+    test('clears the target when switching source remaps the network', () => {
+        const context = makeContext({
+            source: 'server',
+            networkId: 1,
+            bufferName: '#old',
+            serverNetworks: [{ id: 2 }],
+            defaultServerTarget: jest.fn(() => '#active'),
+            $state: {
+                getActiveNetwork: () => null,
+                getActiveBuffer: () => null,
+            },
+        });
+
+        ChatLogSearch.methods.onSourceChange.call(context);
+
+        expect(context.networkId).toBe(2);
+        expect(context.bufferName).toBe('');
+        expect(context.defaultServerTarget).not.toHaveBeenCalled();
+        expect(context.search).toHaveBeenCalledWith(true);
+    });
+
+    test('keeps the target when switching source on the same network', () => {
+        const context = makeContext({
+            source: 'server',
+            networkId: 2,
+            bufferName: '#keep',
+            serverNetworks: [{ id: 2 }],
+            defaultServerTarget: jest.fn(() => '#active'),
+        });
+
+        ChatLogSearch.methods.onSourceChange.call(context);
+
+        expect(context.networkId).toBe(2);
+        expect(context.bufferName).toBe('#keep');
+    });
+
+    test('drops a prefilled target when opening on a remapped network', () => {
+        const context = makeContext({
+            availableSources: ['local', 'server'],
+            source: 'local',
+            serverNetworks: [{ id: 2 }],
+            defaultServerTarget: jest.fn(() => ''),
+            $state: {
+                getActiveNetwork: () => ({ id: 1 }),
+                getActiveBuffer: () => null,
+            },
+        });
+
+        ChatLogSearch.methods.open.call(context, {
+            source: 'server',
+            networkId: 1,
+            bufferName: '#old',
+        });
+
+        expect(context.networkId).toBe(2);
+        expect(context.bufferName).toBe('');
+    });
+
+    test('keeps a prefilled target when opening on the same network', () => {
+        const context = makeContext({
+            availableSources: ['local', 'server'],
+            source: 'local',
+            serverNetworks: [{ id: 2 }],
+            defaultServerTarget: jest.fn(() => ''),
+            $state: {
+                getActiveNetwork: () => ({ id: 2 }),
+                getActiveBuffer: () => null,
+            },
+        });
+
+        ChatLogSearch.methods.open.call(context, {
+            source: 'server',
+            networkId: 2,
+            bufferName: '#keep',
+        });
+
+        expect(context.networkId).toBe(2);
+        expect(context.bufferName).toBe('#keep');
+    });
+});
+
+function makeChannelBuffer(messages = []) {
+    return {
+        networkid: 1,
+        name: '#channel',
+        contextOnly: false,
+        contextTarget: '',
+        flags: {},
+        messages,
+        isChannel: () => true,
+        isQuery: () => false,
+        getMessages: () => messages,
+        flag(name, value) {
+            this.flags[name] = value;
+        },
+    };
+}
+
+function makeContextBuffer() {
+    return {
+        name: '*context-1',
+        contextOnly: true,
+        contextSource: 'local',
+        contextTarget: '',
+        contextOlderRowId: 0,
+        contextNewerRowId: 0,
+        contextRowIds: {},
+        flags: {},
+        clearMessages: jest.fn(function clearMessages() {
+            this.contextRowIds = {};
+        }),
+        flag(name, value) {
+            this.flags[name] = value;
+        },
+        waitForTargetMessage: jest.fn(() => Promise.resolve(null)),
+        scrollToMessage: jest.fn(),
+    };
+}
+
+function makeContextState() {
+    const contextBuffer = makeContextBuffer();
+    const network = {
+        id: 1,
+        buffers: [],
+    };
+    const state = {
+        network,
+        contextBuffer,
+        getNetwork: jest.fn(() => network),
+        addContextBuffer: jest.fn(() => {
+            network.buffers.push(contextBuffer);
+            return contextBuffer;
+        }),
+        setActiveBuffer: jest.fn(),
+        addMessage: jest.fn(),
+    };
+    return state;
+}
+
+describe('ChatLogContext channel continuation', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        ChatLogs.isAvailable.mockReturnValue(true);
+    });
+
+    test('anchors the context at the oldest loaded message', async() => {
+        const state = makeContextState();
+        const channel = makeChannelBuffer([
+            { time: 3000, server_time: 4000 },
+            { time: 1000, server_time: 2000 },
+        ]);
+        ChatLogs.context.mockResolvedValue({
+            rows: [
+                { id: 10, time: 900, server_time: 1800, nick: 'a', message: 'old' },
+                { id: 11, time: 1000, server_time: 2000, nick: 'b', message: 'anchor' },
+            ],
+            hasOlder: true,
+            hasNewer: true,
+        });
+
+        await expect(ChatLogContext.openChannelContext(state, channel))
+            .resolves.toBe(true);
+
+        expect(ChatLogs.context).toHaveBeenCalledWith({
+            networkId: 1,
+            bufferName: '#channel',
+            serverTime: 2000,
+            time: 2000,
+            before: 25,
+            after: 25,
+        });
+        expect(state.addContextBuffer).toHaveBeenCalledWith(1, '#channel');
+        expect(state.setActiveBuffer).toHaveBeenCalledWith(1, state.contextBuffer.name);
+        expect(state.addMessage).toHaveBeenCalledTimes(2);
+        expect(state.contextBuffer.contextOlderRowId).toBe(10);
+        expect(state.contextBuffer.contextNewerRowId).toBe(11);
+        expect(state.contextBuffer.flags).toMatchObject({
+            context_has_older: true,
+            context_has_newer: true,
+            context_loading: false,
+        });
+    });
+
+    test('falls back to the newest local row when no messages are loaded', async() => {
+        const state = makeContextState();
+        const channel = makeChannelBuffer([]);
+        ChatLogs.search.mockResolvedValue({ rows: [{ id: 9 }] });
+        ChatLogs.context.mockResolvedValue({
+            rows: [{ id: 9, time: 500, server_time: 500, nick: 'a', message: 'latest' }],
+            hasOlder: true,
+            hasNewer: false,
+        });
+
+        await expect(ChatLogContext.openChannelContext(state, channel))
+            .resolves.toBe(true);
+
+        expect(ChatLogs.search).toHaveBeenCalledWith({
+            networkId: 1,
+            bufferName: '#channel',
+            query: '',
+            limit: 1,
+        });
+        expect(ChatLogs.context).toHaveBeenCalledWith(
+            expect.objectContaining({ rowId: 9 })
+        );
+        expect(ChatLogs.context.mock.calls[0][0]).not.toHaveProperty('serverTime');
+    });
+
+    test('returns false when no local rows are available', async() => {
+        const state = makeContextState();
+        const channel = makeChannelBuffer([]);
+        ChatLogs.search.mockResolvedValue({ rows: [] });
+
+        await expect(ChatLogContext.openChannelContext(state, channel))
+            .resolves.toBe(false);
+
+        expect(ChatLogs.context).not.toHaveBeenCalled();
+        expect(state.setActiveBuffer).not.toHaveBeenCalled();
     });
 });

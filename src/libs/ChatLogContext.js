@@ -64,6 +64,41 @@ function scrollToResult(state, buffer, result) {
     });
 }
 
+function openContextBuffer(state, network, targetName, options) {
+    return ChatLogs.context(options).then((response) => {
+        const rows = response.rows || [];
+        if (!rows.length) {
+            return false;
+        }
+
+        const contextBuffer = findContextBuffer(state, network.id, targetName) ||
+            state.addContextBuffer(network.id, targetName);
+        if (!contextBuffer) {
+            return false;
+        }
+
+        resetContextBuffer(contextBuffer);
+        contextBuffer.contextTarget = targetName;
+        contextBuffer.flag('context_loading', false);
+        state.setActiveBuffer(network.id, contextBuffer.name);
+        addRows(state, contextBuffer, rows);
+        contextBuffer.contextOlderRowId = rows[0].id;
+        contextBuffer.contextNewerRowId = rows[rows.length - 1].id;
+        contextBuffer.flag('context_has_older', !!response.hasOlder);
+        contextBuffer.flag('context_has_newer', !!response.hasNewer);
+
+        const first = rows[0];
+        return scrollToResult(state, contextBuffer, {
+            irc_id: first.irc_id,
+            server_time: first.server_time,
+            time: first.time,
+            nick: first.nick,
+            message: first.message,
+            raw_text: first.raw_text,
+        }).then((scrolled) => scrolled || true);
+    }).catch(() => false);
+}
+
 export function openContextResult(state, result) {
     if (!result || !ChatLogs.isAvailable()) {
         return Promise.resolve(false);
@@ -123,44 +158,70 @@ export function openGapContext(state, buffer, gap) {
         return Promise.resolve(false);
     }
 
-    return ChatLogs.context({
+    return openContextBuffer(state, network, targetName, {
         networkId: network.id,
         bufferName: targetName,
         serverTime: anchor,
         time: anchor,
         before: INITIAL_BEFORE,
         after: INITIAL_AFTER,
-    }).then((response) => {
-        const rows = response.rows || [];
-        if (!rows.length) {
+    });
+}
+
+export function openChannelContext(state, buffer) {
+    if (!buffer || buffer.contextOnly || !ChatLogs.isAvailable()) {
+        return Promise.resolve(false);
+    }
+
+    const network = state.getNetwork(buffer.networkid);
+    if (!network ||
+        (!buffer.isChannel() && !buffer.isQuery()) ||
+        !buffer.name
+    ) {
+        return Promise.resolve(false);
+    }
+
+    const targetName = buffer.name;
+    const messages = typeof buffer.getMessages === 'function' ?
+        buffer.getMessages() :
+        [];
+    const oldestTime = messages.reduce((oldest, message) => {
+        const time = Number(message && (message.server_time || message.time)) || 0;
+        if (time > 0 && (!oldest || time < oldest)) {
+            return time;
+        }
+        return oldest;
+    }, 0);
+
+    if (oldestTime) {
+        return openContextBuffer(state, network, targetName, {
+            networkId: network.id,
+            bufferName: targetName,
+            serverTime: oldestTime,
+            time: oldestTime,
+            before: INITIAL_BEFORE,
+            after: INITIAL_AFTER,
+        });
+    }
+
+    // No messages are loaded, so start from the newest local row instead.
+    return ChatLogs.search({
+        networkId: network.id,
+        bufferName: targetName,
+        query: '',
+        limit: 1,
+    }).then((result) => {
+        const row = result && result.rows && result.rows[0];
+        if (!row) {
             return false;
         }
-
-        const contextBuffer = findContextBuffer(state, network.id, targetName) ||
-            state.addContextBuffer(network.id, targetName);
-        if (!contextBuffer) {
-            return false;
-        }
-
-        resetContextBuffer(contextBuffer);
-        contextBuffer.contextTarget = targetName;
-        contextBuffer.flag('context_loading', false);
-        state.setActiveBuffer(network.id, contextBuffer.name);
-        addRows(state, contextBuffer, rows);
-        contextBuffer.contextOlderRowId = rows[0].id;
-        contextBuffer.contextNewerRowId = rows[rows.length - 1].id;
-        contextBuffer.flag('context_has_older', !!response.hasOlder);
-        contextBuffer.flag('context_has_newer', !!response.hasNewer);
-
-        const first = rows[0];
-        return scrollToResult(state, contextBuffer, {
-            irc_id: first.irc_id,
-            server_time: first.server_time,
-            time: first.time,
-            nick: first.nick,
-            message: first.message,
-            raw_text: first.raw_text,
-        }).then((scrolled) => scrolled || true);
+        return openContextBuffer(state, network, targetName, {
+            networkId: network.id,
+            bufferName: targetName,
+            rowId: row.id,
+            before: INITIAL_BEFORE,
+            after: INITIAL_AFTER,
+        });
     }).catch(() => false);
 }
 

@@ -31,7 +31,11 @@
                         <option v-if="localAvailable" :value="sourceLocal">
                             {{ $t('chatlogs_source_local') }}
                         </option>
-                        <option v-if="serverAvailable" :value="sourceServer">
+                        <option
+                            v-if="serverAvailable"
+                            :value="sourceServer"
+                            :disabled="!canUseServerSearch"
+                        >
                             {{ $t('chatlogs_source_server') }}
                         </option>
                     </select>
@@ -230,6 +234,11 @@ export default {
         serverAvailable() {
             return this.serverNetworks.length > 0;
         },
+        canUseServerSearch() {
+            return this.serverNetworks.some((network) => (
+                network.id === this.networkId
+            ));
+        },
         availableSources() {
             const sources = [];
             if (this.localAvailable) {
@@ -346,7 +355,9 @@ export default {
                 this.networkId = requestedNetwork;
             }
 
-            this.bufferName = typeof options.bufferName === 'string' ?
+            const networkChanged = this.networkId !== requestedNetwork;
+            this.bufferName = !networkChanged &&
+                typeof options.bufferName === 'string' ?
                 options.bufferName :
                 '';
             if (
@@ -381,6 +392,7 @@ export default {
             this.search(true);
         },
         onSourceChange() {
+            const previousNetwork = this.networkId;
             if (
                 this.source === MessageSearch.SOURCE_SERVER &&
                 !this.serverNetworks.some((network) => network.id === this.networkId)
@@ -396,15 +408,24 @@ export default {
                         0;
                 }
             }
-            if (this.source === MessageSearch.SOURCE_SERVER && !this.bufferName) {
+
+            const networkChanged = this.networkId !== previousNetwork;
+            if (networkChanged) {
+                this.bufferName = '';
+            } else if (this.source === MessageSearch.SOURCE_SERVER && !this.bufferName) {
                 this.bufferName = this.defaultServerTarget();
             }
             this.search(true);
         },
         onNetworkChange() {
             this.bufferName = '';
-            if (this.source === MessageSearch.SOURCE_SERVER) {
-                this.bufferName = this.defaultServerTarget();
+            if (
+                this.source === MessageSearch.SOURCE_SERVER &&
+                !this.serverNetworks.some((network) => network.id === this.networkId)
+            ) {
+                this.networkId = this.serverNetworks[0] ?
+                    this.serverNetworks[0].id :
+                    0;
             }
             this.search(true);
         },

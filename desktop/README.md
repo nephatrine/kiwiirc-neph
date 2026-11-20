@@ -429,13 +429,17 @@ This is a local audit marker, not content deletion.
 
 Search matches word prefixes, so `otter` matches `otters`. Use **View → Search
 Messages…** or `Ctrl+Shift+F` to search, and the same settings section to clear
-the local database. Opening a result loads surrounding history around the
-target; if the loaded context is not contiguous with the current scrollback, a
-gap marker offers controls to load older or newer messages. For unjoined
-channels, or when server history cannot provide the target, a temporary
-read-only History buffer is built from local logs; it is not joined and is
-discarded when closed or when the app exits. Chat logs are not included in
-profile export/import.
+the local database. Server History becomes selectable only after choosing a
+network that supports server-side search, and switching networks clears the
+prefilled channel. Opening a result loads surrounding history around the target;
+if the loaded context is not contiguous with the current scrollback, a gap
+marker offers controls to load older or newer messages. For unjoined channels,
+or when server history cannot provide the target, a temporary read-only History
+buffer is built from local logs; it is not joined and is discarded when closed
+or when the app exits. **Open Channel Logs** at the top of an exhausted
+scrollback opens that History buffer anchored at the oldest loaded message (or
+the newest local row when nothing is loaded), so older messages can be paged
+without opening search. Chat logs are not included in profile export/import.
 
 ## Logs & Troubleshooting
 

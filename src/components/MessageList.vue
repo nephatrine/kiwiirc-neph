@@ -893,10 +893,14 @@ export default {
             this.buffer.requestHistoryGap(gap, direction);
         },
         openChannelLogs() {
-            this.$state.$emit('chatlogs.open', {
-                networkId: this.buffer.networkid,
-                bufferName: this.buffer.name,
-                source: 'local',
+            return ChatLogContext.openChannelContext(this.$state, this.buffer).then((opened) => {
+                if (!opened) {
+                    this.$state.$emit(
+                        'notification.show',
+                        this.$t('chatlogs_no_local_context'),
+                        { force: true }
+                    );
+                }
             });
         },
         loadContext(direction) {

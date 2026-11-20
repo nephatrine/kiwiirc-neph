@@ -3,7 +3,13 @@ import MessageList from '@/components/MessageList';
 import MessageListRow from '@/components/MessageListRow';
 import Container from '@/components/Container';
 import ContainerHeader from '@/components/ContainerHeader';
+import * as ChatLogContext from '@/libs/ChatLogContext';
 import { isConsecutiveMessage } from '@/libs/bufferTools';
+
+jest.mock('@/libs/ChatLogContext', () => ({
+    ...jest.requireActual('@/libs/ChatLogContext'),
+    openChannelContext: jest.fn(),
+}));
 
 function makeRowMessage(overrides = {}) {
     return {
@@ -293,7 +299,7 @@ describe('MessageList local log history tools', () => {
         };
     }
 
-    test('decides when to offer local logs and opens them', () => {
+    test('decides when to offer local logs and opens them', async() => {
         const cases = [
             {
                 options: { historySupported: false },
@@ -339,16 +345,30 @@ describe('MessageList local log history tools', () => {
                 networkid: 7,
                 name: '#channel',
             },
+            $t: (key) => key,
             $state: { $emit: emit },
         };
 
-        MessageList.methods.openChannelLogs.call(context);
+        ChatLogContext.openChannelContext.mockResolvedValue(true);
+        await MessageList.methods.openChannelLogs.call(context);
 
-        expect(emit).toHaveBeenCalledWith('chatlogs.open', {
-            networkId: 7,
-            bufferName: '#channel',
-            source: 'local',
-        });
+        expect(ChatLogContext.openChannelContext).toHaveBeenCalledWith(
+            context.$state,
+            context.buffer
+        );
+        expect(emit).not.toHaveBeenCalledWith(
+            'chatlogs.open',
+            expect.anything()
+        );
+
+        ChatLogContext.openChannelContext.mockResolvedValue(false);
+        await MessageList.methods.openChannelLogs.call(context);
+
+        expect(emit).toHaveBeenCalledWith(
+            'notification.show',
+            'chatlogs_no_local_context',
+            { force: true }
+        );
     });
 });
 
