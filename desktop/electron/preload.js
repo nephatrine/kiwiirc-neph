@@ -9,12 +9,31 @@ const UPDATE_STATUS_CHANNEL = 'kiwi:update-status';
 const embedErrorHandlers = new Set();
 let embedErrorListening = false;
 let cachedConfig = null;
-const notificationSupported = ipcRenderer.sendSync(
+
+function timedSync(channel) {
+    const startedAt = Date.now();
+    const value = ipcRenderer.sendSync(channel);
+    const durationMs = Date.now() - startedAt;
+    if (durationMs >= 50) {
+        try {
+            ipcRenderer.send('kiwi:diag-event', {
+                type: 'sync-ipc',
+                channel,
+                durationMs,
+            });
+        } catch (err) {
+            // Diagnostics are best-effort.
+        }
+    }
+    return value;
+}
+
+const notificationSupported = timedSync(
     'kiwi:notification-supported'
 ) === true;
-const traySupported = ipcRenderer.sendSync('kiwi:tray-supported') === true;
-const logsSupported = ipcRenderer.sendSync('kiwi:logs-supported') === true;
-const appVersion = ipcRenderer.sendSync('kiwi:app-version');
+const traySupported = timedSync('kiwi:tray-supported') === true;
+const logsSupported = timedSync('kiwi:logs-supported') === true;
+const appVersion = timedSync('kiwi:app-version');
 
 function notificationEventHandler(channel) {
     const handlers = new Set();
@@ -116,7 +135,7 @@ function onEmbedError(handler) {
 
 function desktopConfig() {
     if (cachedConfig === null) {
-        cachedConfig = ipcRenderer.sendSync('kiwi:desktop-config');
+        cachedConfig = timedSync('kiwi:desktop-config');
     }
     return cachedConfig;
 }
@@ -125,6 +144,15 @@ contextBridge.exposeInMainWorld('kiwiConfig', desktopConfig);
 
 contextBridge.exposeInMainWorld('kiwiDesktop', {
     isDesktop: true,
+    diagnostics: {
+        event: (payload) => {
+            try {
+                ipcRenderer.send('kiwi:diag-event', payload);
+            } catch (err) {
+                // Diagnostics are best-effort.
+            }
+        },
+    },
     platform: process.platform,
     version: typeof appVersion === 'string' ? appVersion : '',
     versions: {

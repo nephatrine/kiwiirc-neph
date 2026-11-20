@@ -66,6 +66,9 @@ const {
     writeProfileArchive,
 } = require('./profile-archive');
 const { createMainLog } = require('./main-log');
+const { createDiagnostics } = require('./diagnostics');
+const { configureLogging } = require('./logging');
+const { chromiumLogFile } = require('./app-paths');
 const { createChatLogStore } = require('./chat-log-store');
 const { addEmbedReferer } = require('./embed-referer');
 const { addAppFrameAncestor } = require('./twitch-embed-policy');
@@ -87,16 +90,25 @@ const APP_SCHEME = 'app';
 const APP_HOST = 'kiwi';
 const APP_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
 const DEV_ORIGIN = 'http://localhost:8080';
-const isDev = process.argv.includes('--dev');
-const isVerbose = process.argv.includes('--verbose');
-if (!isDev && !isVerbose) {
-    app.commandLine.appendSwitch('log-level', '3');
-    app.commandLine.appendSwitch('v', '0');
-}
+// Set the app name before any path lookup: Electron pins `userData` to the app
+// name the first time that path is read, so an early read permanently selects
+// the package default profile.
 app.setName('KiwiIRC');
 if (process.platform === 'win32') {
     app.setAppUserModelId('net.nephatrine.kiwiirc');
 }
+const isDev = process.argv.includes('--dev');
+const isVerbose = process.argv.includes('--verbose');
+const isDiagnostics = process.env.KIWI_DIAGNOSTICS === '1' ||
+    process.argv.includes('--diagnostics');
+
+const logging = configureLogging({
+    app,
+    isDev,
+    isVerbose,
+    isDiagnostics,
+    logFile: isDiagnostics ? chromiumLogFile(app) : '',
+});
 const distPath = app.isPackaged ?
     path.join(process.resourcesPath, 'dist') :
     path.resolve(__dirname, '../../dist');
@@ -176,6 +188,7 @@ let trayService = null;
 let updateService = null;
 let updateNotification = null;
 let mainLog = null;
+let diagnostics = null;
 let chatLogStore = null;
 let chatLogError = '';
 let availablePresets = [];
@@ -212,6 +225,9 @@ process.on('unhandledRejection', (reason) => {
 
 app.on('render-process-gone', (event, webContents, details) => {
     logError('Renderer process gone', details);
+    if (diagnostics) {
+        diagnostics.snapshotNow('render-process-gone');
+    }
 });
 
 app.on('child-process-gone', (event, details) => {
@@ -244,12 +260,29 @@ if (!app.requestSingleInstanceLock()) {
             version: app.getVersion(),
             platform: process.platform,
             packaged: app.isPackaged,
+            logging,
         });
         registerSessionSecurity();
         loadDesktopConfiguration();
         const userDataDir = app.getPath('userData');
+        diagnostics = createDiagnostics({
+            app,
+            userDataDir,
+            log: {
+                info: logInfo,
+                warn: logWarn,
+                error: logError,
+            },
+        });
+        diagnostics.start();
         profileStore = createProfileStore(userDataDir);
-        secretStore = createSecretStore({ userDataDir, safeStorage });
+        secretStore = createSecretStore({
+            userDataDir,
+            safeStorage,
+            log: {
+                warn: logWarn,
+            },
+        });
         desktopSettingsStore = createDesktopSettingsStore(userDataDir);
         await desktopSettingsStore.load();
         try {
@@ -320,6 +353,7 @@ if (!app.requestSingleInstanceLock()) {
             logError('Failed to initialize chat log store', err);
         }
         registerDesktopConfigIpc();
+        registerDiagnosticsIpc();
         registerUpdateIpc();
         registerThemeIpc();
         registerEmojiPackIpc();
@@ -342,6 +376,11 @@ if (!app.requestSingleInstanceLock()) {
                 }).catch((err) => {
                     logError('Failed to update desktop settings', err);
                 });
+            },
+            onDiagnostics: () => {
+                if (diagnostics) {
+                    diagnostics.snapshotNow('tray');
+                }
             },
             onOpenUpdate: (update) => {
                 openExternal(update.releaseUrl);
@@ -399,6 +438,11 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 function cleanupDesktopServices() {
+    if (diagnostics) {
+        diagnostics.stop();
+        diagnostics = null;
+    }
+
     if (updateService) {
         updateService.stop();
         updateService = null;
@@ -518,6 +562,22 @@ function onIpc(channel, handler) {
         }
         handler(event, ...args);
     });
+}
+
+function registerDiagnosticsIpc() {
+    onIpc('kiwi:diag-beat', (event, payload) => {
+        if (diagnostics) {
+            diagnostics.recordBeat(event.sender.id, payload);
+        }
+    });
+    onIpc('kiwi:diag-event', (event, payload) => {
+        if (diagnostics) {
+            diagnostics.recordEvent(event.sender.id, payload);
+        }
+    });
+    handleIpc('kiwi:diag-snapshot', () => (
+        diagnostics ? diagnostics.snapshotNow('renderer') : null
+    ));
 }
 
 function registerDesktopConfigIpc() {
@@ -1700,6 +1760,9 @@ function createWindow(startHidden = false) {
     });
 
     mainWindow = window;
+    if (diagnostics) {
+        diagnostics.attachWindow(window);
+    }
 
     let stateTimer = null;
     const captureWindowState = () => {

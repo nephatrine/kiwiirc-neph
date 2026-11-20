@@ -57,6 +57,25 @@ import {
 
 const desktop = {
     isDesktop,
+    diagnostics: {
+        event: (payload) => {
+            if (typeof window === 'undefined' ||
+                !window.kiwiDesktop ||
+                !window.kiwiDesktop.diagnostics) {
+                return;
+            }
+            try {
+                window.kiwiDesktop.diagnostics.event(payload);
+            } catch (err) {
+                // Diagnostics are best-effort.
+            }
+        },
+        isAvailable: () => !!(
+            typeof window !== 'undefined' &&
+            window.kiwiDesktop &&
+            window.kiwiDesktop.diagnostics
+        ),
+    },
     http: {
         fetch: desktopFetch,
         uploadFile: desktopUploadFile,

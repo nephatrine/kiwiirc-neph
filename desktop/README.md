@@ -439,13 +439,33 @@ profile export/import.
 
 ## Logs & Troubleshooting
 
-Desktop main-process errors are written to `main.log` in Electron's app logs
-directory. On Windows this is normally `%APPDATA%\KiwiIRC\logs\main.log`.
+Desktop main-process events are written to `main.log` in Electron's app logs
+directory. On Windows this is normally `%APPDATA%\KiwiIRC\logs\main.log`, with a
+rotated `main.log.1` backup.
 
 Use **File → Open Log Folder** to open it. Chat-log initialization failures,
 auto-launch errors, native HTTP failures, renderer crashes, and canceled quits
-are recorded there. Run with `--verbose` to restore Chromium verbose logging
-when troubleshooting.
+are recorded there.
+
+Freeze diagnostics are always on. When a window stops responding or the main
+process event loop stalls, the app writes a metrics-only snapshot to
+`%APPDATA%\KiwiIRC\diagnostics\freeze-*.json` (last 20 kept). Renderer long
+tasks, slow synchronous IPC, and hang durations are also recorded in `main.log`.
+**Capture Diagnostics Snapshot** in the tray menu writes one manually. Snapshots
+never contain message text, nicknames, or credentials.
+
+Chromium logging has two modes. Explicit command-line flags always win over the
+app defaults:
+
+- **Console:** `--enable-logging --log-level=1` opens a console window and
+  prints warnings. Levels are `0` info, `1` warning, `2` error, `3` fatal. Add
+  `--verbose` if the app's quiet defaults would otherwise replace the level.
+- **File:** `KIWI_DIAGNOSTICS=1` (or `--diagnostics`) writes
+  `%APPDATA%\KiwiIRC\chrome_debug.log` at info level.
+
+For a freeze, collect the newest `freeze-*.json`, `main.log` (and `.1`), and a
+dump of the hung process (Task Manager → **Create dump file**, or
+`procdump -ma -h <pid>`).
 
 ## Plugin Trust
 

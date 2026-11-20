@@ -1,3 +1,4 @@
+const fsp = require('node:fs/promises');
 const path = require('node:path');
 const {
     atomicWriteFile,
@@ -97,12 +98,41 @@ async function readDocument(filePath) {
     return backup === null ? null : parseDocument(backup);
 }
 
-function createSecretStore({ userDataDir, safeStorage }) {
+function createSecretStore({ userDataDir, safeStorage, log = null }) {
     if (typeof userDataDir !== 'string' || !userDataDir) {
         throw new Error('invalid profile directory');
     }
 
     const filePath = secretsFilePath(userDataDir);
+    let lastLoadError = '';
+
+    function warn(message, details) {
+        if (!log || typeof log.warn !== 'function') {
+            return;
+        }
+        try {
+            log.warn(message, details);
+        } catch (err) {
+            // Logging must never break secret handling.
+        }
+    }
+
+    async function quarantine(file) {
+        const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const target = `${file}.undecryptable-${stamp}`;
+        try {
+            await fsp.rename(file, target);
+            return target;
+        } catch (err) {
+            if (err.code !== 'ENOENT') {
+                warn('Failed to quarantine undecryptable secrets file', {
+                    file,
+                    reason: err && err.message ? err.message : String(err),
+                });
+            }
+            return null;
+        }
+    }
 
     async function status() {
         let available = false;
@@ -143,6 +173,7 @@ function createSecretStore({ userDataDir, safeStorage }) {
             secure,
             backend,
             protection: available ? 'safeStorage' : 'plaintext',
+            lastLoadError,
         };
     }
 
@@ -172,43 +203,87 @@ function createSecretStore({ userDataDir, safeStorage }) {
         });
     }
 
-    async function load(stateKey) {
-        assertStateKey(stateKey);
-        const document = await readDocument(filePath);
+    async function loadCandidate(candidate, stateKey, currentStatus) {
+        const text = await readTextFile(candidate);
+        if (text === null) {
+            return { status: 'missing' };
+        }
+
+        const document = parseDocument(text);
         if (!document || document.stateKey !== stateKey) {
-            return null;
+            return { status: 'missing' };
         }
 
         if (document.protection === 'plaintext') {
-            return sanitizeSecrets(document.data);
+            lastLoadError = '';
+            return {
+                status: 'loaded',
+                secrets: sanitizeSecrets(document.data),
+            };
         }
 
-        const currentStatus = await status();
         if (!currentStatus.available || !safeStorage ||
             typeof safeStorage.decryptStringAsync !== 'function'
         ) {
+            lastLoadError = 'unavailable';
             throw new Error('secure password storage is unavailable');
         }
 
-        const decrypted = await safeStorage.decryptStringAsync(
-            Buffer.from(String(document.data || ''), 'base64')
-        );
-        const secrets = sanitizeSecrets(JSON.parse(decrypted.result));
+        try {
+            const decrypted = await safeStorage.decryptStringAsync(
+                Buffer.from(String(document.data || ''), 'base64')
+            );
+            const secrets = sanitizeSecrets(JSON.parse(decrypted.result));
+            lastLoadError = '';
 
-        if (decrypted.shouldReEncrypt) {
-            try {
-                await writeEncrypted(stateKey, secrets, currentStatus);
-            } catch (err) {
-                // The decrypted values are still usable for this session.
+            if (decrypted.shouldReEncrypt) {
+                try {
+                    await writeEncrypted(stateKey, secrets, currentStatus);
+                } catch (err) {
+                    // The decrypted values are still usable for this session.
+                }
             }
+
+            return { status: 'loaded', secrets };
+        } catch (err) {
+            lastLoadError = 'decrypt-failed';
+            await quarantine(candidate);
+            warn('Stored passwords could not be decrypted; quarantined file', {
+                stateKey,
+                backend: currentStatus.backend,
+                file: candidate,
+                reason: err && err.message ? err.message : String(err),
+            });
+            return { status: 'quarantined' };
+        }
+    }
+
+    async function load(stateKey) {
+        assertStateKey(stateKey);
+        const currentStatus = await status();
+
+        const primary = await loadCandidate(filePath, stateKey, currentStatus);
+        if (primary.status === 'loaded') {
+            return primary.secrets;
         }
 
-        return secrets;
+        const backup = await loadCandidate(
+            `${filePath}.bak`,
+            stateKey,
+            currentStatus
+        );
+        if (backup.status === 'loaded') {
+            return backup.secrets;
+        }
+
+        return null;
     }
 
     async function save(stateKey, value) {
         assertStateKey(stateKey);
         const secrets = sanitizeSecrets(value);
+        lastLoadError = '';
+
         if (!Object.keys(secrets).length) {
             await clear(stateKey);
             return status();
@@ -244,6 +319,7 @@ function createSecretStore({ userDataDir, safeStorage }) {
 
     async function clear(stateKey) {
         assertStateKey(stateKey);
+        lastLoadError = '';
         const document = await readDocument(filePath);
         if (document && document.stateKey !== stateKey) {
             return;

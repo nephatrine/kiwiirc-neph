@@ -71,6 +71,7 @@ function createTrayService({
     getWindow,
     getSettings,
     onChangeCloseToTray,
+    onDiagnostics,
     onOpenUpdate,
     onQuit,
     trayIconPath,
@@ -173,16 +174,29 @@ function createTrayService({
                     }
                 },
             },
-            { type: 'separator' },
-            {
-                label: 'Quit Kiwi IRC',
-                click: () => {
-                    if (typeof onQuit === 'function') {
-                        onQuit();
-                    }
-                },
-            }
+            { type: 'separator' }
         );
+
+        if (typeof onDiagnostics === 'function') {
+            items.push(
+                {
+                    label: 'Capture Diagnostics Snapshot',
+                    click: () => {
+                        onDiagnostics();
+                    },
+                },
+                { type: 'separator' }
+            );
+        }
+
+        items.push({
+            label: 'Quit Kiwi IRC',
+            click: () => {
+                if (typeof onQuit === 'function') {
+                    onQuit();
+                }
+            },
+        });
 
         tray.setContextMenu(Menu.buildFromTemplate(items));
     }

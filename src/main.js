@@ -34,6 +34,7 @@ import * as DesktopStorage from '@/libs/storage/Desktop';
 import { migrateLegacyProfile } from '@/libs/storage/DesktopMigration';
 import * as DesktopSecrets from '@/libs/desktop/Secrets';
 import { initDesktopPresetMenu } from '@/libs/desktop/PresetMenu';
+import { startFreezeBeacon } from '@/libs/desktop/FreezeBeacon';
 import * as Misc from '@/helpers/Misc';
 import GlobalApi from '@/libs/GlobalApi';
 import { AudioManager } from '@/libs/AudioManager';
@@ -687,6 +688,7 @@ function initInputCommands() {
 function startApp() {
     let state = getState();
 
+    startFreezeBeacon();
     initDesktopPresetMenu(state);
     new WindowTitle(state);
 
