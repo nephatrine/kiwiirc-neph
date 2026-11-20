@@ -2,6 +2,7 @@
 
 import * as TextFormatting from '@/helpers/TextFormatting';
 import * as Misc from '@/helpers/Misc';
+import { applyTypography } from '@/helpers/Typography';
 import { byteLength, withinLimit } from '@/helpers/LoginFields';
 import { rollDice, formatRoll } from '@/helpers/Dice';
 import { each } from '@/helpers/Utils';
@@ -206,7 +207,7 @@ inputCommands.lines = function inputCommandLines(event, command, line, context) 
     });
 };
 
-function handleMessage(type, event, command, line, context) {
+function handleMessage(type, event, command, line, context, applyReplacements = true) {
     event.handled = true;
 
     const { network } = context;
@@ -229,6 +230,18 @@ function handleMessage(type, event, command, line, context) {
     // Make sure we have some text to actually send
     if (!message) {
         return;
+    }
+
+    if (
+        applyReplacements &&
+        type !== 'notice' &&
+        network.isUtf8 &&
+        this.state.setting('buffers.typographic_replacements')
+    ) {
+        message = applyTypography(message, {
+            protectCode: true,
+            protectUrls: true,
+        });
     }
 
     let localBuffer = bufferName;
@@ -377,7 +390,8 @@ inputCommands.auto = function inputCommandAuto(event, command, line, context) {
         event,
         command,
         buffer.name + ' ' + line,
-        context
+        context,
+        false
     );
 };
 

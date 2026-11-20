@@ -13,6 +13,7 @@ import {
 import toHtml from '@/libs/renderers/Html';
 import GlobalApi from '@/libs/GlobalApi';
 import BridgeCard from '@/components/BridgeCard';
+import { applyTypographyToBlocks } from '@/helpers/Typography';
 import getState from './state';
 
 let nextId = 0;
@@ -80,6 +81,8 @@ export default class Message {
         this.blocks = [];
         this.hasParsed = false;
         this.lastUsedExtraFormatting = null;
+        this.lastUsedTypography = null;
+        this.lastRenderKey = null;
         this.hasRendered = false;
         this.hasUserLink = false;
         // template should be null or a Vue component to render this message
@@ -181,17 +184,24 @@ export default class Message {
         this.hasParsed = false;
         this.blocks = [];
         this.lastUsedExtraFormatting = null;
+        this.lastUsedTypography = null;
+        this.lastRenderKey = null;
     }
 
     toHtml(messageList) {
-        if (this.hasRendered) {
+        const useExtraFormatting = !!messageList.useExtraFormatting;
+        const useTypography = !!messageList.useSimpleTypography;
+        const renderKey = `${useExtraFormatting}:${useTypography}`;
+
+        if (this.hasRendered && this.lastRenderKey === renderKey) {
             return this.html;
         }
 
         this.hasRendered = true;
+        this.lastRenderKey = renderKey;
 
         if (isRawBuffer(messageList.buffer)) {
-            this.toBlocks(messageList.buffer, messageList.useExtraFormatting);
+            this.toBlocks(messageList.buffer, useExtraFormatting, useTypography);
             this.hasUserLink = false;
             this.html = toHtml(this.blocks, false);
             return this.html;
@@ -203,7 +213,7 @@ export default class Message {
             !messageList.buffer.isSpecial() &&
             (!network || network.isUtf8);
 
-        this.toBlocks(messageList.buffer, messageList.useExtraFormatting);
+        this.toBlocks(messageList.buffer, useExtraFormatting, useTypography);
 
         state.$emit('message.prestyle', { message: this, blocks: this.blocks });
 
@@ -216,9 +226,12 @@ export default class Message {
         return this.html;
     }
 
-    toBlocks(buffer, useExtraFormatting) {
+    toBlocks(buffer, useExtraFormatting, useTypography = false) {
         if (isRawBuffer(buffer)) {
-            if (!this.hasParsed || this.lastUsedExtraFormatting !== useExtraFormatting) {
+            if (!this.hasParsed ||
+                this.lastUsedExtraFormatting !== useExtraFormatting ||
+                this.lastUsedTypography !== useTypography
+            ) {
                 this.blocks = [{
                     type: 'raw',
                     content: controlCharsToGlyphs(String(this.message || '')),
@@ -229,11 +242,15 @@ export default class Message {
                 this.embed.payload = null;
                 this.hasParsed = true;
                 this.lastUsedExtraFormatting = useExtraFormatting;
+                this.lastUsedTypography = useTypography;
             }
             return this.blocks;
         }
 
-        if (this.hasParsed && this.lastUsedExtraFormatting === useExtraFormatting) {
+        if (this.hasParsed &&
+            this.lastUsedExtraFormatting === useExtraFormatting &&
+            this.lastUsedTypography === useTypography
+        ) {
             return this.blocks;
         }
 
@@ -252,6 +269,16 @@ export default class Message {
             buffer
         );
 
+        const type = (this.type || '').toLowerCase();
+        const showTypography = !!(
+            useTypography &&
+            !isSpecial &&
+            (type === 'privmsg' || type === 'message' || type === 'action')
+        );
+        if (showTypography) {
+            blocks = applyTypographyToBlocks(blocks);
+        }
+
         this.mentioned_urls = blocks
             .filter((block) => block.type === 'url' && !isSpoilerBlock(block))
             .map((block) => block.meta.url);
@@ -261,6 +288,7 @@ export default class Message {
         this.blocks = blocks;
         this.hasParsed = true;
         this.lastUsedExtraFormatting = useExtraFormatting;
+        this.lastUsedTypography = useTypography;
         return blocks;
     }
 

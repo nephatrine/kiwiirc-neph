@@ -324,6 +324,10 @@
                                 <span>{{ $t('settings_formatting') }} </span>
                                 <input v-model="settingBufferExtraFormatting" type="checkbox">
                             </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_simple_typography') }} </span>
+                                <input v-model="settingBufferSimpleTypography" type="checkbox">
+                            </label>
                             <label v-if="touchSupported" class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_show_message_info') }} </span>
                                 <input v-model="settingBufferShowMessageInfo" type="checkbox">
@@ -425,6 +429,19 @@
                                 <span>{{ $t('settings_emoji_convert_as_typed') }} </span>
                                 <input v-model="settingBufferEmojiConvertAsTyped" type="checkbox">
                             </label>
+                            <label class="u-checkbox-wrapper">
+                                <span>{{ $t('settings_typographic_replacements') }} </span>
+                                <input
+                                    v-model="settingBufferTypographicReplacements"
+                                    type="checkbox"
+                                >
+                            </label>
+                            <p
+                                v-if="settingBufferTypographicReplacements"
+                                class="kiwi-appsettings-hint"
+                            >
+                                {{ $t('settings_typographic_replacements_hint') }}
+                            </p>
                             <label class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_shared_input') }} </span>
                                 <input v-model="settingBufferSharedInput" type="checkbox">
@@ -1512,6 +1529,8 @@ export default {
         settingBufferBlockPms: bindSetting('buffers.block_pms'),
         settingBufferScrollbackSize: bindSetting('buffers.scrollback_size'),
         settingBufferExtraFormatting: bindSetting('buffers.extra_formatting'),
+        settingBufferSimpleTypography: bindSetting('buffers.simple_typography'),
+        settingBufferTypographicReplacements: bindSetting('buffers.typographic_replacements'),
         settingBufferTrafficAsActivity: bindSetting('buffers.traffic_as_activity'),
         settingDefaultBanMask: bindSetting('buffers.default_ban_mask'),
         settingDefaultKickReason: bindSetting('buffers.default_kick_reason'),

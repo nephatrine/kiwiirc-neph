@@ -965,6 +965,10 @@ msgstr "Scrollback Messages"
 msgid "settings_formatting"
 msgstr "Simple Markdown"
 
+#: Convert punctuation when displaying messages
+msgid "settings_simple_typography"
+msgstr "Simple Typography"
+
 #: Color nicknames
 msgid "settings_nick_colouring"
 msgstr "Color Nicknames"
@@ -2605,6 +2609,13 @@ msgstr "Show Emoji"
 #: Convert emoji shortcodes
 msgid "settings_emoji_convert_as_typed"
 msgstr "Automatic Emoji Conversion"
+
+#: Convert punctuation in sent messages
+msgid "settings_typographic_replacements"
+msgstr "Typographic Replacements"
+
+msgid "settings_typographic_replacements_hint"
+msgstr "Applied to sent messages on UTF-8 networks; code and links are unchanged."
 
 #: Emoji pack preference
 msgid "settings_emoji_pack_preference"

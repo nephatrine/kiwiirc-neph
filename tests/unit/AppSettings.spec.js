@@ -50,6 +50,8 @@ describe('AppSettings channel defaults', () => {
         ['settingBufferShowNickChanges', 'show_nick_changes', false],
         ['settingBufferShowModeChanges', 'show_mode_changes', false],
         ['settingBufferExtraFormatting', 'extra_formatting', false],
+        ['settingBufferSimpleTypography', 'simple_typography', false],
+        ['settingBufferTypographicReplacements', 'typographic_replacements', true],
         ['settingBufferShowRealNames', 'show_realnames', true],
         ['settingBufferShowHostnames', 'show_hostnames', true],
         ['settingBufferShowTopicInHeader', 'show_topic_in_header', true],
@@ -77,6 +79,8 @@ describe('AppSettings channel defaults', () => {
         expect(s.setting('buffers.show_topics')).toBe(true);
         expect(s.setting('buffers.show_mode_changes')).toBe(true);
         expect(s.setting('buffers.extra_formatting')).toBe(true);
+        expect(s.setting('buffers.simple_typography')).toBe(true);
+        expect(s.setting('buffers.typographic_replacements')).toBe(false);
         expect(s.setting('emojiPackPreference')).toBe('local');
     });
 

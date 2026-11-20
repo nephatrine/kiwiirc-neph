@@ -119,6 +119,8 @@ export const configTemplates = {
             server_as_activity: false,
             block_pms: false,
             extra_formatting: true,
+            simple_typography: true,
+            typographic_replacements: false,
             show_realnames: false,
             default_ban_mask: '*!%i@%h',
             default_kick_reason: 'Your behaviour is not conducive to the desired environment.',

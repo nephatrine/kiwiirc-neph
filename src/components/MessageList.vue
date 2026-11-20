@@ -295,6 +295,9 @@ export default {
             // Enables simple markdown formatting globally
             return this.$state.setting('buffers.extra_formatting');
         },
+        useSimpleTypography() {
+            return this.$state.setting('buffers.simple_typography');
+        },
         showWithoutUser() {
             return !!(this.buffer && this.buffer.state &&
                 this.buffer.state.setting('avatars.show_without_user'));
@@ -700,7 +703,11 @@ export default {
             }
 
             return isEmojiOnlyBlocks(
-                message.toBlocks(this.buffer, this.useExtraFormatting)
+                message.toBlocks(
+                    this.buffer,
+                    this.useExtraFormatting,
+                    this.useSimpleTypography
+                )
             );
         },
         formatMessage(message) {

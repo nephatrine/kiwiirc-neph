@@ -186,6 +186,7 @@ describe('MessageList emoji-only messages', () => {
             isSpecial: () => false,
         },
         useExtraFormatting: true,
+        useSimpleTypography: true,
     };
 
     function textBlock(content) {
@@ -223,7 +224,7 @@ describe('MessageList emoji-only messages', () => {
     test('accepts normal, whitespace-separated, and uppercase chat messages', () => {
         let message = makeMessage();
         expect(isEmojiOnly(message)).toBe(true);
-        expect(message.toBlocks).toHaveBeenCalledWith(context.buffer, true);
+        expect(message.toBlocks).toHaveBeenCalledWith(context.buffer, true, true);
 
         message = makeMessage({
             toBlocks: () => [

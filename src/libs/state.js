@@ -246,7 +246,11 @@ function createNewState() {
                             let latestMessages = impBuffer.latest_messages || [];
                             latestMessages.forEach((msg) => {
                                 let m = new Message(msg);
-                                m.toBlocks(buffer, this.setting('buffers.extra_formatting'));
+                                m.toBlocks(
+                                    buffer,
+                                    this.setting('buffers.extra_formatting'),
+                                    this.setting('buffers.simple_typography')
+                                );
                                 buffer.latest_messages.push(m);
                             });
 
@@ -1031,7 +1035,11 @@ function createNewState() {
                     bufferMessage.ignore = true;
                 }
 
-                bufferMessage.toBlocks(buffer, state.setting('buffers.extra_formatting'));
+                bufferMessage.toBlocks(
+                    buffer,
+                    state.setting('buffers.extra_formatting'),
+                    state.setting('buffers.simple_typography')
+                );
 
                 buffer.addMessage(bufferMessage);
 

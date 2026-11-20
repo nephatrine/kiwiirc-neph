@@ -1,7 +1,12 @@
 import MessageList from '@/components/MessageList';
 import state from '@/libs/state';
+import Message from '@/libs/Message';
 import { ircToHtml } from '@/helpers/IrcToHtml';
 import { htmlToIrc } from '@/helpers/HtmlToIrc';
+import {
+    applyTypography,
+    applyTypographyToBlocks
+} from '@/helpers/Typography';
 import {
     FORMAT_12H,
     FORMAT_24H,
@@ -44,6 +49,172 @@ describe('global simple markdown', () => {
             $state: s,
             buffer,
         })).toBe(false);
+    });
+});
+
+describe('simple typography', () => {
+    test('converts only exact dash and ellipsis runs', () => {
+        expect(applyTypography('--')).toBe('\u2013');
+        expect(applyTypography('---')).toBe('\u2014');
+        expect(applyTypography('----')).toBe('----');
+        expect(applyTypography('-----')).toBe('-----');
+        expect(applyTypography('...')).toBe('\u2026');
+        expect(applyTypography('....')).toBe('....');
+        expect(applyTypography('..')).toBe('..');
+        expect(applyTypography('a - b -- c --- d')).toBe(
+            'a - b \u2013 c \u2014 d'
+        );
+    });
+
+    test('converts copyright and trademark symbols', () => {
+        expect(applyTypography('(c) (C) (tm) (TM) (Tm)')).toBe(
+            '\u00a9 \u00a9 \u2122 \u2122 \u2122'
+        );
+        expect(applyTypography('(r)')).toBe('(r)');
+    });
+
+    test('converts quotes and apostrophes', () => {
+        expect(applyTypography('"Hello"')).toBe('\u201cHello\u201d');
+        expect(applyTypography("'Hello'")).toBe('\u2018Hello\u2019');
+        expect(applyTypography("don't it's")).toBe('don\u2019t it\u2019s');
+        expect(applyTypography("'90s")).toBe('\u201990s');
+        expect(applyTypography('He said "hello" -- then left...')).toBe(
+            'He said \u201chello\u201d \u2013 then left\u2026'
+        );
+    });
+
+    test('leaves protected code and URLs unchanged', () => {
+        expect(applyTypography('`-- ...`', { protectCode: true }))
+            .toBe('`-- ...`');
+        expect(applyTypography('\x11-- ...\x11', { protectCode: true }))
+            .toBe('\x11-- ...\x11');
+        expect(applyTypography('\x02"hello"\x02', { protectCode: true }))
+            .toBe('\x02\u201chello\u201d\x02');
+        expect(applyTypography('https://example.com/a--b...', {
+            protectUrls: true,
+        })).toBe('https://example.com/a--b...');
+        expect(applyTypography('go to https://example.com/a--b... now --', {
+            protectUrls: true,
+        })).toBe('go to https://example.com/a--b... now \u2013');
+    });
+
+    test('only transforms plain text blocks', () => {
+        const blocks = applyTypographyToBlocks([
+            { type: 'text', content: '-- "quote"', styles: {} },
+            { type: 'text', content: '--', styles: { monospace: true } },
+            { type: 'text', content: '--', styles: { block: true } },
+            { type: 'url', content: 'https://example.com/--', styles: {} },
+            { type: 'user', content: '--', styles: {} },
+            { type: 'channel', content: '#--', styles: {} },
+            { type: 'emoji', content: '--', styles: {} },
+        ]);
+
+        expect(blocks[0].content).toBe('\u2013 \u201cquote\u201d');
+        expect(blocks[1].content).toBe('--');
+        expect(blocks[2].content).toBe('--');
+        expect(blocks[3].content).toBe('https://example.com/--');
+        expect(blocks[4].content).toBe('--');
+        expect(blocks[5].content).toBe('#--');
+        expect(blocks[6].content).toBe('--');
+    });
+
+    function makeBuffer(options = {}) {
+        return {
+            users: {},
+            isSpecial: () => !!options.special,
+            isRaw: () => !!options.raw,
+            setting: () => undefined,
+            getNetwork: () => ({
+                isUtf8: true,
+                resolveMessage: () => null,
+            }),
+        };
+    }
+
+    test('applies display typography to chat and action messages only', () => {
+        const buffer = makeBuffer();
+
+        const chat = new Message({
+            message: '-- ... (c)',
+            nick: 'tester',
+            type: 'privmsg',
+        });
+        expect(chat.toBlocks(buffer, false, true)[0].content)
+            .toBe('\u2013 \u2026 \u00a9');
+        expect(chat.message).toBe('-- ... (c)');
+
+        const action = new Message({
+            message: 'waves -- ...',
+            nick: 'tester',
+            type: 'action',
+        });
+        expect(action.toBlocks(buffer, false, true)[0].content)
+            .toBe('waves \u2013 \u2026');
+
+        const notice = new Message({
+            message: 'notice -- ...',
+            nick: 'tester',
+            type: 'notice',
+        });
+        expect(notice.toBlocks(buffer, false, true)[0].content)
+            .toBe('notice -- ...');
+
+        const special = new Message({
+            message: '-- ...',
+            nick: 'tester',
+            type: 'privmsg',
+        });
+        expect(special.toBlocks(makeBuffer({ special: true }), false, true)[0].content)
+            .toBe('-- ...');
+
+        const raw = new Message({
+            message: '-- ...',
+            nick: 'tester',
+            type: 'privmsg',
+        });
+        expect(raw.toBlocks(makeBuffer({ raw: true }), false, true)[0].content)
+            .toBe('-- ...');
+    });
+
+    test('protects code when Simple Markdown is disabled and reparses on toggle', () => {
+        const buffer = makeBuffer();
+        const message = new Message({
+            message: '`-- ...`',
+            nick: 'tester',
+            type: 'privmsg',
+        });
+
+        expect(message.toBlocks(buffer, false, true)[0].content)
+            .toBe('`-- ...`');
+
+        const plain = new Message({
+            message: '-- ...',
+            nick: 'tester',
+            type: 'privmsg',
+        });
+        expect(plain.toBlocks(buffer, false, true)[0].content)
+            .toBe('\u2013 \u2026');
+        expect(plain.toBlocks(buffer, false, false)[0].content)
+            .toBe('-- ...');
+    });
+
+    test('rerenders cached HTML when the display setting changes', () => {
+        const buffer = makeBuffer();
+        const message = new Message({
+            message: '-- ...',
+            nick: 'tester',
+            type: 'privmsg',
+        });
+        const messageList = {
+            buffer,
+            useExtraFormatting: false,
+            useSimpleTypography: true,
+        };
+
+        expect(message.toHtml(messageList)).toContain('\u2013 \u2026');
+
+        messageList.useSimpleTypography = false;
+        expect(message.toHtml(messageList)).toContain('-- ...');
     });
 });
 

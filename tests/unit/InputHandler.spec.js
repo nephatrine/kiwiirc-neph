@@ -432,3 +432,121 @@ describe('default aliases', () => {
         expect(rewriter.process('/q TestNick', vars)).toBe('/query TestNick');
     });
 });
+
+describe('InputHandler typographic replacements', () => {
+    function makeOutgoing(settings = {}) {
+        const buffer = {
+            name: '#channel',
+            networkid: 1,
+            replying_to: null,
+            isChannel: () => true,
+            isSpecial: () => false,
+            promoteServerContext: jest.fn(),
+        };
+        const network = {
+            id: 1,
+            nick: 'me',
+            isUtf8: settings.utf8 !== false,
+            connection: { server: 'irc.example.com' },
+            isChannelName: () => true,
+            extractTargetGroup: () => null,
+            hasCap: () => false,
+            replyTagName: () => '',
+            isTwitch: () => false,
+            ircClient: {
+                say: jest.fn(),
+                action: jest.fn(),
+                notice: jest.fn(),
+                raw: jest.fn(),
+            },
+        };
+        const state = {
+            setting: jest.fn((key) => {
+                if (key === 'buffers.typographic_replacements') {
+                    return settings.enabled !== false;
+                }
+                return '';
+            }),
+            $watch: jest.fn(),
+            $on: jest.fn(),
+            $emit: jest.fn(),
+            addMessage: jest.fn(),
+            getOrAddBufferByName: jest.fn(() => buffer),
+        };
+
+        return {
+            handler: new InputHandler(state),
+            network,
+            buffer,
+            state,
+            context: { network, buffer },
+        };
+    }
+
+    test('converts normal messages when the network is UTF-8', () => {
+        const { handler, network, state, context } = makeOutgoing();
+
+        handler.processLine('/msg #channel -- hi ... (c)', context);
+
+        expect(network.ircClient.say).toHaveBeenCalledWith(
+            '#channel',
+            '\u2013 hi \u2026 \u00a9',
+            {}
+        );
+        expect(state.addMessage.mock.calls[0][1]).toEqual(expect.objectContaining({
+            raw_text: '\u2013 hi \u2026 \u00a9',
+        }));
+    });
+
+    test('converts /me actions', () => {
+        const { handler, network, context } = makeOutgoing();
+
+        handler.processLine('/action #channel waves --', context);
+
+        expect(network.ircClient.action).toHaveBeenCalledWith(
+            '#channel',
+            'waves \u2013',
+            {}
+        );
+    });
+
+    test('leaves notices, non-UTF-8 networks, and disabled settings alone', () => {
+        const notice = makeOutgoing();
+        notice.handler.processLine('/notice #channel --', notice.context);
+        expect(notice.network.ircClient.notice).toHaveBeenCalledWith(
+            '#channel',
+            '--',
+            {}
+        );
+
+        const nonUtf8 = makeOutgoing({ utf8: false });
+        nonUtf8.handler.processLine('/msg #channel --', nonUtf8.context);
+        expect(nonUtf8.network.ircClient.say).toHaveBeenCalledWith(
+            '#channel',
+            '--',
+            {}
+        );
+
+        const disabled = makeOutgoing({ enabled: false });
+        disabled.handler.processLine('/msg #channel --', disabled.context);
+        expect(disabled.network.ircClient.say).toHaveBeenCalledWith(
+            '#channel',
+            '--',
+            {}
+        );
+    });
+
+    test('protects URLs, backticks, and IRC monospace', () => {
+        const { handler, network, context } = makeOutgoing();
+        const message = 'https://example.com/a--b... `--` \x11--\x11';
+        const expected = 'https://example.com/a--b... `--` \x11--\x11';
+
+        handler.processLine(`/msg #channel ${message}`, context);
+
+        expect(network.ircClient.say).toHaveBeenCalledWith(
+            '#channel',
+            expected,
+            {}
+        );
+    });
+});
