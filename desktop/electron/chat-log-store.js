@@ -98,7 +98,10 @@ function buildFtsQuery(query) {
     return query.trim()
         .split(/\s+/)
         .filter((token) => /[\p{L}\p{N}]/u.test(token))
-        .map((token) => `"${token.replace(/"/g, '""')}"*`)
+        .map((token) => {
+            const escaped = token.replace(/"/g, '""');
+            return `(message : "${escaped}"* OR raw_text : "${escaped}"*)`;
+        })
         .join(' AND ');
 }
 
@@ -560,8 +563,12 @@ function createChatLogStore(userDataDir) {
             params.push(integerValue(options.networkId));
         }
         if (typeof options.bufferName === 'string' && options.bufferName) {
-            clauses.push('m.buffer_name = ?');
+            clauses.push('m.buffer_name = ? COLLATE NOCASE');
             params.push(textValue(options.bufferName, MAX_FIELD_BYTES));
+        }
+        if (typeof options.fromNick === 'string' && options.fromNick) {
+            clauses.push('m.nick = ? COLLATE NOCASE');
+            params.push(textValue(options.fromNick, MAX_FIELD_BYTES));
         }
 
         const where = clauses.length ? clauses.join(' AND ') : '1 = 1';

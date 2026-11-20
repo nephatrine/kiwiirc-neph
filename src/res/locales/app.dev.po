@@ -2153,6 +2153,9 @@ msgstr "Searches chat logs stored on this device."
 msgid "chatlogs_source_server_hint"
 msgstr "Searches history stored by the server or bouncer."
 
+msgid "chatlogs_search_syntax_hint"
+msgstr "Use in:#channel or from:nick to narrow results."
+
 msgid "chatlogs_result_not_loaded"
 msgstr "Not Loaded"
 

@@ -83,6 +83,55 @@ describe('Desktop chat log store', () => {
         expect(store.search({ query: 'blotter' }).rows).toHaveLength(1);
     });
 
+    it('searches message content only and supports target filters', () => {
+        store.append([
+            makeEntry({
+                irc_id: 'alpine-message',
+                network_name: 'OFTC',
+                buffer_name: '#alpine-linux',
+                nick: 'Alice',
+                message: 'hello world',
+                raw_text: 'hello world',
+            }),
+            makeEntry({
+                irc_id: 'other-message',
+                network_name: 'TestNet',
+                buffer_name: '#other',
+                nick: 'Bob',
+                message: 'hello alpine',
+                raw_text: 'hello alpine',
+            }),
+        ]);
+
+        expect(store.search({ query: 'alpine' }).rows)
+            .toEqual([expect.objectContaining({ message: 'hello alpine' })]);
+        expect(store.search({ query: 'oftc' }).rows).toHaveLength(0);
+        expect(store.search({ query: 'alice' }).rows).toHaveLength(0);
+
+        expect(store.search({
+            query: 'hello',
+            bufferName: '#ALPINE-LINUX',
+        }).rows).toEqual([
+            expect.objectContaining({ message: 'hello world' }),
+        ]);
+        expect(store.search({
+            query: 'hello',
+            fromNick: 'alice',
+        }).rows).toEqual([
+            expect.objectContaining({ message: 'hello world' }),
+        ]);
+        expect(store.search({
+            query: 'hello',
+            fromNick: 'bob',
+        }).rows).toEqual([
+            expect.objectContaining({ message: 'hello alpine' }),
+        ]);
+        expect(store.search({
+            query: '',
+            bufferName: '#alpine-linux',
+        }).rows).toHaveLength(1);
+    });
+
     it('deduplicates messages by irc_id', () => {
         const entry = makeEntry({ irc_id: 'same-id' });
 

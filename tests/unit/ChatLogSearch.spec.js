@@ -57,6 +57,7 @@ function makeContext(overrides = {}) {
         defaultServerTarget: ChatLogSearch.methods.defaultServerTarget,
         search: jest.fn(),
         close: jest.fn(),
+        parseSearchQuery: ChatLogSearch.methods.parseSearchQuery,
         $nextTick: (cb) => cb(),
         $refs: {},
         $set: (target, key, value) => {
@@ -133,8 +134,102 @@ describe('ChatLogSearch buffer filters', () => {
             query: 'hello',
             networkId: 5,
             bufferName: '#channel',
+            fromNick: '',
             limit: 50,
             offset: 0,
+        });
+    });
+
+    test('parses channel and nick search filters', () => {
+        const parse = ChatLogSearch.methods.parseSearchQuery;
+
+        expect(parse('in:#alpine-linux fix', '#other')).toEqual({
+            text: 'fix',
+            bufferName: '#alpine-linux',
+            fromNick: '',
+        });
+        expect(parse('from:Alice hello', '')).toEqual({
+            text: 'hello',
+            bufferName: '',
+            fromNick: 'Alice',
+        });
+        expect(parse('#alpine-linux', '')).toEqual({
+            text: '',
+            bufferName: '#alpine-linux',
+            fromNick: '',
+        });
+        expect(parse('@Alice', '#channel')).toEqual({
+            text: '',
+            bufferName: '#channel',
+            fromNick: 'Alice',
+        });
+        expect(parse('hello #channel @Alice', '')).toEqual({
+            text: 'hello #channel @Alice',
+            bufferName: '',
+            fromNick: '',
+        });
+    });
+
+    test('passes explicit search filters to local logs', async() => {
+        ChatLogs.search.mockResolvedValue({ rows: [], hasMore: false });
+        const context = makeContext({
+            query: 'in:#alpine-linux fix',
+            networkId: 5,
+            bufferName: '#other',
+        });
+
+        await ChatLogSearch.methods.search.call(context, true);
+
+        expect(ChatLogs.search).toHaveBeenCalledWith({
+            query: 'fix',
+            networkId: 5,
+            bufferName: '#alpine-linux',
+            fromNick: '',
+            limit: 50,
+            offset: 0,
+        });
+    });
+
+    test('passes explicit search filters to server search', async() => {
+        const run = jest.fn().mockResolvedValue({ commands: [] });
+        const network = {
+            id: 7,
+            name: 'TestNetwork',
+            nick: 'Me',
+            state: 'connected',
+            isChannelName: (name) => name.startsWith('#'),
+            caseCompare: (a, b) => String(a).toLowerCase() === String(b).toLowerCase(),
+            timeToLocal: (time) => time,
+            ircClient: {
+                search: {
+                    isSupported: () => true,
+                    run,
+                },
+            },
+        };
+        const context = makeContext({
+            source: 'server',
+            localAvailable: false,
+            availableSources: ['server'],
+            networkId: 7,
+            query: 'from:Alice in:#channel hello',
+            bufferName: '#other',
+            serverNetworks: [network],
+            $state: {
+                getNetwork: () => network,
+                getActiveNetwork: () => network,
+            },
+        });
+
+        await ChatLogSearch.methods.search.call(context, true);
+
+        expect(run).toHaveBeenCalledWith({
+            in: '#channel',
+            from: 'Alice',
+            after: undefined,
+            before: 0,
+            text: 'hello',
+            limit: 50,
         });
     });
 
@@ -144,6 +239,7 @@ describe('ChatLogSearch buffer filters', () => {
             networkId: 7,
             bufferName: '',
             query: 'hello',
+            parseSearchQuery: ChatLogSearch.methods.parseSearchQuery,
             $t: (key) => key,
         });
 
@@ -266,7 +362,7 @@ describe('ChatLogSearch buffer filters', () => {
         expect(context.error).toBe('');
         expect(run).toHaveBeenCalledWith({
             in: '#channel',
-            from: undefined,
+            from: '',
             after: undefined,
             before: 0,
             text: 'hello',

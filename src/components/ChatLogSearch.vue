@@ -90,6 +90,9 @@
                 <div v-if="sourceHint" class="kiwi-logsearch-hint">
                     {{ sourceHint }}
                 </div>
+                <div class="kiwi-logsearch-hint">
+                    {{ $t('chatlogs_search_syntax_hint') }}
+                </div>
                 <div
                     v-if="source === sourceServer"
                     class="kiwi-logsearch-hint"
@@ -281,13 +284,14 @@ export default {
             if (this.source !== MessageSearch.SOURCE_SERVER) {
                 return '';
             }
+            const parsed = this.parseSearchQuery(this.query, this.bufferName);
             if (!this.networkId) {
                 return this.$t('chatlogs_server_network_required');
             }
-            if (!this.bufferName.trim()) {
+            if (!parsed.bufferName.trim()) {
                 return this.$t('chatlogs_server_target_required');
             }
-            if (!this.query.trim()) {
+            if (!parsed.text.trim()) {
                 return this.$t('chatlogs_server_query_prompt');
             }
             return '';
@@ -520,6 +524,43 @@ export default {
                     this.error = this.$t('chatlogs_jump_failed');
                 });
         },
+        parseSearchQuery(query, currentBuffer = '') {
+            const text = String(query || '').trim();
+            let bufferName = currentBuffer || '';
+            let fromNick = '';
+
+            if (!text) {
+                return { text: '', bufferName, fromNick };
+            }
+
+            const words = text.split(/\s+/);
+            let index = 0;
+
+            while (index < words.length) {
+                const first = words[index];
+                const inMatch = /^in:(.+)$/i.exec(first);
+                const fromMatch = /^from:(.+)$/i.exec(first);
+
+                if (inMatch) {
+                    bufferName = inMatch[1];
+                } else if (fromMatch) {
+                    fromNick = fromMatch[1].replace(/^@/, '');
+                } else if (first.startsWith('#') && first.length > 1) {
+                    bufferName = first;
+                } else if (first.startsWith('@') && first.length > 1) {
+                    fromNick = first.slice(1);
+                } else {
+                    break;
+                }
+                index += 1;
+            }
+
+            return {
+                text: words.slice(index).join(' '),
+                bufferName,
+                fromNick,
+            };
+        },
         async search(reset) {
             if (this.loading && !reset) {
                 return;
@@ -532,6 +573,8 @@ export default {
                 this.loading = false;
                 this.resetSearch();
             }
+
+            const parsed = this.parseSearchQuery(this.query, this.bufferName);
 
             if (this.source === MessageSearch.SOURCE_SERVER) {
                 if (this.searchPrompt) {
@@ -557,16 +600,18 @@ export default {
                     result = await MessageSearch.searchServer({
                         state: this.$state,
                         networkId: this.networkId,
-                        bufferName: this.bufferName,
-                        query: this.query,
+                        bufferName: parsed.bufferName,
+                        from: parsed.fromNick,
+                        query: parsed.text,
                         limit: PAGE_SIZE,
                         before: this.serverBefore || 0,
                     });
                 } else {
                     result = await MessageSearch.searchLocal({
-                        query: this.query,
+                        query: parsed.text,
                         networkId: this.networkId,
-                        bufferName: this.bufferName,
+                        bufferName: parsed.bufferName,
+                        fromNick: parsed.fromNick,
                         limit: PAGE_SIZE,
                         offset: this.offset,
                     });
