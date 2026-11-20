@@ -824,21 +824,31 @@ describe('ControlInput accidental command warning', () => {
     });
 
     test('warns about password-like single tokens', () => {
-        const { context } = makeContext('Passw0rd');
+        const tokens = [
+            'Tom19881010!',
+            'Qwerty123!',
+            'correct-horse-Battery-9',
+            '2hAj5#mne-ix.86H',
+        ];
 
-        ControlInput.methods.submitForm.call(context);
+        tokens.forEach((token) => {
+            const { context } = makeContext(token);
+            ControlInput.methods.submitForm.call(context);
 
-        expect(context.showCommandWarning).toBe(true);
-        expect(context.commandWarningType).toBe('password');
-        expect(context.$state.$emit).not.toHaveBeenCalled();
+            expect(context.showCommandWarning).toBe(true);
+            expect(context.commandWarningType).toBe('password');
+            expect(context.$state.$emit).not.toHaveBeenCalled();
+        });
     });
 
     test('does not warn about weak, nick, or URL-like tokens', () => {
-        let result = makeContext('PASSWORD1');
-        ControlInput.methods.submitForm.call(result.context);
-        expect(result.context.showCommandWarning).toBe(false);
+        ['P@ssw0rd', 'Ab1!Ab1!Ab1!', 'PASSWORD1'].forEach((token) => {
+            const result = makeContext(token);
+            ControlInput.methods.submitForm.call(result.context);
+            expect(result.context.showCommandWarning).toBe(false);
+        });
 
-        result = makeContext('Passw0rd', true, {
+        let result = makeContext('Tom19881010!', true, {
             buffer: { hasNick: () => true },
         });
         ControlInput.methods.submitForm.call(result.context);

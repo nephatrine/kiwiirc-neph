@@ -255,7 +255,7 @@ import Logger from '@/libs/Logger';
 import BouncerProvider from '@/libs/BouncerProvider';
 import { probeServerCaps, createProbeTransport } from '@/libs/ServerProbe';
 import { parseAccountRegistrationCap } from '@/libs/accountRegistration';
-import { passwordScore } from '@/helpers/PasswordStrength';
+import { passwordScore, passwordLevelClass, passwordLevelLabelKey } from '@/helpers/PasswordStrength';
 import {
     byteLength,
     compileNickPattern,
@@ -419,22 +419,17 @@ export default {
             return this.activeTab === 'bnc' ||
                 isValidServerPassword(this.fields.serverPassword);
         },
+        passwordValue() {
+            return this.activeTab === 'register' ? this.fields.password : '';
+        },
         passwordStrength() {
-            return passwordScore(
-                this.activeTab === 'register' ? this.fields.password : ''
-            );
+            return passwordScore(this.passwordValue);
         },
         passwordStrengthClass() {
-            return 'kiwi-welcome-password-strength-level--' + this.passwordStrength;
+            return passwordLevelClass(this.passwordValue);
         },
         passwordStrengthLabel() {
-            const labels = [
-                'password_strength_weak',
-                'password_strength_fair',
-                'password_strength_good',
-                'password_strength_strong',
-            ];
-            return labels[Math.max(0, this.passwordStrength - 1)] || labels[0];
+            return passwordLevelLabelKey(this.passwordValue);
         },
         registerPasswordHint() {
             const info = this.probeRegInfo;

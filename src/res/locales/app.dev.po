@@ -1496,6 +1496,22 @@ msgstr "Good"
 msgid "password_strength_strong"
 msgstr "Strong"
 
+#: Password strength: easy
+msgid "password_strength_easy"
+msgstr "Easy"
+
+#: Password strength: medium
+msgid "password_strength_medium"
+msgstr "Medium"
+
+#: Password strength: very strong
+msgid "password_strength_very_strong"
+msgstr "Very Strong"
+
+#: Password strength: extremely strong
+msgid "password_strength_extremely_strong"
+msgstr "Extremely Strong"
+
 #: Send a message...
 msgid "input_placeholder"
 msgstr "Send a message..."

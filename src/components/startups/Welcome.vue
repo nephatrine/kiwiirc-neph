@@ -352,7 +352,7 @@ import {
 import Logger from '@/libs/Logger';
 import { probeServerCaps, createProbeTransport } from '@/libs/ServerProbe';
 import { parseAccountRegistrationCap } from '@/libs/accountRegistration';
-import { passwordScore } from '@/helpers/PasswordStrength';
+import { passwordScore, passwordLevelClass, passwordLevelLabelKey } from '@/helpers/PasswordStrength';
 import Captcha from '@/components/Captcha';
 import StartupLayout from './CommonLayout';
 
@@ -644,20 +644,17 @@ export default {
         isServerPasswordValid() {
             return !this.useTabs || isValidServerPassword(this.fields.serverPassword);
         },
+        passwordValue() {
+            return this.useTabs ? this.fields.password : '';
+        },
         passwordStrength() {
-            return passwordScore(this.useTabs ? this.fields.password : '');
+            return passwordScore(this.passwordValue);
         },
         passwordStrengthClass() {
-            return 'kiwi-welcome-password-strength-level--' + this.passwordStrength;
+            return passwordLevelClass(this.passwordValue);
         },
         passwordStrengthLabel() {
-            const labels = [
-                'password_strength_weak',
-                'password_strength_fair',
-                'password_strength_good',
-                'password_strength_strong',
-            ];
-            return labels[Math.max(0, this.passwordStrength - 1)] || labels[0];
+            return passwordLevelLabelKey(this.passwordValue);
         },
         isNickValid() {
             const nickPattern = compileNickPattern(
@@ -1429,55 +1426,6 @@ form.kiwi-welcome-simple-form h2 {
     font-size: 0.9em;
     font-style: italic;
     margin-top: 4px;
-}
-
-.kiwi-welcome-password-strength {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: -8px 0 12px 0;
-}
-
-.kiwi-welcome-password-strength-bar {
-    flex: 1;
-    height: 4px;
-    border-radius: 2px;
-    background: rgb(128, 128, 128, 0.25);
-    overflow: hidden;
-}
-
-.kiwi-welcome-password-strength-level {
-    display: block;
-    width: 0;
-    height: 100%;
-    transition: width 0.2s, background-color 0.2s;
-}
-
-.kiwi-welcome-password-strength-level--1 {
-    width: 25%;
-    background: #c0392b;
-}
-
-.kiwi-welcome-password-strength-level--2 {
-    width: 50%;
-    background: #e67e22;
-}
-
-.kiwi-welcome-password-strength-level--3 {
-    width: 75%;
-    background: #f1c40f;
-}
-
-.kiwi-welcome-password-strength-level--4 {
-    width: 100%;
-    background: #27ae60;
-}
-
-.kiwi-welcome-password-strength-label {
-    font-size: 0.85em;
-    min-width: 60px;
-    text-align: right;
-    opacity: 0.8;
 }
 
 .kiwi-welcome-anonymous-warning {

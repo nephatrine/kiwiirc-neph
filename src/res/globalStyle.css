@@ -1,3 +1,11 @@
+:root {
+    --kiwi-password-easy: #c0392b;
+    --kiwi-password-medium: #e67e22;
+    --kiwi-password-strong: #b8860b;
+    --kiwi-password-very-strong: #2ecc71;
+    --kiwi-password-extremely-strong: #27ae60;
+}
+
 h1,
 h2,
 h3,
@@ -271,6 +279,60 @@ select {
     font-family: var(--kiwi-font-mono);
     white-space: pre-wrap;
     display: block;
+}
+
+.kiwi-welcome-password-strength {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: -8px 0 12px 0;
+}
+
+.kiwi-welcome-password-strength-bar {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: rgb(128, 128, 128, 0.25);
+    overflow: hidden;
+}
+
+.kiwi-welcome-password-strength-level {
+    display: block;
+    width: 0;
+    height: 100%;
+    transition: width 0.2s, background-color 0.2s;
+}
+
+.kiwi-welcome-password-strength-level--easy {
+    width: 20%;
+    background: var(--kiwi-password-easy);
+}
+
+.kiwi-welcome-password-strength-level--medium {
+    width: 40%;
+    background: var(--kiwi-password-medium);
+}
+
+.kiwi-welcome-password-strength-level--strong {
+    width: 60%;
+    background: var(--kiwi-password-strong);
+}
+
+.kiwi-welcome-password-strength-level--very-strong {
+    width: 80%;
+    background: var(--kiwi-password-very-strong);
+}
+
+.kiwi-welcome-password-strength-level--extremely-strong {
+    width: 100%;
+    background: var(--kiwi-password-extremely-strong);
+}
+
+.kiwi-welcome-password-strength-label {
+    font-size: 0.85em;
+    min-width: 60px;
+    text-align: right;
+    opacity: 0.8;
 }
 
 .kiwi-formatting-reverse {

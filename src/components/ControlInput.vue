@@ -1641,7 +1641,7 @@ export default {
                 return false;
             }
 
-            return passwordScore(value) >= 3;
+            return passwordScore(value) >= 7;
         },
         sendCommandWarning() {
             this.submitForm(true);

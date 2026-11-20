@@ -4,6 +4,11 @@ import { TextEncoder } from 'util';
 import state from '@/libs/state';
 import ThemeManager from '@/libs/ThemeManager';
 import UserBox from '@/components/UserBox';
+import {
+    passwordLevelClass,
+    passwordLevelLabelKey,
+    passwordScore
+} from '@/helpers/PasswordStrength';
 
 global.__VERSION__ = 'test';
 global.__COMMITHASH__ = 'test';
@@ -104,20 +109,46 @@ describe('UserBox registration', () => {
         expect(strength.compareDocumentPosition(emailAfter))
             .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
 
-        expect(comp.registerPasswordStrength).toBe(1);
+        expect(comp.registerPasswordStrength).toBe(0);
         expect(comp.registerPasswordStrengthClass)
-            .toBe('kiwi-welcome-password-strength-level--1');
-        expect(comp.registerPasswordStrengthLabel).toBe('password_strength_weak');
-        expect(comp.$el.querySelector('.kiwi-welcome-password-strength-level--1')).toBeTruthy();
+            .toBe('kiwi-welcome-password-strength-level--easy');
+        expect(comp.registerPasswordStrengthLabel).toBe('password_strength_easy');
+        expect(comp.$el.querySelector('.kiwi-welcome-password-strength-level--easy')).toBeTruthy();
 
         comp.registerForm.password = 'Zxcvbn9!';
         await Vue.nextTick();
 
-        expect(comp.registerPasswordStrength).toBe(4);
+        expect(comp.registerPasswordStrength).toBe(5);
         expect(comp.registerPasswordStrengthClass)
-            .toBe('kiwi-welcome-password-strength-level--4');
-        expect(comp.registerPasswordStrengthLabel).toBe('password_strength_strong');
-        expect(comp.$el.querySelector('.kiwi-welcome-password-strength-level--4')).toBeTruthy();
+            .toBe('kiwi-welcome-password-strength-level--medium');
+        expect(comp.registerPasswordStrengthLabel).toBe('password_strength_medium');
+        expect(comp.$el.querySelector('.kiwi-welcome-password-strength-level--medium')).toBeTruthy();
+
+        comp.registerForm.password = '2hAj5#mne-ix.86H';
+        await Vue.nextTick();
+
+        expect(comp.registerPasswordStrength).toBe(14);
+        expect(comp.registerPasswordStrengthClass)
+            .toBe('kiwi-welcome-password-strength-level--extremely-strong');
+        expect(comp.registerPasswordStrengthLabel)
+            .toBe('password_strength_extremely_strong');
+    });
+
+    it('maps PwScore levels to the five strength labels', () => {
+        const cases = [
+            ['Ab1!Ab1!Ab1!', 0, 'easy', 'password_strength_easy'],
+            ['P@ssw0rd', 5, 'medium', 'password_strength_medium'],
+            ['Tom19881010!', 7, 'strong', 'password_strength_strong'],
+            ['correct-horse-Battery-9', 11, 'very-strong', 'password_strength_very_strong'],
+            ['2hAj5#mne-ix.86H', 14, 'extremely-strong', 'password_strength_extremely_strong'],
+        ];
+
+        cases.forEach(([password, points, levelClass, label]) => {
+            expect(passwordScore(password)).toBe(points);
+            expect(passwordLevelClass(password))
+                .toBe(`kiwi-welcome-password-strength-level--${levelClass}`);
+            expect(passwordLevelLabelKey(password)).toBe(label);
+        });
     });
 
     it('enforces the account-registration length and required fields', () => {

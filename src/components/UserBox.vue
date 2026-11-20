@@ -579,7 +579,7 @@ import * as TextFormatting from '@/helpers/TextFormatting';
 import * as Misc from '@/helpers/Misc';
 import GlobalApi from '@/libs/GlobalApi';
 import { ircToHtml } from '@/helpers/IrcToHtml';
-import { passwordScore } from '@/helpers/PasswordStrength';
+import { passwordScore, passwordLevelClass, passwordLevelLabelKey } from '@/helpers/PasswordStrength';
 import { effectiveRetention, effectiveService } from '@/libs/fileupload';
 import { NICKSERV_SETTINGS } from '@/libs/ErgoServices';
 import { CHANSERV_SETTINGS } from '@/libs/ErgoChanServ';
@@ -802,16 +802,10 @@ export default {
             return passwordScore(this.registerForm.password);
         },
         registerPasswordStrengthClass() {
-            return 'kiwi-welcome-password-strength-level--' + this.registerPasswordStrength;
+            return passwordLevelClass(this.registerForm.password);
         },
         registerPasswordStrengthLabel() {
-            const labels = [
-                'password_strength_weak',
-                'password_strength_fair',
-                'password_strength_good',
-                'password_strength_strong',
-            ];
-            return labels[Math.max(0, this.registerPasswordStrength - 1)] || labels[0];
+            return passwordLevelLabelKey(this.registerForm.password);
         },
         registerValid() {
             const info = this.registrationInfo;
