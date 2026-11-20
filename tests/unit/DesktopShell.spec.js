@@ -23,6 +23,15 @@ const {
     installNetworkIcon,
     resolveNetworkIconFile,
 } = require('../../desktop/electron/network-icons');
+const {
+    LOG_MODES,
+    configureLogging,
+    describeLogging,
+} = require('../../desktop/electron/logging');
+const {
+    APP_NAME,
+    chromiumLogFile,
+} = require('../../desktop/electron/app-paths');
 
 describe('auto-launch', () => {
     const fs = fsp;
@@ -286,12 +295,13 @@ describe('desktop main log', () => {
         fs.rmSync(logDir, { recursive: true, force: true });
     });
 
-    it('writes timestamped log lines and formats errors and objects', () => {
+    it('writes timestamped log lines and formats errors and objects', async() => {
         const log = createMainLog({ logDir });
 
         log.info('started');
         log.warn('warning');
         log.error(new Error('boom'));
+        await log.flush();
 
         const text = fs.readFileSync(log.path(), 'utf8');
         expect(text).toContain('[INFO] started');
@@ -302,14 +312,16 @@ describe('desktop main log', () => {
         expect(formatValue({ ok: true })).toBe('{"ok":true}');
     });
 
-    it('rotates the log when it exceeds the size limit', () => {
+    it('rotates the log when it exceeds the size limit', async() => {
         const log = createMainLog({
             logDir,
             maxBytes: 80,
         });
 
         log.info('a'.repeat(60));
+        await log.flush();
         log.info('b'.repeat(60));
+        await log.flush();
 
         expect(fs.existsSync(`${log.path()}.1`)).toBe(true);
         expect(fs.readFileSync(`${log.path()}.1`, 'utf8'))
@@ -365,5 +377,171 @@ describe('desktop network icons', () => {
         );
 
         expect(result).toBeNull();
+    });
+});
+
+function makeLoggingApp(initial = {}) {
+    const switches = new Map(Object.entries(initial));
+    return {
+        switches,
+        commandLine: {
+            hasSwitch: (name) => switches.has(name),
+            getSwitchValue: (name) => (switches.has(name) ? switches.get(name) : ''),
+            appendSwitch: (name, value) => {
+                switches.set(name, value === undefined ? '' : String(value));
+            },
+        },
+    };
+}
+
+describe('logging configuration', () => {
+    test('applies quiet defaults when nothing is requested', () => {
+        const app = makeLoggingApp();
+        const logging = configureLogging({ app });
+
+        expect(app.switches.get('log-level')).toBe('3');
+        expect(app.switches.get('v')).toBe('0');
+        expect(logging).toMatchObject({
+            mode: LOG_MODES.QUIET,
+            level: '3',
+            file: '',
+        });
+    });
+
+    test('preserves explicit console logging and level', () => {
+        const app = makeLoggingApp({ 'enable-logging': '' });
+        const consoleLogging = configureLogging({ app });
+
+        expect(app.switches.has('log-level')).toBe(false);
+        expect(consoleLogging.mode).toBe(LOG_MODES.CONSOLE);
+
+        const levelled = makeLoggingApp({ 'log-level': '1' });
+        const logging = configureLogging({ app: levelled });
+
+        expect(levelled.switches.get('log-level')).toBe('1');
+        expect(levelled.switches.has('v')).toBe(false);
+        expect(logging.level).toBe('1');
+    });
+
+    test('skips quiet defaults in dev and verbose modes', () => {
+        const dev = makeLoggingApp();
+        configureLogging({ app: dev, isDev: true });
+        expect(dev.switches.has('log-level')).toBe(false);
+
+        const verbose = makeLoggingApp();
+        configureLogging({ app: verbose, isVerbose: true });
+        expect(verbose.switches.has('log-level')).toBe(false);
+    });
+
+    test('diagnostics defaults to a pinned info-level file', () => {
+        const app = makeLoggingApp();
+        const logging = configureLogging({
+            app,
+            isDiagnostics: true,
+            logFile: '/tmp/kiwi/chrome_debug.log',
+        });
+
+        expect(app.switches.get('enable-logging')).toBe('file');
+        expect(app.switches.get('log-level')).toBe('0');
+        expect(app.switches.get('log-file')).toBe('/tmp/kiwi/chrome_debug.log');
+        expect(logging).toMatchObject({
+            mode: LOG_MODES.FILE,
+            level: '0',
+            file: '/tmp/kiwi/chrome_debug.log',
+        });
+    });
+
+    test('diagnostics never overrides an explicit console or level', () => {
+        const consoleApp = makeLoggingApp({ 'enable-logging': '' });
+        const consoleLogging = configureLogging({
+            app: consoleApp,
+            isDiagnostics: true,
+            logFile: '/tmp/kiwi/chrome_debug.log',
+        });
+
+        expect(consoleApp.switches.get('enable-logging')).toBe('');
+        expect(consoleApp.switches.has('log-file')).toBe(false);
+        expect(consoleLogging.mode).toBe(LOG_MODES.CONSOLE);
+
+        const levelled = makeLoggingApp({
+            'log-level': '1',
+            'log-file': '/tmp/custom.log',
+        });
+        const logging = configureLogging({
+            app: levelled,
+            isDiagnostics: true,
+            logFile: '/tmp/kiwi/chrome_debug.log',
+        });
+
+        expect(levelled.switches.get('log-level')).toBe('1');
+        expect(levelled.switches.get('log-file')).toBe('/tmp/custom.log');
+        expect(levelled.switches.get('enable-logging')).toBe('file');
+        expect(logging).toMatchObject({ level: '1', file: '/tmp/custom.log' });
+    });
+
+    test('describes a missing command line safely', () => {
+        expect(describeLogging(null)).toEqual({
+            mode: LOG_MODES.QUIET,
+            level: 'default',
+            file: '',
+            verbose: '',
+        });
+        expect(configureLogging({})).toMatchObject({ mode: LOG_MODES.QUIET });
+    });
+});
+
+function makePathApp(paths) {
+    return {
+        getPath: jest.fn((name) => {
+            if (Object.prototype.hasOwnProperty.call(paths, name)) {
+                return paths[name];
+            }
+            throw new Error(`unknown path: ${name}`);
+        }),
+    };
+}
+
+describe('desktop app paths', () => {
+    it('builds the Chromium log path from appData only', () => {
+        const app = makePathApp({
+            appData: '/home/user/.config',
+            userData: '/home/user/.config/should-not-be-used',
+        });
+
+        expect(chromiumLogFile(app)).toBe(
+            path.join('/home/user/.config', APP_NAME, 'chrome_debug.log')
+        );
+        expect(app.getPath).toHaveBeenCalledTimes(1);
+        expect(app.getPath).toHaveBeenCalledWith('appData');
+        expect(app.getPath).not.toHaveBeenCalledWith('userData');
+    });
+
+    it('returns an empty path when appData is unavailable', () => {
+        const app = makePathApp({});
+
+        expect(chromiumLogFile(app)).toBe('');
+    });
+
+    it('returns an empty path for a missing app object', () => {
+        expect(chromiumLogFile(null)).toBe('');
+        expect(chromiumLogFile({})).toBe('');
+    });
+
+    it('sets the app name before configuring logging', () => {
+        const source = fsSync.readFileSync(
+            path.join(__dirname, '../../desktop/electron/main.js'),
+            'utf8'
+        );
+
+        // Electron resolves `userData` from the app name the first time the
+        // path is read, so identity must be established before any path use.
+        const nameIndex = source.indexOf("app.setName('KiwiIRC')");
+        const loggingIndex = source.indexOf('configureLogging({');
+        const moduleLoadIndex = source.indexOf("require('./app-paths')");
+
+        expect(nameIndex).toBeGreaterThan(-1);
+        expect(loggingIndex).toBeGreaterThan(nameIndex);
+        expect(moduleLoadIndex).toBeGreaterThan(-1);
+        expect(moduleLoadIndex).toBeLessThan(nameIndex);
     });
 });
