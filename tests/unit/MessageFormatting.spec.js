@@ -86,6 +86,8 @@ describe('simple typography', () => {
     test('leaves protected code and URLs unchanged', () => {
         expect(applyTypography('`-- ...`', { protectCode: true }))
             .toBe('`-- ...`');
+        expect(applyTypography('```bash\n-- ...\n```', { protectCode: true }))
+            .toBe('```bash\n-- ...\n```');
         expect(applyTypography('\x11-- ...\x11', { protectCode: true }))
             .toBe('\x11-- ...\x11');
         expect(applyTypography('\x02"hello"\x02', { protectCode: true }))
@@ -103,6 +105,7 @@ describe('simple typography', () => {
             { type: 'text', content: '-- "quote"', styles: {} },
             { type: 'text', content: '--', styles: { monospace: true } },
             { type: 'text', content: '--', styles: { block: true } },
+            { type: 'text', content: '--', styles: { code: true } },
             { type: 'url', content: 'https://example.com/--', styles: {} },
             { type: 'user', content: '--', styles: {} },
             { type: 'channel', content: '#--', styles: {} },
@@ -112,10 +115,11 @@ describe('simple typography', () => {
         expect(blocks[0].content).toBe('\u2013 \u201cquote\u201d');
         expect(blocks[1].content).toBe('--');
         expect(blocks[2].content).toBe('--');
-        expect(blocks[3].content).toBe('https://example.com/--');
-        expect(blocks[4].content).toBe('--');
-        expect(blocks[5].content).toBe('#--');
-        expect(blocks[6].content).toBe('--');
+        expect(blocks[3].content).toBe('--');
+        expect(blocks[4].content).toBe('https://example.com/--');
+        expect(blocks[5].content).toBe('--');
+        expect(blocks[6].content).toBe('#--');
+        expect(blocks[7].content).toBe('--');
     });
 
     function makeBuffer(options = {}) {
@@ -174,6 +178,23 @@ describe('simple typography', () => {
         });
         expect(raw.toBlocks(makeBuffer({ raw: true }), false, true)[0].content)
             .toBe('-- ...');
+    });
+
+    test('leaves fenced code blocks untouched', () => {
+        const buffer = makeBuffer();
+        const message = new Message({
+            message: 'before --\n```bash\ncode -- ...\n```\nafter ...',
+            nick: 'tester',
+            type: 'privmsg',
+        });
+        const blocks = message.toBlocks(buffer, true, true);
+        const code = blocks.find((block) => block.styles.block);
+
+        expect(code.content).toBe('```bash\ncode -- ...\n```');
+        expect(blocks.some((block) => block.content === 'before \u2013'))
+            .toBe(true);
+        expect(blocks.some((block) => block.content === 'after \u2026'))
+            .toBe(true);
     });
 
     test('protects code when Simple Markdown is disabled and reparses on toggle', () => {

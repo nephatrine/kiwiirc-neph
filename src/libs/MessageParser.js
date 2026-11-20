@@ -25,13 +25,75 @@ export default function parseMessage(message, formatOpts = {}, userList = null, 
     if (formatOpts.visibleControlChars) {
         msg = Misc.controlCharsToGlyphs(msg);
     }
-    const blocks = formatIrcMessage(msg, formatOpts);
-    let formatedBlocks = blocks.reduce(
-        (acc, block, i) => acc.concat(processBlock(block, userList, buffer)),
-        []
-    );
+
+    const parts = formatOpts.extras ?
+        splitFencedBlocks(msg) :
+        [{ type: 'text', content: msg }];
+
+    let formatedBlocks = [];
+    parts.forEach((part) => {
+        if (part.type === 'code') {
+            formatedBlocks.push(createNewBlock(
+                Misc.controlCharsToGlyphs(part.content),
+                { block: true },
+                'raw'
+            ));
+            return;
+        }
+
+        const blocks = formatIrcMessage(part.content, formatOpts);
+        formatedBlocks = formatedBlocks.concat(blocks.reduce(
+            (acc, block) => acc.concat(processBlock(block, userList, buffer)),
+            []
+        ));
+    });
 
     return formatedBlocks;
+}
+
+/**
+ * Split a message into normal text and fenced code segments.
+ * The opening fence may carry an ignored language hint.
+ */
+function splitFencedBlocks(message) {
+    const parts = [];
+    const lines = message.split('\n');
+    let textLines = [];
+    let codeLines = null;
+
+    function flushText() {
+        if (textLines.length) {
+            parts.push({ type: 'text', content: textLines.join('\n') });
+            textLines = [];
+        }
+    }
+
+    function flushCode() {
+        if (codeLines !== null) {
+            parts.push({ type: 'code', content: codeLines.join('\n') });
+            codeLines = null;
+        }
+    }
+
+    lines.forEach((line) => {
+        if (codeLines === null) {
+            if (/^[ \t]*```/.test(line)) {
+                flushText();
+                codeLines = [line];
+            } else {
+                textLines.push(line);
+            }
+        } else if (/^[ \t]*```[ \t]*$/.test(line)) {
+            codeLines.push(line);
+            flushCode();
+        } else {
+            codeLines.push(line);
+        }
+    });
+
+    flushText();
+    flushCode();
+    return parts;
 }
 
 /**
@@ -41,6 +103,11 @@ export default function parseMessage(message, formatOpts = {}, userList = null, 
  * @returns An array of blocks, where each special content will be extracted into a separate block.
  */
 function processBlock(block, userList, buffer) {
+    if (block.styles && (block.styles.block || block.styles.code)) {
+        const content = Misc.controlCharsToGlyphs(block.content);
+        return content === block.content ? [block] : [{ ...block, content }];
+    }
+
     const wordsRegex = /\S+/g;
     const skipEmoji = block.styles &&
         (block.styles.monospace || block.styles.block);

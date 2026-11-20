@@ -2,6 +2,10 @@
 
 const tokens = Object.create(null);
 
+function isWhitespace(char) {
+    return !char || /\s/.test(char);
+}
+
 /**
  * Token functions may return:
  * null - move forward in the input by the length of the token
@@ -108,8 +112,8 @@ tokens['__'] = {
         }
 
         // Underscores may be part of a word or URL so consider it an opening
-        // token if it's at the start of a word or after a space
-        if (pos > 0 && inp[pos - 1] !== ' ') {
+        // token if it's at the start of a word or after whitespace
+        if (pos > 0 && !isWhitespace(inp[pos - 1])) {
             return -1;
         }
 
@@ -142,7 +146,8 @@ tokens['_'] = {
         }
 
         // Underscores may be part of a word or URL so consider it an opening
-        if (pos > 0 && inp[pos - 1] !== ' ') {
+        // only if it's at the start of a word or after whitespace
+        if (pos > 0 && !isWhitespace(inp[pos - 1])) {
             return -1;
         }
 
@@ -208,20 +213,21 @@ tokens['*'] = {
             return -1;
         }
 
-        // * may be part of a word (ie. pasting code) or URL so only start bolding if * is after a
-        // space
-        if (pos > 0 && inp[pos - 1] !== ' ') {
+        // * may be part of a word (ie. pasting code) or URL so only start bolding if * is after
+        // whitespace
+        if (pos > 0 && !isWhitespace(inp[pos - 1])) {
             return -1;
         }
 
         // Only style if:
         //     * we have a closing * further on
-        //     * the * further on has a space after it or is the last character
+        //     * the * further on has whitespace after it or is the last character
         let remainingText = inp.substr(pos + 1);
         let nextPos = remainingText.indexOf(this.token);
         if (
             nextPos === -1 ||
-            (nextPos < remainingText.length - 1 && remainingText[nextPos + 1] !== ' ')
+            (nextPos < remainingText.length - 1 &&
+                !isWhitespace(remainingText[nextPos + 1]))
         ) {
             return -1;
         }
@@ -267,14 +273,15 @@ tokens['`'] = {
     fn: function parseToken(inp, pos, block, prevBlock, openToks) {
         if (openToks[this.token]) {
             delete block.styles.monospace;
+            delete block.styles.code;
             openToks[this.token] = null;
             prevBlock.content += this.token;
             return null;
         }
 
         // Backticks may be part of a word or NICK so only consider it a codeblock if
-        // it's at the start of a scentence or comes after a space
-        if (pos > 0 && inp[pos - 1] !== ' ') {
+        // it's at the start of a sentence or comes after whitespace
+        if (pos > 0 && !isWhitespace(inp[pos - 1])) {
             return -1;
         }
 
@@ -287,10 +294,10 @@ tokens['`'] = {
             return -1;
         }
 
-        // Only consider the found closing backtick as closing if it comes before a space or is at
-        // the end of the text. If it's in the middle of text then it's highly lickely part of that
-        // text and not actually closing. eg. `hello and wel`come
-        if (str[endPos + 1] && str[endPos + 1] !== ' ') {
+        // Only consider the found closing backtick as closing if it comes before whitespace or is
+        // at the end of the text. If it's in the middle of text then it's highly lickely part of
+        // that text and not actually closing. eg. `hello and wel`come
+        if (endPos + 1 < str.length && !isWhitespace(str[endPos + 1])) {
             return -1;
         }
 
@@ -298,6 +305,7 @@ tokens['`'] = {
         // before jumping the position forward in the input
         openToks[this.token] = true;
         block.styles.monospace = true;
+        block.styles.code = true;
         block.content += this.token + str.substr(0, endPos);
         block.containsContent = true;
         // The + 1 because:

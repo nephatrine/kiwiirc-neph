@@ -270,5 +270,92 @@ describe('MessageParser.js', () => {
             expect(blocks[1].styles.background).toBeUndefined();
             expect(blocks[2].styles.color).toBeUndefined();
         });
+
+        it('applies extra formatting on every line', () => {
+            const cases = [
+                ['*one*\n*two*', 'italic'],
+                ['**one**\n**two**', 'bold'],
+                ['_one_\n_two_', 'italic'],
+                ['__one__\n__two__', 'underline'],
+                ['~~one~~\n~~two~~', 'strikethrough'],
+                ['`one`\n`two`', 'monospace'],
+                ['***one***\n***two***', 'bold'],
+            ];
+
+            cases.forEach(([text, style]) => {
+                const blocks = parseMessage(text, { extras: true });
+                expect(blocks.some((block) => (
+                    block.styles[style] && block.content.includes('one')
+                ))).toBe(true);
+                expect(blocks.some((block) => (
+                    block.styles[style] && block.content.includes('two')
+                ))).toBe(true);
+            });
+        });
+
+        it('parses fenced code blocks and ignores the language hint', () => {
+            const blocks = parseMessage(
+                'this is\n```bash\na code\nblock\n```\nafter',
+                { extras: true }
+            );
+            const code = blocks.find((block) => block.styles.block);
+
+            expect(code).toMatchObject({
+                type: 'raw',
+                content: '```bash\na code\nblock\n```',
+                styles: { block: true },
+            });
+            expect(blocks.some((block) => block.content.includes('this is')))
+                .toBe(true);
+            expect(blocks.some((block) => block.content.includes('after')))
+                .toBe(true);
+        });
+
+        it('does not parse links, users, or emoji inside fenced code', () => {
+            const blocks = parseMessage(
+                '```\nhttp://example.com #channel :smile:\n```',
+                { extras: true }
+            );
+            const code = blocks.find((block) => block.styles.block);
+
+            expect(code.content).toBe('```\nhttp://example.com #channel :smile:\n```');
+            expect(blocks.filter((block) => block.type === 'url')).toHaveLength(0);
+            expect(blocks.filter((block) => block.type === 'user')).toHaveLength(0);
+            expect(blocks.filter((block) => block.type === 'emoji')).toHaveLength(0);
+        });
+
+        it('treats an unclosed fence as code to the end', () => {
+            const blocks = parseMessage('```\na code\nmore', { extras: true });
+            const code = blocks.find((block) => block.styles.block);
+
+            expect(code.content).toBe('```\na code\nmore');
+        });
+
+        it('renders IRC control characters inside code as glyphs', () => {
+            let blocks = parseMessage('`\x11what\x11`', { extras: true });
+            let code = blocks.find((block) => block.styles.code);
+
+            expect(code.content).toBe('`\u2411what\u2411`');
+            expect(blocks.filter((block) => block.type === 'url')).toHaveLength(0);
+
+            blocks = parseMessage('```\n\x11code\x11\n```', { extras: true });
+            code = blocks.find((block) => block.styles.block);
+
+            expect(code.content).toBe('```\n\u2411code\u2411\n```');
+        });
+
+        it('keeps ordinary IRC monospace formatting', () => {
+            const blocks = parseMessage('\x11mono\x11');
+            const mono = blocks.find((block) => block.styles.monospace);
+
+            expect(mono.content).toBe('mono');
+            expect(mono.styles.code).toBeUndefined();
+        });
+
+        it('ignores fences when extras are disabled', () => {
+            const blocks = parseMessage('```\ncode\n```');
+
+            expect(blocks.some((block) => block.styles.block)).toBe(false);
+        });
     });
 });

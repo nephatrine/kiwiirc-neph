@@ -1,6 +1,7 @@
 'kiwi public';
 
 const URL_PATTERN = /(?:https?:\/\/|www\.)[^\s<>"'`]+/gi;
+const FENCED_CODE_PATTERN = /(^|\n)[ \t]*```[^\n]*\n[\s\S]*?(?:\n[ \t]*```[ \t]*(?=\n|$)|$)/g;
 const CODE_SPAN_PATTERN = /`[^`]*`/g;
 const IRC_MONOSPACE_PATTERN = /\x11[^\x11]*\x11/g;
 const IRC_CONTROL_PATTERN = /\x03(?:\d{1,2}(?:,\d{1,2})?)?|\x04(?:[0-9a-fA-F]{6}(?:,[0-9a-fA-F]{6})?)?|[\x02\x0F\x11\x16\x1D\x1E\x1F]/g;
@@ -83,6 +84,7 @@ export function applyTypography(text, options = {}) {
     let output = text;
 
     if (options.protectCode) {
+        output = protectMatches(output, FENCED_CODE_PATTERN, protectedSpans);
         output = protectMatches(output, IRC_MONOSPACE_PATTERN, protectedSpans);
         output = protectMatches(output, CODE_SPAN_PATTERN, protectedSpans);
     }
@@ -119,7 +121,11 @@ export function applyTypographyToBlocks(blocks) {
         if (!block || block.type !== 'text') {
             return block;
         }
-        if (block.styles && (block.styles.monospace || block.styles.block)) {
+        if (block.styles && (
+            block.styles.monospace ||
+            block.styles.block ||
+            block.styles.code
+        )) {
             return block;
         }
 

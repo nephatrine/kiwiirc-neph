@@ -270,7 +270,7 @@ select {
     background: rgb(0, 0, 0, 0.05);
     font-family: var(--kiwi-font-mono);
     white-space: pre-wrap;
-    display: inline-block;
+    display: block;
 }
 
 .kiwi-formatting-reverse {
