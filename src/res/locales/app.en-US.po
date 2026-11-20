@@ -805,6 +805,27 @@ msgstr "Send as Message"
 msgid "command_accidental_edit"
 msgstr "Edit"
 
+msgid "command_paste_title"
+msgstr "Large Paste"
+
+msgid "command_paste_text"
+msgstr "You pasted more than 10 lines. Send this as a message?"
+
+msgid "command_password_title"
+msgstr "Possible Password"
+
+msgid "command_password_text"
+msgstr "This single word looks like a password. Send it anyway?"
+
+msgid "command_multiline_title"
+msgstr "Multiline Message"
+
+msgid "command_multiline_text"
+msgstr "This network does not support multiline messages. Your message will be sent as {{count}} separate messages."
+
+msgid "command_accidental_send_anyway"
+msgstr "Send Anyway"
+
 #: Taskbar flashing
 msgid "settings_flash_title"
 msgstr "Taskbar Flashing"

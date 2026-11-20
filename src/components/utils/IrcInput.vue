@@ -90,7 +90,9 @@ export default Vue.component('irc-input', {
                     return;
                 }
 
-                document.execCommand('insertText', false, clpData.getData('text/plain'));
+                const text = clpData.getData('text/plain');
+                document.execCommand('insertText', false, text);
+                this.$emit('paste', { text });
             }
 
             setTimeout(() => {

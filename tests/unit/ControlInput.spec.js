@@ -695,7 +695,7 @@ describe('ControlInput as-typed emoji conversion', () => {
 });
 
 describe('ControlInput accidental command warning', () => {
-    function makeContext(ircText, warnEnabled = true) {
+    function makeContext(ircText, warnEnabled = true, options = {}) {
         const input = {
             getValue: jest.fn(() => ircText),
             buildIrcText: jest.fn(() => ircText),
@@ -717,15 +717,21 @@ describe('ControlInput accidental command warning', () => {
                 $emit: jest.fn(),
             },
             showCommandWarning: false,
+            commandWarningType: '',
+            commandWarningLines: 0,
+            lastPasteAt: options.lastPasteAt || 0,
             has_focus: true,
             keep_focus: false,
-            buffer: undefined,
-            network: undefined,
+            buffer: options.buffer,
+            network: options.network,
             historyAdd: jest.fn(),
             stopTyping: jest.fn(),
             $nextTick: (cb) => cb(),
         };
         context.submitForm = ControlInput.methods.submitForm;
+        context.showAccidentalWarning = ControlInput.methods.showAccidentalWarning;
+        context.messageLineCount = ControlInput.methods.messageLineCount;
+        context.looksLikePassword = ControlInput.methods.looksLikePassword;
         return { context, input };
     }
 
@@ -786,6 +792,85 @@ describe('ControlInput accidental command warning', () => {
 
         expect(context.showCommandWarning).toBe(false);
         expect(context.$state.$emit).toHaveBeenCalledWith('input.raw', ' /join #chan');
+    });
+
+    test('warns about a recent large paste', () => {
+        const text = Array.from({ length: 11 }, (_, index) => `line ${index}`).join('\n');
+        const { context } = makeContext(text, true, {
+            lastPasteAt: Date.now(),
+        });
+
+        ControlInput.methods.submitForm.call(context);
+
+        expect(context.showCommandWarning).toBe(true);
+        expect(context.commandWarningType).toBe('paste');
+        expect(context.$state.$emit).not.toHaveBeenCalled();
+    });
+
+    test('does not warn about short or stale pastes', () => {
+        const short = Array.from({ length: 10 }, (_, index) => `line ${index}`).join('\n');
+        let result = makeContext(short, true, { lastPasteAt: Date.now() });
+        ControlInput.methods.submitForm.call(result.context);
+        expect(result.context.showCommandWarning).toBe(false);
+        expect(result.context.$state.$emit).toHaveBeenCalled();
+
+        const large = Array.from({ length: 11 }, (_, index) => `line ${index}`).join('\n');
+        result = makeContext(large, true, {
+            lastPasteAt: Date.now() - 3000,
+        });
+        ControlInput.methods.submitForm.call(result.context);
+        expect(result.context.showCommandWarning).toBe(false);
+        expect(result.context.$state.$emit).toHaveBeenCalled();
+    });
+
+    test('warns about password-like single tokens', () => {
+        const { context } = makeContext('Passw0rd');
+
+        ControlInput.methods.submitForm.call(context);
+
+        expect(context.showCommandWarning).toBe(true);
+        expect(context.commandWarningType).toBe('password');
+        expect(context.$state.$emit).not.toHaveBeenCalled();
+    });
+
+    test('does not warn about weak, nick, or URL-like tokens', () => {
+        let result = makeContext('PASSWORD1');
+        ControlInput.methods.submitForm.call(result.context);
+        expect(result.context.showCommandWarning).toBe(false);
+
+        result = makeContext('Passw0rd', true, {
+            buffer: { hasNick: () => true },
+        });
+        ControlInput.methods.submitForm.call(result.context);
+        expect(result.context.showCommandWarning).toBe(false);
+
+        result = makeContext('https://example.com/a--b...');
+        ControlInput.methods.submitForm.call(result.context);
+        expect(result.context.showCommandWarning).toBe(false);
+    });
+
+    test('warns about multiline text without multiline support', () => {
+        const { context } = makeContext('one\ntwo\nthree', true, {
+            network: { hasCap: () => false },
+        });
+
+        ControlInput.methods.submitForm.call(context);
+
+        expect(context.showCommandWarning).toBe(true);
+        expect(context.commandWarningType).toBe('multiline');
+        expect(context.commandWarningLines).toBe(3);
+        expect(context.$state.$emit).not.toHaveBeenCalled();
+    });
+
+    test('does not warn about multiline text when supported', () => {
+        const { context } = makeContext('one\ntwo', true, {
+            network: { hasCap: () => true },
+        });
+
+        ControlInput.methods.submitForm.call(context);
+
+        expect(context.showCommandWarning).toBe(false);
+        expect(context.$state.$emit).toHaveBeenCalledWith('input.raw', 'one\ntwo');
     });
 });
 

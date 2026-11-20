@@ -55,8 +55,8 @@
             <div class="kiwi-controlinput-command-text">
                 <i class="bx bx-error" aria-hidden="true" />
                 <div>
-                    <strong>{{ $t('command_accidental_title') }}</strong>
-                    <div>{{ $t('command_accidental_text') }}</div>
+                    <strong>{{ $t(commandWarningTitleKey) }}</strong>
+                    <div>{{ $t(commandWarningTextKey, commandWarningTextParams) }}</div>
                 </div>
             </div>
             <div class="u-input-confirm">
@@ -66,7 +66,7 @@
                     @mousedown.prevent
                     @click="sendCommandWarning"
                 >
-                    {{ $t('command_accidental_send') }}
+                    {{ $t(commandWarningSendKey) }}
                 </button>
                 <button
                     type="button"
@@ -112,6 +112,7 @@
                         class="kiwi-controlinput-input"
                         wrap="off"
                         @input="inputUpdate"
+                        @paste="onInputPaste"
                         @keydown="inputKeyDown($event)"
                         @keyup="inputKeyUp($event)"
                         @click="showPlugins = false"
@@ -248,6 +249,7 @@
 
 import * as Misc from '@/helpers/Misc';
 import { escapeHtml } from '@/helpers/Utils';
+import { passwordScore } from '@/helpers/PasswordStrength';
 import * as TextFormatting from '@/helpers/TextFormatting';
 import * as EmojiProvider from '@/libs/EmojiProvider';
 import * as Emoji from '@/helpers/Emoji';
@@ -321,6 +323,7 @@ import AwayStatusIndicator from './AwayStatusIndicator';
 import TypingUsersList from './TypingUsersList';
 
 const EMOJI_AUTOCOMPLETE_RE = /:([^\p{Cc}\p{Cf}\p{Cs}\p{Zl}\p{Zp}\p{Zs}/:]+)(?:\/([^\p{Cc}\p{Cf}\p{Cs}\p{Zl}\p{Zp}\p{Zs}:]+))?$/u;
+const PASTE_WARNING_MS = 2000;
 
 function trailingEmojiToken(value) {
     const token = String(value || '');
@@ -365,6 +368,9 @@ export default {
             pluginUiElements: GlobalApi.singleton().controlInputPlugins,
             showPlugins: false,
             showCommandWarning: false,
+            commandWarningType: '',
+            commandWarningLines: 0,
+            lastPasteAt: 0,
             current_input_value: '',
             has_focus: false,
             keep_focus: false,
@@ -530,6 +536,38 @@ export default {
                 ));
             return isMessageBuffer && canRequestAutocomplete(this.network);
         },
+        commandWarningTitleKey() {
+            switch (this.commandWarningType) {
+            case 'paste':
+                return 'command_paste_title';
+            case 'password':
+                return 'command_password_title';
+            case 'multiline':
+                return 'command_multiline_title';
+            default:
+                return 'command_accidental_title';
+            }
+        },
+        commandWarningTextKey() {
+            switch (this.commandWarningType) {
+            case 'paste':
+                return 'command_paste_text';
+            case 'password':
+                return 'command_password_text';
+            case 'multiline':
+                return 'command_multiline_text';
+            default:
+                return 'command_accidental_text';
+            }
+        },
+        commandWarningTextParams() {
+            return { count: this.commandWarningLines };
+        },
+        commandWarningSendKey() {
+            return this.commandWarningType && this.commandWarningType !== 'command' ?
+                'command_accidental_send_anyway' :
+                'command_accidental_send';
+        },
     },
     watch: {
         history_pos(newVal) {
@@ -642,6 +680,7 @@ export default {
 
             // Clear the command warning on any new input
             this.showCommandWarning = false;
+            this.commandWarningType = '';
             this.maybeHidePlugins();
 
             // Let plugins react to typing without exposing the draft text.
@@ -650,6 +689,9 @@ export default {
                 buffer: this.buffer,
                 textLength: (val || '').length,
             });
+        },
+        onInputPaste() {
+            this.lastPasteAt = Date.now();
         },
         inputRestore() {
             let currentInput = this.$state.setting('buffers.shared_input') ?
@@ -1511,7 +1553,33 @@ export default {
                 );
 
                 if (hasPrecedingSpace) {
-                    this.showCommandWarning = true;
+                    this.showAccidentalWarning('command');
+                    return;
+                }
+
+                const lineCount = this.messageLineCount(ircText);
+
+                if (
+                    this.network &&
+                    typeof this.network.hasCap === 'function' &&
+                    !this.network.hasCap('draft/multiline') &&
+                    lineCount > 1
+                ) {
+                    this.showAccidentalWarning('multiline', lineCount);
+                    return;
+                }
+
+                if (
+                    this.lastPasteAt &&
+                    Date.now() - this.lastPasteAt <= PASTE_WARNING_MS &&
+                    lineCount > 10
+                ) {
+                    this.showAccidentalWarning('paste');
+                    return;
+                }
+
+                if (this.looksLikePassword(ircText)) {
+                    this.showAccidentalWarning('password');
                     return;
                 }
             }
@@ -1525,9 +1593,55 @@ export default {
             this.historyAdd(rawInput);
 
             this.showCommandWarning = false;
+            this.commandWarningType = '';
             this.$refs.input.reset('', this.keep_focus);
 
             this.stopTyping(false);
+        },
+        showAccidentalWarning(type, lines = 0) {
+            this.commandWarningType = type;
+            this.commandWarningLines = lines;
+            this.showCommandWarning = true;
+        },
+        messageLineCount(text) {
+            return String(text || '')
+                .split(/\r\n|\n|\r/)
+                .filter((line) => Misc.stripStyles(line).trim().length > 0)
+                .length;
+        },
+        looksLikePassword(text) {
+            const value = Misc.stripStyles(String(text || '')).trim();
+            if (!value ||
+                /\s/.test(value) ||
+                value.length < 8 ||
+                value.length > 128
+            ) {
+                return false;
+            }
+
+            if (/^[/#]/.test(value) ||
+                /:\/\//.test(value) ||
+                /^www\./i.test(value)
+            ) {
+                return false;
+            }
+
+            if (this.buffer &&
+                typeof this.buffer.hasNick === 'function' &&
+                this.buffer.hasNick(value)
+            ) {
+                return false;
+            }
+
+            if (this.network &&
+                typeof this.network.caseCompare === 'function' &&
+                typeof this.network.nick === 'string' &&
+                this.network.caseCompare(this.network.nick, value)
+            ) {
+                return false;
+            }
+
+            return passwordScore(value) >= 3;
         },
         sendCommandWarning() {
             this.submitForm(true);
