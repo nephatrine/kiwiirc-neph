@@ -443,7 +443,7 @@ describe('Extracted plugin assets', () => {
         { name: 'bongo-cat', css: true },
         { name: 'radio', css: true },
         { name: 'nephwave-desktop', css: false },
-        { name: 'nephnet-cyberdeck', css: false },
+        { name: 'nephdeck-shell', css: false },
         { name: 'suggest-limnoria', css: false },
     ];
 

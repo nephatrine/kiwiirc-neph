@@ -712,7 +712,7 @@ Existing administrator values and user overrides are not overwritten. Read with
 `kiwi.state.setting(name, value)`.
 
 Plugin defaults are not automatically added to `configTemplates.js`; call
-`setConfigDefaults()` from the plugin when it needs defaults. The bundled radio
+`setConfigDefaults()` from the plugin when it needs defaults. The bundled Radio
 plugin does this.
 
 Configuration is public. Never put passwords, tokens, SASL secrets, or user
@@ -801,7 +801,7 @@ if (service && service.enabled()) {
 `getService()` returns `null` when the service is not loaded, so check at call
 time. Registering the same name again replaces the earlier service.
 
-The bundled radio plugin registers a `radio` service with `enabled()`,
+The bundled Radio plugin registers a `radio` service with `enabled()`,
 `getRadio()`, and `openBrowser()`.
 
 ## Layout Chrome Insets
@@ -1047,24 +1047,20 @@ feature-detect optional methods before calling them.
 
 The default configuration enables:
 
-- **`channels-sidebar`** —
-  [Channels Sidebar](static/plugins/channels-sidebar.md) — header slot,
+- [Channels Sidebar](static/plugins/channels-sidebar.md) — header slot,
   `kiwi.require()`, sidebar toggling.
-- **`nephnet-cyberdeck`** —
-  [NephNET Cyberdeck](static/plugins/nephnet-cyberdeck.md) — direct DOM chrome,
-  theme events, Web Audio.
-- **`nephwave-desktop`** —
-  [NephWave Desktop](static/plugins/nephwave-desktop.md) — direct DOM chrome,
+- [NephDeck Shell](static/plugins/nephdeck-shell.md) — direct DOM chrome, theme
+  events, Web Audio.
+- [NephWave Desktop](static/plugins/nephwave-desktop.md) — direct DOM chrome,
   theme events, media display, service consumption.
-- **`bongo-cat`** — [Bongo Companions](static/plugins/bongo-cat.md) — app UI,
-  settings tab, translations, event listeners, asset loading.
-- **`radio`** — [Radio](static/plugins/radio.md) — config defaults, media
-  playback, service registration, translations, browser slot.
-- **`suggest-limnoria`** —
-  [Limnoria Suggestions](static/plugins/suggest-limnoria.md) — command
+- [Bongo Companion](static/plugins/bongo-cat.md) — app UI, settings tab,
+  translations, event listeners, asset loading.
+- [Radio](static/plugins/radio.md) — config defaults, media playback, service
+  registration, translations, browser slot.
+- [Limnoria Suggestions](static/plugins/suggest-limnoria.md) — command
   registration, autocomplete providers, settings blocks, command tree.
-- **`fish`** — [FiSH Encryption](static/plugins/fish.md) — message and topic
-  filters, plugin secrets, DH1080 key exchange, passphrase-locked keys.
+- [FiSH Encryption](static/plugins/fish.md) — message and topic filters, plugin
+  secrets, DH1080 key exchange, passphrase-locked keys.
 
 The customise starter is not loaded by default:
 

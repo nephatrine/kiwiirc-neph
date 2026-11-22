@@ -19,7 +19,7 @@ export const configTemplates = {
     default: {
         plugins: [
             { name: 'channels-sidebar', url: 'static/plugins/channels-sidebar.html' },
-            { name: 'nephnet-cyberdeck', url: 'static/plugins/nephnet-cyberdeck.html' },
+            { name: 'nephdeck-shell', url: 'static/plugins/nephdeck-shell.html' },
             { name: 'nephwave-desktop', url: 'static/plugins/nephwave-desktop.html' },
             { name: 'bongo-cat', url: 'static/plugins/bongo-cat.html' },
             { name: 'radio', url: 'static/plugins/radio.html' },

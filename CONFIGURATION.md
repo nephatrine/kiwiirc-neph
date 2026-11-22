@@ -44,9 +44,9 @@ config, so a saved user setting overrides the same key.
 - **`team`** — Modern message layout, realnames shown, join/part traffic hidden,
   and nickname and mode changes shown.
 
-The default config template enables the bundled channels sidebar,
-`nephnet-cyberdeck`, `nephwave-desktop`, Bongo Companion, radio, and
-`suggest-limnoria` plugins.
+The default config template enables the bundled Channels Sidebar, NephDeck
+Shell, NephWave Desktop, Bongo Companion, Radio, and Limnoria Suggestions
+plugins.
 
 ## Value Replacements
 
@@ -688,11 +688,11 @@ media playback.
   Basic authentication.
 - Resumable uploads are not implemented.
 
-## Limnoria
+## Limnoria Suggestions
 
 The `/lim` command, command suggestions, syntax hints, and per-network settings
-come from the bundled `suggest-limnoria` plugin. Without that plugin, `/lim` is
-not a Kiwi input command and no Limnoria command data is loaded.
+come from the bundled Limnoria Suggestions plugin. Without that plugin, `/lim`
+is not a Kiwi input command and no Limnoria command data is loaded.
 
 The default `plugins` list includes the plugin. Defining your own `plugins`
 array replaces the defaults, so include this entry to keep Limnoria support:
@@ -796,8 +796,8 @@ Use `startupScreen: "bouncer"` for modern bouncers.
 - Forgetting that `probeServerCaps` adds one connection per probed endpoint, and
   that custom endpoints are not probed.
 - Setting `limnoria.suggestions` to `false` and expecting `/lim` to work.
-- Removing `suggest-limnoria` from a custom `plugins` list and expecting `/lim`
-  or Limnoria settings to remain.
+- Removing Limnoria Suggestions from a custom `plugins` list and expecting
+  `/lim` or Limnoria settings to remain.
 - Setting `limnoria.plugins` to empty and expecting local suggestions.
 - Setting `fileupload.service` to `filehost`; FILEHOST is a per-network
   preference and is used automatically when available.

@@ -67,8 +67,8 @@ packaging, and customization instructions.
 
 - Plugin API for UI hooks, tabs, settings blocks, input commands, autocomplete
   providers, views, sidebars, startup screens, translations, and media playback.
-- Bundled channels sidebar, radio, Bongo Companion, and Limnoria plugins, plus
-  the NephDeck and NephWave theme companions.
+- Bundled Channels Sidebar, Radio, Bongo Companion, and Limnoria Suggestions
+  plugins, plus NephDeck Shell and NephWave Desktop.
 - See [PLUGINS.md](PLUGINS.md) for plugin authoring and API details.
 
 ## Requirements

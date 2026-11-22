@@ -1,4 +1,4 @@
-kiwi.plugin('nephnet-cyberdeck', (kiwi, log) => {
+kiwi.plugin('nephdeck-shell', (kiwi, log) => {
     'use strict';
 
     let THEME_PREFIX = 'nephdeck';
@@ -657,12 +657,12 @@ kiwi.plugin('nephnet-cyberdeck', (kiwi, log) => {
             chromeRoot.querySelector('.nephnet-bezel') :
             null;
         if (!bezel) {
-            kiwi.clearLayoutInsets('nephnet-cyberdeck');
+            kiwi.clearLayoutInsets('nephdeck-shell');
             return;
         }
 
         let rect = bezel.getBoundingClientRect();
-        kiwi.setLayoutInsets('nephnet-cyberdeck', {
+        kiwi.setLayoutInsets('nephdeck-shell', {
             top: Math.max(0, rect.top),
             right: Math.max(0, window.innerWidth - rect.right),
             bottom: Math.max(0, window.innerHeight - rect.bottom),
@@ -727,7 +727,7 @@ kiwi.plugin('nephnet-cyberdeck', (kiwi, log) => {
             removeInteractionListeners();
         }
         if (typeof kiwi.clearLayoutInsets === 'function') {
-            kiwi.clearLayoutInsets('nephnet-cyberdeck');
+            kiwi.clearLayoutInsets('nephdeck-shell');
         }
         poweredOn = true;
         if (document.body) {
