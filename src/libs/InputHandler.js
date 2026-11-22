@@ -1078,7 +1078,7 @@ inputCommands.whowas = function inputCommandWhowas(event, command, line, context
                 time: Date.now(),
                 nick: '',
                 message: messageBody,
-                type: 'whowas',
+                type: 'error',
             });
             return;
         }
