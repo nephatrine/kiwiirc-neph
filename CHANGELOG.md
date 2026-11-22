@@ -92,11 +92,13 @@ and this project adheres to
   `ws://` endpoint is configured, and desktop protocol-handler registration
   defaults on.
 - **Plugins**: Added `kiwi.addSettingsBlock()`, `kiwi.registerCommand()`,
-  `kiwi.addAutocompleteProvider()`, the data-free `helpers/CommandTree`, layout
-  chrome insets for framing plugins, and sidebar active-view state. These let
-  plugins append settings blocks, register client commands, provide local
-  completion, and consume combined frame insets without assuming a specific
-  theme.
+  `kiwi.addAutocompleteProvider()`, async-capable `addOutgoingMessageFilter()`,
+  `addIncomingMessageFilter()`, `addIncomingTopicFilter()`,
+  `addBlockRenderer()`, `getSecret()`/`setSecret()`, the data-free
+  `helpers/CommandTree`, layout chrome insets for framing plugins, and sidebar
+  active-view state. These let plugins add settings blocks, commands, local
+  completion, outgoing and incoming message handling, topic handling, block
+  renderers, and secret storage without assuming a specific theme.
 - **Bongo Companion**: Added automatic placement, using Bottom Right while a
   right sidebar is open and Top Right when it is closed, plus automatic sizing
   that grows while the nicklist is visible; both are now the default. Added
@@ -112,10 +114,18 @@ and this project adheres to
   native HTTP with genre, bitrate, listener details, manual lookup, and backoff.
   The station browser remains available with no stations, and the header toggles
   back to the station list.
+- **FiSH Encryption**: Added the bundled FiSH plugin with Blowfish ECB/CBC
+  encryption for queries, channels, notices, actions, and topics, DH1080 key
+  exchange, passphrase-locked key storage, undecryptable-message placeholders,
+  multiline handling, and compatibility with mIRC, ZNC, and WeeChat FiSH
+  clients.
 - **Chat Input**: Added a visible warning when a space-prefixed command is
   cancelled, with actions to edit it or send it as a message. Added a Time
   System selector for 12-hour, 24-hour, and decimal time. Custom
   `timestamp_format` values still render as configured and hide the selector.
+- **Simple Typography**: Added Simple Typography for displayed message
+  punctuation and Typographic Replacements for sent messages on UTF-8 networks.
+  Code spans, fenced code, and links are left unchanged.
 - **Network List & Icons**: Added per-network move-up controls, OFTC and Rekt
   fallback icons, and a per-network icon URL in Server Details → Advanced that
   overrides server-provided and built-in icons. Desktop users can select a local
@@ -128,6 +138,13 @@ and this project adheres to
   network-specific settings global settings now. Many defaults changed. Please
   go through your appsettings page and re-adjust to match your preferences if
   needed.
+- **Simple Markdown**: Messages now supports triple-backtick fenced code blocks,
+  ignores the language hint, preserves the fence lines, and excludes their
+  contents from link, emoji, and typography processing.
+- **Send Guards**: Expanded Accidental Message Protection beyond space-prefixed
+  commands to warn before sending multiline messages on networks without
+  `draft/multiline`, large pastes, and password-like single words, with options
+  to edit or send anyway.
 - **Themes**: Softened the message-list date and unread separator from a 2px
   dashed accent to a 1px dashed accent at 25% opacity in the dark themes that
   inherit `common/base.css`; Kiwi Dark keeps its original separator.
@@ -189,6 +206,8 @@ and this project adheres to
   grapheme-safe chunks.
 - **Messages**: Real names in the Modern layout now render IRC formatting,
   links, and emoji, matching the user box.
+- **Simple Markdown**: Simple Markdown now supports multiline messages, including
+  inline formatting across line breaks.
 - **Read Markers**: Read state now follows the exact sent `MARKREAD` timestamp,
   correlates labeled responses with pending markers, uses the message's local
   time to avoid clock-offset drift, falls back to timestamp references without a
