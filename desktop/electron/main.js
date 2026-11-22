@@ -18,6 +18,7 @@ const {
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
+const { createConsoleWriter } = require('./console-writer');
 const { ensureUserConfig, loadDesktopConfig } = require('./desktop-config');
 const {
     THEME_SCHEME,
@@ -197,6 +198,20 @@ let availablePresets = [];
 let allowUnload = false;
 let isQuitting = false;
 
+const consoleWriter = createConsoleWriter();
+
+function consoleFd(stream) {
+    const fd = stream === 'err' ? process.stderr.fd : process.stdout.fd;
+    if (typeof fd === 'number') {
+        return fd;
+    }
+    return stream === 'err' ? 2 : 1;
+}
+
+function consoleWrite(stream, ...args) {
+    consoleWriter.write(consoleFd(stream), ...args);
+}
+
 function logInfo(...args) {
     if (mainLog) {
         mainLog.info(...args);
@@ -207,14 +222,14 @@ function logWarn(...args) {
     if (mainLog) {
         mainLog.warn(...args);
     }
-    console.warn(...args);
+    consoleWrite('err', ...args);
 }
 
 function logError(...args) {
     if (mainLog) {
         mainLog.error(...args);
     }
-    console.error(...args);
+    consoleWrite('err', ...args);
 }
 
 process.on('uncaughtException', (err) => {
@@ -256,7 +271,7 @@ if (!app.requestSingleInstanceLock()) {
         try {
             mainLog = createMainLog({ logDir: app.getPath('logs') });
         } catch (err) {
-            console.error('Failed to initialize main log:', err);
+            consoleWrite('err', 'Failed to initialize main log:', err);
         }
         logInfo('Desktop starting', {
             version: app.getVersion(),

@@ -20,6 +20,9 @@ const {
     formatValue,
 } = require('../../desktop/electron/main-log');
 const {
+    createConsoleWriter,
+} = require('../../desktop/electron/console-writer');
+const {
     installNetworkIcon,
     resolveNetworkIconFile,
 } = require('../../desktop/electron/network-icons');
@@ -328,6 +331,91 @@ describe('desktop main log', () => {
             .toContain('a'.repeat(60));
         expect(fs.readFileSync(log.path(), 'utf8'))
             .toContain('b'.repeat(60));
+    });
+});
+
+describe('desktop console writer', () => {
+    function makeWriter(options) {
+        const calls = [];
+        const write = (fd, text, callback) => {
+            calls.push({ fd, text, callback });
+        };
+
+        return {
+            calls,
+            writer: createConsoleWriter(Object.assign({ write }, options)),
+        };
+    }
+
+    it('writes one line at a time in order', () => {
+        const { calls, writer } = makeWriter();
+
+        writer.write(2, 'first');
+        writer.write(2, 'second');
+
+        expect(calls).toHaveLength(1);
+        expect(calls[0]).toEqual({
+            fd: 2,
+            text: 'first\n',
+            callback: expect.any(Function),
+        });
+
+        calls[0].callback();
+        expect(calls).toHaveLength(2);
+        expect(calls[1].text).toBe('second\n');
+
+        calls[1].callback();
+    });
+
+    it('drops the oldest pending line when the console stops draining', () => {
+        const { calls, writer } = makeWriter({ maxQueue: 2 });
+
+        writer.write(2, 'in flight');
+        writer.write(2, 'oldest');
+        writer.write(2, 'middle');
+        writer.write(2, 'newest');
+
+        calls[0].callback();
+        expect(calls).toHaveLength(2);
+        expect(calls[1].text).toBe('middle\n');
+
+        calls[1].callback();
+        expect(calls).toHaveLength(3);
+        expect(calls[2].text).toBe('newest\n');
+
+        calls[2].callback();
+    });
+
+    it('formats values and ignores a missing console descriptor', () => {
+        const { calls, writer } = makeWriter();
+
+        writer.write(undefined, 'dropped');
+        writer.write(2, 'value %d', 5);
+
+        expect(calls).toHaveLength(1);
+        expect(calls[0].text).toBe('value 5\n');
+        calls[0].callback();
+    });
+
+    it('keeps draining after a write error', () => {
+        const calls = [];
+        let attempts = 0;
+        const writer = createConsoleWriter({
+            write(fd, text, callback) {
+                attempts += 1;
+                if (attempts === 1) {
+                    throw new Error('console unavailable');
+                }
+                calls.push({ fd, text });
+                callback();
+            },
+        });
+
+        writer.write(2, 'first');
+        writer.write(2, 'second');
+
+        expect(attempts).toBe(2);
+        expect(calls).toEqual([{ fd: 2, text: 'second\n' }]);
     });
 });
 
