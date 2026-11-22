@@ -339,6 +339,7 @@ export default {
         return {
             hostname: embedParentHostname(),
             mediaError: false,
+            previewFailed: false,
             themeMode: 'light',
             linkPreview: null,
             previewLoading: false,
@@ -442,6 +443,7 @@ export default {
     watch: {
         url() {
             this.mediaError = false;
+            this.previewFailed = false;
             this.linkPreview = null;
             this.previewLoading = false;
             this.fallbackPreview = null;
@@ -489,6 +491,7 @@ export default {
         },
         onFrameError() {
             if (this.fallbackPreview || this.previewLoading ||
+                this.previewFailed ||
                 this.media.type === 'oembed' ||
                 this.media.type === 'metadata') {
                 return;
@@ -504,9 +507,10 @@ export default {
                 });
             }).catch(() => {
                 this.previewLoading = false;
+                this.previewFailed = true;
                 this.mediaError = true;
                 this.$nextTick(() => {
-                    this.updateEmbed();
+                    this.$emit('close');
                 });
             });
         },
@@ -542,7 +546,8 @@ export default {
             this.loadPreview(() => resolvePagePreview(this.media.url));
         },
         loadPreview(loader) {
-            if (this.previewLoading || this.linkPreview) {
+            if (this.previewLoading || this.linkPreview ||
+                this.mediaError || this.previewFailed) {
                 return;
             }
 
@@ -554,19 +559,29 @@ export default {
                     this.onLoad();
                 });
             }).catch(() => {
+                const failedUrl = this.url || this.media.url;
                 if (this.media.type === 'metadata' || this.media.type === 'oembed') {
+                    // Mark both the raw prop and the sanitised form: the message
+                    // list compares mentioned_urls against the raw URL.
+                    Misc.markPreviewFailed(failedUrl);
                     Misc.markPreviewFailed(this.media.url);
-                    this.$state.$emit('link-preview.failed', this.media.url);
+                    this.$state.$emit('link-preview.failed', failedUrl);
                 }
                 this.linkPreview = null;
                 this.previewLoading = false;
+                this.previewFailed = true;
                 this.mediaError = true;
                 this.$nextTick(() => {
-                    this.updateEmbed();
+                    this.$emit('close');
                 });
             });
         },
         updateEmbed() {
+            if (this.previewFailed || this.mediaError) {
+                this.$emit('close');
+                return;
+            }
+
             if (this.media.type === 'oembed') {
                 this.resolvePreview();
                 return;

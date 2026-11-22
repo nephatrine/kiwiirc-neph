@@ -86,6 +86,8 @@ describe('UrlEmbed preview failures', () => {
         await embed.$nextTick();
 
         expect(resolvePagePreview).toHaveBeenCalledWith(url);
+        expect(resolvePagePreview).toHaveBeenCalledTimes(1);
+        expect(embed.previewFailed).toBe(true);
         expect(isPreviewFailed(url)).toBe(true);
         expect(testState.$emit).toHaveBeenCalledWith('link-preview.failed', url);
         expect(closed).toHaveBeenCalled();
@@ -102,8 +104,28 @@ describe('UrlEmbed preview failures', () => {
         await embed.$nextTick();
 
         expect(resolveLinkPreview).toHaveBeenCalledWith(url);
+        expect(resolveLinkPreview).toHaveBeenCalledTimes(1);
+        expect(embed.previewFailed).toBe(true);
         expect(isPreviewFailed(url)).toBe(true);
         expect(testState.$emit).toHaveBeenCalledWith('link-preview.failed', url);
         expect(closed).toHaveBeenCalled();
+    });
+
+    it('does not retry a failed preview', async() => {
+        const url = 'https://example.com/article';
+        resolvePagePreview.mockRejectedValue(new Error('not available'));
+
+        const embed = mountEmbed(url);
+        await flush();
+        await embed.$nextTick();
+        await flush();
+
+        expect(resolvePagePreview).toHaveBeenCalledTimes(1);
+
+        embed.updateEmbed();
+        await flush();
+        await embed.$nextTick();
+
+        expect(resolvePagePreview).toHaveBeenCalledTimes(1);
     });
 });
