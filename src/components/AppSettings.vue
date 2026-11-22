@@ -436,12 +436,6 @@
                                     type="checkbox"
                                 >
                             </label>
-                            <p
-                                v-if="settingBufferTypographicReplacements"
-                                class="kiwi-appsettings-hint"
-                            >
-                                {{ $t('settings_typographic_replacements_hint') }}
-                            </p>
                             <label class="u-checkbox-wrapper">
                                 <span>{{ $t('settings_shared_input') }} </span>
                                 <input v-model="settingBufferSharedInput" type="checkbox">

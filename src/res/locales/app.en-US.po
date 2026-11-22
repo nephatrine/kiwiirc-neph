@@ -2634,9 +2634,6 @@ msgstr "Automatic Emoji Conversion"
 msgid "settings_typographic_replacements"
 msgstr "Typographic Replacements"
 
-msgid "settings_typographic_replacements_hint"
-msgstr "Applied to sent messages on UTF-8 networks; code and links are unchanged."
-
 #: Emoji pack preference
 msgid "settings_emoji_pack_preference"
 msgstr "Pack Preference"
