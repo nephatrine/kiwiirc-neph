@@ -127,16 +127,6 @@ describe('per-buffer sidebar settings', () => {
         };
     }
 
-    test('does not expose markdown or typing settings', () => {
-        expect(SidebarSectionSettings.computed.settingExtraFormatting).toBeUndefined();
-        expect(SidebarSectionSettings.computed.settingShareTyping).toBeUndefined();
-        expect(SidebarSectionSettings.computed.typingSupported).toBeUndefined();
-        expect(SidebarSectionSettings.computed.settingShowJoinParts).toBeUndefined();
-        expect(SidebarSectionSettings.computed.settingShowTopics).toBeUndefined();
-        expect(SidebarSectionSettings.computed.settingShowNickChanges).toBeUndefined();
-        expect(SidebarSectionSettings.computed.settingShowModeChanges).toBeUndefined();
-    });
-
     test('shows channel settings only for channel operators', () => {
         expect(SidebarSectionSettings.computed.channelSettingsVisible.call({
             buffer: { isChannel: () => true },

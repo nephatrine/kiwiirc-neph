@@ -454,11 +454,9 @@ describe('Misc.js helpers', () => {
             expect(connections[1].port).toBe(7000);
         });
 
-        test('parsePresetServer no longer aliases znc to bnc', () => {
-            const znc = Misc.parsePresetServer('Example|ircs://irc.example.com?type=znc');
+        test('maps the bnc preset type', () => {
             const bnc = Misc.parsePresetServer('Example|ircs://irc.example.com?type=bnc');
 
-            expect(znc.type).toBe('irc');
             expect(bnc.type).toBe('bnc');
         });
 

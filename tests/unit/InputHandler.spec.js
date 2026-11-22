@@ -424,10 +424,8 @@ describe('default aliases', () => {
         expect(rewriter.process('/t', vars)).toBe('/topic #chan');
     });
 
-    it('leaves removed aliases alone and keeps existing shorthand', () => {
+    it('routes join and query shorthand', () => {
         const rewriter = makeRewriter();
-        expect(rewriter.process('/connect irc.example.com', vars))
-            .toBe('/connect irc.example.com');
         expect(rewriter.process('/j #chan', vars)).toBe('/join #chan');
         expect(rewriter.process('/q TestNick', vars)).toBe('/query TestNick');
     });

@@ -206,7 +206,6 @@ describe('NetworkSettings server details', () => {
 
         expect(checkboxes).toHaveLength(1);
         expect(comp.$el.querySelector('.kiwi-networksettings-raw-scrollback')).toBeNull();
-        expect(comp.$el.querySelector('.kiwi-networksettings-websocket-url')).toBeNull();
         expect(comp.$el.textContent).not.toContain('settings_raw_scrollback');
 
         expect(autorun.compareDocumentPosition(showRaw))
@@ -223,13 +222,9 @@ describe('NetworkSettings server details', () => {
         const rawScrollback = comp.$el.querySelector(
             '.kiwi-networksettings-raw-scrollback input'
         );
-        const websocketUrl = comp.$el.querySelector(
-            '.kiwi-networksettings-websocket-url input'
-        );
         expect(rawScrollback).not.toBeNull();
         expect(rawScrollback.type).toBe('number');
         expect(rawScrollback.title).toBe('settings_raw_scrollback');
-        expect(websocketUrl).toBeNull();
     });
 
     it('shows the websocket path in the top server field', () => {

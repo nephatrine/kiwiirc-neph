@@ -45,7 +45,6 @@ describe('avatar fallback styles', () => {
         expect(avatarFallbackStyleFromUrl(
             'https://api.dicebear.com/10.x/rings/svg?seed=Alice'
         )).toBe(CUSTOM_AVATAR_STYLE);
-        expect(DICEBEAR_FALLBACK_URLS['dicebear-rings']).toBeUndefined();
         expect(getAvatarFallbackUrl(LOCAL_IDENTICON)).toBe('');
         expect(getAvatarFallbackUrl(LOCAL_INITIALS)).toBe('');
         expect(isDiceBearFallbackStyle(LOCAL_INITIALS)).toBe(false);

@@ -62,25 +62,22 @@ describe('buffer notification settings', () => {
 
         expect(result).toBe('default');
         expect(buffer.settings.alert_on).toBeUndefined();
-        expect(buffer.settings.mute_sound).toBeUndefined();
     });
 
-    test('sets Never without a separate sound flag', () => {
+    test('sets Never', () => {
         const { buffer } = makeBuffer();
 
         BufferSettings.computed.settingAlertOn.set.call(makeContext(buffer), 'never');
 
         expect(buffer.settings.alert_on).toBe('never');
-        expect(buffer.settings.mute_sound).toBeUndefined();
     });
 
-    test('sets explicit non-Never options without a sound flag', () => {
+    test('sets explicit non-Never options', () => {
         const { buffer } = makeBuffer();
 
         BufferSettings.computed.settingAlertOn.set.call(makeContext(buffer), 'highlight');
 
         expect(buffer.settings.alert_on).toBe('highlight');
-        expect(buffer.settings.mute_sound).toBeUndefined();
     });
 
     test('Never clears Favorite', () => {

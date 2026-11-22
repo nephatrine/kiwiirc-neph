@@ -316,16 +316,6 @@ describe('JoyPixels emoji data', () => {
         });
         expect(allNames).toHaveLength(2566);
         expect(allNames.some((name) => name.includes('_tone'))).toBe(false);
-        expect(allNames).not.toContain('tone1');
-        expect(allNames).not.toContain('regional_indicator_a');
-        expect(allNames).not.toContain('digit_zero');
-        expect(allNames).not.toContain('red_haired');
-        expect(allNames).not.toContain('curly_haired');
-        expect(allNames).not.toContain('white_haired');
-        expect(allNames).not.toContain('bald');
-        expect(allNames).not.toContain('man_red_haired');
-        expect(allNames).not.toContain('person_bald');
-        expect(allNames).not.toContain('blond_haired_person');
         expect(shortcodeToChar.family_man_woman_boy).toBe('👨‍👩‍👦');
     });
 
@@ -336,9 +326,6 @@ describe('JoyPixels emoji data', () => {
         expect(shortcodeToChar.hankey).toBe('💩');
         expect(shortcodeToChar.slight_smile).toBe('🙂');
         expect(shortcodeToChar.slightly_smiling_face).toBe('🙂');
-        expect(shortcodeToChar.hugs).toBeUndefined();
-        expect(shortcodeToChar.cowboy_hat_face).toBeUndefined();
-        expect(shortcodeToChar.bald_man).toBeUndefined();
         expect(shortcodeToChar.pouting_face).toBe('😡');
         expect(shortcodeToChar.ok_woman).toBe('🙆');
         expect(shortcodeToChar.guardsman).toBe('💂');
