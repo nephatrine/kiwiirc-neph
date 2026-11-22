@@ -112,7 +112,14 @@ const SEARCH_CAPS = ['draft/search', 'soju.im/search'];
 
 export function installTwitchAction(ircClient) {
     ircClient.action = function twitchAction(target, message, tags) {
-        ircClient.say(target, `/me ${message}`, tags);
+        // Twitch has no multiline ACTION frame. Send each logical line as its
+        // own /me so later lines keep the action prefix.
+        String(message || '')
+            .split(/\r\n|\n|\r/)
+            .filter((line) => line)
+            .forEach((line) => {
+                ircClient.say(target, `/me ${line}`, tags);
+            });
     };
 }
 
@@ -354,6 +361,24 @@ export function create(state, network) {
             return;
         }
         originalIrcClientNotice.apply(ircClient, [target, message, tags]);
+    };
+
+    // FiSH sends one encoded payload per IRC line, so a multiline encrypted
+    // action must become separate ACTION messages. The framework's action()
+    // wraps the whole string in one CTCP frame and would split ciphertext at
+    // arbitrary byte offsets, so split logical lines before it sees them.
+    const originalIrcClientAction = ircClient.action;
+    ircClient.action = function action(target, message, tags) {
+        const lines = String(message || '')
+            .split(/\r\n|\n|\r/)
+            .filter((line) => line);
+        if (lines.length > 1) {
+            lines.forEach((line) => {
+                originalIrcClientAction.apply(ircClient, [target, line, tags]);
+            });
+            return;
+        }
+        originalIrcClientAction.apply(ircClient, [target, message, tags]);
     };
 
     ircClient.on('raw', (event) => {

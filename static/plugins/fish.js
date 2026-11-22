@@ -83,7 +83,7 @@ kiwi.plugin('fish', (kiwi, log) => {
     kiwi.addTranslations('fish', {
         'en-us': {
             automatic_exchange: 'Automatic Key Exchange',
-            automatic_exchange_hint: 'Start a DH1080 exchange when a private message has no key yet. The message is held until the exchange finishes and is never sent as plaintext.',
+            automatic_exchange_hint: 'Start a DH1080 exchange when a private message has no key yet. Messages are held and cannot be sent as plaintext.',
             command_action_plus: 'Send Encrypted Action',
             command_fish: 'Manage FiSH Keys',
             command_key: 'Set, View, or Delete Key',
@@ -119,7 +119,7 @@ kiwi.plugin('fish', (kiwi, log) => {
             key_saved: 'Key saved.',
             key_target: 'Target',
             key_target_hint: 'Nick or #channel',
-            key_too_long: 'FiSH: that key is {{bytes}} bytes, but Blowfish is defined for 56. The first {{max}} bytes are used, so peers that follow the spec will not match it.',
+            key_too_long: 'FiSH: that key is {{bytes}} bytes, but Blowfish should not use more than 56. The first {{max}} bytes are used, so peers that follow the spec will not match it.',
             key_value: 'Key',
             key_value_hint: 'Key or passphrase',
             keys_empty: 'No FiSH keys are set for this network.',
@@ -140,9 +140,9 @@ kiwi.plugin('fish', (kiwi, log) => {
             status_unlocked: 'Keys are unlocked for this session.',
             store_local: 'Keys are stored in this browser and are not protected by the operating system. Set a passphrase to encrypt them.',
             unlock: 'Unlock',
-            warning: 'FiSH is a weak, unauthenticated cipher. Blowfish ECB leaks patterns in the plaintext and neither mode detects tampering. Do not use it for anything that needs to stay secret.',
-            warning_cbc: 'CBC hides repeated blocks, but FiSH uses a fixed IV and no MAC, so tampering is undetected and identical messages can still be recognised.',
-            warning_ecb: 'ECB encrypts identical 8-byte blocks to identical ciphertext, so patterns in the message leak. It has no integrity protection.',
+            warning: 'FiSH is an unauthenticated cipher that is susceptible to tampering and replay attacks.',
+            warning_cbc: 'FiSH CBC is susceptible to tampering and replay attacks.',
+            warning_ecb: 'FiSH ECB can leak patterns from the encrypted ciphertext and is susceptible to tampering and replay attacks.',
         },
     });
 
@@ -796,16 +796,15 @@ kiwi.plugin('fish', (kiwi, log) => {
         const buffer = messageBuffers.get(message);
         const network = buffer && buffer.getNetwork ? buffer.getNetwork() : null;
         const props = message.bodyTemplateProps || {};
-        const payload = Fish.parsePayload(message.raw_text);
-        if (!network || !payload) {
+        if (!network) {
             return false;
         }
 
         const target = props.isPrivate ?
             (props.nick || '') :
             (buffer.name || '');
-        const result = decryptBody(network, target, payload);
-        if (!result.ok) {
+        const result = decryptWireText(network, target, message.raw_text);
+        if (!result || !result.ok) {
             return false;
         }
 
@@ -882,16 +881,80 @@ kiwi.plugin('fish', (kiwi, log) => {
         },
     });
 
+    /**
+     * Decrypt every payload line in a message.
+     *
+     * A draft/multiline batch reaches us as one event whose lines are joined
+     * with newlines. Each line may be its own +OK payload, while a legacy
+     * client may instead encrypt one payload that decrypts to text containing
+     * newlines. Both forms end up as newline-joined plaintext here.
+     * @param {Object} network Network
+     * @param {String} target Key target
+     * @param {String} rawText Message text
+     * @returns {Object|null} Decryption result, or null when not all lines are FiSH
+     */
+    function decryptWireText(network, target, rawText) {
+        const lines = String(rawText || '').split(/\r\n|\n|\r/);
+        const payloads = lines.map((line) => (line ? Fish.parsePayload(line) : null));
+
+        let hasPayload = false;
+        let allPayloads = true;
+        lines.forEach((line, index) => {
+            if (!line) {
+                return;
+            }
+            if (payloads[index]) {
+                hasPayload = true;
+            } else {
+                allPayloads = false;
+            }
+        });
+
+        if (!hasPayload || !allPayloads) {
+            return null;
+        }
+
+        let encrypted = false;
+        let failure = null;
+        const output = lines.map((line, index) => {
+            if (!line) {
+                return '';
+            }
+
+            const result = decryptBody(network, target, payloads[index]);
+            if (!result.ok) {
+                if (!failure) {
+                    failure = result;
+                }
+                return '';
+            }
+
+            if (!result.plaintext) {
+                encrypted = true;
+            }
+            return result.text;
+        });
+
+        if (failure) {
+            return {
+                ok: false,
+                mode: failure.mode,
+                reason: failure.reason,
+            };
+        }
+
+        return {
+            ok: true,
+            text: output.join('\n'),
+            isEncrypted: encrypted,
+        };
+    }
+
     function incomingFilter(context) {
         if (!context || !context.text) {
             return undefined;
         }
         if (['privmsg', 'action', 'notice'].indexOf(context.type) === -1) {
-            return undefined;
-        }
-
-        const payload = Fish.parsePayload(context.text);
-        if (!payload) {
             return undefined;
         }
 
@@ -910,14 +973,17 @@ kiwi.plugin('fish', (kiwi, log) => {
             target = context.buffer.name;
         }
 
-        const result = decryptBody(context.network, target, payload);
+        const result = decryptWireText(context.network, target, context.text);
+        if (!result) {
+            return undefined;
+        }
 
         if (result.ok) {
             return {
                 text: result.text,
                 // A plaintext escape is not encryption: it may be logged and
                 // gets no marker.
-                isEncrypted: !result.plaintext,
+                isEncrypted: result.isEncrypted,
             };
         }
 
@@ -933,7 +999,6 @@ kiwi.plugin('fish', (kiwi, log) => {
                 // The key did not produce plausible text; say so before a click.
                 initialFailed: result.reason === 'failed',
             },
-
         };
     }
 
@@ -1061,6 +1126,124 @@ kiwi.plugin('fish', (kiwi, log) => {
         return promise;
     }
 
+    /* ------------------------------------------------------------------ *
+     * Outgoing chunking
+     * ------------------------------------------------------------------ */
+
+    // The core client budgets 350 bytes for message content and reserves the
+    // rest of the 512-byte relayed line for the sender prefix and target.
+    // BatchHandlers also splits physical batch lines at 350, so a FiSH payload
+    // must never exceed it.
+    const DEFAULT_WIRE_BUDGET = 350;
+
+    // irc-framework subtracts '\x01ACTION ' and the closing '\x01' from the
+    // action budget.
+    const ACTION_WIRE_OVERHEAD = 9;
+
+    const graphemeSegmenter = typeof Intl !== 'undefined' &&
+        typeof Intl.Segmenter === 'function' ?
+        new Intl.Segmenter(undefined, { granularity: 'grapheme' }) :
+        null;
+
+    function splitGraphemes(value) {
+        const text = String(value || '');
+        if (graphemeSegmenter) {
+            return Array.from(
+                graphemeSegmenter.segment(text),
+                (entry) => entry.segment
+            );
+        }
+        // Code points at least keep surrogate pairs together.
+        return Array.from(text);
+    }
+
+    function wireBudget(network, type) {
+        const configured = network && network.ircClient &&
+            network.ircClient.options ?
+            Number(network.ircClient.options.message_max_length) :
+            0;
+        // A configured budget above the batch limit would be split by
+        // BatchHandlers anyway, breaking the payload.
+        const lineBudget = configured > 0 ?
+            Math.min(configured, DEFAULT_WIRE_BUDGET) :
+            DEFAULT_WIRE_BUDGET;
+        return Math.max(1, lineBudget - (type === 'action' ? ACTION_WIRE_OVERHEAD : 0));
+    }
+
+    /**
+     * Largest plaintext chunk whose encrypted wire line fits the budget.
+     *
+     * CBC = "+OK *" + standard Base64(8-byte IV + block-padded plaintext)
+     * ECB = "+OK "  + FiSH Base64(block-padded plaintext), 12 chars per block
+     * @param {String} mode FiSH mode
+     * @param {Number} budget Wire content budget in bytes
+     * @returns {Number} Plaintext bytes per payload
+     */
+    function maxPlaintextBytes(mode, budget) {
+        if (budget <= 0) {
+            return 0;
+        }
+
+        if (mode === MODE_CBC) {
+            const groups = Math.floor((budget - 5) / 4);
+            const encrypted = (3 * groups) - 8; // remove the CBC IV
+            return Math.max(0, Math.floor(encrypted / 8) * 8);
+        }
+
+        const blocks = Math.floor((budget - 4) / 12);
+        return Math.max(0, blocks * 8);
+    }
+
+    function chunkPlaintext(text, maxBytes) {
+        const chunks = [];
+        if (maxBytes < 1) {
+            return chunks;
+        }
+
+        // Drop empty logical lines: irc-framework's plaintext path filters
+        // them too, and an empty line has no valid FiSH payload.
+        String(text || '').split(/\r\n|\n|\r/).forEach((line) => {
+            if (!line) {
+                return;
+            }
+
+            let chunk = '';
+            let chunkBytes = 0;
+            splitGraphemes(line).forEach((grapheme) => {
+                const bytes = Fish.utf8Encode(grapheme).length;
+                if (chunkBytes > 0 && chunkBytes + bytes > maxBytes) {
+                    chunks.push(chunk);
+                    chunk = '';
+                    chunkBytes = 0;
+                }
+                chunk += grapheme;
+                chunkBytes += bytes;
+            });
+
+            if (chunk) {
+                chunks.push(chunk);
+            }
+        });
+
+        return chunks;
+    }
+
+    /**
+     * Encrypt a message as one payload per IRC line.
+     * @param {Object} network Network
+     * @param {Object} entry Key entry with key and mode
+     * @param {String} type Message type
+     * @param {String} text Plaintext
+     * @returns {String} Newline-joined +OK payloads
+     */
+    function encryptWire(network, entry, type, text) {
+        const budget = wireBudget(network, type);
+        const maxBytes = maxPlaintextBytes(entry.mode, budget);
+        return chunkPlaintext(text, maxBytes)
+            .map((chunk) => Fish.encrypt(entry.key, entry.mode, chunk))
+            .join('\n');
+    }
+
     function outgoingFilter(context) {
         const network = context.network;
         const target = context.target;
@@ -1103,7 +1286,7 @@ kiwi.plugin('fish', (kiwi, log) => {
                 return { cancel: true, error: 'FiSH: unlock your keys with /fish <passphrase> first.' };
             }
 
-            const payload = Fish.encrypt(entry.key, entry.mode, context.text);
+            const payload = encryptWire(network, entry, context.type, context.text);
             return {
                 wireText: payload,
                 displayText: context.text,
@@ -1127,7 +1310,12 @@ kiwi.plugin('fish', (kiwi, log) => {
 
         const nick = keyTarget;
         return startExchange(network, nick, MODE_CBC).then((result) => {
-            const payload = Fish.encrypt(result.key, result.mode, context.text);
+            const payload = encryptWire(
+                network,
+                { key: result.key, mode: result.mode },
+                context.type,
+                context.text
+            );
             return {
                 wireText: payload,
                 displayText: context.text,
@@ -1646,7 +1834,7 @@ kiwi.plugin('fish', (kiwi, log) => {
             return false;
         }
 
-        const wire = Fish.encrypt(entry.key, entry.mode, text);
+        const wire = encryptWire(network, entry, type, text);
         const hasEcho = network.hasCap('echo-message');
         const hasLabel = network.hasCap('labeled-response');
         const isSpecial = buffer && buffer.isSpecial ? buffer.isSpecial() : false;

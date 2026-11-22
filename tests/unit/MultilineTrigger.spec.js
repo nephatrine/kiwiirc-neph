@@ -60,4 +60,38 @@ describe('outgoing multiline trigger', () => {
 
         expect(hasBatchStart(client)).toBe(false);
     });
+
+    test('splits multiline actions into separate CTCP actions', () => {
+        const client = makeClient();
+
+        client.action('#channel', 'one\ntwo');
+
+        const lines = client.raw.mock.calls
+            .filter(([command]) => command === 'PRIVMSG')
+            .map(([, target, text]) => ({ target, text }));
+        expect(lines).toEqual([
+            { target: '#channel', text: '\x01ACTION one\x01' },
+            { target: '#channel', text: '\x01ACTION two\x01' },
+        ]);
+    });
+
+    test('batches encoded payload lines without concatenating them', () => {
+        const client = makeClient();
+        const payloads = [
+            '+OK *' + 'A'.repeat(340),
+            '+OK *' + 'B'.repeat(340),
+        ];
+
+        client.say('#channel', payloads.join('\n'));
+
+        expect(hasBatchStart(client)).toBe(true);
+        expect(sentChunks(client)).toEqual(payloads);
+
+        const lines = client.raw.mock.calls
+            .map(([message]) => message)
+            .filter((message) => message && message.command === 'PRIVMSG');
+        lines.forEach((line) => {
+            expect(line.tags).not.toHaveProperty('draft/multiline-concat');
+        });
+    });
 });

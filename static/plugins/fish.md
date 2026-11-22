@@ -147,6 +147,40 @@ inside the framing: the prefixes are stripped, the text is not decrypted, and it
 is treated as a normal message (logged, no marker pill). It needs no key. Web
 push shows that escaped text rather than `[Encrypted Message]`.
 
+## Multiline messages
+
+One FiSH payload is one IRC line. Before encryption, outgoing text is split at
+logical newlines and then at the payload byte limit, so every chunk becomes its
+own `+OK` line. Empty lines are not sent, matching the client's plaintext
+behaviour.
+
+At the 350-byte content budget the exact plaintext limits are:
+
+| Mode | Payload   | Wire |
+| ---- | --------- | ---- |
+| CBC  | 248 bytes | 349  |
+| ECB  | 224 bytes | 340  |
+
+CBC carries an 8-byte IV that the simple base64 estimate does not include. ECB
+uses FiSH's 12-characters-per-8-bytes base64, so its limit is lower. CTCP ACTION
+reserves nine bytes for `\x01ACTION `, giving 240 bytes (CBC) or 224 (ECB) per
+action payload.
+
+When the server advertises `draft/multiline`, the joined payload lines are sent
+as one multiline batch, with each payload as its own batch line. Without the
+capability they are sent as separate PRIVMSGs. A single long line therefore
+wraps at payload boundaries and arrives as a multiline message; there is no
+cross-payload continuation marker because other FiSH clients would display it.
+
+Actions are sent as separate ACTION messages, never as a multiline batch: core
+assembles batch lines before CTCP parsing, so batching would lose the ACTION
+framing.
+
+Incoming batches are decrypted line by line and joined with newlines. A legacy
+peer may instead send one payload that decrypts to text containing newlines;
+that is displayed as a multiline message too. If a message mixes payload lines
+with plaintext lines it is left entirely alone rather than partially decrypted.
+
 ## Key storage and passphrases
 
 Keys are stored per network and target in the plugin secret store, never in

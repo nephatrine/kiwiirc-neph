@@ -228,6 +228,19 @@ describe('Twitch actions', () => {
             { 'client-nonce': 'abc' }
         );
     });
+
+    it('keeps the /me prefix on each multiline line', () => {
+        const ircClient = {
+            action: jest.fn(),
+            say: jest.fn(),
+        };
+
+        installTwitchAction(ircClient);
+        ircClient.action('#channel', 'one\ntwo');
+
+        expect(ircClient.say).toHaveBeenNthCalledWith(1, '#channel', '/me one', undefined);
+        expect(ircClient.say).toHaveBeenNthCalledWith(2, '#channel', '/me two', undefined);
+    });
 });
 
 describe('TwitchUserNotice', () => {
