@@ -1010,26 +1010,6 @@ msgstr "Hide Bridged Previews"
 msgid "settings_generic_link_previews"
 msgstr "Automatically Preview Links"
 
-#: Limnoria
-msgid "settings_limnoria"
-msgstr "Limnoria"
-
-#: Limnoria Suggestions
-msgid "settings_limnoria_suggestions"
-msgstr "Limnoria Suggestions"
-
-#: Limnoria Name
-msgid "settings_limnoria_name"
-msgstr "Limnoria Name"
-
-#: Limnoria Plugins
-msgid "settings_limnoria_plugins"
-msgstr "Limnoria Plugins"
-
-#: Comma or space separated plugin names.
-msgid "settings_limnoria_plugins_hint"
-msgstr "Comma or space separated plugin names."
-
 #: JOIN/PART messages
 msgid "settings_show_joinpart"
 msgstr "JOIN/PART Messages"
@@ -3174,7 +3154,6 @@ msgstr "Set SASL Credentials"
 msgid "bouncerserv_sasl_reset"
 msgstr "Reset SASL Credentials"
 
-
 #: Send a message
 msgid "command_msg"
 msgstr "Send Message"
@@ -3275,10 +3254,6 @@ msgstr "Change Real Name"
 msgid "command_roll"
 msgstr "Roll Dice"
 
-#: Limnoria command
-msgid "command_lim"
-msgstr "Limnoria Command"
-
 #: Autocomplete request command
 msgid "command_auto"
 msgstr "Remote Autocomplete"
@@ -3295,22 +3270,6 @@ msgstr "Autocomplete requests are not available here."
 msgid "autocomplete_always_hint"
 msgstr "Use <TAB> to request command suggestions."
 
-#: Limnoria suggestions are disabled for this network.
-msgid "limnoria_disabled"
-msgstr "Limnoria suggestions are disabled for this network."
-
-#: Set a Limnoria Name in the network settings first.
-msgid "limnoria_name_required"
-msgstr "Set a Limnoria Name in the network settings first."
-
-#: Enter a Limnoria command after /lim.
-msgid "limnoria_command_required"
-msgstr "Enter a Limnoria command after /lim."
-
-#: Limnoria channel commands require a channel with the bot present.
-msgid "limnoria_channel_unavailable"
-msgstr "Limnoria channel commands require a channel with the bot present."
-
 #: Custom emoji category
 msgid "custom_emojis"
 msgstr "Custom"
@@ -3326,7 +3285,6 @@ msgstr "Server"
 #: Emoji source label
 msgid "emoji_source_channel"
 msgstr "Channel"
-
 #: Emoji source label
 msgid "emoji_source_unicode"
 msgstr "Unicode"

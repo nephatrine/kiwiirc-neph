@@ -69,12 +69,23 @@ export default class GlobalApi extends EventEmitter {
         this.tabs = Object.create(null);
         this.services = Object.create(null);
         this.commands = Object.create(null);
+        this.commandMeta = Object.create(null);
         this.autocompleteProviders = Object.create(null);
         this.loadedPlugins = [];
         this.loadedPluginEntries = [];
         this.failedPlugins = [];
         this.pluginEntryName = null;
         this.isReady = false;
+        /** Async hooks that may rewrite or cancel an outgoing chat message */
+        this.outgoingMessageFilters = [];
+        /** Sync hooks that may rewrite the body of an incoming chat message */
+        this.incomingMessageFilters = [];
+        /** Sync hooks that may rewrite an incoming channel topic */
+        this.incomingTopicFilters = [];
+        /** Renderers for plugin-defined message block types */
+        this.blockRenderers = Object.create(null);
+        /** Optional plugin secret storage adapter, wired up by src/main.js */
+        this.secretStore = null;
         /** Reactive media playback state reported by plugins */
         this.media = Vue.observable({
             playing: false,
@@ -216,15 +227,36 @@ export default class GlobalApi extends EventEmitter {
 
     /**
      * Register an input command handler.
+     *
+     * Registered commands also appear in the `/` autocomplete list. The
+     * optional metadata controls how they are presented there.
      * @param {String} name Command name without the leading slash
      * @param {Function} handler Called with (event, command, params, context)
+     * @param {Object} [options] Autocomplete metadata
+     * @param {String|Function} [options.description] Text, a `locale_id_`
+     * translation key, or a function returning translated text
+     * @param {String[]} [options.alias] Alternative names without the slash
+     * @param {Boolean} [options.hidden] Keep the command out of autocomplete
      */
-    registerCommand(name, handler) {
+    registerCommand(name, handler, options) {
         const command = String(name || '').toLowerCase();
         if (!command || typeof handler !== 'function') {
             return;
         }
+        const meta = (options && typeof options === 'object') ? options : {};
+        const alias = Array.isArray(meta.alias) ?
+            meta.alias
+                .map((item) => String(item || '').replace(/^\//, '').toLowerCase())
+                .filter((item) => !!item) :
+            [];
+
         this.commands[command] = handler;
+        this.commandMeta[command] = {
+            command: command,
+            alias: alias,
+            description: meta.description || '',
+            hidden: !!meta.hidden,
+        };
     }
 
     /**
@@ -266,8 +298,273 @@ export default class GlobalApi extends EventEmitter {
     }
 
     /**
-     * Report whether a plugin is currently playing media.
+     * Register a hook that may rewrite or cancel an outgoing chat message.
      *
+     * Hooks run in registration order before the local echo is added and before
+     * anything reaches the wire. A hook is called with a context object:
+     *
+     *   {
+     *     network, buffer, target, type,   // type: privmsg|action|notice
+     *     text,                            // the text the user typed
+     *     tags,                            // outgoing IRCv3 tags
+     *   }
+     *
+     * It may return a context object (to replace or amend it), a Promise that
+     * resolves to one, or nothing to leave the message untouched. Returning an
+     * object with `cancel: true` stops the message from being sent; an optional
+     * `error` string is shown in the buffer as a local error.
+     *
+     * The returned context recognises two extra fields:
+     *
+     *   wireText     - text actually sent to the server (defaults to `text`)
+     *   displayText  - text shown in the local echo (defaults to `text`)
+     *   isEncrypted  - marks the local echo as encrypted, which keeps it out of
+     *                  local chat logs and lets other plugins treat it specially
+     *
+     * A hook may hold the message by returning a Promise that only resolves once
+     * it is safe to send, eg. after a key exchange completes.
+     * @param {Function} hook Called with the outgoing message context
+     */
+    addOutgoingMessageFilter(hook) {
+        if (typeof hook === 'function') {
+            this.outgoingMessageFilters.push(hook);
+        }
+    }
+
+    /**
+     * Register a hook that may rewrite the body of an incoming chat message.
+     *
+     * Hooks are synchronous and run in registration order before the message is
+     * formatted and added to a buffer, so a hook may replace the visible text
+     * without losing the raw wire text. Each hook is called with:
+     *
+     *   { network, buffer, nick, target, type, text, tags }
+     *
+     * and may return `{ text, isEncrypted, bodyTemplate, bodyTemplateProps }`.
+     * `text` defaults to the previous value, and returning nothing leaves the
+     * message untouched. `bodyTemplate` replaces the rendered message body with
+     * a Vue component, which lets a plugin offer an interactive placeholder.
+     * @param {Function} hook Called with the incoming message context
+     */
+    addIncomingMessageFilter(hook) {
+        if (typeof hook === 'function') {
+            this.incomingMessageFilters.push(hook);
+        }
+    }
+
+    /**
+     * Register a hook that may rewrite an incoming channel topic.
+     *
+     * The hook is called with `(topic, buffer)` and may return a replacement
+     * topic string. Returning nothing leaves the topic untouched.
+     * @param {Function} hook Called with the incoming topic
+     */
+    addIncomingTopicFilter(hook) {
+        if (typeof hook === 'function') {
+            this.incomingTopicFilters.push(hook);
+        }
+    }
+
+    /**
+     * Register a renderer for a plugin-defined message block type.
+     *
+     * Incoming text can only ever produce the block types `parseMessage`
+     * emits, so a message body cannot impersonate a plugin block. The renderer
+     * receives `(block, blocks)` and returns the inner HTML for the block span;
+     * it is responsible for escaping any of its own content.
+     * @param {String} type Block type, eg. 'fish-marker'
+     * @param {Function} render Renderer returning inner HTML
+     */
+    addBlockRenderer(type, render) {
+        const name = String(type || '');
+        if (!name || typeof render !== 'function') {
+            return;
+        }
+        this.blockRenderers[name] = render;
+    }
+
+    /**
+     * Look up a plugin block renderer.
+     * @param {String} type Block type
+     * @returns {Function|null}
+     */
+    getBlockRenderer(type) {
+        return this.blockRenderers[String(type || '')] || null;
+    }
+
+    /**
+     * Run every incoming message hook and return the resulting context.
+     * @param {Object} context Incoming message context
+     * @returns {Object} The possibly rewritten context
+     */
+    applyIncomingMessageFilters(context) {
+        let current = context;
+        this.incomingMessageFilters.forEach((hook) => {
+            let result;
+            try {
+                result = hook(current);
+            } catch (err) {
+                Logger.error('Incoming message filter failed', err);
+                return;
+            }
+
+            if (result && typeof result === 'object') {
+                current = Object.assign({}, current, result);
+            }
+        });
+        return current;
+    }
+
+    /**
+     * Run every incoming topic hook and return the resulting topic.
+     * @param {String} topic Incoming topic
+     * @param {Object} buffer Buffer the topic belongs to
+     * @returns {String} The possibly rewritten topic
+     */
+    applyIncomingTopicFilters(topic, buffer) {
+        let current = topic;
+        this.incomingTopicFilters.forEach((hook) => {
+            let result;
+            try {
+                result = hook(current, buffer);
+            } catch (err) {
+                Logger.error('Incoming topic filter failed', err);
+                return;
+            }
+
+            if (typeof result === 'string') {
+                current = result;
+            }
+        });
+        return current;
+    }
+
+    /**
+     * Run the outgoing message hooks, honouring Promise-returning hooks.
+     *
+     * The callback runs exactly once, either synchronously (when every hook is
+     * synchronous) or after the last Promise settles.
+     * @param {Object} context Outgoing message context
+     * @param {Function} done Called with the final context
+     */
+    applyOutgoingMessageFilters(context, done) {
+        let filters = this.outgoingMessageFilters;
+        let index = 0;
+
+        const mergeContext = (current, result) => (
+            result && typeof result === 'object' ?
+                Object.assign({}, current, result) :
+                current
+        );
+
+        const finish = (result) => {
+            done(result && typeof result === 'object' ? result : context);
+        };
+
+        const step = (current) => {
+            if (index >= filters.length) {
+                finish(current);
+                return;
+            }
+
+            let filter = filters[index];
+            index += 1;
+
+            let result;
+            try {
+                result = filter(current);
+            } catch (err) {
+                Logger.error('Outgoing message filter failed', err);
+                step(current);
+                return;
+            }
+
+            if (result && typeof result.then === 'function') {
+                result.then((resolved) => {
+                    step(mergeContext(current, resolved));
+                }, (err) => {
+                    Logger.error('Outgoing message filter failed', err);
+                    finish({
+                        cancel: true,
+                        error: 'The message could not be prepared for sending.',
+                    });
+                });
+                return;
+            }
+
+            step(mergeContext(current, result));
+        };
+
+        step(context);
+    }
+
+    /**
+     * Attach the plugin secret storage adapter.
+     * @param {Object} store Adapter with get/set/delete and isSecure()
+     */
+    setSecretStore(store) {
+        this.secretStore = store || null;
+    }
+
+    /**
+     * Read a secret blob belonging to a plugin.
+     * @param {String} scope Stable, plugin-owned scope name
+     * @returns {Promise<String|null>}
+     */
+    getSecret(scope) {
+        if (!this.secretStore || typeof this.secretStore.get !== 'function') {
+            return Promise.resolve(null);
+        }
+        return Promise.resolve(this.secretStore.get(scope));
+    }
+
+    /**
+     * Write a secret blob belonging to a plugin.
+     * @param {String} scope Stable, plugin-owned scope name
+     * @param {String} value Secret payload, or null to remove it
+     * @returns {Promise<Boolean>} Whether the write happened
+     */
+    setSecret(scope, value) {
+        if (!this.secretStore || typeof this.secretStore.set !== 'function') {
+            return Promise.resolve(false);
+        }
+        if (value === null || typeof value === 'undefined') {
+            return Promise.resolve(this.secretStore.delete(scope)).then(() => true);
+        }
+        return Promise.resolve(this.secretStore.set(scope, String(value)))
+            .then(() => true)
+            .catch((err) => {
+                Logger.error('Unable to store a plugin secret', err);
+                return false;
+            });
+    }
+
+    /**
+     * Report whether plugin secrets are protected by the operating system.
+     * @returns {Boolean}
+     */
+    secretsAreSecure() {
+        return !!(
+            this.secretStore &&
+            typeof this.secretStore.isSecure === 'function' &&
+            this.secretStore.isSecure()
+        );
+    }
+
+    /**
+     * Report whether a plugin secret store is available at all.
+     * @returns {Boolean}
+     */
+    hasSecretStore() {
+        return !!(
+            this.secretStore &&
+            typeof this.secretStore.get === 'function' &&
+            typeof this.secretStore.set === 'function'
+        );
+    }
+
+    /**
+     * Report whether a plugin is currently playing media.
      * Multiple sources may report playback at once. The aggregate
      * `kiwi.media.playing` flag stays true until every source has stopped.
      * @param {String} source Stable plugin identifier, eg. 'radio'

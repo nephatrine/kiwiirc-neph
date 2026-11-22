@@ -7,6 +7,7 @@ import { each, find, toTimestamp } from '@/helpers/Utils';
 import { extractBuffers } from '@/helpers/Misc';
 import { byteLength } from '@/helpers/LoginFields';
 import { buildOutgoingMessage, serializeOutgoingMessage } from '@/helpers/IrcSerialization';
+import GlobalApi from './GlobalApi';
 import typingMiddleware from './TypingMiddleware';
 import autocompleteMiddleware from './AutocompleteMiddleware';
 import reactionMiddleware from './ReactionMiddleware';
@@ -1167,12 +1168,7 @@ function clientMiddleware(state, network) {
             const text = String(params[params.length - 1] || '').trim() ||
                 TextFormatting.t('oper_success');
 
-            state.addMessage(buffer, {
-                time: Date.now(),
-                nick: '',
-                message: text,
-                type: 'info',
-            });
+            state.addSystemMessage(buffer, text);
         }
 
         if (command === '002') {
@@ -1306,12 +1302,9 @@ function clientMiddleware(state, network) {
                     { old: oldName, new: newName, reason }
                 );
 
-                state.addMessage(buffer, {
+                state.addSystemMessage(buffer, messageBody, {
                     time: eventTime,
                     server_time: serverTime,
-                    nick: '',
-                    message: messageBody,
-                    type: 'info',
                 });
 
                 state.$emit('notification.show', messageBody, {
@@ -1700,9 +1693,24 @@ function clientMiddleware(state, network) {
                 host: event.hostname,
             };
             const messageText = bridgeCard ? bridgeCard.body : twitchText;
+            const messageFilter = bridgeCard ?
+                { text: messageText } :
+                GlobalApi.singleton().applyIncomingMessageFilters({
+                    network: network,
+                    buffer: buffer,
+                    nick: event.nick,
+                    target: bufferName,
+                    type: textFormatType,
+                    text: messageText,
+                    tags: messageTags,
+                    isPrivate: isPrivateMessage,
+                });
+            const displayText = typeof messageFilter.text === 'string' ?
+                messageFilter.text :
+                messageText;
             let messageBody;
             if (textFormatType === 'notice' && !bridgeCard) {
-                messageBody = String(messageText || '')
+                messageBody = String(displayText || '')
                     .split('\n')
                     .map((line) => TextFormatting.formatText('notice', {
                         ...formatParams,
@@ -1712,7 +1720,7 @@ function clientMiddleware(state, network) {
             } else {
                 messageBody = TextFormatting.formatText(bridgeCard ? 'privmsg' : textFormatType, {
                     ...formatParams,
-                    text: messageText,
+                    text: displayText,
                 });
             }
 
@@ -1728,6 +1736,9 @@ function clientMiddleware(state, network) {
                 is_rerouted: isRerouted || (isTwitch && isTwitchRerouted(twitchTags)),
                 protocol_target: protocolTarget,
                 bridge_card: bridgeCard,
+                is_encrypted: !!messageFilter.isEncrypted,
+                bodyTemplate: messageFilter.bodyTemplate || null,
+                bodyTemplateProps: messageFilter.bodyTemplateProps || {},
             };
 
             // If bot messages are disabled and the user is a known bot or the
@@ -2944,8 +2955,13 @@ function clientMiddleware(state, network) {
             }
             let buffer = state.getOrAddBufferByName(networkid, targetName);
             let previousTopic = buffer.topic || '';
+            let incomingTopic = event.topic || '';
+            let topic = GlobalApi.singleton().applyIncomingTopicFilters(
+                incomingTopic,
+                buffer
+            );
             if (!isHistory) {
-                buffer.topic = event.topic || '';
+                buffer.topic = topic;
             }
 
             let typeExtra = '';
@@ -2962,13 +2978,13 @@ function clientMiddleware(state, network) {
                     'channel_topic',
                     null,
                     'changed_topic_to',
-                    { nick: event.nick, topic: event.topic || '' },
+                    { nick: event.nick, topic: topic },
                 );
-            } else if ((event.topic || '').trim()) {
-                let sameTopic = !isHistory && previousTopic === (event.topic || '');
+            } else if ((topic || '').trim()) {
+                let sameTopic = !isHistory && previousTopic === topic;
                 if (!sameTopic) {
                     typeExtra = 'topic_join';
-                    messageBody = TextFormatting.formatText('channel_topic', event.topic);
+                    messageBody = TextFormatting.formatText('channel_topic', topic);
                 }
             }
 

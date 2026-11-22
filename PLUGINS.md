@@ -234,9 +234,14 @@ Commonly used members, grouped by purpose:
 **Registration**
 
 - `kiwi.plugin(name, callback)` — Register a plugin.
-- `kiwi.registerCommand(name, handler)` — Register an input command.
+- `kiwi.registerCommand(name, handler, options)` — Register an input command and
+  add it to autocomplete.
 - `kiwi.addAutocompleteProvider(name, provider)` — Register local completion.
 - `kiwi.addSettingsBlock(type, component, args)` — Add a settings block.
+- `kiwi.addOutgoingMessageFilter(hook)`, `kiwi.addIncomingMessageFilter(hook)`,
+  and `kiwi.addIncomingTopicFilter(hook)` — Transform chat traffic.
+- `kiwi.getSecret(scope)` and `kiwi.setSecret(scope, value)` — Store plugin
+  secrets outside the config and profile.
 - UI, tab, view, sidebar, startup, and service hooks are described below.
 
 **Events**
@@ -309,15 +314,38 @@ reactive. Use the state and buffer helpers rather than replacing arrays.
 per-network settings. They behave like `state.setting()` but are scoped to one
 network.
 
+To add a local status line, use the system message helper:
+
+```js
+kiwi.state.addSystemMessage(buffer, 'Key exchange complete.');
+```
+
+It creates an unauthored `system` row with the standard `ⓘ` text format. Every
+layout renders it like a core system notice, and the join/part, topic, nick and
+mode visibility settings do not hide it. Pass `{ type_extra: 'my-plugin' }` as
+the third argument for a private row class. Local errors should keep
+`type: 'error'` and are not system messages.
+
 ## Input Commands
 
-`kiwi.registerCommand(name, handler)` registers a client-side input command
-without the leading slash. Command names are matched case-insensitively.
+`kiwi.registerCommand(name, handler, options)` registers a client-side input
+command without the leading slash. Command names are matched case-insensitively.
+
+Registered commands also appear in the `/` autocomplete list. The optional
+`options` object controls how they are presented:
+
+- `description` — a plain string, a `locale_id_…` translation key, or a function
+  returning translated text.
+- `alias` — alternative command names without the leading slash.
+- `hidden` — set `true` to keep the command out of autocomplete.
 
 ```js
 kiwi.registerCommand('hello', (event, command, params, context) => {
     event.handled = true;
     kiwi.state.$emit('input.raw', '/msg ' + context.buffer.name + ' Hello', context);
+}, {
+    description: 'Say Hello',
+    alias: ['hi'],
 });
 ```
 
@@ -331,6 +359,108 @@ errors are logged and do not abort input processing.
 Commands that need the normal message path can re-emit `input.raw` with the
 original context, as in the example. This preserves pending-message, local echo,
 and alias handling.
+
+## Message Filters
+
+Filters let a plugin transform chat traffic without forking the input or message
+pipeline. All three accept one function and are applied in registration order.
+
+### `addOutgoingMessageFilter(hook)`
+
+Runs before the local echo is added and before anything reaches the wire. The
+hook receives one context object and may return a replacement, a Promise that
+resolves to one, or nothing:
+
+```js
+kiwi.addOutgoingMessageFilter((context) => {
+    // context: { network, buffer, target, type, text, tags }
+    // type is 'privmsg', 'action', or 'notice'
+    return {
+        wireText: 'transformed ' + context.text, // what the server receives
+        displayText: context.text, // what the local echo shows
+        isEncrypted: true, // keeps it out of chat logs
+    };
+});
+```
+
+Returning `{ cancel: true, error: 'why' }` stops the message; the optional
+`error` string is added to the buffer as a local error. A Promise holds the
+message until it settles, which is how the FiSH plugin waits for a key exchange.
+A rejected Promise cancels the message. Returned fields are merged into the
+existing context, so a hook only needs to supply what it changes.
+
+### `addIncomingMessageFilter(hook)`
+
+Runs synchronously on incoming `PRIVMSG`, `NOTICE`, and `ACTION` text before it
+is formatted, so replacing `text` keeps normal formatting and highlighting:
+
+```js
+kiwi.addIncomingMessageFilter((context) => {
+    // context: { network, buffer, nick, target, type, text, tags, isPrivate }
+    if (context.text !== 'secret') {
+        return undefined;
+    }
+    return {
+        text: 'plaintext',
+        isEncrypted: true
+    };
+});
+```
+
+`raw_text` keeps the original wire text. A hook may also return `bodyTemplate`
+and `bodyTemplateProps` to render the body with a component instead of parsed
+text, which is how a plugin offers an interactive placeholder.
+
+### `addIncomingTopicFilter(hook)`
+
+`hook(topic, buffer)` may return a replacement topic string. The result is what
+the buffer header and topic messages show. Encrypting an outgoing topic is just
+a command that calls `network.ircClient.setTopic()`.
+
+### Block renderers
+
+`kiwi.addBlockRenderer(type, render)` lets a plugin define a message block type
+that only it can produce. The renderer receives `(block, blocks)` and returns
+the inner HTML for that block; it must escape its own content.
+
+```js
+kiwi.addBlockRenderer('my-badge', (block) => (
+    '<span class="my-badge">' + escapeHtml(block.meta.label) + '</span>'
+));
+```
+
+Push a block of that type from a `message.blocks` listener, which fires once per
+parse with the parsed array:
+
+```js
+state.$on('message.blocks', (event) => {
+    event.blocks.push({
+        type: 'my-badge',
+        content: '',
+        styles: {},
+        meta: {
+            label: 'x'
+        },
+    });
+});
+```
+
+Unregistered types render as plain escaped text, and a block may omit `styles`.
+This is the only way to render content that incoming message text cannot
+imitate, because the parser can only emit its own block types.
+
+### Plugin secrets
+
+Plugins that keep keys or tokens should not put them in the config or the
+exported profile. `kiwi.getSecret(scope)`, `kiwi.setSecret(scope, value)` (pass
+`null` to delete), `kiwi.hasSecretStore()`, and `kiwi.secretsAreSecure()` read
+and write one opaque string per plugin-owned scope. Desktop builds store it in
+the profile directory encrypted with the operating system key store; web builds
+fall back to localStorage, which is not OS protected.
+
+`message.is_encrypted` marks messages and echoes that must stay out of local
+chat logs, and `[Encrypted Message]` is the fixed web push body for encrypted
+push payloads.
 
 ## UI Hooks
 
@@ -933,6 +1063,8 @@ The default configuration enables:
 - **`suggest-limnoria`** —
   [Limnoria Suggestions](static/plugins/suggest-limnoria.md) — command
   registration, autocomplete providers, settings blocks, command tree.
+- **`fish`** — [FiSH Encryption](static/plugins/fish.md) — message and topic
+  filters, plugin secrets, DH1080 key exchange, passphrase-locked keys.
 
 The customise starter is not loaded by default:
 

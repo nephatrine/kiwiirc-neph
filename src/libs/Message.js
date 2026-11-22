@@ -142,6 +142,9 @@ export default class Message {
         this.is_pending = !!message.is_pending;
         this.is_new = !!message.is_new;
         this.is_rerouted = !!message.is_rerouted;
+        // Set by an incoming message filter when the body was decrypted or is an
+        // encrypted placeholder. Encrypted messages stay out of local chat logs.
+        this.is_encrypted = !!message.is_encrypted;
         this.protocol_target = message.protocol_target || '';
         this.is_redacted = !!message.is_redacted;
         this.redacted_by = message.redacted_by || '';
@@ -413,6 +416,7 @@ export default class Message {
             is_pending: this.is_pending,
             is_new: this.is_new,
             is_rerouted: this.is_rerouted,
+            is_encrypted: !!this.is_encrypted,
             protocol_target: this.protocol_target,
             is_redacted: this.is_redacted,
             redacted_by: this.redacted_by,

@@ -2036,6 +2036,31 @@ export default {
                 alias: displayName ? [displayName] : [],
             };
         },
+        commandDescription(command) {
+            let description = command.description;
+
+            // Plugin commands may resolve their own translation at render time.
+            if (typeof description === 'function') {
+                try {
+                    description = description();
+                } catch (err) {
+                    Logger.error(
+                        'Autocomplete command description failed',
+                        command.command,
+                        err
+                    );
+                    description = '';
+                }
+            }
+
+            // Core descriptions are translation keys with a locale_id_ prefix.
+            if (typeof description === 'string' &&
+                description.indexOf('locale_id_') === 0) {
+                description = TextFormatting.t(description.substr(10));
+            }
+
+            return description || '';
+        },
         buildAutoCompleteItems(_opts) {
             let opts = _opts || {};
             let list = [];
@@ -2095,14 +2120,21 @@ export default {
 
             if (opts.commands) {
                 let commandList = [];
-                autocompleteCommands.forEach((command) => {
-                    // allow descriptions to be translation keys or static strings
-                    let desc = command.description.indexOf('locale_id_') === 0 ?
-                        TextFormatting.t(command.description.substr(10)) :
-                        command.description;
+                let seenCommands = new Set();
+                const pluginCommands = Object.values(
+                    GlobalApi.singleton().commandMeta || {}
+                ).filter((command) => command && !command.hidden);
+
+                autocompleteCommands.concat(pluginCommands).forEach((command) => {
+                    const name = String(command.command || '').toLowerCase();
+                    if (!name || seenCommands.has(name)) {
+                        return;
+                    }
+                    seenCommands.add(name);
+
                     commandList.push({
-                        text: '/' + command.command,
-                        description: desc,
+                        text: '/' + name,
+                        description: this.commandDescription(command),
                         type: 'command',
                         // Each alias needs the / command prefix adding
                         alias: (command.alias || []).map((c) => '/' + c),

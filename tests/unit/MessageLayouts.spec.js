@@ -94,8 +94,7 @@ describe('MessageListMessageCompact', () => {
         };
     }
 
-    function mountLayout(wideTimestamp = false) {
-        const message = createMessage();
+    function mountLayout(wideTimestamp = false, message = createMessage()) {
         const ml = createMl(message, wideTimestamp);
         const methods = createMethods();
         const vm = new Vue({
@@ -137,6 +136,25 @@ describe('MessageListMessageCompact', () => {
 
         expect(vm.$el.classList.contains('kiwi-messagelist-message--wide-timestamp'))
             .toBe(true);
+
+        vm.$destroy();
+    });
+
+    it('renders a local system message with no author or away marker', () => {
+        const local = Object.assign(createMessage(), {
+            nick: '',
+            type: 'system',
+            type_extra: 'fish',
+            user: null,
+        });
+        const { vm } = mountLayout(false, local);
+
+        expect(vm.$el.classList.contains('kiwi-messagelist-message-system-fish'))
+            .toBe(true);
+        expect(vm.$el.querySelector('.away-status-stub')).toBeNull();
+        expect(vm.$el.querySelector('.kiwi-messagelist-nick').textContent.trim())
+            .toBe('');
+        expect(vm.$el.getAttribute('data-nick')).toBe('');
 
         vm.$destroy();
     });

@@ -1,4 +1,5 @@
 import ControlInput from '@/components/ControlInput';
+import GlobalApi from '@/libs/GlobalApi';
 
 describe('ControlInput autocomplete', () => {
     function makeContext() {
@@ -51,6 +52,7 @@ describe('ControlInput autocomplete', () => {
             autocomplete_open: false,
             providerAutocompleteResult: ControlInput.methods.providerAutocompleteResult,
             openProviderAutocomplete: ControlInput.methods.openProviderAutocomplete,
+            commandDescription: ControlInput.methods.commandDescription,
             shouldCompleteEmoji: ControlInput.methods.shouldCompleteEmoji,
             emojiAutocompleteToken: ControlInput.methods.emojiAutocompleteToken,
             applyEmojiAutocompleteValue: ControlInput.methods.applyEmojiAutocompleteValue,
@@ -230,6 +232,63 @@ describe('ControlInput autocomplete', () => {
         expect(context.autocomplete_filter).toBe('jo');
         expect(context.autocomplete_filtering).toBe(false);
         expect(context.autocomplete_open).toBe(true);
+    });
+
+    it('includes registered plugin commands in the command list', () => {
+        const api = GlobalApi.singleton();
+        api.registerCommand('hello', () => {}, {
+            description: () => 'Say Hello',
+            alias: ['hi'],
+        });
+        api.registerCommand('hidden', () => {}, {
+            description: 'Hidden',
+            hidden: true,
+        });
+
+        try {
+            const { context } = makeContext();
+            const items = ControlInput.methods.buildAutoCompleteItems.call(
+                context,
+                { commands: true }
+            );
+            const hello = items.find((item) => item.text === '/hello');
+
+            expect(hello).toEqual({
+                text: '/hello',
+                description: 'Say Hello',
+                type: 'command',
+                alias: ['/hi'],
+            });
+            expect(items.some((item) => item.text === '/join')).toBe(true);
+            expect(items.some((item) => item.text === '/hidden')).toBe(false);
+        } finally {
+            delete api.commands.hello;
+            delete api.commandMeta.hello;
+            delete api.commands.hidden;
+            delete api.commandMeta.hidden;
+        }
+    });
+
+    it('does not duplicate core commands with plugin metadata', () => {
+        const api = GlobalApi.singleton();
+        api.registerCommand('join', () => {}, {
+            description: 'Plugin Join',
+        });
+
+        try {
+            const { context } = makeContext();
+            const items = ControlInput.methods.buildAutoCompleteItems.call(
+                context,
+                { commands: true }
+            );
+
+            expect(items.filter((item) => item.text === '/join')).toHaveLength(1);
+            expect(items.find((item) => item.text === '/join').description)
+                .not.toBe('Plugin Join');
+        } finally {
+            delete api.commands.join;
+            delete api.commandMeta.join;
+        }
     });
 
     it('uses the first non-empty provider hint', () => {

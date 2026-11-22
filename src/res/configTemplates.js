@@ -24,6 +24,7 @@ export const configTemplates = {
             { name: 'bongo-cat', url: 'static/plugins/bongo-cat.html' },
             { name: 'radio', url: 'static/plugins/radio.html' },
             { name: 'suggest-limnoria', url: 'static/plugins/suggest-limnoria.html' },
+            { name: 'fish', url: 'static/plugins/fish.html' },
         ],
         plugins_disabled: [],
         windowTitle: 'Kiwi IRC - The web IRC client',
@@ -207,6 +208,7 @@ export const configTemplates = {
 # General aliases
 /p /part $1+
 /me /action $destination $1+
+/me+ /action+ $destination $1+
 /j /join $1+
 /q /query $1+
 /w /whois $1+
@@ -248,6 +250,7 @@ export const configTemplates = {
             channel_selfkick: '× %text (%reason)',
             channel_topic: 'ⓘ %text',
             mode: 'ⓘ %text',
+            system: 'ⓘ %text',
             nickname_alreadyinuse: '⚠ %text',
             nick_changed: 'ⓘ %text',
             motd: '%text',

@@ -1323,6 +1323,7 @@ div.kiwi-messagelist-item.kiwi-messagelist-item--selected .kiwi-messagelist-mess
 
 /* Remove the styling for none user messages, as they make the page look bloated */
 .kiwi-messagelist-message-mode,
+.kiwi-messagelist-message-system,
 .kiwi-messagelist-message-traffic {
     padding-top: 5px;
     padding-bottom: 5px;
@@ -1343,6 +1344,7 @@ div.kiwi-messagelist-item.kiwi-messagelist-item--selected .kiwi-messagelist-mess
 
 /* Channel messages - e.g 'server on #testing22 ' message and such */
 .kiwi-messagelist-message-mode,
+.kiwi-messagelist-message-system,
 .kiwi-messagelist-message-traffic,
 .kiwi-messagelist-message-nick {
     margin: 10px 0;
@@ -1357,6 +1359,7 @@ div.kiwi-messagelist-item.kiwi-messagelist-item--selected .kiwi-messagelist-mess
 
 /* Absolute position the time on these messages so it's not above the message, it looks awful */
 .kiwi-messagelist-message-mode .kiwi-messagelist-time,
+.kiwi-messagelist-message-system .kiwi-messagelist-time,
 .kiwi-messagelist-message-traffic .kiwi-messagelist-time {
     position: absolute;
     top: 1px;

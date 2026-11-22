@@ -313,3 +313,114 @@ describe('Desktop secret store', () => {
         expect(fs.existsSync(store.filePath())).toBe(true);
     });
 });
+
+describe('Desktop plugin secret store', () => {
+    const {
+        createPluginSecretStore,
+        PLUGIN_SECRETS_FILE,
+        sanitizeScopeMap,
+        // eslint-disable-next-line n/global-require
+    } = require('../../desktop/electron/plugin-secrets');
+
+    let userDataDir;
+
+    beforeEach(() => {
+        userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kiwi-plugin-secrets-'));
+    });
+
+    afterEach(() => {
+        fs.rmSync(userDataDir, { recursive: true, force: true });
+    });
+
+    it('round trips scoped values through safeStorage', async() => {
+        const safeStorage = makeSafeStorage();
+        const store = createPluginSecretStore({ userDataDir, safeStorage });
+
+        expect(await store.get('fish')).toBeNull();
+
+        await store.set('fish', '{"keys":{}}');
+        expect(await store.get('fish')).toBe('{"keys":{}}');
+        expect(safeStorage.encryptStringAsync).toHaveBeenCalled();
+
+        const stored = fs.readFileSync(path.join(userDataDir, PLUGIN_SECRETS_FILE), 'utf8');
+        expect(stored).not.toContain('"keys"');
+        expect(JSON.parse(stored).protection).toBe('safeStorage');
+    });
+
+    it('keeps other scopes when one is removed', async() => {
+        const store = createPluginSecretStore({
+            userDataDir,
+            safeStorage: makeSafeStorage(),
+        });
+
+        await store.set('fish', 'a');
+        await store.set('other', 'b');
+        await store.remove('fish');
+
+        expect(await store.get('fish')).toBeNull();
+        expect(await store.get('other')).toBe('b');
+    });
+
+    it('deletes the file once the last scope is removed', async() => {
+        const store = createPluginSecretStore({
+            userDataDir,
+            safeStorage: makeSafeStorage(),
+        });
+
+        await store.set('fish', 'a');
+        await store.remove('fish');
+
+        expect(fs.existsSync(path.join(userDataDir, PLUGIN_SECRETS_FILE))).toBe(false);
+    });
+
+    it('writes plaintext only when secure storage is unavailable', async() => {
+        const store = createPluginSecretStore({
+            userDataDir,
+            safeStorage: makeSafeStorage({ available: false }),
+        });
+
+        await store.set('fish', 'plain-value');
+        expect(await store.get('fish')).toBe('plain-value');
+
+        const document = JSON.parse(
+            fs.readFileSync(path.join(userDataDir, PLUGIN_SECRETS_FILE), 'utf8')
+        );
+        expect(document.protection).toBe('plaintext');
+    });
+
+    it('refuses to fall back to plaintext over an encrypted file', async() => {
+        await createPluginSecretStore({
+            userDataDir,
+            safeStorage: makeSafeStorage(),
+        }).set('fish', 'a');
+
+        const store = createPluginSecretStore({
+            userDataDir,
+            safeStorage: makeSafeStorage({ available: false }),
+        });
+
+        await expect(store.set('fish', 'b'))
+            .rejects.toThrow('secure plugin secret storage is unavailable');
+    });
+
+    it('rejects invalid scopes and values', async() => {
+        const store = createPluginSecretStore({
+            userDataDir,
+            safeStorage: makeSafeStorage(),
+        });
+
+        expect(await store.get('bad scope')).toBeNull();
+        await expect(store.set('bad scope', 'x')).rejects.toThrow();
+        await expect(store.set('fish', '')).rejects.toThrow();
+        await expect(store.set('fish', 'x'.repeat(300 * 1024))).rejects.toThrow();
+    });
+
+    it('drops invalid entries when reading a plaintext document', () => {
+        expect(sanitizeScopeMap({
+            'good': 'value',
+            'bad scope': 'value',
+            '': 'value',
+            'empty': '',
+        })).toEqual({ good: 'value' });
+    });
+});

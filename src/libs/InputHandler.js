@@ -191,6 +191,48 @@ export default class InputHandler {
             network.ircClient.raw(line);
         }
     }
+
+    /**
+     * Echo an outgoing message locally and send it to the server.
+     * @param {Object} outgoing Filtered outgoing message context
+     * @param {String} fnName irc-framework method used to send it
+     * @param {Object} caps Echo/label capabilities for this buffer
+     */
+    sendOutgoingMessage(outgoing, fnName, caps) {
+        const { network, buffer, target, type, tags } = outgoing;
+        const wireText = typeof outgoing.wireText === 'string' ?
+            outgoing.wireText :
+            outgoing.text;
+        const displayText = typeof outgoing.displayText === 'string' ?
+            outgoing.displayText :
+            outgoing.text;
+        let textFormatType = 'privmsg';
+        if (type === 'action') {
+            textFormatType = 'action';
+        } else if (type === 'notice') {
+            textFormatType = 'notice';
+        }
+
+        let messageBody = TextFormatting.formatText(textFormatType, {
+            nick: network.nick,
+            text: displayText,
+        });
+
+        let newMessage = {
+            time: Date.now(),
+            nick: network.nick,
+            message: messageBody,
+            raw_text: wireText,
+            type: type,
+            tags: { ...tags },
+            is_pending: (caps.hasEcho || caps.hasLabel) && !caps.isSpecialBuffer,
+            is_rerouted: !!tags['+channel-context'],
+            is_encrypted: !!outgoing.isEncrypted,
+        };
+
+        this.state.addMessage(buffer, newMessage);
+        network.ircClient[fnName](target, wireText, tags);
+    }
 }
 
 /**
@@ -253,12 +295,6 @@ function handleMessage(type, event, command, line, context, applyReplacements = 
     let buffer = localBuffer.length && this.state.getOrAddBufferByName(network.id, localBuffer);
     if (buffer) {
         buffer.promoteServerContext();
-        let textFormatType = 'privmsg';
-        if (type === 'action') {
-            textFormatType = 'action';
-        } else if (type === 'notice') {
-            textFormatType = 'notice';
-        }
 
         let tags = {};
         let outgoingTarget = bufferName;
@@ -281,11 +317,6 @@ function handleMessage(type, event, command, line, context, applyReplacements = 
             }
         }
 
-        let messageBody = TextFormatting.formatText(textFormatType, {
-            nick: network.nick,
-            text: message,
-        });
-
         let hasEcho = network.hasCap('echo-message');
         let hasLabel = network.hasCap('labeled-response');
 
@@ -297,28 +328,54 @@ function handleMessage(type, event, command, line, context, applyReplacements = 
             tags.label = Misc.generateLabel();
         }
 
-        let newMessage = {
-            time: Date.now(),
-            nick: network.nick,
-            message: messageBody,
-            raw_text: message,
-            type: type,
-            tags: { ...tags },
-            is_pending: (hasEcho || hasLabel) && !isSpecialBuffer,
-            is_rerouted: !!tags['+channel-context'],
-        };
-
-        this.state.addMessage(buffer, newMessage);
-
         let fnNames = {
             privmsg: 'say',
             action: 'action',
             notice: 'notice',
         };
         let fnName = fnNames[type] || 'say';
-        network.ircClient[fnName](outgoingTarget, message, tags);
 
-        buffer.replying_to = null;
+        let outgoing = {
+            network: network,
+            buffer: buffer,
+            target: outgoingTarget,
+            type: type,
+            text: message,
+            tags: tags,
+        };
+
+        let api = GlobalApi.singleton();
+        if (!api.outgoingMessageFilters.length) {
+            this.sendOutgoingMessage(outgoing, fnName, {
+                hasEcho,
+                hasLabel,
+                isSpecialBuffer,
+            });
+            buffer.replying_to = null;
+            return;
+        }
+
+        // Filters may be asynchronous, in which case the message is held until
+        // they finish. A held message must never fall back to its plaintext.
+        api.applyOutgoingMessageFilters(outgoing, (result) => {
+            if (result.cancel) {
+                if (result.error) {
+                    this.state.addMessage(buffer, {
+                        nick: '*',
+                        message: String(result.error),
+                        type: 'error',
+                    });
+                }
+                return;
+            }
+
+            this.sendOutgoingMessage(result, fnName, {
+                hasEcho,
+                hasLabel,
+                isSpecialBuffer,
+            });
+            buffer.replying_to = null;
+        });
     }
 }
 

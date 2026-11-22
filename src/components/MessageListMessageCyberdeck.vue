@@ -640,6 +640,7 @@ export default {
 
 .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-traffic,
 .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-mode,
+.kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-system,
 .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-error {
     display: block;
     margin: 0;
@@ -649,12 +650,14 @@ export default {
 
 .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-traffic .kiwi-messagelist-cyberdeck-gutter,
 .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-mode .kiwi-messagelist-cyberdeck-gutter,
+.kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-system .kiwi-messagelist-cyberdeck-gutter,
 .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-error .kiwi-messagelist-cyberdeck-gutter {
     display: none;
 }
 
 .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-traffic .kiwi-messagelist-cyberdeck-content,
 .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-mode .kiwi-messagelist-cyberdeck-content,
+.kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-system .kiwi-messagelist-cyberdeck-content,
 .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-error .kiwi-messagelist-cyberdeck-content {
     padding-left: 10px;
     border-left: 0;
@@ -662,6 +665,7 @@ export default {
 
 .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-traffic .kiwi-messagelist-body,
 .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-mode .kiwi-messagelist-body,
+.kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-system .kiwi-messagelist-body,
 .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-error .kiwi-messagelist-body {
     padding: 0 4px;
     border-left: 0;

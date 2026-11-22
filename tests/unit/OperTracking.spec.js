@@ -72,8 +72,8 @@ describe('oper tracking', () => {
 
         const messages = buffer.getMessages();
         expect(messages).toHaveLength(1);
-        expect(messages[0].type).toBe('info');
-        expect(messages[0].message).toBe('You are now an IRC operator');
+        expect(messages[0].type).toBe('system');
+        expect(messages[0].message).toBe('ⓘ You are now an IRC operator');
     });
 
     it('does not notify for operator feedback', async() => {

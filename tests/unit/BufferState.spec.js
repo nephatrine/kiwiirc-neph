@@ -579,3 +579,24 @@ describe('raw buffer backlog', () => {
         expect(raw.rawBacklog[1].message).toBe('[S] line 3');
     });
 });
+
+describe('local system messages', () => {
+    it('adds an unauthored system row with the system format', () => {
+        const s = state.create();
+        const network = s.addNetwork('TestNetwork', 'TestNick', {});
+        network.state = 'connected';
+        network.nick = 'TestNick';
+        const buffer = s.addBuffer(network.id, '#chan');
+
+        const message = s.addSystemMessage(buffer, 'FiSH: key set', {
+            type_extra: 'fish',
+        });
+
+        expect(message.nick).toBe('');
+        expect(message.type).toBe('system');
+        expect(message.type_extra).toBe('fish');
+        expect(message.message).toBe('ⓘ FiSH: key set');
+
+        s.$destroy();
+    });
+});

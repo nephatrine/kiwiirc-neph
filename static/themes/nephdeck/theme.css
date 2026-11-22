@@ -1493,6 +1493,7 @@ body .kiwi-wrap .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-to
 
 body .kiwi-wrap .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-traffic .kiwi-messagelist-body,
 body .kiwi-wrap .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-mode .kiwi-messagelist-body,
+body .kiwi-wrap .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-system .kiwi-messagelist-body,
 body .kiwi-wrap .kiwi-messagelist-message--cyberdeck.kiwi-messagelist-message-error .kiwi-messagelist-body {
     font-family: var(--kiwi-font-mono);
     letter-spacing: 0.03em;

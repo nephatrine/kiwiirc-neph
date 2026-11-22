@@ -1218,6 +1218,7 @@ function createNewState() {
                     message.type !== 'traffic' &&
                     message.type !== 'ctcp' &&
                     message.type !== 'info' &&
+                    message.type !== 'system' &&
                     !buffer.isSpecial() &&
                     (
                         (buffer.setting('flash_title') === 'message') ||
@@ -1247,6 +1248,32 @@ function createNewState() {
                 }
 
                 return this.addMessage(buffer, message);
+            },
+
+            /**
+             * Add a local system message to a buffer.
+             *
+             * Uses the `system` type and `textFormats.system`, so every layout
+             * renders it like a core system notice and the join/part, topic,
+             * nick and mode visibility settings do not hide it.
+             * @param {Object} buffer Buffer to add to
+             * @param {String} text Message text
+             * @param {Object} [options] Extra message fields, for example
+             * `type_extra`
+             * @returns {Object|undefined} The added message
+             */
+            addSystemMessage(buffer, text, options) {
+                const extra = (options && typeof options === 'object') ? options : {};
+
+                return this.addMessage(buffer, Object.assign({}, extra, {
+                    time: typeof extra.time === 'number' ? extra.time : Date.now(),
+                    nick: '',
+                    message: TextFormatting.formatText('system', {
+                        nick: '',
+                        text: String(text || ''),
+                    }),
+                    type: 'system',
+                }));
             },
 
             getUser(networkid, nick, usersArr_) {

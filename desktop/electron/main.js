@@ -52,6 +52,7 @@ const { handleMediaRequest } = require('./media');
 const { MEDIA_SCHEME } = require('./media-url');
 const { createProfileStore, MAX_STORAGE_BYTES } = require('./profile-store');
 const { createSecretStore } = require('./secrets');
+const { createPluginSecretStore } = require('./plugin-secrets');
 const { createNotificationService } = require('./notifications');
 const { createDesktopSettingsStore } = require('./desktop-settings');
 const { createAutoLaunchService } = require('./auto-launch');
@@ -181,6 +182,7 @@ let desktopConfig = null;
 let desktopConfigPath = null;
 let profileStore = null;
 let secretStore = null;
+let pluginSecretStore = null;
 let notificationService = null;
 let desktopSettingsStore = null;
 let autoLaunchService = null;
@@ -277,6 +279,13 @@ if (!app.requestSingleInstanceLock()) {
         diagnostics.start();
         profileStore = createProfileStore(userDataDir);
         secretStore = createSecretStore({
+            userDataDir,
+            safeStorage,
+            log: {
+                warn: logWarn,
+            },
+        });
+        pluginSecretStore = createPluginSecretStore({
             userDataDir,
             safeStorage,
             log: {
@@ -599,6 +608,15 @@ function registerDesktopConfigIpc() {
     handleIpc('kiwi:secrets-clear', (event, stateKey) => (
         secretStore.clear(stateKey)
     ));
+    handleIpc('kiwi:plugin-secret-get', (event, scope) => (
+        pluginSecretStore.get(scope)
+    ));
+    handleIpc('kiwi:plugin-secret-set', (event, scope, value) => {
+        if (value === null || typeof value === 'undefined') {
+            return pluginSecretStore.remove(scope);
+        }
+        return pluginSecretStore.set(scope, value);
+    });
 
     handleIpc('kiwi:profile-export', async(event, text, options) => {
         if (typeof text !== 'string' || !text) {

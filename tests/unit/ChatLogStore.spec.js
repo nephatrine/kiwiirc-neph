@@ -438,6 +438,11 @@ describe('Chat log recorder', () => {
         expect(isLoggableMessage(buffer, { type: 'join' })).toBe(false);
         expect(isLoggableMessage(buffer, { type: 'privmsg', ignore: true })).toBe(false);
         expect(isLoggableMessage(buffer, { type: 'privmsg', is_redacted: true })).toBe(false);
+        expect(isLoggableMessage(buffer, {
+            type: 'privmsg',
+            is_encrypted: true,
+        })).toBe(false);
+        expect(toLogEntry(buffer, { type: 'privmsg', is_encrypted: true })).toBeNull();
 
         const serverBuffer = buffer.getNetwork().serverBuffer();
         expect(isLoggableMessage(serverBuffer, {})).toBe(false);

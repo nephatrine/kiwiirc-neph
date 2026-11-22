@@ -1,0 +1,107 @@
+{
+  "blowfish": {
+    "available": true,
+    "cbc": [
+      {
+        "key": "blowfish",
+        "plain": "qwertyui",
+        "wire": "+OK *hBKe2sJOaZZXHtUQ6fPTug=="
+      },
+      {
+        "key": "passphrase",
+        "plain": "example message",
+        "wire": "+OK *4p9CUy1f/I8UVpL0Zg9BaegKLXEzPRdO"
+      },
+      {
+        "error": "ValueError: Incorrect Blowfish key length (60 bytes)",
+        "key": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+        "plain": "long key"
+      }
+    ],
+    "ecb": [
+      {
+        "key": "blowfish",
+        "plain": "qwerty",
+        "wire": "+OK Ee5Cz.Dgr1q1"
+      },
+      {
+        "key": "blowfish",
+        "plain": "qwertyui",
+        "wire": "+OK qKKBR.riU410"
+      },
+      {
+        "key": "blowfish",
+        "plain": "qwertyuiop",
+        "wire": "+OK qKKBR.riU410bpm4f/1UAmL0"
+      },
+      {
+        "key": "blowfish",
+        "plain": "qwertyuiopasdfghjklzxcvbnm1234567890",
+        "wire": "+OK qKKBR.riU410sK.30/GVDts.ewTqf.5tm3p/Ol.d.0DH23r/m9tTw.Rmpbj1"
+      },
+      {
+        "key": "passphrase",
+        "plain": "example message",
+        "wire": "+OK Fw.oi.qObzc/MmX6X1N7a0F."
+      },
+      {
+        "key": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+        "plain": "boundary key",
+        "wire": "+OK bKXhY.tvIh2.JKrG3/KxiNK0"
+      },
+      {
+        "error": "ValueError: Incorrect Blowfish key length (60 bytes)",
+        "key": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+        "plain": "long key"
+      },
+      {
+        "error": "ValueError: Incorrect Blowfish key length (72 bytes)",
+        "key": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+        "plain": "maximum key"
+      }
+    ],
+    "note": "CBC payloads embed a random first block, so their wire values change on every run; only decryption is asserted for them."
+  },
+  "dh": {
+    "exchanges": [
+      {
+        "alicePrivate": "71F8memRQuIlnTqCckLzC9Z1Ii3k5xFPc+uLLqpAKYJfXbT4DG9qPt92LJObTcvkndLYgc+Zr7z4nvZTAww3XfkMDX2THKnOnVDvExKN64sXSb8bVuu1QxXUje5O3cLD7d9wV17FhuIEaHGfMZl5CClp1224XnyMO9NrYOfgN3d8UiZDHkOqA",
+        "alicePublic": "X5BSkNd4wzBieGoXAmNkb5O32RlOd6n8dUU6v1xqTDkbPEmCA5G13asbwi55/S688PbGGF7rwnhEBKAJVBJAvu1ZCIJt01e81cuU4l5zKYOaW+mJxPeBUD3jag7dU1PvnNMm0Rxo1tbH8Si6TSQDUiNpFliIDviPlYMCvIYNS7g9HpuuG6l+A",
+        "bobPrivate": "GnSSmFYDBvGC6ppblBrM1u7chZ/4JqTxDKYjUit62Z8U5mFqQ53UzrZm9I5djMjN8bx33nTO3U5swzbEq28DTNKCh/8m+bcLTcMgL6TYv3rAzani/aHuECSiujh9tdz7dCkHcGpml7cR2AVK6DtW2nXQmUjwfYsi39Z+XcydaLPOblNTBLIYA",
+        "bobPublic": "oPVKlchU3R6BIZKZKINxHT5WJCVSSW/B6x6/o7CJ8iVX70VOiksidvWSVWZ8oJcrBNlQxCUR+OaRHt0CCrw7w8fWR3cD5OkKyrF8hxFdMKMDlsBsCaWSeY6pP6UEiDmU2j4mX0P+7kz8RpHHqbe4tO73ppVglWkDBn21eVeKj7IOOknbVVi/A",
+        "key": "tnq2bi5KD0zCGPlbSQmF5uuDgh1D2azR+rkCku6pGGM"
+      },
+      {
+        "alicePrivate": "3xYwjwraRcHPu/t/nWxnE6QxOYN+scg+Ao6I+UraesBGxHUZdmkTrCcecCy4K8f0UzwfpYM7Ycc7h9bfLyNlseUeqQRc8Q9Ws8E4Y08Y2pkWtcKU3gxDvJqtc2vakO5eph/8X7DIbfoarR1EbTE+Y8awQbqSmeBt042qcm5yC5UIe9iByPAsA",
+        "alicePublic": "0F0+ODgzXblA+XDZ4NlkIHfhqbivA4w3YMsyCYlj7mRxmSte5xiqnkvLjTiIat8qEd11Byv4EpFGMktRJO9ZcRtmRODgSHeczwGaal/8z/uEwtctk6ueA0XCnRR8l+w6b5moB+NYevj/PBJR7iyN2oQR8GKPaOWRvs58oEEtn6bFUGQW3tplA",
+        "bobPrivate": "E9qn15DWFjieMhCTLq2Ag9Mdqh9GLCf13HjuRyKwRnZ52vLNlFcLIzrk6+KvEI0CfNXVukHryicIcDr9VAZysGau+hmOJVzd7sswQ99R8P62JuMmPtGX/NjvKq9W6WgPf8jq4wHaB6lF6A6VyI1ZrN6KWAIFL95gpMdrLASDO9aL2HGvXUf8A",
+        "bobPublic": "TdVZvhJFKIXAaHw6UwqpHlMT9sggdu+4hcpwSeIVXt+PP+4JRQpP7tHE4zl4P30nUHSDZfS6TRz0learpwtHDb93ITmbNhMejz35vplORVc0RF7Ke3EHvHsZl7ggLKlv0zxYFRsLwBsR3J0noQ4uQbzQw50P29lweuBPGsokeqZJJqjaO357A",
+        "key": "8iV6H6NmbDT6D39nGG/8PEQQsOcWk9Abuik9Y4ykngk"
+      },
+      {
+        "alicePrivate": "lnK0f46UiaeZHUPoQfyXc4fTIYgILi4ft4+J16UsnOh5mmV3pUDR6QrYl151GLcs4roQWZLI/SYKgSScV3cl6cqVhBL9EeM8NG26tfICk9CRE5jGW1ioW/c5ptzxRXUKl2CO77mLUKVCtKVhTG3ypFMTYC/WbXxeV4JD8NoqbISRogItp/SAA",
+        "alicePublic": "xoVeNsCKT4VCurM+IJ7OCN/F2zSI7uQZF+8qew7rqkZmFHmsfh/uSBT1NJsDJxImufGSRVYOVzsaltLHnC7uCzdhHTuhMDcLxWDUHWJx+VYcQh8lhNlHEChDy8IEq/cTPuY9RtRma7SVjT68tX0mhDjfbAEFuGeGUFnu73zhEvXJEC7VDUpoA",
+        "bobPrivate": "oN7TsKQjsoaCQkIb2sVvvUt/thZZ8zTnJCXYvsBZfq6SCM3xzOtsNMZe9tzEMqOZ+rCX0rEiMYy3rhp6mlgeBl5nOGjX4Wi4LcWzvQV+proJHrDGCPxlbj0wYo+/aZ7t4mN1soEJmyyxLMMCRKDidZM/AqBq9vbw32ALhhF4VBb5erO1WdqUA",
+        "bobPublic": "6BdOjKrU2jGvLUBGV3UyDpbmBR0O1FoXPhbg5uUySYdO/E58XeYQhu/N8ojNMPPcIVHqhdOmJs6Cr5HqyLI6NMdpxApd5TGb6AoIGnq/dNaYvOQiTZYlx41TdVOD3z3kn/SLocr5Vi690ZvFsZ/oNgA3N9GN5b9AmjlgbrvIbhPEwWLKb5RhA",
+        "key": "X8gjWwtXHE1IEuRJ+n88C10M0ahDSyENTf1yBCI3Rmg"
+      }
+    ],
+    "keyLength": 43,
+    "primeBitLength": 1080,
+    "primeHex": "FBE1022E23D213E8ACFA9AE8B9DFADA3EA6B7AC7A7B7E95AB5EB2DF858921FEADE95E6AC7BE7DE6ADBAB8A783E7AF7A7FA6A2B7BEB1E72EAE2B72F9FA2BFB2A2EFBEFAC868BADB3E828FA8BADFADA3E4CC1BE7E8AFE85E9698A783EB68FA07A77AB6AD7BEB618ACF9CA2897EB28A6189EFA07AB99A8A7FA9AE299EFA7BA66DEAFEFBEFBF0B7D8B",
+    "publicKeyLength": 181,
+    "shortSecret": {
+      "byteLength": 134,
+      "key": "dIu4SleQwV2hRFoFj5PcbsYge82MxLRK/2DxJTtJ/uw",
+      "secretHex": "8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003039"
+    },
+    "wideSecret": {
+      "byteLength": 135,
+      "key": "Fdgf4y9DpyKGO/6z4UCB4jaj7kZ9Swfitd7vMrpKPmw",
+      "secretHex": "fbe1022e23d213e8acfa9ae8b9dfada3ea6b7ac7a7b7e95ab5eb2df858921feade95e6ac7be7de6adbab8a783e7af7a7fa6a2b7beb1e72eae2b72f9fa2bfb2a2efbefac868badb3e828fa8badfada3e4cc1be7e8afe85e9698a783eb68fa07a77ab6ad7beb618acf9ca2897eb28a6189efa07ab99a8a7fa9ae299efa7ba66deafefbefbf0b7d8a"
+    }
+  },
+  "note": "Generated by scripts/fish-vectors.py; do not edit by hand.",
+  "reference": "weechat-fish (GPL-3.0-or-later, referenced only, never vendored)",
+  "seed": "kiwi-fish-vectors"
+}

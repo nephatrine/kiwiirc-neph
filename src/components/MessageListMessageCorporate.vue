@@ -695,6 +695,7 @@ export default {
 
 .kiwi-messagelist-message--corporate.kiwi-messagelist-message-traffic,
 .kiwi-messagelist-message--corporate.kiwi-messagelist-message-mode,
+.kiwi-messagelist-message--corporate.kiwi-messagelist-message-system,
 .kiwi-messagelist-message--corporate.kiwi-messagelist-message-error {
     display: block;
     margin: 0;
@@ -706,6 +707,8 @@ export default {
 .kiwi-messagelist-message--corporate.kiwi-messagelist-message-traffic .kiwi-messagelist-corporate-meta,
 .kiwi-messagelist-message--corporate.kiwi-messagelist-message-mode .kiwi-messagelist-corporate-avatar,
 .kiwi-messagelist-message--corporate.kiwi-messagelist-message-mode .kiwi-messagelist-corporate-meta,
+.kiwi-messagelist-message--corporate.kiwi-messagelist-message-system .kiwi-messagelist-corporate-avatar,
+.kiwi-messagelist-message--corporate.kiwi-messagelist-message-system .kiwi-messagelist-corporate-meta,
 .kiwi-messagelist-message--corporate.kiwi-messagelist-message-error .kiwi-messagelist-corporate-avatar,
 .kiwi-messagelist-message--corporate.kiwi-messagelist-message-error .kiwi-messagelist-corporate-meta {
     display: none;
@@ -713,6 +716,7 @@ export default {
 
 .kiwi-messagelist-message--corporate.kiwi-messagelist-message-traffic .kiwi-messagelist-corporate-main,
 .kiwi-messagelist-message--corporate.kiwi-messagelist-message-mode .kiwi-messagelist-corporate-main,
+.kiwi-messagelist-message--corporate.kiwi-messagelist-message-system .kiwi-messagelist-corporate-main,
 .kiwi-messagelist-message--corporate.kiwi-messagelist-message-error .kiwi-messagelist-corporate-main {
     width: 100%;
     max-width: 100%;
@@ -720,6 +724,7 @@ export default {
 
 .kiwi-messagelist-message--corporate.kiwi-messagelist-message-traffic .kiwi-messagelist-corporate-bubble,
 .kiwi-messagelist-message--corporate.kiwi-messagelist-message-mode .kiwi-messagelist-corporate-bubble,
+.kiwi-messagelist-message--corporate.kiwi-messagelist-message-system .kiwi-messagelist-corporate-bubble,
 .kiwi-messagelist-message--corporate.kiwi-messagelist-message-error .kiwi-messagelist-corporate-bubble {
     max-width: 100%;
     padding: 0;

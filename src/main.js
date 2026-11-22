@@ -33,6 +33,7 @@ import * as LocalStorage from '@/libs/storage/Local';
 import * as DesktopStorage from '@/libs/storage/Desktop';
 import { migrateLegacyProfile } from '@/libs/storage/DesktopMigration';
 import * as DesktopSecrets from '@/libs/desktop/Secrets';
+import { createPluginSecretStore } from '@/libs/PluginSecretStore';
 import { initDesktopPresetMenu } from '@/libs/desktop/PresetMenu';
 import { startFreezeBeacon } from '@/libs/desktop/FreezeBeacon';
 import * as Misc from '@/helpers/Misc';
@@ -630,6 +631,7 @@ async function initState() {
 
     api.setState(getState());
     api.desktop = desktop;
+    api.setSecretStore(createPluginSecretStore());
     initChatLogs(getState());
 }
 

@@ -1,0 +1,234 @@
+<!--
+    fish — FiSH encryption for queries, channels, topics, and notices
+    -----------------------------------------------------------------
+    Loads the vendored Blowfish/DH1080 helpers and the plugin itself. The key
+    store lives in the plugin secret store, never in the config or the exported
+    profile.
+-->
+
+<template id="fish-placeholder">
+    <span
+        class="kiwi-fish-placeholder"
+        role="button"
+        tabindex="0"
+        :title="hint"
+        @click="decrypt"
+        @keydown.enter.prevent="decrypt"
+        @keydown.space.prevent="decrypt"
+    >{{ label }}</span>
+</template>
+
+<template id="fish-general">
+    <div class="kiwi-fish-settings">
+        <div class="kiwi-appsettings-section kiwi-fish-warning">
+            {{ $t('fish:warning') }}
+        </div>
+        <div class="kiwi-appsettings-section">
+            <label class="u-checkbox-wrapper">
+                <span>{{ $t('fish:automatic_exchange') }} </span>
+                <input v-model="automaticExchange" type="checkbox">
+            </label>
+            <div class="kiwi-fish-hint">{{ $t('fish:automatic_exchange_hint') }}</div>
+        </div>
+        <div class="kiwi-appsettings-section">
+            <label class="kiwi-appsettings-full">
+                <span>{{ $t('fish:marker_position') }} </span>
+                <select v-model="markerPosition" class="u-input">
+                    <option value="prefix">{{ $t('fish:marker_prefix') }}</option>
+                    <option value="suffix">{{ $t('fish:marker_suffix') }}</option>
+                    <option value="none">{{ $t('fish:marker_none') }}</option>
+                </select>
+            </label>
+        </div>
+        <div class="kiwi-appsettings-section">
+            <div v-if="!secureStore" class="kiwi-fish-hint">
+                {{ $t('fish:store_local') }}
+            </div>
+            <div v-if="hasPassphrase && !unlocked">
+                <div class="kiwi-fish-hint">{{ $t('fish:locked_hint') }}</div>
+                <label class="kiwi-appsettings-full">
+                    <span>{{ $t('fish:passphrase') }} </span>
+                    <input
+                        v-model="passphrase"
+                        class="u-input"
+                        type="password"
+                        @keydown.enter.prevent="unlockKeys"
+                    >
+                </label>
+                <button class="u-button u-button-small" @click="unlockKeys">
+                    {{ $t('fish:unlock') }}
+                </button>
+            </div>
+            <div v-else>
+                <label class="kiwi-appsettings-full">
+                    <span>{{ $t('fish:passphrase') }} </span>
+                    <input
+                        v-model="passphrase"
+                        class="u-input"
+                        type="password"
+                        :placeholder="$t('fish:passphrase_hint')"
+                        @keydown.enter.prevent="setKeyPassphrase"
+                    >
+                </label>
+                <button class="u-button u-button-small" @click="setKeyPassphrase">
+                    {{ hasPassphrase ? $t('fish:passphrase_change') : $t('fish:passphrase_set') }}
+                </button>
+                <button
+                    v-if="hasPassphrase"
+                    class="u-button u-button-small kiwi-fish-remove-passphrase"
+                    @click="clearKeyPassphrase"
+                >
+                    {{ $t('fish:passphrase_remove') }}
+                </button>
+            </div>
+            <div v-if="message" class="kiwi-fish-error">{{ message }}</div>
+        </div>
+    </div>
+</template>
+
+<template id="fish-network">
+    <div class="kiwi-appsettings-section">
+        <div class="kiwi-fish-hint">{{ status }}</div>
+        <table v-if="keys.length" class="kiwi-fish-key-table">
+            <thead>
+                <tr>
+                    <th>{{ $t('fish:key_target') }}</th>
+                    <th>{{ $t('fish:key_mode') }}</th>
+                    <th>{{ $t('fish:key_value') }}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="entry in keys" :key="entry.target">
+                    <td>{{ entry.target }}</td>
+                    <td>{{ entry.mode.toUpperCase() }}</td>
+                    <td><code class="kiwi-fish-key-value">{{ entry.key }}</code></td>
+                    <td>
+                        <button class="u-button u-button-small" @click="removeKey(entry.target)">
+                            {{ $t('fish:key_delete') }}
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div v-else class="kiwi-fish-hint">{{ $t('fish:keys_empty') }}</div>
+
+        <form class="kiwi-fish-add-key" @submit.prevent="addKey">
+            <input
+                v-model="newTarget"
+                class="u-input"
+                :placeholder="$t('fish:key_target_hint')"
+            >
+            <select v-model="newMode" class="u-input">
+                <option value="ecb">ECB</option>
+                <option value="cbc">CBC</option>
+            </select>
+            <input
+                v-model="newKey"
+                class="u-input"
+                :placeholder="$t('fish:key_value_hint')"
+            >
+            <button class="u-button u-button-small" type="submit">{{ $t('fish:key_add') }}</button>
+        </form>
+
+        <button class="u-button u-button-small" @click="decryptAll">
+            {{ $t('fish:decrypt_all') }}
+        </button>
+        <div v-if="message" class="kiwi-fish-hint">{{ message }}</div>
+    </div>
+</template>
+
+<template id="fish-encryption">
+    <div
+        v-if="visible"
+        :class="{
+            'kiwi-fish-encryption': true,
+            'kiwi-sidebar-settings': context === 'channel',
+        }"
+    >
+        <div v-if="!loaded" class="kiwi-fish-hint">
+            {{ $t('fish:status_loading') }}
+        </div>
+        <div v-else-if="locked" class="kiwi-fish-hint">
+            {{ $t('fish:locked_hint') }}
+        </div>
+
+        <form v-if="loaded" class="u-form" @submit.prevent="saveKey">
+            <label class="kiwi-fish-field">
+                <span>{{ $t('fish:encryption_type') }} </span>
+                <select
+                    v-model="mode"
+                    class="u-input"
+                    :disabled="locked"
+                    @change="onModeChange"
+                >
+                    <option value="none">{{ $t('fish:encryption_none') }}</option>
+                    <option value="ecb">{{ $t('fish:encryption_ecb') }}</option>
+                    <option value="cbc">{{ $t('fish:encryption_cbc') }}</option>
+                </select>
+            </label>
+
+            <div v-if="mode !== 'none'" class="kiwi-fish-hint kiwi-fish-mode-warning">
+                {{ modeWarning }}
+            </div>
+
+            <label v-if="mode !== 'none'" class="kiwi-fish-field">
+                <span>{{ $t(context === 'userbox' ? 'fish:encryption_key' : 'fish:key_value') }} </span>
+                <div class="kiwi-fish-key-input">
+                    <input
+                        v-model="key"
+                        class="u-input"
+                        :type="showKey ? 'text' : 'password'"
+                        autocomplete="off"
+                        spellcheck="false"
+                        :disabled="locked"
+                    >
+                    <i
+                        class="u-input-text-plaintext bx bx-show"
+                        :class="{ 'u-input-text-plaintext--active': showKey }"
+                        aria-hidden="true"
+                        @click="showKey = !showKey"
+                    ></i>
+                </div>
+            </label>
+
+            <div
+                v-if="mode !== 'none' && key"
+                class="kiwi-welcome-password-strength kiwi-fish-key-strength"
+            >
+                <div class="kiwi-welcome-password-strength-bar">
+                    <span
+                        class="kiwi-welcome-password-strength-level"
+                        :class="passwordStrengthClass"
+                    ></span>
+                </div>
+                <span class="kiwi-welcome-password-strength-label">
+                    {{ $t(passwordStrengthLabel) }}
+                </span>
+            </div>
+
+            <div class="kiwi-fish-encryption-actions">
+                <button
+                    v-if="mode !== 'none'"
+                    class="u-button u-button-small"
+                    type="submit"
+                    :disabled="locked || !key.trim()"
+                >{{ $t('fish:key_save') }}</button>
+                <button
+                    v-if="canExchange"
+                    class="u-button u-button-small"
+                    type="button"
+                    :disabled="locked || exchanging"
+                    @click="exchangeKey"
+                >{{ exchanging ? $t('fish:exchange_pending') : $t('fish:exchange') }}</button>
+            </div>
+        </form>
+
+        <div v-if="status" class="kiwi-fish-hint">{{ status }}</div>
+    </div>
+</template>
+
+<link rel="stylesheet" href="fish.css">
+
+<script src="fish/crypto.js"></script>
+<script src="fish.js"></script>

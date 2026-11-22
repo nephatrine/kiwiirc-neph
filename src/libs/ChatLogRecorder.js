@@ -31,6 +31,11 @@ export function isLoggableMessage(buffer, message) {
     if (!LOGGED_TYPES.includes(message.type) || message.ignore || message.is_redacted) {
         return false;
     }
+    // Encrypted messages never reach the local chat log, whether they were
+    // decrypted for display or are still an encrypted placeholder.
+    if (message.is_encrypted) {
+        return false;
+    }
     return !!buffer.getNetwork();
 }
 
@@ -126,6 +131,11 @@ function applyConfirmation(event = {}) {
     const { message, buffer } = event;
     const network = buffer && buffer.getNetwork();
     if (!message || !network || !message.irc_id) {
+        return;
+    }
+    if (message.is_encrypted) {
+        // Nothing was queued for an encrypted message, so there is nothing to
+        // confirm either.
         return;
     }
     if (!buffer.isChannel || (!buffer.isChannel() && !buffer.isQuery())) {

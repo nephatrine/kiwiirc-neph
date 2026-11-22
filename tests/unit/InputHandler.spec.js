@@ -550,3 +550,122 @@ describe('InputHandler typographic replacements', () => {
         );
     });
 });
+
+describe('InputHandler outgoing message filters', () => {
+    function makeOutgoing() {
+        const buffer = {
+            name: '#channel',
+            networkid: 1,
+            replying_to: null,
+            isChannel: () => true,
+            isSpecial: () => false,
+            promoteServerContext: jest.fn(),
+        };
+        const network = {
+            id: 1,
+            nick: 'me',
+            isUtf8: true,
+            connection: { server: 'irc.example.com' },
+            isChannelName: () => true,
+            extractTargetGroup: () => null,
+            hasCap: () => false,
+            replyTagName: () => '',
+            isTwitch: () => false,
+            ircClient: {
+                say: jest.fn(),
+                action: jest.fn(),
+                notice: jest.fn(),
+                raw: jest.fn(),
+            },
+        };
+        const state = {
+            setting: jest.fn(() => ''),
+            $watch: jest.fn(),
+            $on: jest.fn(),
+            $emit: jest.fn(),
+            addMessage: jest.fn(),
+            getOrAddBufferByName: jest.fn(() => buffer),
+        };
+
+        return {
+            handler: new InputHandler(state),
+            network,
+            buffer,
+            state,
+            context: { network, buffer },
+        };
+    }
+
+    afterEach(() => {
+        GlobalApi.singleton().outgoingMessageFilters.length = 0;
+    });
+
+    test('sends and echoes the filtered text', () => {
+        GlobalApi.singleton().addOutgoingMessageFilter((context) => ({
+            wireText: '+OK ' + context.text,
+            displayText: context.text + ' ⚷',
+            isEncrypted: true,
+        }));
+
+        const { handler, network, state, context } = makeOutgoing();
+        handler.processLine('/msg #channel hello', context);
+
+        expect(network.ircClient.say).toHaveBeenCalledWith('#channel', '+OK hello', {});
+
+        const echo = state.addMessage.mock.calls[0][1];
+        expect(echo).toEqual(expect.objectContaining({
+            raw_text: '+OK hello',
+            is_encrypted: true,
+        }));
+        expect(echo.message).toBe('hello ⚷');
+    });
+
+    test('holds the message until an asynchronous filter resolves', async() => {
+        let release = null;
+        GlobalApi.singleton().addOutgoingMessageFilter((context) => (
+            new Promise((resolve) => {
+                release = () => resolve({ wireText: '+OK ' + context.text });
+            })
+        ));
+
+        const { handler, network, context } = makeOutgoing();
+        handler.processLine('/msg #channel hello', context);
+
+        expect(network.ircClient.say).not.toHaveBeenCalled();
+
+        release();
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(network.ircClient.say).toHaveBeenCalledWith('#channel', '+OK hello', {});
+    });
+
+    test('cancels the message and reports why', () => {
+        GlobalApi.singleton().addOutgoingMessageFilter(() => ({
+            cancel: true,
+            error: 'not sent',
+        }));
+
+        const { handler, network, buffer, state, context } = makeOutgoing();
+        handler.processLine('/msg #channel hello', context);
+
+        expect(network.ircClient.say).not.toHaveBeenCalled();
+        expect(state.addMessage).toHaveBeenCalledWith(buffer, expect.objectContaining({
+            type: 'error',
+            message: 'not sent',
+        }));
+    });
+
+    test('filters actions and notices too', () => {
+        GlobalApi.singleton().addOutgoingMessageFilter((context) => ({
+            wireText: '+OK ' + context.text,
+        }));
+
+        const { handler, network, context } = makeOutgoing();
+        handler.processLine('/action #channel waves', context);
+        handler.processLine('/notice #channel hi', context);
+
+        expect(network.ircClient.action).toHaveBeenCalledWith('#channel', '+OK waves', {});
+        expect(network.ircClient.notice).toHaveBeenCalledWith('#channel', '+OK hi', {});
+    });
+});

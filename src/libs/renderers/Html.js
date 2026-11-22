@@ -3,6 +3,7 @@
 import { escapeHtml } from '@/helpers/Utils';
 import { canPreviewUrl, isSpoilerBlock } from '@/helpers/Misc';
 import getState from '@/libs/state';
+import GlobalApi from '@/libs/GlobalApi';
 import * as EmojiProvider from '@/libs/EmojiProvider';
 
 export default render;
@@ -17,8 +18,9 @@ function render(blocks, renderEmoticons) {
         // a
         let style = '';
         let classes = '';
+        const blockStyles = block.styles || {};
 
-        Object.keys(block.styles).forEach((s) => {
+        Object.keys(blockStyles).forEach((s) => {
             if (s === 'underline') {
                 style += 'text-decoration:underline;';
             } else if (s === 'strikethrough') {
@@ -34,16 +36,16 @@ function render(blocks, renderEmoticons) {
             } else if (s === 'block') {
                 classes += 'kiwi-formatting-extras-block ';
             } else if (s === 'color') {
-                if (block.styles[s][0] === '#') {
-                    style += `color:${block.styles[s]};`;
+                if (blockStyles[s][0] === '#') {
+                    style += `color:${blockStyles[s]};`;
                 } else {
-                    classes += `irc-fg-colour-${block.styles[s]} `;
+                    classes += `irc-fg-colour-${blockStyles[s]} `;
                 }
             } else if (s === 'background') {
-                if (block.styles[s][0] === '#') {
-                    style += `background-color:${block.styles[s]};`;
+                if (blockStyles[s][0] === '#') {
+                    style += `background-color:${blockStyles[s]};`;
                 } else {
-                    classes += `irc-bg-colour-${block.styles[s]} `;
+                    classes += `irc-bg-colour-${blockStyles[s]} `;
                 }
             }
         });
@@ -74,8 +76,12 @@ function render(blocks, renderEmoticons) {
         case 'raw':
             content = escapeHtml(block.content);
             break;
-        default:
-            content = EmojiProvider.wrapEmojiText(block.content);
+        default: {
+            const custom = GlobalApi.singleton().getBlockRenderer(block.type);
+            content = custom ?
+                custom(block, blocks) :
+                EmojiProvider.wrapEmojiText(block.content);
+        }
         }
 
         return html + buildSpan(content, classes, style);

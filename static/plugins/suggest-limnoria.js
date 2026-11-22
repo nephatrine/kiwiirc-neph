@@ -27,7 +27,17 @@ kiwi.plugin('suggest-limnoria', (kiwi, log) => {
 
     kiwi.addTranslations('suggest-limnoria', {
         'en-us': {
+            command_lim: 'Limnoria Command',
+            limnoria_channel_unavailable: 'Limnoria channel commands require a channel with the bot present.',
+            limnoria_command_required: 'Enter a Limnoria command after /lim.',
+            limnoria_disabled: 'Limnoria suggestions are disabled for this network.',
+            limnoria_name_required: 'Set a Limnoria Name in the network settings first.',
             loadFailed: 'Limnoria command data could not be loaded.',
+            settings_limnoria: 'Limnoria',
+            settings_limnoria_name: 'Limnoria Name',
+            settings_limnoria_plugins: 'Limnoria Plugins',
+            settings_limnoria_plugins_hint: 'Comma or space separated plugin names.',
+            settings_limnoria_suggestions: 'Limnoria Suggestions',
         },
     });
 
@@ -161,7 +171,7 @@ kiwi.plugin('suggest-limnoria', (kiwi, log) => {
         }
         return {
             text: '/lim',
-            description: kiwi.i18n.t('command_lim'),
+            description: kiwi.i18n.t('suggest-limnoria:command_lim'),
             help: '',
             type: 'command',
         };
@@ -289,15 +299,15 @@ kiwi.plugin('suggest-limnoria', (kiwi, log) => {
         let commandText = String(params || '').trim();
 
         if (!settings.suggestions) {
-            addLimnoriaError(buffer, TextFormatting.t('limnoria_disabled'));
+            addLimnoriaError(buffer, TextFormatting.t('suggest-limnoria:limnoria_disabled'));
             return;
         }
         if (!settings.name) {
-            addLimnoriaError(buffer, TextFormatting.t('limnoria_name_required'));
+            addLimnoriaError(buffer, TextFormatting.t('suggest-limnoria:limnoria_name_required'));
             return;
         }
         if (!commandText) {
-            addLimnoriaError(buffer, TextFormatting.t('limnoria_command_required'));
+            addLimnoriaError(buffer, TextFormatting.t('suggest-limnoria:limnoria_command_required'));
             return;
         }
 
@@ -317,7 +327,7 @@ kiwi.plugin('suggest-limnoria', (kiwi, log) => {
                     if (!buffer.isChannel() || !buffer.hasNick(settings.name)) {
                         addLimnoriaError(
                             buffer,
-                            TextFormatting.t('limnoria_channel_unavailable')
+                            TextFormatting.t('suggest-limnoria:limnoria_channel_unavailable')
                         );
                         return;
                     }
@@ -394,9 +404,12 @@ kiwi.plugin('suggest-limnoria', (kiwi, log) => {
     });
 
     kiwi.addSettingsBlock('network', SettingsComponent, {
-        title: 't_settings_limnoria',
+        title: 't_suggest-limnoria:settings_limnoria',
+        tabName: 'limnoria',
     });
-    kiwi.registerCommand('lim', runCommand);
+    kiwi.registerCommand('lim', runCommand, {
+        description: () => kiwi.i18n.t('suggest-limnoria:command_lim'),
+    });
     kiwi.addAutocompleteProvider('suggest-limnoria', {
         suggest,
         hint,

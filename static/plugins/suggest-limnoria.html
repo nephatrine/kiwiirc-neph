@@ -9,19 +9,19 @@
 <template id="suggest-limnoria-settings">
     <div class="kiwi-appsettings-section">
         <label class="u-checkbox-wrapper">
-            <span>{{ $t('settings_limnoria_suggestions') }} </span>
+            <span>{{ $t('suggest-limnoria:settings_limnoria_suggestions') }} </span>
             <input v-model="suggestions" type="checkbox">
         </label>
         <label v-if="suggestions" class="kiwi-appsettings-full">
-            <span>{{ $t('settings_limnoria_name') }} </span>
+            <span>{{ $t('suggest-limnoria:settings_limnoria_name') }} </span>
             <input v-model="name" class="u-input">
         </label>
         <label v-if="suggestions" class="kiwi-appsettings-full">
-            <span>{{ $t('settings_limnoria_plugins') }} </span>
+            <span>{{ $t('suggest-limnoria:settings_limnoria_plugins') }} </span>
             <input
                 v-model="plugins"
                 class="u-input"
-                :placeholder="$t('settings_limnoria_plugins_hint')"
+                :placeholder="$t('suggest-limnoria:settings_limnoria_plugins_hint')"
             >
         </label>
     </div>

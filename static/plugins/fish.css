@@ -1,0 +1,200 @@
+/*
+    FiSH plugin styles
+    ------------------
+    Only the pieces the settings block and the encrypted placeholders need;
+    everything else uses the core settings classes.
+*/
+
+.kiwi-fish-placeholder {
+    cursor: pointer;
+    opacity: 0.8;
+    text-decoration: underline dotted;
+}
+
+.kiwi-fish-placeholder:hover,
+.kiwi-fish-placeholder:focus {
+    opacity: 1;
+}
+
+.kiwi-fish-warning {
+    color: var(--brand-warning, #c98b1b);
+}
+
+.kiwi-fish-hint {
+    max-width: 100%;
+    opacity: 0.75;
+    font-size: 0.9em;
+    overflow-wrap: anywhere;
+}
+
+.kiwi-fish-error {
+    color: var(--brand-error, #c0392b);
+}
+
+.kiwi-fish-key-table {
+    width: 100%;
+    margin-bottom: 0.5em;
+    border-collapse: collapse;
+}
+
+.kiwi-fish-key-table th,
+.kiwi-fish-key-table td {
+    padding: 0.2em 0.4em;
+    text-align: left;
+    vertical-align: top;
+}
+
+.kiwi-fish-key-value {
+    word-break: break-all;
+}
+
+.kiwi-fish-add-key {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4em;
+    margin-bottom: 0.6em;
+}
+
+.kiwi-fish-add-key .u-input {
+    flex: 1 1 8em;
+    min-width: 6em;
+}
+
+.kiwi-fish-add-key select.u-input {
+    flex: 0 0 5em;
+}
+
+.kiwi-fish-remove-passphrase {
+    margin-left: 0.4em;
+}
+
+.kiwi-fish-mode-warning {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin-bottom: 0.4em;
+    overflow-wrap: anywhere;
+    box-sizing: border-box;
+}
+
+.kiwi-fish-encryption {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow-wrap: anywhere;
+}
+
+.kiwi-fish-field {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    margin-bottom: 0.6em;
+}
+
+.kiwi-fish-field > span {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.3em;
+}
+
+.kiwi-fish-encryption form,
+.kiwi-fish-encryption label,
+.kiwi-fish-encryption .kiwi-fish-key-input,
+.kiwi-fish-encryption .kiwi-fish-key-strength {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.kiwi-fish-encryption .u-input,
+.kiwi-fish-encryption select.u-input {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.kiwi-fish-key-input {
+    position: relative;
+}
+
+.kiwi-fish-key-input .u-input {
+    padding-right: 40px;
+}
+
+.kiwi-fish-key-input .u-input-text-plaintext {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.kiwi-userbox .kiwi-fish-encryption {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 0.5em 1em;
+    border-top: 1px solid rgb(128 128 128 / 20%);
+    box-sizing: border-box;
+}
+
+.kiwi-fish-key-strength {
+    min-width: 0;
+    margin: 4px 0 8px;
+}
+
+.kiwi-fish-key-strength .kiwi-welcome-password-strength-bar {
+    min-width: 0;
+}
+
+.kiwi-fish-encryption-actions {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    gap: 0.4em;
+    margin-top: 0.4em;
+    clear: both;
+    box-sizing: border-box;
+}
+
+.kiwi-fish-encryption-actions .u-button {
+    flex: 0 0 auto;
+    min-width: max-content;
+    max-width: 100%;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+/*
+ * Encrypted-message marker (default ⚷).
+ *
+ * Rendered as a block by the plugin, never parsed from message text, so a
+ * plaintext body cannot imitate it. Everything is relative and inherits
+ * `currentColor` so it reads on dark and light themes alike; the low opacity
+ * keeps it quiet in a channel where every line carries one.
+ */
+.kiwi-fish-marker {
+    display: inline-block;
+    margin: 0 0.4em;
+    padding: 0 0.25em;
+    border: 1px solid currentcolor;
+    border-radius: 0.3em;
+    font-size: 0.8em;
+    font-weight: normal;
+    line-height: 1.2;
+    opacity: 0.65;
+    user-select: none;
+}
+
+.kiwi-fish-marker:hover,
+.kiwi-fish-marker:focus {
+    opacity: 1;
+}

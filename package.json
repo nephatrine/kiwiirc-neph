@@ -25,6 +25,7 @@
         "postbuild": "node scripts/minify-static.js",
         "generate:emojis": "node scripts/generate-emojis.js",
         "generate:boxicons": "node scripts/generate-boxicons-css.js",
+        "generate:fish-vectors": "python3 scripts/fish-vectors.py",
         "optimize:bongo": "node scripts/optimize-bongo-images.js",
         "format": "npm-run-all format:*",
         "format:eslint": "eslint --fix src tests scripts static/plugins desktop/electron desktop/scripts \"*.js\" \".*.js\"",

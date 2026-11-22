@@ -1,6 +1,7 @@
 import MessageList from '@/components/MessageList';
 import state from '@/libs/state';
 import Message from '@/libs/Message';
+import GlobalApi from '@/libs/GlobalApi';
 import { ircToHtml } from '@/helpers/IrcToHtml';
 import { htmlToIrc } from '@/helpers/HtmlToIrc';
 import {
@@ -369,5 +370,74 @@ describe('timestamp formats', () => {
 
         expect(formatTimestamp(FORMAT_DECIMAL, new Date(2026, 0, 1, 12, 0, 0)))
             .toBe('5:00:00');
+    });
+});
+
+describe('plugin message blocks', () => {
+    let s;
+    let buffer;
+
+    beforeEach(() => {
+        s = state.create();
+        const network = s.addNetwork('TestNetwork', 'TestNick', {});
+        buffer = s.addBuffer(network.id, '#test');
+    });
+
+    afterEach(() => {
+        s.$destroy();
+    });
+
+    function renderMessage(text, blocks) {
+        const message = new Message({
+            nick: 'other',
+            message: text,
+            time: Date.now(),
+        }, null);
+
+        message.toBlocks(buffer, false, false);
+        // `invalidateRender()` would clear the parsed blocks, so append after
+        // the first parse and let the cache serve the combined list.
+        message.blocks = message.blocks.concat(blocks);
+
+        return message.toHtml({
+            buffer: buffer,
+            useExtraFormatting: false,
+            useSimpleTypography: false,
+        });
+    }
+
+    test('renders a registered plugin block', () => {
+        const api = GlobalApi.singleton();
+        api.addBlockRenderer('test-marker', (block) => (
+            '<span class="test-marker">' + block.meta.label + '</span>'
+        ));
+
+        const html = renderMessage('hello', [{
+            type: 'test-marker',
+            content: '',
+            styles: {},
+            meta: { label: 'marker' },
+        }]);
+
+        expect(html).toContain('<span class="test-marker">marker</span>');
+        expect(html).toContain('hello');
+    });
+
+    test('renders an unregistered block type as escaped text', () => {
+        const html = renderMessage('hello', [{
+            type: 'unknown-plugin-block',
+            content: '<b>not markup</b>',
+            styles: {},
+        }]);
+
+        expect(html).toContain('&lt;b&gt;not markup&lt;/b&gt;');
+        expect(html).not.toContain('<b>not markup</b>');
+    });
+
+    test('tolerates a block without styles', () => {
+        expect(() => renderMessage('hello', [{
+            type: 'unknown-plugin-block',
+            content: 'plain',
+        }])).not.toThrow();
     });
 });

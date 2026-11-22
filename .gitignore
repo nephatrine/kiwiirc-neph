@@ -21,6 +21,12 @@ npm-debug.log*
 deploy.sh
 config.test.json
 
+# Python bytecode from scripts/fish-vectors.py
+__pycache__/
+
+# Not our files to commit.
+scripts/fish.py
+
 # Editor directories and files
 .idea
 .vscode

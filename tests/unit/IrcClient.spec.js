@@ -1,4 +1,5 @@
 import Irc from 'irc-framework';
+import GlobalApi from '@/libs/GlobalApi';
 import state from '@/libs/state';
 import { PUMP_MS } from '@/libs/RelayMeta';
 import { throttlePingTimeoutReset } from '@/libs/IrcClient';
@@ -378,5 +379,136 @@ describe('IrcClient initial channels', () => {
         expect(two).toMatchObject({ joined: false, enabled: true, key: '' });
         expect(client.join).toHaveBeenCalledWith('#one', 'key');
         expect(client.join).toHaveBeenCalledWith('#two', '');
+    });
+});
+
+describe('IrcClient message filters', () => {
+    let s;
+    let network;
+    let client;
+
+    beforeEach(() => {
+        s = state.create();
+        network = s.addNetwork('TestNetwork', 'TestNick', {
+            server: 'irc.example.com',
+            port: 6697,
+            tls: true,
+        });
+        network.state = 'connected';
+        network.nick = 'TestNick';
+        client = network.ircClient;
+        client.user.nick = 'TestNick';
+    });
+
+    afterEach(() => {
+        const api = GlobalApi.singleton();
+        api.incomingMessageFilters.length = 0;
+        api.incomingTopicFilters.length = 0;
+    });
+
+    function dispatch(command, event) {
+        client.parsed_middleware.handle([command, event, client], (err) => {
+            if (err) {
+                throw err;
+            }
+        });
+    }
+
+    function makeEvent(overrides) {
+        return {
+            nick: 'Other',
+            ident: 'other',
+            hostname: 'example.com',
+            target: 'TestNick',
+            type: 'privmsg',
+            message: '+OK abc',
+            time: Date.now(),
+            tags: {},
+            ...overrides,
+        };
+    }
+
+    function lastMessage(buffer) {
+        const messages = buffer.getMessages();
+        return messages[messages.length - 1];
+    }
+
+    it('rewrites an incoming message body and keeps the wire text', () => {
+        const api = GlobalApi.singleton();
+        api.addIncomingMessageFilter((context) => (
+            context.text === '+OK abc' ?
+                { text: 'hello there ⚷', isEncrypted: true } :
+                undefined
+        ));
+
+        dispatch('message', makeEvent());
+
+        const buffer = s.getBufferByName(network.id, 'Other');
+        const message = lastMessage(buffer);
+        expect(message.message).toBe('hello there ⚷');
+        expect(message.raw_text).toBe('+OK abc');
+        expect(message.is_encrypted).toBe(true);
+    });
+
+    it('passes notice and action text through the filter', () => {
+        const api = GlobalApi.singleton();
+        const seen = [];
+        api.addIncomingMessageFilter((context) => {
+            seen.push(context.type);
+            return { text: 'decrypted' };
+        });
+
+        dispatch('message', makeEvent({
+            message: '\x01ACTION +OK abc\x01',
+            type: 'action',
+        }));
+
+        expect(seen).toContain('action');
+        const buffer = s.getBufferByName(network.id, 'Other');
+        expect(lastMessage(buffer).message).toContain('decrypted');
+    });
+
+    it('tells filters whether the message is private', () => {
+        const seen = [];
+        GlobalApi.singleton().addIncomingMessageFilter((context) => {
+            seen.push(context.isPrivate);
+        });
+
+        dispatch('message', makeEvent());
+        dispatch('message', makeEvent({ target: '#test', nick: 'Other' }));
+
+        expect(seen).toEqual([true, false]);
+    });
+
+    it('keeps the message when a filter throws', () => {
+        const api = GlobalApi.singleton();
+        api.addIncomingMessageFilter(() => {
+            throw new Error('boom');
+        });
+
+        expect(() => dispatch('message', makeEvent({ message: 'plain' })))
+            .not.toThrow();
+
+        const buffer = s.getBufferByName(network.id, 'Other');
+        expect(lastMessage(buffer).message).toBe('plain');
+        expect(lastMessage(buffer).is_encrypted).toBe(false);
+    });
+
+    it('decrypts incoming topics through the topic filter', () => {
+        const api = GlobalApi.singleton();
+        api.addIncomingTopicFilter((topic) => (
+            topic === '+OK topickey' ? 'the real topic' : undefined
+        ));
+
+        dispatch('topic', {
+            channel: '#test',
+            topic: '+OK topickey',
+            time: Date.now(),
+            tags: {},
+        });
+
+        const buffer = s.getBufferByName(network.id, '#test');
+        expect(buffer.topic).toBe('the real topic');
+        expect(lastMessage(buffer).message).toContain('the real topic');
     });
 });

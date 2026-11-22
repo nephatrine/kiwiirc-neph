@@ -196,6 +196,31 @@ describe('webpush service worker notifications', () => {
         expect(note.data.target).toBe('#chan');
     });
 
+    it('never puts ciphertext in a push notification', () => {
+        const encrypted = [
+            ':nick!user@host PRIVMSG #chan :+OK abcdef',
+            ':nick!user@host PRIVMSG #chan :+OK *abcdef',
+            ':nick!user@host PRIVMSG #chan :+OK * abcdef',
+            ':nick!user@host PRIVMSG #chan :mcps abcdef',
+            ':nick!user@host PRIVMSG #chan :mcps *abcdef',
+            ':nick!user@host PRIVMSG #chan :\x01ACTION +OK abcdef\x01',
+            ':nick!user@host NOTICE TestNick :+OK abcdef',
+        ];
+
+        encrypted.forEach((line) => {
+            const note = swUtils.buildNotification(line);
+            expect(note).not.toBeNull();
+            expect(note.body).toBe('[Encrypted Message]');
+            expect(note.body).not.toContain('abcdef');
+        });
+
+        expect(swUtils.isEncryptedPayload('+OK abc')).toBe(true);
+        expect(swUtils.isEncryptedPayload('mcps abc')).toBe(true);
+        expect(swUtils.isEncryptedPayload('hello')).toBe(false);
+        // Not a real prefix; only mcps belongs to Mircryption.
+        expect(swUtils.isEncryptedPayload('mspc abc')).toBe(false);
+    });
+
     it('ignores CTCP, control, server, and empty pushes', () => {
         expect(swUtils.buildNotification(
             ':bot!user@host NOTICE TestNick ' +
@@ -257,5 +282,29 @@ describe('webpush service worker scopes', () => {
             'kiwi-webpush:kiwi-state:42:abc'
         );
         expect(swUtils.notificationTag('kiwi-state', 42, '')).toBe('');
+    });
+});
+
+describe('webpush plaintext escape', () => {
+    it('shows the escaped plaintext instead of a generic notice', () => {
+        [
+            ':nick!user@host PRIVMSG #chan :+OK +p hello there',
+            ':nick!user@host PRIVMSG #chan :+OK *+p hello there',
+            ':nick!user@host PRIVMSG #chan :mcps +p hello there',
+            ':nick!user@host PRIVMSG #chan :\x01ACTION +OK +p waves\x01',
+        ].forEach((line) => {
+            const note = swUtils.buildNotification(line);
+            expect(note).not.toBeNull();
+            expect(note.body).toBe(line.indexOf('\x01') === -1 ?
+                'hello there' :
+                'waves');
+        });
+    });
+
+    it('still hides real ciphertext', () => {
+        const note = swUtils.buildNotification(
+            ':nick!user@host PRIVMSG #chan :+OK abcdef'
+        );
+        expect(note.body).toBe('[Encrypted Message]');
     });
 });

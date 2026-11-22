@@ -18,6 +18,15 @@ export function set(name, val) {
     });
 }
 
+export function remove(name) {
+    if (!isSupported()) {
+        return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+        resolve(window.localStorage.removeItem(name));
+    });
+}
+
 function isSupported() {
     if (supportedCached === null) {
         supportedCached = storageAvailable('localStorage');

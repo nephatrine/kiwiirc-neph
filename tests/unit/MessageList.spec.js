@@ -50,6 +50,16 @@ describe('message condensing', () => {
             time: 2000,
             type: 'action',
         }))).toBe(false);
+        // Local system messages are their own type, so they never condense into
+        // a user message above them.
+        expect(isConsecutiveMessage(previous, makeRowMessage({
+            id: 2,
+            time: 2000,
+            type: 'system',
+            nick: '',
+            condenseKey: () => '',
+        }))).toBe(false);
+
         expect(isConsecutiveMessage(undefined, makeRowMessage())).toBe(false);
     });
 });

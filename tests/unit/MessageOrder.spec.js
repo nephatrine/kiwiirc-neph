@@ -108,6 +108,33 @@ describe('message ordering', () => {
     });
 });
 
+describe('system message visibility', () => {
+    test('keeps system rows when mode changes are hidden', () => {
+        const s = state.create();
+        const network = s.addNetwork('TestNetwork', 'TestNick', {});
+        network.state = 'connected';
+        network.nick = 'TestNick';
+        const buffer = s.addBuffer(network.id, '#chan');
+        buffer.setting('show_mode_changes', false);
+
+        s.addMessage(buffer, {
+            time: Date.now(),
+            nick: '',
+            message: 'mode line',
+            type: 'mode',
+        });
+        s.addSystemMessage(buffer, 'system line');
+
+        const visible = orderedMessages(buffer);
+
+        expect(visible).toHaveLength(1);
+        expect(visible[0].type).toBe('system');
+        expect(visible[0].message).toBe('ⓘ system line');
+
+        s.$destroy();
+    });
+});
+
 describe('message echo confirmation', () => {
     let s;
     let network;

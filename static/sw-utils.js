@@ -10,6 +10,60 @@
 }(typeof self !== 'undefined' ? self : this, function() {
     'use strict';
 
+    // Prefixes used by FiSH and Mircryption encrypted payloads.
+    var ENCRYPTED_PREFIXES = ['+OK ', 'mcps '];
+    var ENCRYPTED_BODY = '[Encrypted Message]';
+
+    function isEncryptedPayload(text) {
+        var value = String(text || '');
+        for (var i = 0; i < ENCRYPTED_PREFIXES.length; i++) {
+            if (value.indexOf(ENCRYPTED_PREFIXES[i]) === 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // "+OK +p text" / "+OK *+p text" carry plaintext inside FiSH framing.
+    function plaintextEscapeBody(text) {
+        var value = String(text || '');
+        var prefixes = ['+OK *', '+OK ', 'mcps *', 'mcps '];
+        for (var i = 0; i < prefixes.length; i++) {
+            if (value.indexOf(prefixes[i]) === 0) {
+                var rest = value.slice(prefixes[i].length);
+                if (rest.indexOf('+p ') === 0 && rest.length > 3) {
+                    return rest.slice(3);
+                }
+                return '';
+            }
+        }
+        return '';
+    }
+
+    function notificationBody(text, isCtcp) {
+        var candidate = String(text || '');
+        if (isCtcp) {
+            var inner = candidate.slice(1, -1);
+            if (inner.slice(0, 7).toUpperCase() === 'ACTION ') {
+                candidate = inner.slice(7);
+            } else if (inner.toUpperCase() === 'ACTION') {
+                candidate = '';
+            } else {
+                return ENCRYPTED_BODY;
+            }
+        }
+
+        // An explicit plaintext escape is safe to show; anything else encrypted
+        // must never surface ciphertext or a decrypted body, because the worker
+        // only ever sees the wire text.
+        var escaped = plaintextEscapeBody(candidate);
+        if (escaped) {
+            return escaped;
+        }
+
+        return isEncryptedPayload(candidate) ? ENCRYPTED_BODY : text;
+    }
+
     function unescapeTagValue(value) {
         return String(value)
             .replace(/\\:/g, ';')
@@ -133,7 +187,7 @@
 
             return {
                 title: message.nick || 'Kiwi IRC',
-                body: text,
+                body: notificationBody(text, isCtcp),
                 data: {
                     nick: message.nick || '',
                     target: target,
@@ -229,10 +283,12 @@
     return {
         parseIrcMessage: parseIrcMessage,
         buildNotification: buildNotification,
+        isEncryptedPayload: isEncryptedPayload,
         stateKeyFromScope: stateKeyFromScope,
         networkIdFromScope: networkIdFromScope,
         appRootFromScope: appRootFromScope,
         notificationTag: notificationTag,
+
         shouldSuppressPush: shouldSuppressPush,
         anyNotificationsDisabled: anyNotificationsDisabled,
     };

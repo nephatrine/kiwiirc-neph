@@ -96,9 +96,9 @@ describe('draft/channel-rename', () => {
         expect(buffer.messagesObj.buffer).toBe('#new');
         expect(buffer.getMessages()).toHaveLength(2);
         expect(buffer.getMessages()[0].message).toBe('hello');
-        expect(buffer.getMessages()[1].type).toBe('info');
+        expect(buffer.getMessages()[1].type).toBe('system');
         expect(buffer.getMessages()[1].message).toBe(
-            '#old was renamed to #new (Typo fix).'
+            'ⓘ #old was renamed to #new (Typo fix).'
         );
 
         expect(network.active_metadata_subs['#old']).toBeUndefined();
@@ -130,7 +130,7 @@ describe('draft/channel-rename', () => {
 
         await dispatchRename(client, ['#old', '#new', '']);
 
-        expect(buffer.getMessages()[1].message).toBe('#old was renamed to #new.');
+        expect(buffer.getMessages()[1].message).toBe('ⓘ #old was renamed to #new.');
         expect(notifications).toHaveBeenCalledWith(
             '#old was renamed to #new.',
             expect.objectContaining({ title: 'Channel Renamed' })
@@ -151,7 +151,7 @@ describe('draft/channel-rename', () => {
         expect(caseRename.getBufferByName(caseNetwork.id, '#old')).toBe(caseBuffer);
         expect(caseRename.ui.active_buffer).toBe('#OLD');
         expect(caseBuffer.getMessages().some((message) => (
-            message.message === '#old was renamed to #OLD.'
+            message.message === 'ⓘ #old was renamed to #OLD.'
         ))).toBe(true);
     });
 

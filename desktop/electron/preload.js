@@ -193,6 +193,10 @@ contextBridge.exposeInMainWorld('kiwiDesktop', {
         save: (stateKey, values) => ipcRenderer.invoke('kiwi:secrets-save', stateKey, values),
         clear: (stateKey) => ipcRenderer.invoke('kiwi:secrets-clear', stateKey),
     },
+    pluginSecrets: {
+        get: (scope) => ipcRenderer.invoke('kiwi:plugin-secret-get', scope),
+        set: (scope, value) => ipcRenderer.invoke('kiwi:plugin-secret-set', scope, value),
+    },
     profile: {
         export: (text, options) => ipcRenderer.invoke('kiwi:profile-export', text, options),
         import: () => ipcRenderer.invoke('kiwi:profile-import'),

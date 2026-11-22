@@ -229,6 +229,38 @@ describe('GlobalApi plugin surface', () => {
         expect(Object.keys(api.commands)).toEqual(['lim']);
     });
 
+    it('stores autocomplete metadata for registered commands', () => {
+        const handler = jest.fn();
+        const description = () => 'Say Hello';
+
+        api.registerCommand('Hello', handler, {
+            description,
+            alias: ['/HI', ''],
+        });
+        api.registerCommand('hidden', handler, { hidden: true });
+
+        expect(api.commandMeta.hello).toEqual({
+            command: 'hello',
+            alias: ['hi'],
+            description,
+            hidden: false,
+        });
+        expect(api.commandMeta.hidden.hidden).toBe(true);
+    });
+
+    it('defaults command metadata when options are omitted', () => {
+        const handler = jest.fn();
+
+        api.registerCommand('plain', handler);
+
+        expect(api.commandMeta.plain).toEqual({
+            command: 'plain',
+            alias: [],
+            description: '',
+            hidden: false,
+        });
+    });
+
     it('registers named autocomplete providers', () => {
         const provider = { suggest: () => null };
 
@@ -385,5 +417,157 @@ describe('GlobalApi plugin surface', () => {
         api.clearLayoutInsets('other');
 
         expect(events).toHaveLength(1);
+    });
+});
+
+describe('GlobalApi message filters', () => {
+    let api;
+
+    beforeEach(() => {
+        jest.spyOn(window.console, 'error').mockImplementation(() => {});
+        window._kiwi_exports = {};
+        api = new GlobalApi();
+        api.setState(makeState());
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+        delete window._kiwi_exports;
+    });
+
+    it('runs incoming message filters in order', () => {
+        api.addIncomingMessageFilter((context) => ({
+            text: context.text.toUpperCase(),
+        }));
+        api.addIncomingMessageFilter((context) => ({
+            text: context.text + '!',
+            isEncrypted: true,
+        }));
+
+        const result = api.applyIncomingMessageFilters({ text: 'hello' });
+        expect(result.text).toBe('HELLO!');
+        expect(result.isEncrypted).toBe(true);
+    });
+
+    it('keeps going when an incoming filter throws', () => {
+        api.addIncomingMessageFilter(() => {
+            throw new Error('boom');
+        });
+        api.addIncomingMessageFilter(() => ({ text: 'second' }));
+
+        expect(api.applyIncomingMessageFilters({ text: 'first' }).text)
+            .toBe('second');
+    });
+
+    it('rewrites incoming topics through the topic filters', () => {
+        api.addIncomingTopicFilter((topic) => (topic === '+OK abc' ? 'secret' : undefined));
+        api.addIncomingTopicFilter((topic) => topic + '!');
+
+        expect(api.applyIncomingTopicFilters('+OK abc', null)).toBe('secret!');
+        expect(api.applyIncomingTopicFilters('plain', null)).toBe('plain!');
+    });
+
+    it('applies synchronous outgoing filters immediately', () => {
+        api.addOutgoingMessageFilter((context) => ({
+            wireText: '+OK ' + context.text,
+            isEncrypted: true,
+        }));
+
+        const received = [];
+        api.applyOutgoingMessageFilters({ text: 'hello' }, (result) => received.push(result));
+
+        expect(received).toHaveLength(1);
+        expect(received[0]).toMatchObject({
+            text: 'hello',
+            wireText: '+OK hello',
+            isEncrypted: true,
+        });
+    });
+
+    it('holds an outgoing message until a promise resolves', async() => {
+        let release = null;
+        api.addOutgoingMessageFilter(() => new Promise((resolve) => {
+            release = resolve;
+        }));
+
+        const received = [];
+        api.applyOutgoingMessageFilters({ text: 'hello' }, (result) => received.push(result));
+        expect(received).toHaveLength(0);
+
+        release({ wireText: '+OK hello', isEncrypted: true });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(received).toHaveLength(1);
+        expect(received[0].wireText).toBe('+OK hello');
+    });
+
+    it('cancels the message when an outgoing filter rejects', async() => {
+        api.addOutgoingMessageFilter(() => Promise.reject(new Error('nope')));
+
+        const received = [];
+        api.applyOutgoingMessageFilters({ text: 'hello' }, (result) => received.push(result));
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(received).toHaveLength(1);
+        expect(received[0].cancel).toBe(true);
+    });
+
+    it('passes the context through when a filter returns nothing', () => {
+        api.addOutgoingMessageFilter(() => undefined);
+
+        const received = [];
+        const context = { text: 'hello' };
+        api.applyOutgoingMessageFilters(context, (result) => received.push(result));
+
+        expect(received[0]).toBe(context);
+    });
+});
+
+describe('GlobalApi plugin secrets', () => {
+    let api;
+
+    beforeEach(() => {
+        jest.spyOn(window.console, 'error').mockImplementation(() => {});
+        window._kiwi_exports = {};
+        api = new GlobalApi();
+        api.setState(makeState());
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+        delete window._kiwi_exports;
+    });
+
+    it('reports a missing secret store', () => {
+        expect(api.hasSecretStore()).toBe(false);
+        expect(api.secretsAreSecure()).toBe(false);
+        return expect(api.getSecret('fish')).resolves.toBeNull();
+    });
+
+    it('stores and clears secrets through the adapter', async() => {
+        const values = {};
+        api.setSecretStore({
+            isSecure: () => true,
+            get: jest.fn((scope) => Promise.resolve(values[scope] || null)),
+            set: jest.fn((scope, value) => {
+                values[scope] = value;
+                return Promise.resolve();
+            }),
+            delete: jest.fn((scope) => {
+                delete values[scope];
+                return Promise.resolve();
+            }),
+        });
+
+        expect(api.hasSecretStore()).toBe(true);
+        expect(api.secretsAreSecure()).toBe(true);
+
+        await expect(api.setSecret('fish', 'blob')).resolves.toBe(true);
+        await expect(api.getSecret('fish')).resolves.toBe('blob');
+
+        await expect(api.setSecret('fish', null)).resolves.toBe(true);
+        await expect(api.getSecret('fish')).resolves.toBeNull();
     });
 });
