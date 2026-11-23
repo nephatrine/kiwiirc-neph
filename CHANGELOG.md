@@ -12,232 +12,125 @@ and this project adheres to
 
 ### Added
 
-- **Desktop App**: Added an optional Electron shell with a secure `app://`
-  bridge, a desktop-only JSON5 configuration overlay, native HTTP for emoji
-  packs, downloads, and uploads, a direct-media proxy with Range support, and
-  Linux/Windows packaging. Desktop builds use native notifications instead of
-  Web Push.
-- **Desktop Profiles & Transfer**: Added filesystem-backed state and metadata
-  storage, legacy localStorage migration, OS-backed password storage through
-  `safeStorage` with a warned plaintext fallback, and Personal startup password
-  memory with a per-network opt-out. Added portable profile export/import as a
-  ZIP carrying state, themes, emoji packs, plugins, and custom icons, with an
-  optional plaintext-password export.
-- **Desktop Updates & Distribution**: Added check-only Gitea release
-  notifications with manual and automatic checks, a tray indicator, and a
-  release-page link; updates are never downloaded or installed. Release
-  workflows validate tags, build the web bundle, Linux AppImage, and Windows
-  portable executable for release assets with a combined `SHA256SUMS`, and build
-  stable packages for the Debian and Arch registries.
-- **Desktop Local Content**: Added local theme, emoji pack, and plugin
-  installation from ZIP archives, with installed-content listing, uninstall
-  controls, plugin loaded/failed/disabled status, enable toggles, and a reload
-  prompt. Added the `kiwi-theme://`, `kiwi-emoji://`, `kiwi-icon://`, and
-  `kiwi-plugin://` protocols. Installed content is stored in the desktop
-  user-data directory and included in profile archives.
-- **Desktop Chat Logs**: Added local SQLite chat history with FTS search,
-  configurable retention, redaction handling, word-prefix matching, a desktop
-  search dialog, historical context loading with gap markers, and an Open
-  Channel Logs action for unavailable or exhausted server history. The desktop
-  log search is filtered to the current network and buffer. Unjoined channels
-  use a read-only local-log History buffer instead of rejoining, and searched
-  messages are briefly highlighted.
-- **File Uploads**: Added desktop-only Catbox, Filebin, ShareBin.eu, Uguu~, and
-  WebDAV services alongside Litterbox, with Catbox user hashes, ShareBin
-  retention and chunked uploads, WebDAV access URLs and optional Basic auth, a
-  WebDAV password stored in the desktop secret store, and unique
-  timestamp-and-random upload names.
-- **Message Layouts & Presets**: Added Corporate and Cyberdeck message layouts
-  and refined timestamp, action, and status spacing in the inline and
-  traditional layouts so 12-hour times and narrow rows stay aligned. Added
-  preset menus in the browser and Electron app for one-click NephNET, AIM,
-  Discord, IRC, and Teams combinations; the browser switcher is optional and
-  both menus list only presets whose themes are enabled.
-- **Nicklist & Channel Settings**: Added optional grouped nicklists with Owner,
-  Operator, Half-Op, Voiced, Users/Online, and Offline headings. Split
-  per-buffer Preferences from channel Settings and hid the Settings tab when the
-  channel has no settings to show.
-- **Message Search**: Added server-side history search for `draft/search` and
-  `soju.im/search`, with a source selector for server history or desktop local
-  logs, pagination, one channel/nick target per server search, read-only context
-  for unopened buffers, and `/search <terms>` with server-first and local-log
-  fallback. The search dialog follows the theme; results load context on first
-  click, and unloaded local results become Open Log when server history cannot
-  reach them.
-- **Link Previews**: Expanded link previews with provider players and embeds for
-  major video, audio, map, and presentation services. Added verified generic web
-  metadata cards for selected news, standards, archive, developer, and wiki
-  sites; pages outside the allowlist are not fetched.
-- **Preview Cards**: Reworked link preview and bridged cards into a consistent
-  content-first card with thumbnails, lightbox galleries, safe wrapping, and
-  clickable links. Added desktop metadata cards from Open Graph, Twitter Card,
-  JSON-LD, and oEmbed. Fallbacks degrade from players to oEmbed cards to page
-  metadata and failed cards remove their handles. Desktop player embeds send
-  valid HTTPS Referer values and a desktop-specific Twitch `parent`, so they
-  work under the `app://` origin.
-- **Emoji Packs**: Added a global Emoji Packs settings block with a Local/Remote
-  preference, added network and channel Default/Always/Never policies, and added
-  desktop emoji pack installation from ZIP archives with installed-pack
-  management and the `kiwi-emoji://` protocol.
-- **Remote Autocomplete**: Added `/auto`, which sends
-  `+draft/autocomplete-request` TAGMSGs for the current channel or query and
-  merges responses from multiple bots with each suggestion attributed to its
-  source. The `/auto` prefix is stripped from the sent message, bare `/auto`
-  toggles session-only always-auto mode for the network, and an open list
-  accepts Enter to send or Tab to complete.
-- **IRC Links & Connections**: Added `irc://` and `ircs://` handling in Personal
-  startup, focusing an existing network or opening a prefilled Add Network page,
-  with initial channel lists captured in network settings and a prompt before
-  joining link channels. Added an HTTPS mixed-content warning when a direct
-  `ws://` endpoint is configured, and desktop protocol-handler registration
-  defaults on.
-- **Plugins**: Added `kiwi.addSettingsBlock()`, `kiwi.registerCommand()`,
-  `kiwi.addAutocompleteProvider()`, async-capable `addOutgoingMessageFilter()`,
+- **Desktop App**: Added the optional Electron shell with a secure `app://`
+  origin, native HTTP/media proxying, desktop JSON5 config, Linux/Windows
+  packaging, and native notifications.
+- **Desktop Profiles**: Added filesystem profiles, OS-backed secrets with
+  fallbacks, Personal password memory, and ZIP import/export with optional
+  passwords.
+- **Desktop Updates**: Added check-only Gitea release notifications and
+  validated Linux/Windows release workflows with stable packages and
+  `SHA256SUMS`.
+- **Desktop Local Content**: Added ZIP install/manage for themes, emoji packs,
+  and plugins, with local protocols and profile inclusion.
+- **Desktop Chat Logs**: Added local SQLite history with FTS search, retention,
+  redaction, context gaps, and an Open Channel Logs fallback.
+- **File Uploads**: Added Catbox, Filebin, ShareBin.eu, Uguu~, and WebDAV
+  alongside Litterbox, including chunked uploads, retention, WebDAV auth, and
+  random names.
+- **Message Layouts & Presets**: Added Corporate/Cyberdeck layouts, spacing
+  fixes, and NephNET/AIM/Discord/IRC/Teams presets.
+- **Nicklist & Channel Settings**: Added grouped nicklists and split buffer
+  Preferences from channel Settings.
+- **Message Search**: Added `draft/search`/`soju.im/search`, server/local
+  selection, pagination, context, and `/search`.
+- **Link Previews & Cards**: Added provider players/embeds, verified metadata
+  cards, consistent thumbnails/galleries/links, and desktop Open
+  Graph/Twitter/JSON-LD/oEmbed fallbacks.
+- **Emoji Packs**: Added global/network/channel Emoji Pack policies and desktop
+  ZIP management.
+- **Remote Autocomplete**: Added `/auto` for `+draft/autocomplete-request`,
+  multi-bot suggestions, and session-only always-auto mode.
+- **IRC Links & Connections**: Added `irc://`/`ircs://` startup handling,
+  prefilled joins, mixed-content warnings, and desktop protocol registration.
+- **Plugins**: Added `kiwi.addSettingsBlock()`, `registerCommand()`,
+  `addAutocompleteProvider()`, async `addOutgoingMessageFilter()`,
   `addIncomingMessageFilter()`, `addIncomingTopicFilter()`,
-  `addBlockRenderer()`, `getSecret()`/`setSecret()`, the data-free
-  `helpers/CommandTree`, layout chrome insets for framing plugins, and sidebar
-  active-view state. These let plugins add settings blocks, commands, local
-  completion, outgoing and incoming message handling, topic handling, block
-  renderers, and secret storage without assuming a specific theme.
-- **Bongo Companion**: Added automatic placement, using Bottom Right while a
-  right sidebar is open and Top Right when it is closed, plus automatic sizing
-  that grows while the nicklist is visible; both are now the default. Added
-  independent position and size controls, outside-click dismissal for the stats
-  card, reduced-motion-aware animations, positioning that accounts for full-page
-  views and frame insets, and theme-aware popup colors.
-- **Radio**: Added station management for adding, editing, removing, and
-  restoring user stations and hidden station entries, with homepage links,
-  multiple ordered stream URLs and fallback, URL or desktop-local icons, and
-  settings for Enable Radio, Show Now Playing, Show Waveform, and Show Station
-  Icons. Expanded waveform styles, added a MilkDrop-inspired WebGL visualizer
-  with fullscreen and playback controls, and moved desktop metadata fetching to
-  native HTTP with genre, bitrate, listener details, manual lookup, and backoff.
-  The station browser remains available with no stations, and the header toggles
-  back to the station list.
-- **FiSH Encryption**: Added the bundled FiSH plugin with Blowfish ECB/CBC
-  encryption for queries, channels, notices, actions, and topics, DH1080 key
-  exchange, passphrase-locked key storage, undecryptable-message placeholders,
-  multiline handling, and compatibility with mIRC, ZNC, and WeeChat FiSH
-  clients.
-- **Chat Input**: Added a visible warning when a space-prefixed command is
-  cancelled, with actions to edit it or send it as a message. Added a Time
-  System selector for 12-hour, 24-hour, and decimal time. Custom
-  `timestamp_format` values still render as configured and hide the selector.
-- **Simple Typography**: Added Simple Typography for displayed message
-  punctuation and Typographic Replacements for sent messages on UTF-8 networks.
-  Code spans, fenced code, and links are left unchanged.
-- **Network List & Icons**: Added per-network move-up controls, OFTC and Rekt
-  fallback icons, and a per-network icon URL in Server Details → Advanced that
-  overrides server-provided and built-in icons. Desktop users can select a local
-  image, which is copied into the app data directory and served through
-  `kiwi-icon://`.
+  `addBlockRenderer()`, `getSecret()`/`setSecret()`, `helpers/CommandTree`,
+  layout insets, and sidebar view state.
+- **Bongo Companion**: Added automatic placement/sizing, independent controls,
+  reduced-motion animations, and frame-aware positioning.
+- **Radio**: Added station add/edit/remove/restore, fallback streams, icons,
+  waveform styles, a fullscreen WebGL visualizer, and native metadata.
+- **FiSH Encryption**: Added bundled FiSH with Blowfish ECB/CBC, DH1080
+  exchange, locked keys, placeholders, multiline, and mIRC/ZNC/WeeChat
+  compatibility.
+- **Chat Input**: Added cancelled-command warnings and a 12/24-hour/decimal Time
+  System selector.
+- **Simple Typography**: Added display-time Simple Typography and outgoing
+  replacements on UTF-8 networks.
+- **Network List & Icons**: Added reordering, OFTC/Rekt fallback icons, and
+  custom icon URLs/local images.
 
 ### Changed
 
-- **Settings**: Reorganized settings and made many buffer-specific and some
-  network-specific settings global settings now. Many defaults changed. Please
-  go through your appsettings page and re-adjust to match your preferences if
-  needed.
-- **Simple Markdown**: Messages now supports triple-backtick fenced code blocks,
-  ignores the language hint, preserves the fence lines, and excludes their
-  contents from link, emoji, and typography processing.
-- **Send Guards**: Expanded Accidental Message Protection beyond space-prefixed
-  commands to warn before sending multiline messages on networks without
-  `draft/multiline`, large pastes, and password-like single words, with options
-  to edit or send anyway.
-- **Themes**: Softened the message-list date and unread separator from a 2px
-  dashed accent to a 1px dashed accent at 25% opacity in the dark themes that
-  inherit `common/base.css`; Kiwi Dark keeps its original separator.
-- **Raw Buffer**: Raw protocol lines now bypass message formatting, URL,
-  channel, user, emoji, and preview processing and use a compact monospace row
-  instead of the normal message layouts. Timestamps, `[S]`/`[C]` prefixes, and
-  visible control glyphs are preserved.
-- **WHO Polling**: The away-status fallback now runs every three minutes instead
-  of every 30 seconds, skips channels with more than 100 users, and stops stale
-  loops when a buffer has been removed and replaced by one with the same name.
-- **History**: Hidden-only chathistory batches now advance a separate cursor and
-  continue loading older batches automatically. Trimming restores Load Previous
-  Messages, requests older history from the oldest remaining message, and is
-  briefly delayed after returning to the bottom.
-- **File Uploads**: The preferred upload service and service-specific retention
-  settings are now global, and networks default to preferring FILEHOST when
-  available with a per-network Use FILEHOST setting. Per-network service and
-  retention overrides were removed, and file upload results append to the
-  originating buffer's draft instead of sending immediately.
-- **Autocomplete**: Nick completion now includes known relayed users from the
-  current buffer, including their display names as searchable labels; display
-  names are never inserted into the message. Tab accepts the highlighted
-  suggestion, Enter accepts it and sends, Space and punctuation type normally,
-  and the arrow keys and Shift+Tab navigate the list.
-- **Limnoria**: `/lim`, command suggestions, syntax hints, settings, and command
-  data now come from the bundled `suggest-limnoria` plugin. Core no longer
-  contains Limnoria command names, syntax, or delivery rules.
-- **Radio**: Stations are now starred from the station browser instead of the
+- **Settings**: Reorganized settings, made many options global, and changed
+  several defaults. Review App Settings after upgrading.
+- **Simple Markdown**: Added fenced code blocks with language hints ignored,
+  fence lines preserved, and code excluded from links/emoji/typography.
+- **Send Guards**: Expanded Accidental Message Protection to multiline messages,
+  large pastes, and password-like single words.
+- **Themes**: Softened the date and unread separator in themes inheriting
+  `common/base.css`; Kiwi Dark keeps its separator.
+- **Raw Buffer**: Raw lines now bypass message/link/emoji/preview processing and
+  use compact monospace rows with timestamps and control glyphs preserved.
+- **WHO Polling**: The away fallback now runs every three minutes, skips
+  channels over 100 users, and stops stale loops.
+- **History**: Hidden-only chathistory batches load older batches automatically,
+  and trimming restores Load Previous Messages.
+- **File Uploads**: Preferred service and retention are global, FILEHOST is
+  preferred per network, and results append to the buffer draft.
+- **Autocomplete**: Nick completion includes relayed users and display names
+  without inserting those names; Tab/Enter and navigation are unified.
+- **Limnoria**: `/lim`, suggestions, syntax, settings, and command data now come
+  from `suggest-limnoria`.
+- **Radio**: Stations are starred from the station browser instead of the
   player.
-- **Performance**: Reduced message-list reactivity and renderer memory growth by
-  caching avatar and host-name settings per buffer, avoiding per-message setting
-  reads, scoping row reactivity, precomputing author-repeat and unread state,
-  and bounding avatar caches. Coalesced scroll and tick work, avoided redundant
-  scrollback sorting, shared batch timers, cached radio waveform colors, bounded
-  hidden raw buffers, and reduced IRC ping-timeout churn.
+- **Performance**: Reduced message-list reactivity and memory growth by caching
+  settings, scoping rows, bounding caches, coalescing timers, and avoiding
+  redundant sorting and ping-timeout churn.
 
 ### Removed
 
-- Removed the Network Preferences block; its controles now live in the active
-  network's App Settings tab.
-- Removed the Export State troubleshooting action; `kiwi.log.getLogBuffer()`
-  remains available for raw log diagnostics.
-- Removed the unused top-level `bnc` object, `startupOptions.bouncer`, the
-  `kiwiBnc` and `znc` startup aliases, and the `znc` preset-network type alias.
-  Personal startup now restores a saved bouncer control connection
-  automatically.
-- Removed the special Custom Theme URL field. Theme URLs are always loaded as
-  `<url>/theme.css`, and a theme named `Custom` is treated like any other theme.
-- Removed the Limnoria Prefix setting and the Limnoria-specific remote
-  autocomplete path.
+- Removed the Network Preferences block; its controls now live in Active
+  Network's App Settings.
+- Removed the Export State action; `kiwi.log.getLogBuffer()` remains available.
+- Removed the legacy `bnc`, `startupOptions.bouncer`, `kiwiBnc`, and `znc`
+  aliases; Personal startup restores saved bouncer control connections.
+- Removed the Custom Theme URL field. Theme URLs always load `<url>/theme.css`,
+  and `Custom` is treated like any other theme.
+- Removed the Limnoria Prefix setting and its remote autocomplete path.
 
 ### Fixed
 
-- **Chat & IRC Protocol**: Casefold user and channel state with the negotiated
-  `CASEMAPPING`, apply negated `RPL_ISUPPORT` tokens, fall back to the modern
-  `(ov)@+` `PREFIX` only when the server advertises none, preserve empty
-  trailing parameters, enforce advertised byte limits for `/join`, `/topic`,
-  `/kick`, `/away`, and `/nick`, and send long multiline messages in
-  grapheme-safe chunks.
+- **Chat & IRC Protocol**: Fixed casefolding, negated `RPL_ISUPPORT` tokens,
+  `PREFIX` fallback, empty trailing parameters, advertised byte limits, and
+  grapheme-safe splitting of long messages.
 - **Messages**: Real names in the Modern layout now render IRC formatting,
-  links, and emoji, matching the user box.
-- **Simple Markdown**: Simple Markdown now supports multiline messages,
-  including inline formatting across line breaks.
-- **Read Markers**: Read state now follows the exact sent `MARKREAD` timestamp,
-  correlates labeled responses with pending markers, uses the message's local
-  time to avoid clock-offset drift, falls back to timestamp references without a
-  `msgid`, treats `MARKREAD *` as no stored marker, and ignores stale server
-  markers.
-- **Connection Lifecycle**: Reconnects now reset connection-scoped state, cancel
-  stale timers and batch queues, ignore late socket and SASL callbacks, scope
-  gateway channels to their own socket, dispose probe channels, and defer
-  bouncer saves until a controller is available.
+  links, and emoji like the user box.
+- **Simple Markdown**: Multiline messages now keep inline formatting across line
+  breaks.
+- **Read Markers**: Read state now follows the exact sent timestamp, handles
+  labeled responses, local-time drift, timestamp fallbacks, and stale markers.
+- **Connection Lifecycle**: Reconnects now reset state, cancel stale timers and
+  batches, ignore late socket/SASL callbacks, scope gateway channels, dispose
+  probes, and defer bouncer saves.
 - **Startup Connect**: Temporary and Remember Me off flows no longer reset the
-  live network after connecting, duplicate connect calls are ignored during
-  negotiation, and probe channels cannot collide with network channel IDs.
-- **History**: `CHATHISTORY` timeouts now start when a request is sent, retry
-  with backoff, and keep manual loading available. The LATEST-to-live boundary
-  uses the newest stored message, nested labeled-response batches preserve
-  chathistory metadata, history-end is tracked per request direction, and
-  reaction-only batches no longer create false gaps after reconnect.
-- **Mobile Layout**: Limited the mobile state-browser drawer width, updated
-  NephDeck and NephWave chrome offsets to follow the drawer width, and moved
-  NephDeck app settings inside its mobile chrome.
-- **Shutdown**: Replaced the deprecated `unload` handler with `pagehide`, so
-  connection shutdown no longer triggers the Chromium unload policy violation.
-- **Link Previews**: Failed previews no longer trigger message re-rendering
-  loops that refetched the same URL. Concurrent preview requests are shared,
-  failed previews are cached briefly before retrying, and topic preview handles
-  now open in the pinned media area.
-- **Avatars**: Image avatars now render as plain HTML and keep a stable wrapper,
-  so the message list no longer re-lays out on every animation frame and avatars
-  no longer stretch during theme or preset changes.
-- **Localization**: Fixed account-registration messages that displayed literal
+  live network, duplicate connects are ignored, and probe channels cannot
+  collide with network IDs.
+- **History**: `CHATHISTORY` requests now time out correctly, retry with
+  backoff, preserve nested metadata, track history-end per direction, and avoid
+  false reaction gaps.
+- **Mobile Layout**: Limited the mobile drawer width, updated NephDeck/NephWave
+  offsets, and moved NephDeck settings inside mobile chrome.
+- **Shutdown**: Replaced `unload` with `pagehide`, avoiding the Chromium unload
+  policy violation.
+- **Link Previews**: Failed previews no longer loop or refetch; concurrent
+  requests are shared, failures are briefly cached, and topic handles open in
+  the pinned media area.
+- **Avatars**: Image avatars now render as plain HTML with a stable wrapper, so
+  rows no longer re-layout every frame or stretch on theme changes.
+- **Localization**: Fixed account-registration messages showing literal
   `{version}`, `{account}`, `{min}`, and `{max}` placeholders.
 
 ## [2.1.0] - 2026-11-03
