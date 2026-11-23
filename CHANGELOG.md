@@ -8,7 +8,7 @@ and this project adheres to
 
 ## [Unreleased]
 
-## [2.2.0] - 2026-11-19
+## [2.2.0] - 2026-11-23
 
 ### Added
 
@@ -206,8 +206,8 @@ and this project adheres to
   grapheme-safe chunks.
 - **Messages**: Real names in the Modern layout now render IRC formatting,
   links, and emoji, matching the user box.
-- **Simple Markdown**: Simple Markdown now supports multiline messages, including
-  inline formatting across line breaks.
+- **Simple Markdown**: Simple Markdown now supports multiline messages,
+  including inline formatting across line breaks.
 - **Read Markers**: Read state now follows the exact sent `MARKREAD` timestamp,
   correlates labeled responses with pending markers, uses the message's local
   time to avoid clock-offset drift, falls back to timestamp references without a

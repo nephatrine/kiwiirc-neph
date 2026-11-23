@@ -2,7 +2,7 @@ import { sanitizeUrl } from '@/helpers/Misc';
 
 export const BRIDGE_CARD_TAG = 'kiwi-bridge-card';
 
-const MARKER_REGEX = /^(?:\[FWD\] )?\[(PREVIEW|EMBED)\]/;
+const MARKER_REGEX = /^(?:<[^>\n]*>\s*)*(?:(\[FWD\] ))?\[(PREVIEW|EMBED)\]/;
 
 function labelValue(line, label) {
     const trimmedLine = line.trimStart();
@@ -34,8 +34,8 @@ export function parseBridgeCard(text) {
     }
 
     const card = {
-        marker: marker[1].toLowerCase(),
-        forwarded: lines[0].startsWith('[FWD] '),
+        marker: marker[2].toLowerCase(),
+        forwarded: !!marker[1],
         author: '',
         title: '',
         url: '',

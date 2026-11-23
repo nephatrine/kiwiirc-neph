@@ -103,6 +103,36 @@ describe('BatchHandlers.js', () => {
             expect(results[0].tags['kiwi-bridge-card']).toBe('1');
             expect(results[0].params[1]).toBe('[PREVIEW]\nTitle: A title\nBody');
         });
+
+        it('should mark prefixed bridge card multiline batches', () => {
+            const firstLine = '<\x0308Unknown\x0f> [FWD] [EMBED]';
+            const batch = {
+                tags: {},
+                commands: [
+                    {
+                        command: 'PRIVMSG',
+                        params: ['#channel', firstLine],
+                        tags: {},
+                    },
+                    {
+                        command: 'PRIVMSG',
+                        params: ['#channel', 'Title: A title'],
+                        tags: {},
+                    },
+                    {
+                        command: 'PRIVMSG',
+                        params: ['#channel', 'Body'],
+                        tags: {},
+                    },
+                ],
+            };
+
+            const results = BatchHandlers.handleMultilineBatch(network, client, batch);
+
+            expect(results[0].tags['kiwi-bridge-card']).toBe('1');
+            expect(results[0].params[1])
+                .toBe(firstLine + '\nTitle: A title\nBody');
+        });
     });
 
     describe('sendMultiline', () => {

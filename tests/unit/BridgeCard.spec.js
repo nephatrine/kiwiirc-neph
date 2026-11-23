@@ -42,6 +42,23 @@ describe('bridge card parsing', () => {
         expect(card.title).toBe('Forwarded');
     });
 
+    test('parses a forwarded card behind a bridge reply prefix', () => {
+        const firstLine = '<\x0308Unknown\x0f> [FWD] [EMBED]';
+        const card = parseBridgeCard([
+            firstLine,
+            'Author: Arby\'s',
+            'Title: A title',
+            'Body text',
+        ].join('\n'));
+
+        expect(card.marker).toBe('embed');
+        expect(card.forwarded).toBe(true);
+        expect(card.author).toBe('Arby\'s');
+        expect(card.title).toBe('A title');
+        expect(card.body).toBe('Body text');
+        expect(isBridgeCardText(firstLine)).toBe(true);
+    });
+
     test('keeps only the first title and footer', () => {
         const card = parseBridgeCard([
             '[PREVIEW]',

@@ -666,4 +666,29 @@ describe('InputHandler outgoing message filters', () => {
         expect(network.ircClient.action).toHaveBeenCalledWith('#channel', '+OK waves', {});
         expect(network.ircClient.notice).toHaveBeenCalledWith('#channel', '+OK hi', {});
     });
+
+    test('parses a multiline bridge card into the local echo', () => {
+        const { handler, network, state, context } = makeOutgoing();
+
+        handler.processLine('/msg #channel [EMBED]\nTitle: A title\nBody text', context);
+
+        expect(network.ircClient.say).toHaveBeenCalled();
+        const echo = state.addMessage.mock.calls[0][1];
+        expect(echo.bridge_card).toEqual(expect.objectContaining({
+            marker: 'embed',
+            title: 'A title',
+            body: 'Body text',
+        }));
+        expect(echo.message).toBe('Body text');
+    });
+
+    test('does not card a single-line bridge marker', () => {
+        const { handler, state, context } = makeOutgoing();
+
+        handler.processLine('/msg #channel [EMBED] Title: A title', context);
+
+        const echo = state.addMessage.mock.calls[0][1];
+        expect(echo.bridge_card).toBeNull();
+        expect(echo.message).toContain('[EMBED]');
+    });
 });

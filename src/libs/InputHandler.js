@@ -5,6 +5,7 @@ import * as Misc from '@/helpers/Misc';
 import { applyTypography } from '@/helpers/Typography';
 import { byteLength, withinLimit } from '@/helpers/LoginFields';
 import { rollDice, formatRoll } from '@/helpers/Dice';
+import { isBridgeCardText, parseBridgeCard } from '@/helpers/BridgeCard';
 import { each } from '@/helpers/Utils';
 import * as ChatLogs from '@/libs/desktop/ChatLogs';
 import * as MessageSearch from '@/libs/MessageSearch';
@@ -213,9 +214,17 @@ export default class InputHandler {
             textFormatType = 'notice';
         }
 
+        // Bridge cards normally arrive inside a multiline batch. The local echo
+        // bypasses that parser, so parse the same text here.
+        const bridgeCard = displayText.indexOf('\n') > -1 &&
+            isBridgeCardText(displayText) ?
+            parseBridgeCard(displayText) :
+            null;
+        const messageText = bridgeCard ? bridgeCard.body : displayText;
+
         let messageBody = TextFormatting.formatText(textFormatType, {
             nick: network.nick,
-            text: displayText,
+            text: messageText,
         });
 
         let newMessage = {
@@ -225,6 +234,7 @@ export default class InputHandler {
             raw_text: wireText,
             type: type,
             tags: { ...tags },
+            bridge_card: bridgeCard,
             is_pending: (caps.hasEcho || caps.hasLabel) && !caps.isSpecialBuffer,
             is_rerouted: !!tags['+channel-context'],
             is_encrypted: !!outgoing.isEncrypted,
