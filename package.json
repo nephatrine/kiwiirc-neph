@@ -70,7 +70,7 @@
         "copy-webpack-plugin": "^14.0.0",
         "cssnano": "^5.1.15",
         "eslint": "^9.39.5",
-        "eslint-plugin-import-x": "^4.17.1",
+        "eslint-plugin-import-x": "^4.18.1",
         "eslint-plugin-vue": "^10.11.1",
         "eslint-plugin-vuejs-accessibility": "^2.6.2",
         "globals": "^17.13.0",
@@ -101,7 +101,14 @@
     },
     "overrides": {
         "@ungap/structured-clone": "^1.4.0",
-        "serialize-javascript": "^7.1.4"
+        "js-beautify": {
+            "editorconfig": "^4.0.1",
+            "glob": "^14.0.6"
+        },
+        "serialize-javascript": "^7.1.4",
+        "sockjs": {
+            "uuid": "^11.1.1"
+        }
     },
     "engines": {
         "node": ">= 22.0.0"
